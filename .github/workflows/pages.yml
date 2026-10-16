@@ -28,6 +28,7 @@ jobs:
           python-version: '3.12'
       - run: npm ci
       - run: npm run typecheck
+      - run: npx playwright install --with-deps chromium
       - run: npm test
       - id: pages
         uses: actions/configure-pages@v5
