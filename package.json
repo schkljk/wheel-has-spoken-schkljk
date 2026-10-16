@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @whs/game",
+    "dev": "npm run dev -w @whs/game --",
     "build": "npm run build -w @whs/game",
     "typecheck": "tsc -b && tsc -p tools",
     "test": "vitest run",

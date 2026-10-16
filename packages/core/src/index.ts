@@ -7,3 +7,5 @@ export * from './fighter';
 export * from './kits';
 export * from './names';
 export * from './battle';
+export * from './save';
+export * from './pool';

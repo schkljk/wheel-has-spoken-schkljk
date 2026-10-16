@@ -1,0 +1,691 @@
+{
+ "spins": 35,
+ "entered": 0,
+ "won": 0,
+ "champs": [],
+ "sound": true,
+ "fast": true,
+ "coins": 21,
+ "seen": {
+  "race": [
+   "Sharkfolk"
+  ],
+  "rsub": [
+   "Sharkfolk/Baby shark"
+  ],
+  "arch": [
+   "Mage"
+  ],
+  "asub": [
+   "mage/Hedge wizard"
+  ],
+  "stance": [
+   "Tactical"
+  ],
+  "size": [
+   "Average"
+  ],
+  "back": [
+   "Influencer"
+  ],
+  "syn": [
+   "Glass cannon",
+   "Big brain",
+   "Absolute zero",
+   "Allergic to own kit"
+  ],
+  "weapon": [
+   "Brick",
+   "Electric guitar"
+  ],
+  "power": [
+   "Ice"
+  ],
+  "ench": [
+   "Frost"
+  ],
+  "weak": [
+   "Water"
+  ],
+  "chaos": [
+   "Crowd favorite"
+  ],
+  "quirk": [
+   "Read the manual"
+  ],
+  "side": [
+   "Medic slime"
+  ],
+  "title": [
+   "the Sleeper Agent"
+  ],
+  "moves": [
+   "mv/Arcane bolt",
+   "mv/Mana shield",
+   "mv/Frenzy bite",
+   "mv/Stagger",
+   "mv/Snack time",
+   "mv/Hot pan",
+   "mv/Bone rattle",
+   "mv/Aimed shot",
+   "mv/Bulwark",
+   "mv/Shield bash",
+   "mv/Hellfire",
+   "mv/Power chord",
+   "mv/Pickpocket",
+   "mv/Smoke and mirrors",
+   "mv/Snowball",
+   "mv/Battle hymn",
+   "mv/Dissonance",
+   "mv/Warcry",
+   "mv/Uppercut",
+   "mv/Iaido",
+   "mv/Parry",
+   "mv/Adapt"
+  ],
+  "arena": [
+   "Haunted forest",
+   "Rooftop at night",
+   "Colosseum",
+   "Space station"
+  ],
+  "gear": [
+   "Shadow cloak",
+   "Thinking cap"
+  ]
+ },
+ "last": [
+  "race|Sharkfolk",
+  "rsub|Sharkfolk/Baby shark",
+  "arch|Mage",
+  "asub|mage/Hedge wizard",
+  "stance|Tactical",
+  "size|Average",
+  "back|Influencer",
+  "weapon|Brick",
+  "power|Ice",
+  "ench|Frost",
+  "weak|Water",
+  "chaos|Crowd favorite",
+  "quirk|Read the manual",
+  "side|Medic slime",
+  "title|the Sleeper Agent"
+ ],
+ "champIds": {},
+ "lastTop": [],
+ "career": null,
+ "retired": [
+  {
+   "name": "Retired Legend",
+   "picks": {
+    "race": "Human",
+    "rsub": "Farmhand",
+    "arch": "Brawler",
+    "asub": "Boxing",
+    "stance": "Defensive",
+    "size": "Tiny",
+    "back": "Former pro athlete",
+    "str": "Noodle arms",
+    "spd": "Snail",
+    "dur": "Continental",
+    "iq": "Omniscient",
+    "cha": "Magnetic",
+    "growth": "Plateau",
+    "weapon": "Greatsword",
+    "wm": "Absolute",
+    "power": "Regeneration",
+    "pm": "Grandmaster",
+    "ench": "Flaming",
+    "weak": "Overconfident",
+    "chaos": "Main character",
+    "quirk": "Read the manual",
+    "side": "Ghost of your ex",
+    "title": "Menace to Society"
+   },
+   "bonus": {},
+   "boons": [],
+   "fame": 0,
+   "tp": 0,
+   "talents": [],
+   "challenge": null,
+   "chalLvl": 0,
+   "story": null,
+   "bag": {},
+   "lootBoost": false,
+   "lvl": 22,
+   "xp": 0,
+   "pendingLv": 0,
+   "rec": {
+    "w": 0,
+    "l": 0
+   },
+   "earned": [],
+   "inj": [],
+   "next": null,
+   "belts": {},
+   "defenses": 0,
+   "tourneys": 0,
+   "fights": 0,
+   "gbest": 0,
+   "trained": 0,
+   "isNem": 0,
+   "cid": null,
+   "gear": null,
+   "armory": [],
+   "contract": null,
+   "offers": null,
+   "retiredAt": 1792179368618
+  }
+ ],
+ "nemesis": null,
+ "season": {
+  "n": 1,
+  "tourneys": 0,
+  "stats": {
+   "race": {
+    "Sharkfolk": {
+     "w": 3,
+     "l": 2
+    },
+    "Skeleton": {
+     "w": 0,
+     "l": 1
+    },
+    "Demon": {
+     "w": 0,
+     "l": 1
+    },
+    "Snowman": {
+     "w": 1,
+     "l": 0
+    },
+    "Orc": {
+     "w": 0,
+     "l": 1
+    },
+    "Human": {
+     "w": 1,
+     "l": 0
+    }
+   },
+   "arch": {
+    "mage": {
+     "w": 3,
+     "l": 2
+    },
+    "chef": {
+     "w": 0,
+     "l": 1
+    },
+    "tank": {
+     "w": 0,
+     "l": 1
+    },
+    "trickster": {
+     "w": 1,
+     "l": 0
+    },
+    "bard": {
+     "w": 0,
+     "l": 1
+    },
+    "samurai": {
+     "w": 1,
+     "l": 0
+    }
+   }
+  }
+ },
+ "patch": {
+  "race": {},
+  "arch": {}
+ },
+ "patchNotes": null,
+ "ach": {},
+ "gbest": 0,
+ "lastArena": "space",
+ "tourney": null,
+ "legacy": {
+  "pts": 3,
+  "perks": {
+   "coins": 1
+  }
+ },
+ "rivals": [],
+ "slots": [
+  {
+   "career": {
+    "name": "Basil Crumpet the 47th",
+    "picks": {
+     "race": "Sharkfolk",
+     "rsub": "Baby shark",
+     "arch": "Mage",
+     "asub": "Hedge wizard",
+     "stance": "Tactical",
+     "size": "Average",
+     "back": "Influencer",
+     "str": "Galactic",
+     "spd": "Athlete",
+     "dur": "Glass",
+     "iq": "Knows the script",
+     "cha": "Captivating",
+     "growth": "Steady",
+     "weapon": "Electric guitar",
+     "wm": "Hobbyist",
+     "power": "Ice",
+     "pm": "Mythic",
+     "ench": "Frost",
+     "weak": "Water",
+     "chaos": "Crowd favorite",
+     "quirk": "Read the manual",
+     "side": "Medic slime",
+     "title": "the Sleeper Agent"
+    },
+    "bonus": {
+     "str": 4,
+     "spd": 4,
+     "dur": 4,
+     "iq": 4,
+     "wm": 4,
+     "pm": 4
+    },
+    "boons": [],
+    "fame": 9,
+    "tp": 2,
+    "talents": {
+     "off_sharp": 2,
+     "def_tough": 1
+    },
+    "challenge": null,
+    "chalLvl": 0,
+    "story": {
+     "ch": 1,
+     "ng": 0,
+     "rows": [
+      [
+       "fight"
+      ],
+      [
+       "fight"
+      ],
+      [
+       "rest",
+       "shop"
+      ],
+      [
+       "fight",
+       "elite"
+      ],
+      [
+       "fight"
+      ],
+      [
+       "treasure",
+       "event"
+      ],
+      [
+       "fight"
+      ],
+      [
+       "fight"
+      ],
+      [
+       "event",
+       "rest"
+      ],
+      [
+       "boss"
+      ]
+     ],
+     "row": 6,
+     "picks": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      1
+     ],
+     "hp": 80,
+     "grit": 2,
+     "seenIntro": true,
+     "used": [
+      "promoter"
+     ],
+     "v2": 1,
+     "v3": 1,
+     "v4": 1,
+     "cleared": []
+    },
+    "bag": {
+     "drink": 1
+    },
+    "lootBoost": false,
+    "lvl": 2,
+    "xp": 19,
+    "pendingLv": 0,
+    "rec": {
+     "w": 3,
+     "l": 2
+    },
+    "earned": [],
+    "inj": [],
+    "next": null,
+    "belts": {},
+    "defenses": 0,
+    "tourneys": 0,
+    "fights": 5,
+    "gbest": 0,
+    "trained": 0,
+    "isNem": 0,
+    "cid": "mvbdade4hl0hg",
+    "gear": {
+     "armor": "chain",
+     "helm": "ironhelm",
+     "gloves": "irongauntlets"
+    },
+    "armory": [
+     "vest",
+     "coin",
+     "ironhelm",
+     "chain",
+     "irongauntlets"
+    ],
+    "contract": null,
+    "offers": [
+     "clean",
+     "ults",
+     "combo2"
+    ]
+   },
+   "nemesis": null,
+   "tourney": null,
+   "coins": 21
+  },
+  {
+   "career": {
+    "name": "Slot Fighter 1",
+    "picks": {
+     "race": "Pigeon",
+     "rsub": "Carrier pigeon",
+     "arch": "Wrestler",
+     "asub": "Heel",
+     "stance": "Counter-puncher",
+     "size": "Large",
+     "back": "Just woke up here",
+     "str": "Superhuman",
+     "spd": "Hypersonic",
+     "dur": "Paper",
+     "iq": "Clever",
+     "cha": "Magnetic",
+     "growth": "Plateau",
+     "weapon": "Sledgehammer",
+     "wm": "Expert",
+     "power": "Poison",
+     "pm": "Beginner",
+     "ench": "Heavy",
+     "weak": "Allergic to magic",
+     "chaos": "Nothing",
+     "quirk": "Sore loser",
+     "side": "Messenger pigeon",
+     "title": "No title"
+    },
+    "bonus": {},
+    "boons": [],
+    "fame": 0,
+    "tp": 0,
+    "talents": [
+     "o1",
+     "d1"
+    ],
+    "challenge": null,
+    "chalLvl": 0,
+    "story": null,
+    "bag": {},
+    "lootBoost": false,
+    "lvl": 8,
+    "xp": 4,
+    "pendingLv": 0,
+    "rec": {
+     "w": 7,
+     "l": 3
+    },
+    "earned": [
+     "onepunch"
+    ],
+    "inj": [
+     {
+      "k": "ankle",
+      "left": 1
+     }
+    ],
+    "next": null,
+    "belts": {
+     "local": 1
+    },
+    "defenses": 0,
+    "tourneys": 0,
+    "fights": 0,
+    "gbest": 0,
+    "trained": 0,
+    "isNem": 0,
+    "cid": "slot1",
+    "gear": {
+     "trinket": "coin"
+    },
+    "armory": [],
+    "contract": null,
+    "offers": null
+   },
+   "nemesis": null,
+   "tourney": null,
+   "coins": 20
+  },
+  {
+   "career": {
+    "name": "Slot Fighter 2",
+    "picks": {
+     "race": "Minotaur",
+     "rsub": "Lost",
+     "arch": "Chef",
+     "asub": "Pastry chef",
+     "stance": "Aggressive",
+     "size": "Average",
+     "back": "Former royalty",
+     "str": "Wet tissue",
+     "spd": "Athlete",
+     "dur": "Wet paper",
+     "iq": "Galaxy brain",
+     "cha": "Cult leader",
+     "growth": "Steady",
+     "weapon": "Baseball bat",
+     "wm": "Expert",
+     "power": "Poison",
+     "pm": "Skilled",
+     "ench": "Swift",
+     "weak": "Paper cuts",
+     "chaos": "Lag spike",
+     "quirk": "Lucky socks",
+     "side": "Attack dog",
+     "title": "the Tax Write-off"
+    },
+    "bonus": {},
+    "boons": [],
+    "fame": 0,
+    "tp": 0,
+    "talents": [
+     "o1",
+     "d1"
+    ],
+    "challenge": null,
+    "chalLvl": 0,
+    "story": null,
+    "bag": {},
+    "lootBoost": false,
+    "lvl": 11,
+    "xp": 4,
+    "pendingLv": 0,
+    "rec": {
+     "w": 8,
+     "l": 3
+    },
+    "earned": [
+     "onepunch"
+    ],
+    "inj": [
+     {
+      "k": "ankle",
+      "left": 1
+     }
+    ],
+    "next": null,
+    "belts": {
+     "local": 1
+    },
+    "defenses": 0,
+    "tourneys": 0,
+    "fights": 0,
+    "gbest": 0,
+    "trained": 0,
+    "isNem": 0,
+    "cid": "slot2",
+    "gear": {
+     "trinket": "coin"
+    },
+    "armory": [],
+    "contract": null,
+    "offers": null
+   },
+   "nemesis": null,
+   "tourney": null,
+   "coins": 40
+  }
+ ],
+ "active": 0,
+ "gems": 5,
+ "stats": {
+  "built": 1,
+  "topLevel": 2,
+  "wins": 3,
+  "loot": 3,
+  "gearFound": 7
+ },
+ "goalsDone": [],
+ "mastery": {
+  "mage": 3
+ },
+ "colMiles": 0,
+ "tut": 1,
+ "gearSeen": [
+  "shadowcloak",
+  "thinkcap",
+  "vest",
+  "coin",
+  "ironhelm",
+  "chain",
+  "irongauntlets"
+ ],
+ "dc": {
+  "date": "Fri Oct 16 2026",
+  "opp": {
+   "name": "Comrade Ulysses",
+   "picks": {
+    "race": "Human",
+    "rsub": "Chosen bloodline",
+    "arch": "Samurai",
+    "asub": "Honor-bound",
+    "stance": "Balanced",
+    "size": "Tiny",
+    "back": "Betrayed by the one they trusted",
+    "str": "City level",
+    "spd": "Lightspeed",
+    "dur": "Continental",
+    "iq": "Knows the script",
+    "cha": "Magnetic",
+    "growth": "Plateau",
+    "weapon": "Sledgehammer",
+    "wm": "Clueless",
+    "power": "Sonic scream",
+    "pm": "Clueless",
+    "ench": "Echo",
+    "weak": "Strong winds",
+    "chaos": "Unhinged",
+    "quirk": "Read the manual",
+    "side": "Ghost of your ex",
+    "title": "the Speedrunner"
+   },
+   "bonus": {
+    "spd": -1,
+    "wm": -1,
+    "str": -2,
+    "dur": -2,
+    "iq": -2,
+    "pm": -2
+   },
+   "boons": [
+    {
+     "n": "+1 Speed",
+     "e": "👟"
+    },
+    {
+     "n": "+1 Weapon mastery",
+     "e": "🗡️"
+    },
+    {
+     "n": "Eased off",
+     "e": "🕊️"
+    },
+    {
+     "n": "Eased off",
+     "e": "🕊️"
+    },
+    {
+     "n": "+1 to everything",
+     "e": "💪"
+    },
+    {
+     "n": "Eased off",
+     "e": "🕊️"
+    }
+   ],
+   "fame": 0,
+   "tp": 0,
+   "talents": {},
+   "challenge": null,
+   "chalLvl": 0,
+   "story": null,
+   "bag": {},
+   "lootBoost": false,
+   "lvl": 3,
+   "xp": 0,
+   "pendingLv": 0,
+   "rec": {
+    "w": 0,
+    "l": 0
+   },
+   "earned": [],
+   "inj": [],
+   "next": null,
+   "belts": {},
+   "defenses": 0,
+   "tourneys": 0,
+   "fights": 0,
+   "gbest": 0,
+   "trained": 0,
+   "isNem": 0,
+   "cid": null,
+   "gear": {
+    "boots": "rocket",
+    "cape": "herocape"
+   },
+   "armory": [],
+   "contract": null,
+   "offers": null
+  },
+  "mut": "miniboss",
+  "done": true,
+  "streak": 0,
+  "lastWin": null,
+  "won": false
+ }
+}
