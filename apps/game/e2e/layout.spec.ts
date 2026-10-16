@@ -26,7 +26,7 @@ for (const [width, height] of VIEWS) {
       await check(page, 'import confirmation');
       await page.getByRole('button', { name: /^Load / }).click();
       await check(page, 'roster');
-      await page.getByRole('button', { name: 'Play' }).first().click();
+      await page.getByRole('button', { name: 'Play', exact: true }).first().click();
       for (const tab of ['Play', 'Fighter', 'Goals', 'More']) {
         await page.getByRole('tab', { name: tab }).click();
         await check(page, `${tab} tab`);

@@ -10,16 +10,19 @@ export const save = signal<SaveData>(first.save);
 /** Problems found while loading (shown once on the title screen). */
 export const loadProblems = signal<string[]>(persistent ? first.problems : [...first.problems, 'This browser is not keeping saves (private mode?)']);
 
-/** Changes the save and writes it. */
+/**
+ * Changes the save and writes it. The change works on a copy, so every part of the save that
+ * changed is a new object and anything computed from it updates.
+ */
 export function commit(change: (s: SaveData) => void): void {
-  const s = save.value;
+  const s = structuredClone(save.value);
   change(s);
   try {
     store.write(s);
   } catch (e) {
     toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
   }
-  save.value = { ...s };
+  save.value = s;
 }
 
 /** Replaces the whole save (import, restore), with a backup of the current one first. */
@@ -39,7 +42,8 @@ export const activeFighter = computed(() => loadCareer(activeSlot.value, save.va
 // ---------- navigation ----------
 export type Tab = 'play' | 'fighter' | 'goals' | 'more';
 export type Route = { screen: 'title' } | { screen: 'hub'; tab: Tab };
-export const route = signal<Route>(first.save.roster.active != null ? { screen: 'hub', tab: 'play' } : { screen: 'title' });
+/** The game always opens on the title screen, as the legacy game did. */
+export const route = signal<Route>({ screen: 'title' });
 export const go = (r: Route) => {
   route.value = r;
 };

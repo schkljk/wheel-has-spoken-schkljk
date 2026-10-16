@@ -49,7 +49,7 @@ try {
     await shot('2-confirm');
     await page.getByRole('button', { name: /^Load / }).click();
     await shot('3-title');
-    await page.getByRole('button', { name: 'Play' }).first().click();
+    await page.getByRole('button', { name: 'Play', exact: true }).first().click();
     await shot('4-play');
     for (const t of ['Fighter', 'Goals', 'More']) {
       await page.getByRole('tab', { name: t }).click();

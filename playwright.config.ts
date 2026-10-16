@@ -5,6 +5,8 @@ const PORT = 4173;
 export default defineConfig({
   testDir: 'apps/game/e2e',
   fullyParallel: true,
+  // the layout matrix walks every screen per size; CI machines are slower than laptops
+  timeout: 120_000,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? 'github' : 'list',
   use: {

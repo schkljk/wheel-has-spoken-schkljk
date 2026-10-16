@@ -1,16 +1,41 @@
 # Progress
 
-**Play links** (they work once GitHub Pages is switched on, see "Owner action" below):
+**Play links:**
 - New game: https://schkljk.github.io/wheel-has-spoken-schkljk/
 - Current game: https://schkljk.github.io/wheel-has-spoken-schkljk/legacy/
 
-**Owner action (one time):** open https://github.com/schkljk/wheel-has-spoken-schkljk/settings/pages on your phone, and under "Build and deployment" set **Source** to **GitHub Actions**. GitHub does not let the workflow do this itself. After that every merge publishes automatically.
-
 - [x] Phase 0: study and set up
 - [x] Phase 1: core parity
-- [ ] Phase 2: app shell, saves, performance foundations
+- [x] Phase 2: app shell, saves, performance foundations
 - [ ] Phase 3: every screen ported
 - [ ] Phase 4: upgrades (see docs/UPGRADES.md)
+
+## Phase 2 log: app shell, saves, performance foundations
+
+**What you can do in the new version now:** bring over your save from the old version (it finds it automatically when both run on the same site, or paste the text from the old game's Settings, Back up your save), see your fighters with their real numbers, moves, synergies and build, your goals and class mastery, your records, change settings, take the tour, back up and restore your save. Fights, the story and the modes come in Phase 3; the Play tab shows them as "Soon" and links to the current version.
+
+**Save system** (`packages/core/src/save`):
+- Versioned schema with numbered migrations. Version 0 is the old game's raw save, so importing it is migration #1; it repeats the old game's own load-time repairs (old single-fighter saves move into slot 1, old tokens become coins, missing parts get defaults). Anything unknown is kept in `profile.extra`, nothing is dropped.
+- Split storage: settings, roster, the active fighter (written on its own, it changes most) and profile (collection, records, goals, legacy...). Unchanged parts are not rewritten.
+- Three rolling automatic backups (at most one every 20 minutes), plus a backup before every import, restore and erase, so all of them can be undone. A damaged save falls back to the newest good backup. When storage is full, old backups make room.
+- Export as a file or as copied text; import from a file, pasted text, or the old version's save on the same site (never modified).
+- Fighters keep the old save format (picks by name); `serFighter`/`deserFighter` are ported and checked against the real legacy game.
+- Tests: real-shaped fixtures made by playing the legacy game with a seeded RNG (`tools/fixtures/legacy-saves.ts`), an old single-fighter save and the old clipboard text.
+
+**Ranked pool:** 1,000 fighters rated over 5,000 simulated fights (same Elo rules as before) now build in a Web Worker instead of freezing the phone at startup, and the ranking is cached for the day (about 4 KB). Each pool fighter is rebuilt from the day's seed, so only the ranking order is stored.
+
+**App shell** (`apps/game`): title screen with your three fighters, hub with Play / Fighter / Goals / More tabs, settings (sound, vibration, fast mode, auto-battle, text size, animations: like my phone / calm / full), the tour, save and backup sheet, confirmations for big choices, ripples and springy animations (off when animations are calm). Pixel icons: the 38 legacy icons plus new ones (save, download, upload, trash, back, close, plus, check, clock) in the same style.
+
+**Tests:** 141 unit and parity tests; 19 Playwright tests, including every screen at all 12 required sizes (nothing cut off, no page scroll, no console errors) and the save flows (bring over, paste, file export and import, erase and undo, settings, pool worker and cache).
+
+**Decisions**
+- The game always opens on the title screen, as the old one did.
+- Story repairs for old saves (old chapter numbering, longer chapters, Act II) run when a fighter's story is played, exactly as in the old game; they arrive with the story in Phase 3.
+- The tour still said "Five chapters"; it now says twenty in two acts (text fix, no gameplay change).
+- `commit()` changes a copy of the save so every changed part is a new object (a bug where toggles did not update was found by the tests).
+- Pixi's screen-reader helper button is kept (it lets screen readers reach canvas content); the layout check skips elements parked far off-screen on purpose.
+
+**Next (Phase 3):** port every screen: fighter building with spinning wheels, fights (combat wheel, signature wheel, fight menu, results), story map and events, shops and haggling, armory, talents, cups, gauntlet, daily challenge, boss rush, fight club, collection.
 
 ## Phase 1 log: core parity
 
