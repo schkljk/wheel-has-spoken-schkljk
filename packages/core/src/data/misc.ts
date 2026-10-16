@@ -1,4 +1,4 @@
-// Smaller tables: level-ups, events, injuries, achievements, contracts, daily wheel, mutators.
+// Smaller tables: level-ups, events, injuries, daily wheel, mutators. Achievements and contracts are in content/.
 // Ported from the legacy game by tools/parity/extract-data.ts (final values after all legacy patches).
 import type { Boon, Injury, Quality } from '../types';
 
@@ -52,53 +52,6 @@ export const INJURIES: Injury[] = [
   { k: 'arm', n: 'Broken arm', e: '🦴', m: { wm: -2, str: -1 }, dur: 2 },
   { k: 'ego', n: 'Bruised ego', e: '🥲', m: { str: -1, spd: -1, dur: -1, iq: -1, wm: -1, pm: -1 }, dur: 1 },
   { k: 'ribs', n: 'Cracked ribs', e: '🩻', m: { dur: -2 }, dur: 2 },
-];
-
-/** Core achievements; story ones are added with the story data. */
-export const ACHIEVEMENTS: { k: string; n: string; e: string; q: Quality; d: string }[] = [
-  { k: 'giant', n: 'Giant Slayer', e: '🗡️', q: 3, d: 'Beat an opponent you had under 35% odds against' },
-  { k: 'comeback', n: 'Comeback Kid', e: '📈', q: 2, d: 'Win a fight with less than 10 HP left' },
-  { k: 'flawless', n: 'Flawless', e: '💎', q: 3, d: 'Win a fight without taking damage' },
-  { k: 'onepunch', n: 'One Punch', e: '👊', q: 2, d: 'Win a fight in the first round' },
-  { k: 'untouch', n: 'Untouchable', e: '👻', q: 2, d: 'Dodge 3 attacks in one fight' },
-  { k: 'reader', n: 'Mind Reader', e: '🔮', q: 2, d: 'Win the move matchup 4 times in one fight' },
-  { k: 'combo', n: 'Combo Artist', e: '⚗️', q: 2, d: 'Land 3 element combos in one fight' },
-  { k: 'defender', n: 'Title Defender', e: '🛡️', q: 3, d: 'Win a tournament while defending its belt' },
-  { k: 'revenge', n: 'Revenge Served Cold', e: '🧊', q: 3, d: 'Beat your nemesis' },
-  { k: 'iron', n: 'Iron Will', e: '🦾', q: 2, d: 'Fight 25 times with one fighter' },
-  { k: 'regional', n: 'Regional Champion', e: '🥈', q: 2, d: 'Win the Regional cup' },
-  { k: 'world', n: 'World Champion', e: '🌍', q: 3, d: 'Win the World championship' },
-  { k: 'gauntlet', n: 'Gauntlet Legend', e: '🔥', q: 3, d: 'Win 10 gauntlet fights in a row' },
-  { k: 'underdog', n: 'Underdog Story', e: '🐭', q: 3, d: 'Win a tournament with a fighter rated Cooked or Mid' },
-  { k: 'pigeon', n: 'Pigeon Supremacy', e: '🐦', q: 3, d: 'Win any tournament as a pigeon' },
-  { k: 'lvl10', n: 'Veteran', e: '🎖️', q: 2, d: 'Reach level 10' },
-  { k: 'surpass', n: 'Surpassed a Legend', e: '👑', q: 3, d: 'Beat a hall of fame legend in a challenge' },
-  { k: 'oldscore', n: 'Old Score Settled', e: '⚔️', q: 2, d: 'Beat a returning rival in a rematch' },
-  { k: 'mythic', n: 'Mythic', e: '🌌', q: 3, d: 'Reach the Mythic rank' },
-  { k: 'rush', n: 'Boss Rusher', e: '🏃', q: 3, d: 'Beat all five bosses back to back in the boss rush' },
-  { k: 'bigbet', n: 'High Roller', e: '🎰', q: 2, d: 'Win a fight club bet that paid 3× or more' },
-  { k: 'daily5', n: 'Creature of Habit', e: '📆', q: 2, d: 'Win the daily challenge five days in a row' },
-];
-
-export const CONTRACTS: { k: string; n: string; e: string; d: string; coins: number; xp: number }[] = [
-  { k: 'combo2', n: 'Combo specialist', e: '⚗️', d: 'Land 2 element combos in one fight', coins: 8, xp: 6 },
-  { k: 'reads3', n: 'Mind games', e: '🔮', d: 'Win the move matchup 3 times in one fight', coins: 7, xp: 6 },
-  { k: 'clean', n: 'Clean win', e: '🧼', d: 'Win a fight taking less than 25 damage', coins: 10, xp: 8 },
-  { k: 'upset', n: 'Upset special', e: '📉', d: 'Beat someone you had under 45% odds against', coins: 12, xp: 10 },
-  { k: 'quick', n: 'Quick work', e: '⏱️', d: 'Win a fight in 3 rounds or fewer', coins: 7, xp: 6 },
-  { k: 'ults', n: 'Show-off', e: '🌟', d: 'Use your signature move twice in one fight', coins: 8, xp: 6 },
-  { k: 'wall', n: 'Brick wall', e: '🧱', d: 'Guard 3 times in a fight and still win', coins: 7, xp: 6 },
-  { k: 'hazard', n: 'Hostile territory', e: '🌋', d: 'Win in an arena with a hazard', coins: 9, xp: 6 },
-  { k: 'semis', n: 'Deep run', e: '🏟️', d: 'Reach the semifinals of any tournament', coins: 12, xp: 10 },
-  { k: 'streak', n: 'Hot streak', e: '🔥', d: 'Win 3 gauntlet fights in a row', coins: 14, xp: 10 },
-  {
-    k: 'bigger',
-    n: 'The bigger they are',
-    e: '🗡️',
-    d: 'Beat an opponent 2 or more levels above you',
-    coins: 12,
-    xp: 10,
-  },
 ];
 
 /** Daily wheel. */

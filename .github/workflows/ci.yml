@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
-      - run: npm test
+      # the content parity tests read the legacy game in a real browser
       - run: npx playwright install --with-deps chromium
+      - run: npm test
       - run: npm run e2e

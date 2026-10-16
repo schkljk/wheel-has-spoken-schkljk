@@ -8,68 +8,22 @@
  * After the port the data files are the source of truth; tools/parity/data.test.ts keeps them
  * equal to the legacy tables for as long as parity matters.
  */
-import { writeFileSync } from 'node:fs';
+import { appendFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { mulberry32 } from '../../packages/core/src/rng';
-import { clean } from './extract-data-clean';
+import { writeModule as write, type Table } from './emit';
 import { loadLegacyCore } from './legacy';
 
 const OUT = resolve(dirname(fileURLToPath(import.meta.url)), '../../packages/core/src/data');
 const L = loadLegacyCore(mulberry32(1));
 const get = <T = unknown>(n: string) => L.get<T>(n);
 
-const IDENT = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
-const str = (s: string) => (s.includes("'") ? JSON.stringify(s) : `'${s.replace(/\\/g, '\\\\').replace(/\n/g, '\\n')}'`);
-const key = (k: string) => (IDENT.test(k) ? k : str(k));
-
-function lit(v: unknown, ind = ''): string {
-  if (v === null) return 'null';
-  if (typeof v === 'string') return str(v);
-  if (typeof v === 'number') return Object.is(v, -0) ? '-0' : String(v);
-  if (typeof v === 'boolean') return String(v);
-  const inner = ind + '  ';
-  if (Array.isArray(v)) {
-    const flat = `[${v.map((x) => lit(x, inner)).join(', ')}]`;
-    if (flat.length + ind.length <= 120 && !flat.includes('\n')) return flat;
-    if (v.every((x) => typeof x !== 'object' || x === null)) {
-      // pack long lists of plain values into wrapped lines
-      const lines: string[] = [];
-      let line = '';
-      for (const x of v.map((y) => lit(y) + ',')) {
-        if (line && inner.length + line.length + 1 + x.length > 120) {
-          lines.push(line);
-          line = x;
-        } else line = line ? `${line} ${x}` : x;
-      }
-      if (line) lines.push(line);
-      return `[\n${lines.map((l) => inner + l).join('\n')}\n${ind}]`;
-    }
-    return `[\n${v.map((x) => inner + lit(x, inner)).join(',\n')},\n${ind}]`;
-  }
-  const ents = Object.entries(v as Record<string, unknown>);
-  if (!ents.length) return '{}';
-  const flat = `{ ${ents.map(([k, x]) => `${key(k)}: ${lit(x, inner)}`).join(', ')} }`;
-  if (flat.length + ind.length <= 120 && !flat.includes('\n')) return flat;
-  return `{\n${ents.map(([k, x]) => `${inner}${key(k)}: ${lit(x, inner)}`).join(',\n')},\n${ind}}`;
-}
-
-type Table = { name: string; type: string; value: unknown; doc?: string };
-
-function writeModule(file: string, header: string, imports: string, tables: Table[]) {
-  const body = tables
-    .map((t) => `${t.doc ? `/** ${t.doc} */\n` : ''}export const ${t.name}: ${t.type} = ${lit(clean(t.value))};\n`)
-    .join('\n');
-  const src = `// ${header}\n// Ported from the legacy game by tools/parity/extract-data.ts (final values after all legacy patches).\n${imports ? imports + '\n' : ''}\n${body}`;
-  writeFileSync(resolve(OUT, file), src);
-  console.log(`wrote ${file}`);
-}
-
 // ---------- build wheels ----------
 const SEQ = get<{ k: string; items: unknown }[]>('SEQ');
 const tierItems = (k: string) => SEQ.find((w) => w.k === k)!.items;
 
-writeModule(
+write(OUT,
   'wheels.ts',
   'Build wheels: every slice a fighter can roll.',
   "import type { Arch, Backstory, Enchant, Growth, KeyedItem, Power, Race, Stance, SubWheel, TierItem, Weakness, Weapon, WheelItem } from '../types';",
@@ -108,7 +62,7 @@ writeModule(
   ],
 );
 
-writeModule('gear.ts', 'Gear, rarities and slots.', "import type { Gear, GearSlot, RarityKey } from '../types';", [
+write(OUT, 'gear.ts', 'Gear, rarities and slots.', "import type { Gear, GearSlot, RarityKey } from '../types';", [
   { name: 'RARITY', type: 'Record<RarityKey, { n: string; q: 0 | 1 | 2 | 3; c: string }>', value: get('RARITY') },
   { name: 'RARITY_ORDER', type: 'RarityKey[]', value: get('RARITY_ORDER') },
   { name: 'GEAR_SLOTS', type: 'GearSlot[]', value: get('GEAR_SLOTS') },
@@ -118,16 +72,16 @@ writeModule('gear.ts', 'Gear, rarities and slots.', "import type { Gear, GearSlo
   { name: 'GEM_PRICE', type: 'Record<string, number>', value: get('GEM_PRICE'), doc: 'Gem price of premium gear.' },
 ]);
 
-writeModule(
+write(OUT,
   'synergies.ts',
   'Synergies: combos of picks that unlock bonuses. Their conditions live in ../synergy-tests.ts.',
   "import type { Synergy } from '../types';",
   [{ name: 'SYN', type: 'Synergy[]', value: get('SYN') }],
 );
 
-writeModule('arenas.ts', 'Arenas.', "import type { Arena } from '../types';", [{ name: 'ARENAS', type: 'Arena[]', value: get('ARENAS') }]);
+write(OUT, 'arenas.ts', 'Arenas.', "import type { Arena } from '../types';", [{ name: 'ARENAS', type: 'Arena[]', value: get('ARENAS') }]);
 
-writeModule(
+write(OUT,
   'kits.ts',
   'Move kits: class, race and signature-wheel data. Weapon moves are rules in ../kits.ts.',
   "import type { KitMove } from '../types';",
@@ -143,7 +97,7 @@ writeModule(
   ],
 );
 
-writeModule('talents.ts', 'Talent tree: five branches of twelve talents in six tiers.', '', [
+write(OUT, 'talents.ts', 'Talent tree: five branches of twelve talents in six tiers.', '', [
   {
     name: 'TREE',
     type: '{ k: string; n: string; e: string; col: string; t: [string, string, string, number, TalentEffect, string][] }[]',
@@ -153,17 +107,15 @@ writeModule('talents.ts', 'Talent tree: five branches of twelve talents in six t
   { name: 'OLD_TAL', type: 'Record<string, string>', value: get('OLD_TAL'), doc: 'Old flat talent keys mapped to tree nodes.' },
 ]);
 
-writeModule(
+write(OUT,
   'misc.ts',
-  'Smaller tables: level-ups, events, injuries, achievements, contracts, daily wheel, mutators.',
+  'Smaller tables: level-ups, events, injuries, daily wheel, mutators. Achievements and contracts are in content/.',
   "import type { Boon, Injury, Quality } from '../types';",
   [
     { name: 'LEVELUP', type: '(Boon & { w: number; q: Quality; respin?: number })[]', value: get('LEVELUP') },
     { name: 'BONUS', type: '(Boon & { w: number; q: Quality })[]', value: get('BONUS'), doc: 'Bonus wheel.' },
     { name: 'EVENTS', type: '{ k: string; n: string; e: string; w: number; q: Quality; d: string }[]', value: get('EVENTS') },
     { name: 'INJURIES', type: 'Injury[]', value: get('INJURIES') },
-    { name: 'ACHIEVEMENTS', type: '{ k: string; n: string; e: string; q: Quality; d: string }[]', value: get('ACHIEVEMENTS'), doc: 'Core achievements; story ones are added with the story data.' },
-    { name: 'CONTRACTS', type: '{ k: string; n: string; e: string; d: string; coins: number; xp: number }[]', value: get('CONTRACTS') },
     { name: 'DAILY', type: '{ k: string; n: string; e: string; w: number; q: Quality }[]', value: get('DAILY'), doc: 'Daily wheel.' },
     {
       name: 'MUTATORS',
@@ -176,7 +128,6 @@ writeModule(
 );
 
 // talents.ts and misc.ts reference helper types; append them.
-import { appendFileSync } from 'node:fs';
 appendFileSync(
   resolve(OUT, 'talents.ts'),
   "\nexport interface TalentEffect {\n  m?: import('../types').StatMods;\n  fx?: import('../types').TraitFx;\n  econ?: string;\n}\n",
@@ -190,4 +141,4 @@ appendFileSync(
 const names: Table[] = ['N_TITLE', 'N_FIRST', 'N_EPI', 'N_ADJ', 'N_NOUN', 'N_PLACE', 'N_SURN', 'N_NICK', 'N_DESTROY', 'N_ROLE', 'N_ROMAN', 'N_TAG'].map(
   (n) => ({ name: n, type: 'string[]', value: get(n) }),
 );
-writeModule('names.ts', 'Meme name parts. Templates live in ../names.ts.', '', names);
+write(OUT, 'names.ts', 'Meme name parts. Templates live in ../names.ts.', '', names);
