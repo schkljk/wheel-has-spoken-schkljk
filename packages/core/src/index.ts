@@ -6,3 +6,4 @@ export * from './stats';
 export * from './fighter';
 export * from './kits';
 export * from './names';
+export * from './battle';
