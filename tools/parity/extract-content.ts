@@ -8,10 +8,10 @@
  * Functions inside these tables (story event effects, goal progress counters, unlock checks)
  * are game rules that act on the save; they are ported with the save system and screens.
  */
-import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { openLegacyPage } from './browser';
 import { writeModule, type Table } from './emit';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -20,13 +20,8 @@ const TOOL = 'tools/parity/extract-content.ts';
 
 /** Reads named globals from the running legacy game, dropping functions. */
 export async function readLegacyGlobals(names: string[]): Promise<Record<string, unknown>> {
-  const browser = await chromium.launch(process.env.PW_CHROMIUM ? { executablePath: process.env.PW_CHROMIUM } : {});
+  const { page, browser } = await openLegacyPage();
   try {
-    const page = await browser.newPage();
-    await page.route('**/fonts.googleapis.com/**', (r) => r.abort());
-    await page.goto('file://' + resolve(ROOT, 'legacy/dist/wheel-has-spoken.html'));
-    await page.waitForTimeout(400);
-    // plain source text: compiled helper functions do not exist inside the page
     const json = await page.evaluate(
       `JSON.stringify(Object.fromEntries(${JSON.stringify(names)}.map((n) => [n, (0, eval)(n)])), (k, v) => (typeof v === 'function' ? undefined : v))`,
     );
