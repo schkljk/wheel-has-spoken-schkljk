@@ -1,0 +1,37 @@
+/* reroll sits beside "Spin the rest for me" and greys out once used */
+#s-spin .dock-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+#s-spin #rerollBtn{position:static!important;width:auto!important;max-width:none!important;margin:0!important;font-size:14px!important;min-height:42px;padding:6px 8px!important}
+#s-spin #rerollBtn:disabled{opacity:.42;filter:grayscale(1)}
+#s-spin #rerollBtn[hidden]{display:none}
+#s-spin .dock-row:has(#rerollBtn[hidden]){grid-template-columns:1fr}
+/* talent tree */
+.tt-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.tt-pts{font-weight:800;color:var(--gold)}
+.tt-tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:8px}
+.tt-tab{appearance:none;display:flex;flex-direction:column;align-items:center;gap:1px;padding:6px 2px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+.tt-tab span{font-size:18px}
+.tt-tab small{font-size:11px;opacity:.8}
+.tt-tab.on{border-color:var(--c);color:var(--ink);box-shadow:inset 0 0 0 1px var(--c)}
+.tt-body{display:grid;gap:8px}
+.tt-tier{display:grid;grid-template-columns:62px 1fr 1fr;gap:6px;align-items:stretch}
+.tt-req{display:flex;flex-direction:column;justify-content:center;font-size:12px;font-weight:800;color:var(--muted)}
+.tt-req small{font-weight:600;font-size:10.5px;color:var(--red)}
+.tt-tier.locked .tt-node{opacity:.45}
+.tt-node{appearance:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:8px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;min-height:96px;position:relative}
+.tt-node .tt-e{font-size:20px}
+.tt-node b{font-size:13px;line-height:1.15}
+.tt-node small{font-size:11px;color:var(--muted);line-height:1.2}
+.tt-node.has{border-color:var(--c)}
+.tt-node.max{box-shadow:inset 0 0 0 1px var(--c),0 0 14px -6px var(--c)}
+.tt-node:disabled{cursor:default}
+.tt-node:not(:disabled):active{transform:scale(.97)}
+.tt-pips{display:flex;gap:3px;margin-top:auto;padding-top:4px}
+.tt-pips i{width:9px;height:9px;border-radius:50%;border:1px solid var(--c);background:transparent}
+.tt-pips i.on{background:var(--c)}
+/* shops */
+.shop-tabs{display:flex;gap:6px;margin:0 0 8px;overflow-x:auto;scrollbar-width:none}
+.rar{font-weight:800;margin-right:4px}
+.rar.r-junk{color:#8A8F99}.rar.r-common{color:var(--muted)}.rar.r-rare{color:#2DD4BF}.rar.r-epic{color:#B388FF}.rar.r-legendary{color:#F2B544}.rar.r-mythic{color:#FF4F8B}
+.shopitem.r-rare{box-shadow:inset 3px 0 0 #2DD4BF}.shopitem.r-epic{box-shadow:inset 3px 0 0 #B388FF}.shopitem.r-legendary{box-shadow:inset 3px 0 0 #F2B544}
+.shop-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.shop-tabs .fchip{font-size:12.5px;padding:6px 4px;justify-content:center;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

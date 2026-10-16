@@ -1,0 +1,162 @@
+<body data-screen="s-title">
+<div id="app">
+<header class="bar">
+  <div class="brand">🎡 The wheel has spoken</div>
+  <div class="toggles">
+    <button id="homeBtn" class="coinchip" hidden>🏠 Base</button>
+    <button id="coinChip" class="coinchip" data-info="rule|coins" hidden>🪙 0</button>
+    <button id="setBtn" class="ico" aria-label="Settings" title="Settings">⚙️</button>
+    <button id="sndBtn" class="ico" aria-pressed="true" aria-label="Sound" title="Sound">🔊</button>
+    <button id="fastBtn" class="ico" aria-pressed="false" aria-label="Fast mode" title="Fast mode">⚡</button>
+  </div>
+</header>
+<main>
+
+<section id="s-title" class="screen">
+  <div class="hero-wheel" aria-hidden="true"><canvas id="idle"></canvas></div>
+  <h1>The wheel has spoken</h1>
+  <p class="lede">Spin a fighter where the wheel decides everything, then take them through a five-chapter story: long branching paths, bosses with second phases, loot, and up to three saved fighters.</p>
+  <div id="careerWrap" hidden></div>
+  <div id="newWrap">
+    <label class="fld" for="nameIn">Fighter name</label>
+    <div class="name-row">
+      <input id="nameIn" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Big Steve">
+      <button id="diceBtn" class="ico big" aria-label="Random name" title="Random name">🎲</button>
+    </div>
+    <button id="startBtn" class="btn">Spin a new fighter</button>
+    <p class="hint" id="fullNote" hidden>Your roster is full. Retire one of your three fighters to make room.</p>
+  </div>
+  <details class="more-box">
+    <summary><span>📊</span>Records, legacy and collection</summary>
+    <div id="records"></div>
+    <div id="seasonBox"></div>
+    <div id="collBox"></div>
+    <div id="hall" class="hall"></div>
+  </details>
+</section>
+
+<section id="s-spin" class="screen" hidden>
+  <p class="who" id="spinWho"></p>
+  <div class="prog" id="progWrap"><div class="prog-track"><i id="progFill"></i></div><span id="progTxt"></span></div>
+  <h2 class="cat" id="catLabel"></h2>
+  <div class="oddsbox" id="oddsBox"></div>
+  <div class="wheel-wrap">
+    <canvas id="wheel" aria-hidden="true"></canvas>
+    <div class="pointer" aria-hidden="true"></div>
+    <div class="hub" id="hub" aria-hidden="true">?</div>
+  </div>
+  <div class="legend" role="button" tabindex="0" data-info="rule|odds"><span><i class="sw q0"></i>Cooked</span><span><i class="sw q1"></i>Mid</span><span><i class="sw q2"></i>Good</span><span><i class="sw q3"></i>Goated</span><span>▲▼ odds shifted</span></div>
+  <p class="spin-hint" id="spinHint" role="button" tabindex="0" data-info="rule|flick">👆 Flick the wheel with your finger, or tap Spin</p>
+  <div class="landed" id="landed" aria-live="polite"></div>
+  <div class="dock" id="spinDock">
+    <button id="spinBtn" class="btn">Spin</button>
+    <div class="dock-row"><button id="rerollBtn" class="btn ghost sm" hidden>Reroll</button><button id="autoBtn" class="btn ghost sm">Spin the rest for me</button></div>
+  </div>
+  <div class="preview" id="preview"></div>
+  <dl class="sheet" id="sheet"></dl>
+</section>
+
+<section id="s-card" class="screen" hidden>
+  <div id="cardBox"></div>
+  <div class="dock">
+    <button id="enterBtn" class="btn">Start their career</button>
+    <button id="scrapBtn" class="btn ghost sm">Scrap it and spin again</button>
+  </div>
+</section>
+
+<section id="s-hub" class="screen" hidden>
+  <div id="hubTop"></div>
+  <nav class="hubtabs" role="tablist" aria-label="Fighter page">
+    <button role="tab" data-tab="story" aria-selected="true"><span>📖</span>Story</button>
+    <button role="tab" data-tab="fighter" aria-selected="false"><span>🥊</span>Fighter</button>
+    <button role="tab" data-tab="events" aria-selected="false"><span>🏆</span>Events</button>
+    <button role="tab" data-tab="goals" aria-selected="false"><span>🎯</span>Goals</button>
+    <button role="tab" data-tab="more" aria-selected="false"><span>☰</span>More</button>
+  </nav>
+  <div class="tabp" id="tab-story" role="tabpanel"></div>
+  <div class="tabp" id="tab-fighter" role="tabpanel" hidden></div>
+  <div class="tabp" id="tab-events" role="tabpanel" hidden>
+    <p class="hint tab-lede">Cups and the gauntlet pay less than the story, but they're good practice. Bigger cups open up as the story moves on.</p>
+    <div id="tierList"></div>
+  </div>
+  <div class="tabp" id="tab-goals" role="tabpanel" hidden></div>
+  <div class="tabp" id="tab-more" role="tabpanel" hidden>
+    <div class="menu">
+      <button class="menu-i" id="shopBtn"><span>🛒</span><b>Supply tent</b><small>Bandages, energy drinks and other items for your bag</small></button>
+      <button class="menu-i" id="fullCardBtn"><span>🪪</span><b>Full card</b><small>Every wheel result, stat and trait</small></button>
+      <button class="menu-i" id="hubCodexBtn"><span>📚</span><b>Collection</b><small>Everything your fighters have landed so far</small></button>
+      <button class="menu-i" id="hubTitleBtn"><span>👥</span><b>Your fighters</b><small>Switch fighters or spin a new one</small></button>
+    </div>
+    <button class="btn ghost sm danger" id="retireBtn">Retire this fighter</button>
+  </div>
+  <div id="hubExtras" hidden></div>
+</section>
+
+<section id="s-shop" class="screen" hidden>
+  <h2 class="screen-title">Shop</h2>
+  <p class="hint" id="shopCoins"></p>
+  <div id="shopList"></div>
+  <div id="gearList"></div>
+  <div class="dock"><button class="btn" id="shopBack">Done shopping</button></div>
+</section>
+
+<section id="s-bracket" class="screen" hidden>
+  <h2 class="screen-title" id="bracketTitle">The bracket</h2>
+  <p class="hint">Tap any fighter to see their card.</p>
+  <div id="bracket"></div>
+  <div id="bracketActions" class="dock"></div>
+</section>
+
+<section id="s-map" class="screen" hidden>
+  <div id="mapHead"></div>
+  <div id="mapRows" class="maprows"></div>
+  <div class="dock"><div class="dock-row"><button class="btn ghost" id="bagBtn">🎒 Bag</button><button class="btn ghost" id="mapHub">Fighter page</button></div></div>
+</section>
+<section id="s-fight" class="screen" hidden>
+  <h2 class="screen-title" id="roundName"></h2>
+  <div class="arena" id="arena"></div>
+  <div id="scout"></div>
+  <div id="intent"></div>
+  <div class="moves" id="moves" hidden></div>
+  <ol class="log" id="log"></ol>
+  <div id="result" aria-live="polite"></div>
+  <div id="narr" class="narr"></div>
+  <div class="dock" id="fightDock">
+    <div class="moverow" id="moverow" hidden>
+      <button class="btn ghost sm" id="autoTog" aria-pressed="false">🤖 Auto</button>
+      <button class="btn ghost sm" id="skipBtn">⏭ Skip</button>
+      <button class="btn ghost sm" id="speedTog" aria-pressed="false">⚡ Fast</button>
+      <button class="btn ghost sm" id="logBtn" aria-label="Fight log">📜</button>
+      <button class="btn ghost sm" id="forfeitBtn" aria-label="Forfeit">🏳️</button>
+    </div>
+    <div id="fightActions"></div>
+  </div>
+</section>
+
+<section id="s-codex" class="screen" hidden>
+  <h2 class="screen-title">Your collection</h2>
+  <p class="hint" id="codexSum"></p>
+  <div id="codex"></div>
+  <div class="dock"><button class="btn ghost" id="codexBack">Back</button></div>
+</section>
+
+</main>
+<div class="sheetov" id="choice" hidden><div class="sheet2" id="choiceBody"></div></div>
+<div class="cine" id="cine" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+
+<div class="ov info" id="info" hidden>
+  <div class="panel small" role="dialog" aria-modal="true" aria-label="Info">
+    <div id="infoBody"></div>
+    <button class="btn ghost" id="infoClose">Got it</button>
+  </div>
+</div>
+
+<div class="ov" id="ov" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Details">
+    <div id="ovBody"></div>
+    <button class="btn ghost" id="ovClose">Close</button>
+  </div>
+</div>
+

@@ -1,0 +1,174 @@
+/* full-screen fight layout lives in css_fight.css; the combat wheel just has to fit under the stage */
+body.fullfight #moves{padding:6px 12px 0}
+.log.full{max-height:60vh;overflow:auto;margin:0;padding:0 0 0 4px}
+.log.full li{display:flex}
+.intent.cwi{padding:8px 12px;border-radius:14px}
+.intent.cwi small{display:block}
+
+/* ===== combat wheel ===== */
+.cw{display:flex;flex-direction:column;gap:8px;height:100%;justify-content:center}
+.cw-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
+.fchip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;padding:7px 11px;border-radius:99px;min-height:36px;cursor:pointer;touch-action:manipulation;transition:transform .12s ease,background .15s ease,border-color .15s ease;position:relative}
+.fchip:active{transform:scale(.95)}
+.fchip.on{background:var(--pink);border-color:var(--pink);color:#fff;box-shadow:0 0 0 3px color-mix(in srgb,var(--pink) 25%,transparent)}
+.fchip.rec:not(.on)::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 2px var(--bg);animation:youHere 1.2s ease-in-out infinite}
+.fchip.gold:not(.on){border-color:var(--gold);color:var(--gold)}
+.fchip.steady.on{background:var(--teal);border-color:var(--teal);color:#06231F}
+.fchip.go{background:var(--pink);border-color:var(--pink);color:#fff}
+.fchip:disabled{opacity:.4;cursor:default}
+.cw-help{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line);font-weight:800;text-decoration:none}
+.cw-row{display:flex;align-items:center;justify-content:center;gap:12px}
+.cw-wrap{position:relative;flex:none;touch-action:none;cursor:grab;filter:drop-shadow(0 10px 18px rgba(0,0,0,.45))}
+.cw-wrap canvas{width:100%;height:100%;display:block;border-radius:50%}
+.cw-wrap.spinning canvas{filter:drop-shadow(0 0 16px rgba(242,181,68,.55))}
+.cw-ptr{position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:24px;height:28px;background:linear-gradient(180deg,#FFE7A3,#E5484D);clip-path:polygon(0 0,100% 0,50% 100%);z-index:2;transform-origin:50% 10%;filter:drop-shadow(0 2px 2px rgba(0,0,0,.4))}
+.cw-hub{position:absolute;inset:36%;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#E9E2F7 60%,#BDB1D9);border:3px solid #E8A93A;display:flex;align-items:center;justify-content:center;font-size:clamp(18px,6vw,28px);box-shadow:0 4px 10px rgba(0,0,0,.35);z-index:2;pointer-events:none}
+.cw-hub.pop{animation:hubpop .45s cubic-bezier(.3,1.6,.5,1)}
+.cw-out{flex:1;min-width:0;max-width:150px}
+.cw-out b{display:block;font-family:var(--display);font-weight:800;font-size:19px;line-height:1.05}
+.cw-out b.q3{color:var(--gold)}.cw-out b.q2{color:var(--teal)}.cw-out b.q0{color:var(--red)}
+.cw-out small{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.3}
+.cw-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cw-act .fchip{min-height:34px;padding:6px 10px}
+.cw-timer{height:4px;border-radius:99px;background:var(--surface-2);margin-top:8px;overflow:hidden}
+.cw-timer i{display:block;height:100%;width:100%;background:var(--pink);transform-origin:left;animation:cwTimer linear forwards}
+@keyframes cwTimer{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.cw-spin{min-height:50px}
+#moves.busy .cw-spin,#moves.busy .fchip{opacity:.5;pointer-events:none}
+@media (max-width:360px){.cw-out{max-width:120px}.fchip{font-size:12.5px;padding:6px 9px}}
+
+/* ===== arena life: entrances, vignette, ambient particles ===== */
+.stage::after{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;background:radial-gradient(130% 95% at 50% 45%,transparent 55%,rgba(0,0,0,.42))}
+.stage.intro .ftr.side0{animation:enterL .7s cubic-bezier(.2,.8,.3,1) both}
+.stage.intro .ftr.side1{animation:enterR .7s cubic-bezier(.2,.8,.3,1) .08s both}
+@keyframes enterL{from{transform:translateX(-120%);opacity:0}to{transform:none;opacity:1}}
+@keyframes enterR{from{transform:translateX(120%);opacity:0}to{transform:none;opacity:1}}
+.amb{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+.amb i{position:absolute;display:block;border-radius:50%;opacity:0}
+.amb-ember i{bottom:8%;background:#FFB627;box-shadow:0 0 6px #FF7A2F;animation:ambUp linear infinite}
+.amb-snow i{top:-6%;background:#fff;animation:ambDown linear infinite}
+.amb-rain i{top:-10%;width:1.5px!important;border-radius:2px;background:linear-gradient(180deg,rgba(200,225,255,0),rgba(200,225,255,.8));animation:ambRain linear infinite}
+.amb-leaf i{top:-6%;border-radius:0 60% 0 60%;background:#7CB342;animation:ambLeaf linear infinite}
+.amb-star i,.amb-spark i{background:#fff;box-shadow:0 0 6px #fff;animation:ambTwinkle ease-in-out infinite}
+.amb-fog i{bottom:18%;border-radius:50%;background:rgba(220,210,240,.16);filter:blur(10px);animation:ambFog linear infinite}
+.amb-dust i{bottom:20%;background:rgba(255,240,210,.7);animation:ambDust linear infinite}
+.amb-steam i{bottom:30%;background:rgba(255,255,255,.35);filter:blur(3px);animation:ambUp linear infinite}
+@keyframes ambUp{0%{transform:translateY(0);opacity:0}15%{opacity:.9}100%{transform:translate(18px,-200px);opacity:0}}
+@keyframes ambDown{0%{transform:translateY(0);opacity:0}10%{opacity:.9}100%{transform:translate(-20px,300px);opacity:.2}}
+@keyframes ambRain{0%{transform:translate(0,0);opacity:.8}100%{transform:translate(-40px,320px);opacity:.6}}
+@keyframes ambLeaf{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:.9}100%{transform:translate(-60px,300px) rotate(540deg);opacity:.3}}
+@keyframes ambTwinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes ambFog{0%{transform:translateX(-30%);opacity:0}30%{opacity:1}100%{transform:translateX(130%);opacity:0}}
+@keyframes ambDust{0%{transform:translate(0,0);opacity:0}30%{opacity:.7}100%{transform:translate(40px,-90px);opacity:0}}
+
+/* ===== everywhere else: a living backdrop, livelier buttons and wheels ===== */
+body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;background:
+  radial-gradient(35% 28% at 18% 22%,color-mix(in srgb,var(--pink) 20%,transparent),transparent 70%),
+  radial-gradient(32% 28% at 82% 30%,rgba(91,75,183,.24),transparent 70%),
+  radial-gradient(40% 32% at 50% 92%,rgba(45,212,191,.13),transparent 70%);animation:aurora 24s ease-in-out infinite alternate}
+@keyframes aurora{0%{transform:translate(0,0) rotate(0)}50%{transform:translate(4%,-3%) rotate(6deg)}100%{transform:translate(-4%,3%) rotate(-5deg)}}
+body::after{content:"";position:fixed;inset:0;z-index:100;pointer-events:none;opacity:.05;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.btn:not(.ghost):not(:disabled){position:relative;overflow:hidden}
+.btn:not(.ghost):not(:disabled)::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.32),transparent);transform:skewX(-20deg);animation:shine 5s ease-in-out infinite;pointer-events:none}
+@keyframes shine{0%,72%{left:-60%}100%{left:130%}}
+.wheel-wrap.spinning canvas{filter:drop-shadow(0 0 22px rgba(242,181,68,.5))}
+.hero-wheel{filter:drop-shadow(0 14px 34px rgba(242,181,68,.35))}
+.res.win .big{background:linear-gradient(180deg,#FFE7A3,#F2B544 60%,#C98F2E);-webkit-background-clip:text;background-clip:text;color:transparent}
+.res.lose .big{background:linear-gradient(180deg,#FF9A9A,#E5484D);-webkit-background-clip:text;background-clip:text;color:transparent}
+.storycard,.rankcard,.maphead{background-image:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,0))}
+.mnode.now{background-image:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,0))}
+
+@media (prefers-reduced-motion: reduce){
+  body::before,.btn::after,.amb,.stage.intro .ftr,.fchip.rec::after,.cw-hub.pop{animation:none!important}
+  .amb{display:none}
+}
+/* the combat wheel takes the full width under the stage */
+#moves:not([hidden]){display:block}
+.moves .cw{width:100%}
+.cw-chips{flex-wrap:nowrap;overflow-x:auto;justify-content:flex-start;scrollbar-width:none;padding:2px 2px 4px}
+.cw-chips::-webkit-scrollbar{display:none}
+.fchip{flex:none}
+.cw-row{width:100%}
+.cw-spin{width:100%}
+@media (min-width:420px){.cw-chips{justify-content:center}}
+.cw-spin.gold{background:linear-gradient(180deg,#FFD978,#E8A93A);color:#2A1A05;box-shadow:0 2px 0 #9A6A00,0 10px 20px -12px #E8A93A}
+
+/* ===== fighter page: tabs ===== */
+.hubtabs{position:sticky;top:calc(env(safe-area-inset-top,0px) + 0px);z-index:8;display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:14px 0 4px;padding:4px;border-radius:16px;background:color-mix(in srgb,var(--surface) 88%,transparent);border:1px solid var(--line);backdrop-filter:blur(8px);box-shadow:var(--card-shadow)}
+.hubtabs button{appearance:none;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:700;font-size:12.5px;padding:7px 2px 6px;border-radius:12px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:manipulation;transition:background .15s ease,color .15s ease}
+.hubtabs button span{font-size:19px;line-height:1}
+.hubtabs button[aria-selected="true"]{background:var(--pink);color:#fff;box-shadow:0 4px 12px -6px var(--pink)}
+.tabp.enter>*{animation:nodeIn .3s ease both}
+.tabp.enter>*:nth-child(2){animation-delay:.04s}.tabp.enter>*:nth-child(3){animation-delay:.08s}.tabp.enter>*:nth-child(n+4){animation-delay:.12s}
+.tab-lede{margin:10px 0}
+.menu{display:grid;gap:8px;margin-top:12px}
+.menu-i{appearance:none;display:grid;grid-template-columns:40px 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;box-shadow:var(--card-shadow);touch-action:manipulation}
+.menu-i span{grid-row:1/3;font-size:26px;text-align:center}
+.menu-i b{font-size:16px}
+.menu-i small{color:var(--muted);font-size:13px}
+.menu-i:active{transform:scale(.99)}
+.btn.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line));margin-top:16px}
+/* title: secondary stuff tucked away */
+.more-box{margin-top:18px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:0 14px}
+.more-box summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:700;display:flex;gap:10px;align-items:center}
+.more-box summary::-webkit-details-marker{display:none}
+.more-box summary::after{content:"▾";margin-left:auto;color:var(--muted);transition:transform .2s ease}
+.more-box[open] summary::after{transform:rotate(180deg)}
+.more-box>div{margin-bottom:14px}
+/* pixel sprites */
+svg.ch.px{shape-rendering:crispEdges}
+/* ===== cleaner fight screen: the stage is never covered ===== */
+body.fullfight #s-fight .stage{min-height:34dvh}
+body.fullfight #s-fight .stage .ticker,body.fullfight #s-fight .stage .arena-tag{display:none}
+.fstrip{flex:none;display:flex;gap:8px;align-items:center;padding:6px 12px 0;min-height:30px}
+body.fullfight #s-fight .fstrip .arena-tag{position:static;display:inline-flex;flex:none;font-size:12px;padding:4px 8px;border-radius:99px;background:var(--surface);color:var(--ink);border:1px solid var(--line);backdrop-filter:none}
+body.fullfight #s-fight .fstrip .ticker{position:static;flex:1;min-width:0;margin:0;padding:0;background:none;border:0;box-shadow:none;font-size:12.5px;color:var(--ink);max-height:38px;overflow:hidden}
+body.fullfight #s-fight .fstrip .ticker li{padding:1px 0}
+body.fullfight #s-fight #scout:not(:empty),body.fullfight #s-fight #result:not(:empty){position:static;inset:auto;left:auto;right:auto;top:auto;bottom:auto;z-index:auto;max-height:none;margin:0;animation:none;background:none;border:0;box-shadow:none;backdrop-filter:none}
+body.fullfight #s-fight #scout:not(:empty){flex:none;padding:6px 12px 0;overflow:visible}
+body.fullfight #s-fight #result:not(:empty){flex:0 1 auto;max-height:46dvh;overflow:auto;padding:8px 14px 0}
+.finfo{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.finfo::-webkit-scrollbar{display:none}
+.fi{flex:none;appearance:none;font:inherit;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line);color:var(--ink);white-space:nowrap;cursor:pointer;max-width:72vw;overflow:hidden;text-overflow:ellipsis}
+.fi-odds.good{border-color:var(--teal);color:var(--teal)}.fi-odds.even{border-color:var(--gold);color:var(--gold)}.fi-odds.bad{border-color:var(--red);color:var(--red)}
+.fi-card{color:var(--pink)}
+body.fullfight #s-fight .moverow:not([hidden]){display:grid;grid-template-columns:1.2fr 1.1fr 1.2fr .7fr .7fr;gap:6px}
+body.fullfight #s-fight .moverow .btn{padding:6px 4px;font-size:13px;min-height:38px}
+#speedTog[aria-pressed="true"],#autoTog[aria-pressed="true"]{border-color:var(--pink);color:var(--pink)}
+/* ===== settings ===== */
+.setrow{appearance:none;width:100%;display:flex;align-items:center;gap:12px;text-align:left;padding:12px 4px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);font:inherit;cursor:pointer}
+.setrow>span{flex:1}
+.setrow b{display:block;font-size:16px}
+.setrow small{display:block;color:var(--muted);font-size:13px}
+.sw2{flex:none;width:46px;height:28px;border-radius:99px;background:var(--surface-2);position:relative;transition:background .2s ease;border:1px solid var(--line)}
+.sw2::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .2s ease}
+.sw2.on{background:var(--teal);border-color:var(--teal)}
+.sw2.on::after{transform:translateX(18px)}
+.setgrp{display:grid;gap:8px;margin-top:14px}
+.menu-i.danger b{color:var(--red)}
+.savebox{width:100%;min-height:120px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:12px ui-monospace,monospace;padding:10px;margin-bottom:10px}
+.tut-dots{display:flex;gap:6px;justify-content:center;margin:4px 0 16px}
+.tut-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25)}
+.tut-dots i.on{background:#F2B544;width:20px;border-radius:99px}
+
+/* tighter lower panel so the stage gets the room */
+body.fullfight #s-fight #intent{padding:6px 12px 0;min-height:0}
+body.fullfight #s-fight .intent.cwi{padding:6px 10px;gap:8px;border-radius:12px}
+body.fullfight #s-fight .intent.cwi .ie{font-size:18px}
+body.fullfight #s-fight .intent.cwi div{font-size:13px;line-height:1.25}
+body.fullfight #s-fight .intent.cwi small{font-size:12px}
+body.fullfight #s-fight .cw{gap:6px}
+body.fullfight #s-fight .cw-spin{min-height:46px;font-size:18px}
+body.fullfight #s-fight .hud{padding-bottom:12px}
+body.fullfight #s-fight .fstrip{padding-top:4px;min-height:26px}
+/* short phones: give the stage more room once the fight is under way */
+@media (max-height:720px){
+  body.fullfight #s-fight:has(#moves:not([hidden])) #scout{display:none}
+  body.fullfight #s-fight .hud{padding-top:calc(env(safe-area-inset-top,0px) + 4px);padding-bottom:6px}
+  body.fullfight #s-fight .hud .hn{font-size:14px}
+  body.fullfight #s-fight .hud .mom{display:none}
+  body.fullfight #s-fight .mbar{height:9px}
+  body.fullfight #s-fight .hud .hv{font-size:11px}
+  body.fullfight #s-fight .fchip{min-height:32px;padding:5px 9px;font-size:12.5px}
+  body.fullfight #s-fight .cw-spin{min-height:42px;font-size:17px}
+}
