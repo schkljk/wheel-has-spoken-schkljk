@@ -1,0 +1,2343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Wheel Has Spoken</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bungee&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F7EEF5;--surface:#FFFFFF;--surface-2:#EEDFEC;--ink:#2B1033;--muted:#6B4F70;--line:#DCC6D9;
+  --pink:#D6246A;--pink-deep:#9C1450;--pink-ink:#FFFFFF;--gold:#A86F00;--teal:#0E8277;--red:#C62828;
+  --q0:#7A6680;--q1:#8E3FA6;--q2:#1A9488;--q3:#E0A100;
+  color-scheme:light;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#2B1033;--surface:#3A1A45;--surface-2:#4C2658;--ink:#F7E9D7;--muted:#CDB3CC;--line:#5E3570;
+    --pink:#FF4F8B;--pink-deep:#B0245A;--pink-ink:#2B1033;--gold:#FFB627;--teal:#3DD6C6;--red:#FF6B6B;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#2B1033;--surface:#3A1A45;--surface-2:#4C2658;--ink:#F7E9D7;--muted:#CDB3CC;--line:#5E3570;
+  --pink:#FF4F8B;--pink-deep:#B0245A;--pink-ink:#2B1033;--gold:#FFB627;--teal:#3DD6C6;--red:#FF6B6B;
+  color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 "Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+#app{max-width:560px;margin:0 auto;padding:0 16px 40px}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+
+.bar{display:flex;align-items:center;justify-content:space-between;padding:10px 0 6px;gap:12px}
+.brand{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:14px}
+body[data-screen="s-title"] .brand{visibility:hidden}
+.toggles{display:flex;gap:8px}
+.ico{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:12px;width:44px;height:44px;font-size:20px;cursor:pointer;display:grid;place-items:center;padding:0}
+.ico[aria-pressed="true"]{border-color:var(--pink)}
+.ico.big{width:56px;height:56px;font-size:26px;flex:none}
+
+.screen{padding-top:4px}
+h1{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:clamp(30px,9vw,42px);line-height:1;margin:18px 0 12px}
+.lede{margin:0 0 22px;color:var(--muted);max-width:44ch}
+.hero-wheel{height:150px;overflow:hidden;display:flex;justify-content:center;margin:0 -16px}
+.hero-wheel canvas{width:300px;height:300px;flex:none;animation:idle 90s linear infinite}
+@keyframes idle{to{transform:rotate(360deg)}}
+
+.fld{display:block;font-weight:700;margin-bottom:6px}
+.name-row{display:flex;gap:10px}
+input{flex:1;min-width:0;height:56px;border-radius:14px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:700 18px "Atkinson Hyperlegible",system-ui,sans-serif;padding:0 14px}
+input:focus{border-color:var(--pink);outline:none}
+
+.btn{display:block;width:100%;min-height:56px;border:0;border-radius:16px;background:var(--pink);color:var(--pink-ink);font:700 18px/1.2 "Atkinson Hyperlegible",system-ui,sans-serif;padding:14px 18px;margin-top:14px;cursor:pointer;touch-action:manipulation;box-shadow:0 5px 0 var(--pink-deep);transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--pink-deep)}
+.btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);box-shadow:none;min-height:50px;font-size:16px}
+.btn.ghost:active{transform:none;background:var(--surface)}
+.btn.sm{min-height:46px;font-size:15px;margin-top:10px;padding:10px}
+.btn:disabled{opacity:.45;cursor:default}
+.btn[hidden]{display:none}
+
+.records{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:26px}
+.rec{background:var(--surface);border-radius:14px;padding:10px 12px}
+.rec b{display:block;font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:22px;line-height:1.1}
+.rec span{font-size:13px;color:var(--muted)}
+.coll{margin-top:22px;background:var(--surface);border-radius:16px;padding:14px 16px}
+.coll-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.coll-top b{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:17px}
+.coll-top span{font-size:14px;color:var(--muted)}
+.coll .prog-track{margin-top:10px}
+.hall{margin-top:26px}
+.hall h2,.screen-title{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:20px;margin:0 0 10px;line-height:1.15}
+.hall ol{list-style:none;margin:0;padding:0}
+.hall li{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:end;padding:10px 0;border-bottom:1px solid var(--line)}
+.hall .n{font-weight:700;overflow-wrap:anywhere}
+.hall .s,.hall .d{font-size:13px;color:var(--muted)}
+.empty{color:var(--muted);margin:0}
+
+.who{margin:0;color:var(--muted);font-size:15px;overflow-wrap:anywhere}
+.prog{display:flex;align-items:center;gap:10px;margin-top:8px}
+.prog[hidden]{display:none}
+.prog-track{flex:1;height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden}
+.prog-track i{display:block;height:100%;width:0;background:var(--pink);transition:width .3s}
+.prog span{font-size:13px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cat{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:clamp(24px,7.5vw,32px);line-height:1;margin:14px 0 4px;text-align:center}
+.oddsbox{text-align:center;margin-top:6px}
+.unlock{display:inline-block;font-weight:700;font-size:13px;color:var(--pink);margin-bottom:6px}
+.chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.oc{font-size:12.5px;padding:3px 9px;border-radius:99px;background:var(--surface);border:1.5px solid var(--line);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oc.up{border-color:var(--teal);color:var(--teal)}
+.oc.down{border-color:var(--red);color:var(--red)}
+.oc.off{color:var(--muted);text-decoration:line-through}
+.mood{font-size:13px;color:var(--muted);margin-top:6px}
+
+.wheel-wrap{position:relative;width:min(86vw,370px);aspect-ratio:1;margin:18px auto 0}
+.wheel-wrap canvas{width:100%;height:100%;display:block;will-change:transform}
+.pointer{position:absolute;top:-14px;left:50%;width:34px;height:40px;margin-left:-17px;background:var(--pink);clip-path:polygon(0 0,100% 0,50% 100%);z-index:2}
+.pointer::after{content:"";position:absolute;inset:5px 8px 14px;background:var(--ink);clip-path:polygon(0 0,100% 0,50% 100%);opacity:.25}
+.hub{position:absolute;top:50%;left:50%;width:70px;height:70px;margin:-35px 0 0 -35px;border-radius:50%;background:#FFF6EA;color:#2B1033;border:5px solid var(--pink);display:grid;place-items:center;font:700 26px/1 "Atkinson Hyperlegible",system-ui,sans-serif;z-index:2}
+.legend{display:flex;justify-content:center;flex-wrap:wrap;gap:6px 14px;margin-top:12px;font-size:13px;color:var(--muted)}
+.sw{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.sw.q0{background:#6E5A75}.sw.q1{background:#8E3FA6}.sw.q2{background:#1A9488}.sw.q3{background:#FFB627}
+.landed{min-height:76px;text-align:center;margin-top:14px}
+.landed .ln{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:clamp(20px,6.5vw,26px);line-height:1.1;overflow-wrap:anywhere}
+.landed .rx{color:var(--muted);margin-top:4px}
+.landed .ds{font-size:14px;margin-top:4px}
+.landed.pop .ln{animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.7);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.note{display:inline-block;margin:8px 4px 0;font-weight:700;font-size:14px;padding:4px 11px;border-radius:99px;color:#2B1033}
+.note.new{background:var(--surface-2);color:var(--ink)}
+.note.syn{background:#FFB627}
+.note.anti{background:#FF8A8A}
+.note.sub{background:#3DD6C6}
+
+.preview{display:flex;gap:14px;align-items:flex-end;background:var(--surface);border-radius:16px;padding:12px 14px;margin-top:22px}
+.pv-art{flex:none;width:104px;display:flex;justify-content:center;align-items:flex-end;min-height:126px}
+.pv-txt{min-width:0}
+.pv-txt b{display:block;font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:16px;line-height:1.15;overflow-wrap:anywhere}
+.pv-txt span{display:block;font-size:13px;color:var(--muted);margin-top:4px}
+.sheet{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;margin:12px 0 0;padding:14px 16px;background:var(--surface);border-radius:16px}
+.sheet[hidden],.preview[hidden]{display:none}
+.sheet dt{color:var(--muted);font-size:14px}
+.sheet dd{margin:0;font-weight:700;font-size:15px;overflow-wrap:anywhere}
+.sheet dd.pending{color:var(--muted);font-weight:400}
+.sheet dd.now{color:var(--pink)}
+
+.ch{display:block;overflow:visible}
+.xe{display:none}
+.body.down .ey{display:none}
+.body.down .xe{display:inline}
+
+.fcard{background:var(--surface);border-radius:20px;padding:18px 16px}
+.fc-top{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:end}
+.fc-name{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:20px;line-height:1.1;overflow-wrap:anywhere}
+.fc-sub{color:var(--muted);font-size:14px;margin-top:4px}
+.stamp{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:13px;line-height:1.1;padding:6px 8px;border:3px solid currentColor;border-radius:8px;transform:rotate(-8deg);text-align:center;max-width:100px;align-self:start}
+.stamp.q0{color:var(--muted)}.stamp.q1{color:var(--ink)}.stamp.q2{color:var(--teal)}.stamp.q3{color:var(--gold)}
+.fc-win{margin:16px 0 4px;font-size:15px}
+.stats{display:grid;gap:9px;margin-top:12px}
+.st{display:grid;grid-template-columns:104px 1fr;grid-template-areas:"lb vl" "lb tr";column-gap:10px;align-items:center}
+.st .lb{grid-area:lb;font-size:14px;color:var(--muted)}
+.st .vl{grid-area:vl;font-size:14px;font-weight:700}
+.st .vl em{font-style:normal;color:var(--teal);margin-left:4px}
+.st .vl em.neg{color:var(--red)}
+.st .tr{grid-area:tr;height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-top:3px}
+.st .tr i{display:block;height:100%;border-radius:99px}
+.f0{background:var(--q0)}.f1{background:var(--q1)}.f2{background:var(--q2)}.f3{background:var(--q3)}
+.loadout{display:grid;grid-template-columns:auto 1fr;gap:10px 14px;margin:18px 0 0}
+.loadout dt{color:var(--muted);font-size:14px}
+.loadout dd{margin:0;font-weight:700}
+.loadout dd small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.loadout .syn{display:block;margin-bottom:6px}
+.loadout .syn.anti{color:var(--red)}
+
+.hint{margin:-4px 0 4px;color:var(--muted);font-size:14px}
+.round{margin-top:18px}
+.round h3{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:15px;margin:0 0 8px}
+.match{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;padding:6px;border-radius:14px;background:var(--surface);margin-bottom:8px;border:2px solid transparent}
+.match.mine{border-color:var(--pink)}
+.chip{appearance:none;border:0;background:none;text-align:left;padding:4px 6px;display:flex;gap:6px;align-items:flex-end;min-width:0;cursor:pointer;border-radius:10px;min-height:48px}
+.chip.r{flex-direction:row-reverse;text-align:right}
+.mini{display:inline-flex;align-items:flex-end;flex:none}
+.chip .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:700;padding-bottom:6px}
+.chip.lost{opacity:.42}
+.chip.lost .n{text-decoration:line-through}
+.chip.you .n{color:var(--pink)}
+.vs{font-size:12px;color:var(--muted)}
+.tbd{color:var(--muted);font-size:14px;padding:14px 6px}
+.tbd.r{text-align:right}
+.champ-line{background:var(--surface);border-radius:14px;padding:12px 14px;margin:0 0 6px;font-weight:700}
+
+.arena{margin-top:8px;border-radius:20px;overflow:hidden;background:var(--surface)}
+.hud{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:start;padding:12px 12px 0}
+.hs{min-width:0}
+.hs.r{text-align:right}
+.hn{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:13px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hs.me .hn{color:var(--pink)}
+.mbar{height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:5px}
+.mbar i{display:block;height:100%;width:100%;transition:width .3s ease}
+.hs.r .mbar i{margin-left:auto}
+.mbar.hp i{background:var(--teal)}
+.mbar.hp i.low{background:var(--red)}
+.mbar.en{height:6px}
+.mbar.en i{background:var(--gold)}
+.mbar.en.full{box-shadow:0 0 0 2px var(--gold)}
+.hv{display:flex;justify-content:space-between;gap:6px;font-size:12px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.rd{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:12px;color:var(--muted);padding-top:2px;white-space:nowrap}
+.stage{position:relative;height:240px;margin-top:4px;overflow:hidden}
+.floor{position:absolute;left:0;right:0;bottom:0;height:46px;background:var(--surface-2)}
+.floor::before{content:"";position:absolute;left:0;right:0;top:-4px;height:8px;background-image:radial-gradient(circle,#FFB627 0 2.6px,transparent 3.2px),radial-gradient(circle,#FF4F8B 0 2.6px,transparent 3.2px);background-size:24px 8px;background-position:0 0,12px 0;background-repeat:repeat-x}
+.ftr{position:absolute;bottom:22px;width:130px;display:flex;flex-direction:column;align-items:center;z-index:1}
+.ftr.side0{left:calc(22% - 65px)}
+.ftr.side1{right:calc(22% - 65px)}
+.badges{height:22px;font-size:16px;letter-spacing:2px;line-height:22px}
+.body{display:inline-block;transform-origin:50% 92%;transition:transform .55s cubic-bezier(.5,-.4,.6,1.4),opacity .55s}
+.ftr.side0 .body.down{transform:translateX(18px) rotate(-90deg);opacity:.6}
+.ftr.side1 .body.down{transform:translateX(-18px) rotate(90deg);opacity:.6}
+.body.frozen{filter:saturate(.3) brightness(1.15) drop-shadow(0 0 8px #7FE3FF)}
+.body.poisoned{filter:drop-shadow(0 0 7px #4CD964)}
+.stage .ch{animation:bob 1.7s ease-in-out infinite alternate}
+.body.down .ch{animation:none}
+@keyframes bob{to{transform:translateY(-3px)}}
+.tint{position:absolute;inset:0;opacity:0;pointer-events:none;z-index:2}
+.t-fire{background:#FF6A00}.t-ice{background:#7FE3FF}.t-lightning{background:#FFF04D}.t-water{background:#2F80FF}.t-shadow{background:#000}.t-light{background:#FFFFFF}.t-poison{background:#4CD964}.t-gravity{background:#6B2FBF}.t-mind{background:#FF4FD8}.t-time{background:#9AA0A6}.t-reality{background:#FF4F8B}.t-ult{background:#FFFFFF}.t-arcane{background:#B388FF}
+.fxl{position:absolute;inset:0;pointer-events:none;z-index:3}
+.fxe{position:absolute;font-size:34px;line-height:1;transform:translate(-50%,-50%);will-change:transform}
+.float{position:absolute;font:700 20px/1 "Atkinson Hyperlegible",system-ui,sans-serif;color:var(--red);white-space:nowrap;transform:translate(-50%,0);text-shadow:0 1px 0 var(--surface)}
+.float.crit{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:24px;color:var(--gold)}
+.float.heal{color:var(--teal)}
+.float.info{font-size:15px;color:var(--ink)}
+.float.weak{font-size:15px;color:var(--teal)}
+.banner{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:clamp(20px,7vw,30px);color:var(--pink);opacity:0;pointer-events:none;text-align:center;line-height:1.05;z-index:4;width:90%}
+
+.moves{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.moves[hidden],.moverow[hidden]{display:none}
+.mv{appearance:none;border:2px solid var(--line);background:var(--surface);border-radius:16px;padding:10px 12px;text-align:left;cursor:pointer;display:grid;grid-template-columns:auto 1fr;grid-template-areas:"i t" "i s";column-gap:10px;align-items:center;min-height:74px;box-shadow:0 4px 0 var(--line);touch-action:manipulation}
+.mv:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.mv .mi{grid-area:i;font-size:28px;line-height:1}
+.mv .mt{grid-area:t;font-weight:700;font-size:15px;line-height:1.2}
+.mv .ms{grid-area:s;font-size:12.5px;color:var(--muted);line-height:1.25}
+.mv:disabled{opacity:.42;cursor:default;box-shadow:none}
+.mv.ult.ready{border-color:var(--gold);box-shadow:0 4px 0 var(--gold)}
+.moves.busy .mv{opacity:.5;pointer-events:none}
+.moverow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#autoTog[aria-pressed="true"]{border-color:var(--pink);color:var(--pink)}
+
+.scout{margin-top:14px;background:var(--surface);border-radius:16px;padding:14px 16px}
+.scout p{margin:0 0 10px}
+.odds{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:20px;line-height:1.1}
+.linkish{appearance:none;border:0;background:none;color:var(--pink);font-weight:700;padding:10px 0 2px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tip{font-size:14px;color:var(--muted);margin:12px 0 0}
+.log{list-style:none;margin:14px 0 0;padding:0;max-height:32vh;overflow:auto;border-top:2px solid var(--line)}
+.log:empty{display:none}
+.log li{display:flex;gap:10px;justify-content:space-between;align-items:baseline;padding:8px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
+.log li.miss{color:var(--muted)}
+.log li.special{color:var(--gold)}
+.log li.ult{color:var(--pink)}
+.log li.ko{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:15px;color:var(--pink)}
+.log li.ko b{font-weight:400}
+.dmg{font-weight:700;color:var(--red);white-space:nowrap;font-variant-numeric:tabular-nums}
+.heal .dmg{color:var(--teal)}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:99px;margin-left:6px;vertical-align:1px;color:#2B1033;font-family:"Atkinson Hyperlegible",system-ui,sans-serif}
+.pill.crit{background:#FFB627}
+.pill.weak{background:#3DD6C6}
+.pill.guard{background:#CDB3CC}
+.res{margin-top:16px;text-align:center}
+.res .big{font-family:Bungee,"Arial Black",Impact,sans-serif;font-size:clamp(28px,9vw,40px);line-height:1}
+.res.win .big{color:var(--gold)}
+.res.lose .big{color:var(--red)}
+.res p{margin:8px auto 0;max-width:40ch}
+.narr{margin-top:14px;background:var(--surface);border-radius:16px;padding:14px 16px;font-size:16px;white-space:pre-wrap}
+.narr:empty{display:none}
+.narr .muted{color:var(--muted)}
+
+.cx-cat{margin-top:20px}
+.cx-cat h3{font-family:Bungee,"Arial Black",Impact,sans-serif;font-weight:400;font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.cx-cat h3 span{font:400 13px "Atkinson Hyperlegible",system-ui,sans-serif;color:var(--muted)}
+.cx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:8px 10px;border-left:5px solid var(--q1);display:flex;gap:8px;align-items:center;min-height:46px;font-size:14px;font-weight:700;min-width:0}
+.tile.q0{border-left-color:var(--q0)}.tile.q2{border-left-color:var(--q2)}.tile.q3{border-left-color:var(--q3)}
+.tile.unk{color:var(--muted);font-weight:400}
+.tile .e{font-size:20px;flex:none}
+.tile small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+
+.ov{position:fixed;inset:0;background:rgba(20,6,24,.62);display:flex;align-items:flex-end;justify-content:center;z-index:50;padding-top:env(safe-area-inset-top,0px)}
+.ov[hidden]{display:none}
+.ov .panel{background:var(--bg);width:100%;max-width:560px;max-height:88%;overflow:auto;border-radius:22px 22px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+
+@media (prefers-reduced-motion: reduce){
+  .hero-wheel canvas,.stage .ch{animation:none}
+  .landed.pop .ln{animation:none}
+  .btn,.mbar i,.prog-track i,.body{transition:none}
+}
+</style>
+</head>
+<body data-screen="s-title">
+<div id="app">
+<header class="bar">
+  <div class="brand">🎡 The wheel has spoken</div>
+  <div class="toggles">
+    <button id="sndBtn" class="ico" aria-pressed="true" aria-label="Sound" title="Sound">🔊</button>
+    <button id="fastBtn" class="ico" aria-pressed="false" aria-label="Fast mode" title="Fast mode">⚡</button>
+  </div>
+</header>
+<main>
+
+<section id="s-title" class="screen">
+  <div class="hero-wheel" aria-hidden="true"><canvas id="idle"></canvas></div>
+  <h1>The wheel has spoken</h1>
+  <p class="lede">Name a fighter. The wheel decides everything else: race, bloodline, class, backstory, powers, title, and the weakness that will probably end them. Then fight your way through an 8-fighter bracket.</p>
+  <label class="fld" for="nameIn">Fighter name</label>
+  <div class="name-row">
+    <input id="nameIn" maxlength="24" autocomplete="off" spellcheck="false" placeholder="Big Steve">
+    <button id="diceBtn" class="ico big" aria-label="Random name" title="Random name">🎲</button>
+  </div>
+  <button id="startBtn" class="btn">Spin my fighter</button>
+  <div id="records"></div>
+  <div id="collBox"></div>
+  <div id="hall" class="hall"></div>
+</section>
+
+<section id="s-spin" class="screen" hidden>
+  <p class="who" id="spinWho"></p>
+  <div class="prog" id="progWrap"><div class="prog-track"><i id="progFill"></i></div><span id="progTxt"></span></div>
+  <h2 class="cat" id="catLabel"></h2>
+  <div class="oddsbox" id="oddsBox"></div>
+  <div class="wheel-wrap">
+    <canvas id="wheel" aria-hidden="true"></canvas>
+    <div class="pointer" aria-hidden="true"></div>
+    <div class="hub" id="hub" aria-hidden="true">?</div>
+  </div>
+  <div class="legend" aria-hidden="true"><span><i class="sw q0"></i>Cooked</span><span><i class="sw q1"></i>Mid</span><span><i class="sw q2"></i>Good</span><span><i class="sw q3"></i>Goated</span><span>▲▼ odds shifted</span></div>
+  <div class="landed" id="landed" aria-live="polite"></div>
+  <button id="spinBtn" class="btn">Spin</button>
+  <button id="rerollBtn" class="btn ghost" hidden>Reroll</button>
+  <button id="autoBtn" class="btn ghost">Spin the rest for me</button>
+  <div class="preview" id="preview"></div>
+  <dl class="sheet" id="sheet"></dl>
+</section>
+
+<section id="s-card" class="screen" hidden>
+  <div id="cardBox"></div>
+  <button id="enterBtn" class="btn">Enter the tournament</button>
+  <button id="scrapBtn" class="btn ghost">Scrap it and spin again</button>
+</section>
+
+<section id="s-bracket" class="screen" hidden>
+  <h2 class="screen-title">The bracket</h2>
+  <p class="hint">Tap any fighter to see their card.</p>
+  <div id="bracket"></div>
+  <div id="bracketActions"></div>
+</section>
+
+<section id="s-fight" class="screen" hidden>
+  <h2 class="screen-title" id="roundName"></h2>
+  <div class="arena" id="arena"></div>
+  <div id="scout"></div>
+  <div class="moves" id="moves" hidden></div>
+  <div class="moverow" id="moverow" hidden>
+    <button class="btn ghost sm" id="autoTog" aria-pressed="false">Auto-battle</button>
+    <button class="btn ghost sm" id="skipBtn">Skip to the result</button>
+  </div>
+  <ol class="log" id="log"></ol>
+  <div id="result" aria-live="polite"></div>
+  <div id="narr" class="narr"></div>
+  <div id="fightActions"></div>
+</section>
+
+<section id="s-codex" class="screen" hidden>
+  <h2 class="screen-title">Your collection</h2>
+  <p class="hint" id="codexSum"></p>
+  <div id="codex"></div>
+  <button class="btn ghost" id="codexBack">Back</button>
+</section>
+
+</main>
+</div>
+
+<div class="ov" id="ov" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-label="Fighter card">
+    <div id="ovBody"></div>
+    <button class="btn ghost" id="ovClose">Close</button>
+  </div>
+</div>
+
+<script>
+// ===== CORE START =====
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function pickW(items){let t=0;for(const it of items)t+=it.w;let r=Math.random()*t;for(let i=0;i<items.length;i++){r-=items[i].w;if(r<=0)return i}return items.length-1}
+const ALL=n=>({str:n,spd:n,dur:n,iq:n,wm:n,pm:n});
+const STATLBL={str:'strength',spd:'speed',dur:'durability',iq:'IQ',wm:'weapon mastery',pm:'power mastery'};
+
+const TW=[9,13,15,14,12,10,8,6,4,2];
+const TQ=v=>v<=2?0:v<=4?1:v<=7?2:3;
+const TIERNAMES={
+  str:['Noodle arms','Mid','Peak human','Superhuman','Building lifter','Mountain splitter','Continental','Planet buster','Star crusher','Universal'],
+  spd:['Snail','Jogger','Peak human','Supersonic','Hypersonic','Lightning','Lightspeed','Faster than light','Teleport fast','Omnipresent'],
+  dur:['Glass','Paper','Peak human','Bulletproof','Tank','Mountain','Continental','Planetary','Cosmic','Immortal'],
+  iq:['Brainrot','Below average','Average','Street smart','Clever','Genius','Prodigy','Mastermind','Galaxy brain','Omniscient'],
+  mast:['Clueless','Beginner','Amateur','Trained','Skilled','Expert','Master','Grandmaster','Legendary','Absolute']
+};
+function tiers(names,key,lab){
+  return TIERNAMES[names].map((n,i)=>{
+    const v=i+1,it={n,v,w:TW[i],q:TQ(v),lab};
+    if(key==='iq'){if(v<=2)it.o=[{w:'weak',n:['Easily confused','Forgets own name'],x:3},{w:'chaos',n:['Unhinged'],x:2}];else if(v>=8)it.o=[{w:'weak',n:['Easily confused','Forgets own name'],x:0.2}];}
+    if(key==='spd'&&v>=8)it.o=[{w:'weak',n:['Bad ankles'],x:0.25}];
+    if(key==='dur'&&v<=2)it.o=[{w:'weak',n:['Glass jaw','Fragile bones'],x:2.5}];
+    if(key==='str'&&v>=9)it.o=[{w:'weapon',n:['Planet-cracker axe','War hammer'],x:2}];
+    return it;
+  });
+}
+
+const RACES=[
+  {n:'Human',e:'🧍',w:12,q:1,m:{},o:[{w:'chaos',n:['Main character'],x:1.5}]},
+  {n:'Goblin',e:'👺',w:10,q:0,m:{str:-1,spd:1},o:[{w:'size',n:['Tiny','Small'],x:2.5},{w:'weapon',n:['Brick','Dagger','Rubber chicken'],x:2},{w:'iq',s:-1}]},
+  {n:'Skeleton',e:'💀',w:8,q:1,m:{dur:-1,spd:1},unholy:1,immune:1,o:[{w:'weapon',n:['Scythe'],x:3},{w:'weak',n:['Fragile bones'],x:3},{w:'weak',n:['Weak stomach'],x:0}]},
+  {n:'Orc',e:'👹',w:8,q:1,m:{str:2,iq:-2},o:[{w:'str',s:1},{w:'weapon',n:['War hammer','Planet-cracker axe'],x:2.5}]},
+  {n:'Elf',e:'🧝',w:7,q:1,m:{spd:1,iq:1,dur:-1},o:[{w:'weapon',n:['Bow'],x:4},{w:'spd',s:1}]},
+  {n:'Pigeon',e:'🐦',w:5,q:0,m:{str:-2,spd:1,iq:-1},r:'A pigeon. We are so back (we are not)',o:[{w:'size',n:['Tiny','Small'],x:3},{w:'weapon',n:['Wet noodle','Rubber chicken'],x:3}]},
+  {n:'Raccoon',e:'🦝',w:5,q:1,m:{iq:1,str:-1,spd:1},o:[{w:'weak',n:['Short attention span'],x:3},{w:'weapon',n:['Frying pan'],x:3}]},
+  {n:'Slime',e:'🟢',w:6,q:1,m:{dur:2,str:-1,iq:-1},o:[{w:'weak',n:['Fragile bones','Glass jaw'],x:0},{w:'power',n:['Poison','Water'],x:3}]},
+  {n:'Vampire',e:'🧛',w:5,q:2,m:{str:1,spd:1},unholy:1,o:[{w:'weak',n:['Sunlight'],x:4},{w:'ench',n:['Vampiric'],x:3}]},
+  {n:'Werewolf',e:'🐺',w:5,q:2,m:{str:2,spd:1,iq:-1},o:[{w:'weak',n:['Allergic to cats'],x:4},{w:'str',s:1}]},
+  {n:'Cyborg',e:'🤖',w:5,q:2,m:{dur:1,iq:1},immune:1,o:[{w:'weapon',n:['Laser rifle'],x:4},{w:'weak',n:['Electricity','Water'],x:3}]},
+  {n:'Ghost',e:'👻',w:4,q:2,m:{dur:2,str:-1},unholy:1,immune:1,o:[{w:'weak',n:['Fragile bones','Glass jaw'],x:0},{w:'power',n:['Telekinesis','Shadow','Teleportation'],x:2.5}]},
+  {n:'Golem',e:'🗿',w:4,q:2,m:{dur:3,spd:-2},immune:1,o:[{w:'size',n:['Huge','Colossal'],x:2.5},{w:'weak',n:['Water'],x:3},{w:'spd',s:-1}]},
+  {n:'Demon',e:'😈',w:3.5,q:2,m:{str:2,dur:1},unholy:1,o:[{w:'power',n:['Fire','Shadow'],x:3},{w:'weak',n:['Sunlight'],x:2}]},
+  {n:'Angel',e:'😇',w:3,q:2,m:{spd:2,dur:1},o:[{w:'power',n:['Holy light'],x:5},{w:'ench',n:['Holy'],x:3},{w:'weak',n:['Fear of the dark'],x:3}]},
+  {n:'Elemental',e:'🌪️',w:3,q:2,m:{pm:2},o:[{w:'power',n:['No power'],x:0}]},
+  {n:'Dragonkin',e:'🐉',w:2.5,q:3,m:{str:2,dur:2},o:[{w:'size',n:['Large','Huge','Colossal'],x:2},{w:'weak',n:['The cold'],x:3}]},
+  {n:'Cosmic warrior',e:'🌠',w:1.6,q:3,m:{str:1,spd:1,pm:1},o:[{w:'back',n:['Reincarnated legend'],x:6}]},
+  {n:'Titan',e:'🏔️',w:1.5,q:3,m:{str:3,dur:2,spd:-1},o:[{w:'size',n:['Tiny','Small','Average'],x:0},{w:'str',s:2}]},
+  {n:'Eldritch horror',e:'🐙',w:0.8,q:3,m:{str:2,spd:2,dur:2,iq:2,pm:2},unholy:1,o:[{w:'power',n:['Reality warping','Mind control'],x:4},{w:'iq',s:2}]}
+];
+
+const RSUB={
+  'Human':{label:'Bloodline',items:[
+    {n:'Farmhand',e:'🌾',w:8,q:1,m:{str:1},d:'Strong back, simple life: +1 strength'},
+    {n:'Shadow ninja clan',e:'🥷',w:5,q:2,m:{spd:2},fx:{dodgeB:.05},d:'+2 speed, dodges more'},
+    {n:'Arcane scholars',e:'📚',w:5,q:2,m:{iq:1,pm:2},o:[{w:'power',n:['No power'],x:0.3}],d:'+1 IQ, +2 power mastery, powers more likely'},
+    {n:'Guardian line',e:'🛡️',w:5,q:2,m:{dur:2},d:'+2 durability'},
+    {n:'Beast tamer blood',e:'🐾',w:4,q:2,fx:{pet:{e:'🐕',n:'loyal dog',x:0.8}},d:'A loyal dog fights alongside them'},
+    {n:"Primordial's descendant",e:'🌋',w:1.2,q:3,m:{str:2,dur:2,pm:2},d:'+2 strength, durability and power mastery'},
+    {n:'Chosen bloodline',e:'🌟',w:0.4,q:3,m:ALL(2),d:'+2 to everything'}]},
+  'Goblin':{label:'Clan',items:[
+    {n:'Lone scavenger',e:'🎒',w:8,q:0,d:'Travels alone. Nothing special'},
+    {n:'Sewer gang',e:'🐀',w:6,q:1,m:{spd:1},fx:{pet:{e:'🐀',n:'rat buddy',x:0.5}},d:'+1 speed and a rat buddy'},
+    {n:'Tinkerer',e:'🔧',w:5,q:2,m:{iq:2},fx:{wlvl:1},o:[{w:'weapon',n:['Laser rifle','Chainsaw'],x:3}],d:'+2 IQ, weapons hit harder'},
+    {n:'Warband leader',e:'📯',w:3,q:2,m:{str:1},fx:{pet:{e:'👺',n:'goblin pals',x:1.0}},d:'Goblin pals jump in every round'},
+    {n:'Goblin king',e:'👑',w:0.8,q:3,m:ALL(1),fx:{pet:{e:'👺',n:'goblin horde',x:1.6}},d:'A whole horde and +1 to everything'}]},
+  'Skeleton':{label:'Bones',items:[
+    {n:'Brittle',e:'🦴',w:6,q:0,m:{dur:-1},d:'−1 durability'},
+    {n:'Calcium rich',e:'🥛',w:6,q:2,m:{dur:2},d:'+2 durability'},
+    {n:'Dancing bones',e:'💃',w:5,q:2,m:{spd:2},d:'+2 speed'},
+    {n:'Spooky scary',e:'🎃',w:3,q:2,fx:{rizz:.12},d:'Opponents get spooked and lose turns'},
+    {n:'Lich bones',e:'🔮',w:1,q:3,m:{pm:3},o:[{w:'power',n:['Shadow','Reality warping','Poison','Life drain'],x:3},{w:'power',n:['No power'],x:0.3}],d:'+3 power mastery, dark magic more likely'}]},
+  'Orc':{label:'Warband role',items:[
+    {n:'Grunt',e:'🪖',w:8,q:1,m:{str:1},d:'Just a guy. +1 strength'},
+    {n:'Shaman',e:'🪶',w:5,q:2,m:{pm:2},o:[{w:'power',n:['No power'],x:0.4}],d:'+2 power mastery'},
+    {n:'Warchief',e:'🪓',w:3,q:2,m:{str:2,dur:1},d:'+2 strength, +1 durability'},
+    {n:'Blood rage',e:'😡',w:4,q:2,fx:{rage:50},d:'Hits harder below 50 HP'},
+    {n:'Peaceful orc',e:'🌸',w:3,q:0,m:{str:-2,iq:2},d:'−2 strength, +2 IQ. Just wants to garden'}]},
+  'Elf':{label:'Rizz level',items:[
+    {n:'No rizz',e:'😶',w:6,q:0,d:'Zero aura'},
+    {n:'Mid rizz',e:'🙂',w:8,q:1,fx:{rizz:.06},d:'Opponents get distracted now and then'},
+    {n:'Unspoken rizz',e:'😏',w:4,q:2,fx:{rizz:.14},d:'Opponents get distracted often'},
+    {n:'Rizz god',e:'😎',w:1.2,q:3,fx:{rizz:.24},d:'Opponents can barely focus'},
+    {n:'Negative rizz',e:'🫣',w:3,q:0,fx:{dr:-0.1},d:'So awkward the opponent hits 10% harder'}]},
+  'Pigeon':{label:'Pigeon type',items:[
+    {n:'City pigeon',e:'🏙️',w:8,q:0,d:'Eats fries. That is it'},
+    {n:'Carrier pigeon',e:'✉️',w:5,q:1,m:{spd:2},d:'+2 speed'},
+    {n:'War pigeon',e:'🎖️',w:4,q:2,m:{str:2},d:'+2 strength'},
+    {n:'Pigeon of the apocalypse',e:'☄️',w:0.8,q:3,m:ALL(3),d:'+3 to everything'}]},
+  'Raccoon':{label:'Trash rank',items:[
+    {n:'Dumpster diver',e:'🗑️',w:8,q:1,fx:{immune:1},d:'Immune to poison'},
+    {n:'Night bandit',e:'🌙',w:5,q:2,m:{spd:2},fx:{drain:8},d:'+2 speed, steals energy on hits'},
+    {n:'Trash panda prodigy',e:'🧠',w:4,q:2,m:{iq:3},d:'+3 IQ'},
+    {n:'Rabid',e:'🤪',w:3,q:2,fx:{venom:3},d:'Strikes poison the target'}]},
+  'Slime':{label:'Slime type',items:[
+    {n:'Basic slime',e:'🟢',w:8,q:0,d:'Wobbly'},
+    {n:'Acid slime',e:'🧪',w:5,q:2,fx:{venom:3},o:[{w:'power',n:['Poison'],x:3}],d:'Strikes poison the target'},
+    {n:'King slime',e:'👑',w:3,q:2,m:{str:2},o:[{w:'size',n:['Huge','Colossal'],x:3}],d:'+2 strength and probably huge'},
+    {n:'Metal slime',e:'⚙️',w:1,q:3,m:{dur:5},d:'+5 durability'}]},
+  'Vampire':{label:'Clan',items:[
+    {n:'Fledgling',e:'🦇',w:8,q:1,m:{spd:1},d:'Still learning. +1 speed'},
+    {n:'Noble house',e:'🍷',w:5,q:2,m:{iq:2,str:1},o:[{w:'ench',n:['Vampiric'],x:2}],d:'+2 IQ, +1 strength'},
+    {n:'Nosferatu',e:'🧟',w:4,q:2,m:{str:2},fx:{regen:3},d:'+2 strength, regenerates'},
+    {n:'Daywalker',e:'🕶️',w:2,q:3,m:{spd:1,dur:1},o:[{w:'weak',n:['Sunlight'],x:0}],d:'Sunlight is off the weakness wheel'},
+    {n:'Ancient',e:'🏛️',w:0.8,q:3,m:ALL(2),d:'+2 to everything'}]},
+  'Werewolf':{label:'Moon phase',items:[
+    {n:'New moon',e:'🌑',w:5,q:0,m:{str:-2},d:'−2 strength'},
+    {n:'Half moon',e:'🌓',w:8,q:1,d:'Normal wolf stuff'},
+    {n:'Full moon',e:'🌕',w:4,q:2,m:{str:2,spd:1},d:'+2 strength, +1 speed'},
+    {n:'Blood moon',e:'🔴',w:1,q:3,m:{str:3},fx:{rage:60},d:'+3 strength, rages below 60 HP'}]},
+  'Cyborg':{label:'Upgrade',items:[
+    {n:'Outdated firmware',e:'💾',w:6,q:0,m:{iq:-2},d:'−2 IQ'},
+    {n:'Rocket fists',e:'🚀',w:4,q:2,m:{str:1},fx:{wlvl:1},o:[{w:'weapon',n:['Bare fists'],x:3}],d:'+1 strength, hits harder'},
+    {n:'Targeting chip',e:'🎯',w:4,q:2,fx:{critB:.12},d:'+12% crit chance'},
+    {n:'Nano repair',e:'🔩',w:4,q:2,fx:{regen:4},d:'Regenerates every round'},
+    {n:'Overclocked',e:'⚡',w:2,q:3,m:{spd:3},d:'+3 speed'}]},
+  'Ghost':{label:'Haunting style',items:[
+    {n:'Friendly ghost',e:'👋',w:6,q:0,m:{str:-1},d:'−1 strength. Just wants a hug'},
+    {n:'Poltergeist',e:'🪑',w:5,q:2,m:{pm:1},o:[{w:'power',n:['Telekinesis'],x:5}],d:'Telekinesis much more likely'},
+    {n:'Banshee',e:'😱',w:4,q:2,fx:{rizz:.12},d:'Screams make opponents lose turns'},
+    {n:'Wraith',e:'🌫️',w:2,q:3,m:{str:2},fx:{dodgeB:.08},d:'+2 strength, dodges more'}]},
+  'Golem':{label:'Material',items:[
+    {n:'Clay',e:'🏺',w:6,q:0,m:{dur:-1},d:'−1 durability'},
+    {n:'Stone',e:'🪨',w:8,q:1,m:{dur:1},d:'Classic. +1 durability'},
+    {n:'Iron',e:'⛓️',w:4,q:2,m:{dur:3},d:'+3 durability'},
+    {n:'Flesh',e:'🍖',w:3,q:2,fx:{regen:4},d:'Regenerates every round'},
+    {n:'Diamond',e:'💎',w:0.8,q:3,m:{dur:5},d:'+5 durability'}]},
+  'Demon':{label:'Circle of hell',items:[
+    {n:'Limbo',e:'🌫️',w:6,q:0,d:'First circle. Mid'},
+    {n:'Lust',e:'💋',w:4,q:2,fx:{rizz:.14},d:'Distracts opponents'},
+    {n:'Greed',e:'💰',w:4,q:2,fx:{drain:10},d:'Steals energy on hits'},
+    {n:'Wrath',e:'🔥',w:4,q:2,fx:{rage:60},o:[{w:'power',n:['Fire'],x:3}],d:'Rages below 60 HP, fire more likely'},
+    {n:'Ninth circle',e:'🧊',w:1,q:3,m:ALL(2),o:[{w:'power',n:['Ice'],x:4}],d:'+2 to everything, ice more likely'}]},
+  'Angel':{label:'Choir',items:[
+    {n:'Cherub',e:'👶',w:6,q:1,m:{spd:2,str:-1},o:[{w:'size',n:['Tiny','Small'],x:4}],d:'Tiny and fast'},
+    {n:'Guardian',e:'🛡️',w:5,q:2,m:{dur:2},fx:{guardX:.35},d:'+2 durability, guards harder'},
+    {n:'Seraph',e:'🔥',w:3,q:2,m:{pm:2},o:[{w:'power',n:['Holy light','Fire'],x:3}],d:'+2 power mastery, holy light and fire more likely'},
+    {n:'Fallen',e:'🖤',w:2,q:3,m:{str:2},fx:{unholy:1},o:[{w:'power',n:['Shadow'],x:4}],d:'+2 strength, turns unholy, shadow more likely'}]},
+  'Elemental':{label:'Element',items:[
+    {n:'Fire',e:'🔥',w:5,q:2,fx:{breath:'fire'},o:[{w:'power',n:['Fire'],x:8}],d:'Fire power way more likely, burning strikes'},
+    {n:'Ice',e:'❄️',w:5,q:2,fx:{breath:'ice'},o:[{w:'power',n:['Ice'],x:8}],d:'Ice power way more likely, freezing strikes'},
+    {n:'Storm',e:'⚡',w:5,q:2,fx:{breath:'lightning'},o:[{w:'power',n:['Lightning'],x:8}],d:'Lightning way more likely, shocking strikes'},
+    {n:'Water',e:'🌊',w:5,q:2,fx:{breath:'water'},o:[{w:'power',n:['Water'],x:8}],d:'Water way more likely, soaking strikes'},
+    {n:'Earth',e:'🪨',w:4,q:2,m:{dur:2},o:[{w:'power',n:['Telekinesis','Gravity'],x:5}],d:'+2 durability, telekinesis and gravity more likely'},
+    {n:'Void',e:'🌌',w:0.8,q:3,m:{pm:2},o:[{w:'power',n:['Reality warping'],x:10}],d:'Reality warping way more likely'}]},
+  'Dragonkin':{label:'Dragon color',items:[
+    {n:'Red',e:'🔴',w:5,q:2,fx:{breath:'fire'},o:[{w:'power',n:['Fire'],x:4}],d:'Fire breath on strikes, fire more likely'},
+    {n:'White',e:'⚪',w:5,q:2,fx:{breath:'ice'},o:[{w:'power',n:['Ice'],x:4}],d:'Frost breath on strikes, ice more likely'},
+    {n:'Blue',e:'🔵',w:5,q:2,fx:{breath:'lightning'},o:[{w:'power',n:['Lightning'],x:4}],d:'Lightning breath on strikes'},
+    {n:'Black',e:'⚫',w:4,q:2,fx:{breath:'shadow'},o:[{w:'power',n:['Shadow'],x:4}],d:'Shadow breath on strikes'},
+    {n:'Gold',e:'🟡',w:1,q:3,m:ALL(2),d:'+2 to everything'}]},
+  'Cosmic warrior':{label:'Constellation',items:[
+    {n:"Orion's belt",e:'🏹',w:5,q:2,m:{str:2},d:'+2 strength'},
+    {n:'Big dipper',e:'🥄',w:5,q:2,m:{dur:2},d:'+2 durability'},
+    {n:'Andromeda',e:'🌀',w:4,q:2,m:{pm:2},d:'+2 power mastery'},
+    {n:'Some random star',e:'⭐',w:5,q:0,d:'Nobody knows its name'},
+    {n:'Supernova',e:'💥',w:0.8,q:3,m:ALL(3),d:'+3 to everything'}]},
+  'Titan':{label:'Titan of',items:[
+    {n:'Mountains',e:'⛰️',w:5,q:2,m:{dur:3},d:'+3 durability'},
+    {n:'Storms',e:'🌩️',w:4,q:2,m:{pm:1},o:[{w:'power',n:['Lightning'],x:5}],d:'Lightning much more likely'},
+    {n:'Time',e:'⌛',w:1,q:3,m:{iq:1},o:[{w:'power',n:['Time stop'],x:8}],d:'Time stop much more likely'},
+    {n:'Nothing in particular',e:'🤷',w:6,q:0,d:'Big. That is it'}]},
+  'Eldritch horror':{label:'Eye count',items:[
+    {n:'Three eyes',e:'👁️',w:6,q:1,m:{iq:1},d:'+1 IQ'},
+    {n:'Twelve eyes',e:'👀',w:4,q:2,m:{iq:2},fx:{critB:.08},d:'+2 IQ, crits more'},
+    {n:'Too many eyes',e:'🫨',w:3,q:2,fx:{dodgeB:.1},d:'Sees everything coming: dodges more'},
+    {n:'Infinite eyes',e:'♾️',w:0.6,q:3,m:ALL(3),d:'+3 to everything'}]}
+};
+
+const ARCHS=[
+  {k:'brawler',n:'Brawler',e:'🥊',w:8,q:1,m:{str:1},d:'Fists hit like a real weapon',o:[{w:'weapon',n:['Bare fists'],x:4},{w:'str',s:1}]},
+  {k:'mage',n:'Mage',e:'🧙',w:7,q:2,m:{pm:2},d:'+2 power mastery, spins the spellbook',o:[{w:'iq',s:1},{w:'pm',s:1}]},
+  {k:'assassin',n:'Assassin',e:'🥷',w:6,q:2,m:{spd:1},d:'Strikes first, crits more',o:[{w:'weapon',n:['Dagger','Katana'],x:3},{w:'spd',s:1}]},
+  {k:'paladin',n:'Paladin',e:'🛡️',w:6,q:2,m:{dur:1},d:'Extra damage to unholy races, spins holy powers',o:[{w:'weapon',n:['War hammer','Katana'],x:2},{w:'ench',n:['Holy'],x:4},{w:'dur',s:1}]},
+  {k:'berserker',n:'Berserker',e:'😤',w:6,q:2,m:{},d:'Hits harder when hurt',o:[{w:'weapon',n:['Planet-cracker axe','War hammer','Chainsaw'],x:2},{w:'iq',s:-1},{w:'str',s:1}]},
+  {k:'tank',n:'Tank',e:'🏋️',w:6,q:1,m:{dur:2,spd:-1},d:'+2 durability, −1 speed',o:[{w:'dur',s:2},{w:'spd',s:-1}]},
+  {k:'trickster',n:'Trickster',e:'🎭',w:5,q:2,m:{iq:1},d:'Dodges a lot more',o:[{w:'weapon',n:['Uno reverse card'],x:4},{w:'chaos',n:['Unhinged'],x:3}]},
+  {k:'necro',n:'Necromancer',e:'⚰️',w:4,q:2,m:{},d:'Rises once after dying, spins cursed powers',o:[{w:'weapon',n:['Scythe'],x:4}]},
+  {k:'tamer',n:'Beast tamer',e:'🐾',w:5,q:1,m:{},d:'Fights with an animal companion',o:[{w:'weapon',n:['Bow'],x:2}]},
+  {k:'monk',n:'Monk',e:'🧘',w:5,q:2,m:{str:1,spd:1},d:'+1 strength, +1 speed',o:[{w:'weapon',n:['Bare fists'],x:4},{w:'spd',s:1}]},
+  {k:'slayer',n:'Giant slayer',e:'🎯',w:4,q:2,m:{},d:'Extra damage to stronger foes',o:[{w:'ench',n:['Godslayer'],x:4}]},
+  {k:'resilient',n:'Resilient',e:'🩹',w:4,q:2,m:{},d:'Any stat that lands below Peak human gets spun again'},
+  {k:'npc',n:'NPC',e:'🫥',w:7,q:0,m:ALL(-1),d:'−1 to everything',r:'Bro is literally an NPC 💀',o:[{w:'str',s:-1},{w:'spd',s:-1},{w:'dur',s:-1},{w:'iq',s:-1},{w:'chaos',n:['Nothing'],x:2}]},
+  {k:'chosen',n:'Chosen one',e:'🌟',w:1,q:3,m:ALL(2),d:'+2 to everything',r:'THE CHOSEN ONE 👹',o:[{w:'chaos',n:['Main character','Plot armor'],x:4}]}
+];
+const ARCHK=Object.fromEntries(ARCHS.map(a=>[a.k,a]));
+const ULTS={brawler:'One-inch punch',mage:'Arcane overload',assassin:'Thousand cuts',paladin:'Final judgement',berserker:'Blood rage',tank:'Body slam',trickster:'Bait and switch',necro:'Grave call',tamer:'Stampede',monk:'Hundred palms',slayer:'Giant killer',resilient:'Second wind',npc:'Default attack',chosen:'Destiny strike'};
+
+const ASUB={
+  brawler:{label:'Fighting style',items:[
+    {n:'Boxing',e:'🥊',w:6,q:2,fx:{critB:.12},d:'+12% crit chance'},
+    {n:'Wrestling',e:'🤼',w:5,q:2,m:{dur:2},d:'+2 durability'},
+    {n:'Kung fu',e:'🐉',w:5,q:2,m:{spd:1,wm:1},d:'+1 speed, +1 weapon mastery'},
+    {n:'Drunken fist',e:'🍺',w:3,q:2,fx:{dodgeB:.1},d:'Wobbles out of the way a lot'},
+    {n:'Bar fighter',e:'🪑',w:5,q:1,fx:{wlvl:1},d:'Uses the furniture: hits harder'}]},
+  mage:{label:'School of magic',items:[
+    {n:'Pyromancy',e:'🔥',w:5,q:2,o:[{w:'power',n:['Fire'],x:6}],d:'Fire way more likely'},
+    {n:'Cryomancy',e:'❄️',w:5,q:2,o:[{w:'power',n:['Ice'],x:6}],d:'Ice way more likely'},
+    {n:'Storm magic',e:'⚡',w:5,q:2,o:[{w:'power',n:['Lightning'],x:6}],d:'Lightning way more likely'},
+    {n:'Arcane',e:'🔮',w:4,q:2,m:{pm:2},o:[{w:'power',n:['Arcane missiles'],x:4}],d:'+2 power mastery'},
+    {n:'Chronomancy',e:'⏳',w:1,q:3,o:[{w:'power',n:['Time stop'],x:8}],d:'Time stop way more likely'},
+    {n:'Hedge wizard',e:'🌿',w:4,q:0,m:{pm:-1},d:'−1 power mastery. Mostly makes tea'}]},
+  assassin:{label:'Technique',items:[
+    {n:'Poisoned blades',e:'🧪',w:5,q:2,fx:{venom:3},d:'Strikes poison the target'},
+    {n:'Smoke bombs',e:'💨',w:5,q:2,fx:{dodgeB:.1},d:'Dodges more'},
+    {n:'One-shot',e:'🎯',w:4,q:2,fx:{critB:.12},d:'+12% crit chance'},
+    {n:'Contract killer',e:'📜',w:3,q:2,m:{str:2},d:'+2 strength'},
+    {n:'Clumsy',e:'🍌',w:4,q:0,m:{spd:-2},d:'−2 speed. Trips a lot'}]},
+  paladin:{label:'Oath',items:[
+    {n:'Oath of light',e:'☀️',w:5,q:2,m:{pm:1},o:[{w:'power',n:['Holy light','Smite'],x:4}],d:'Holy light and smite more likely'},
+    {n:'Oath of vengeance',e:'⚔️',w:5,q:2,m:{str:2},d:'+2 strength'},
+    {n:'Oath of protection',e:'🛡️',w:5,q:2,m:{dur:2},fx:{guardX:.35},d:'+2 durability, guards harder'},
+    {n:'Oath of snacks',e:'🍩',w:3,q:1,fx:{regen:3},d:'Regenerates a little between bites'},
+    {n:'Broken oath',e:'💔',w:1.5,q:3,m:{str:3},fx:{unholy:1},d:'+3 strength, but now unholy'}]},
+  berserker:{label:'Rage',items:[
+    {n:'Mild annoyance',e:'😒',w:5,q:0,fx:{rageAt:25},d:'Only rages below 25 HP'},
+    {n:'Seething',e:'😠',w:8,q:1,fx:{rageAt:50},d:'Rages below 50 HP'},
+    {n:'Blind fury',e:'🔴',w:4,q:2,m:{iq:-1},fx:{rageAt:70},d:'Rages below 70 HP, −1 IQ'},
+    {n:'Unending rage',e:'🌋',w:1,q:3,fx:{rageAt:101},d:'Always raging'}]},
+  tank:{label:'Armor',items:[
+    {n:'Cardboard armor',e:'📦',w:4,q:0,m:{dur:-1},d:'−1 durability'},
+    {n:'Chainmail',e:'⛓️',w:6,q:1,m:{dur:1},d:'+1 durability'},
+    {n:'Full plate',e:'🛡️',w:5,q:2,m:{dur:2,spd:-1},d:'+2 durability, −1 speed'},
+    {n:'Tower shield',e:'🚪',w:4,q:2,fx:{guardX:.35},d:'Guarding blocks 65%'},
+    {n:'Adamantium',e:'💎',w:1,q:3,m:{dur:4},d:'+4 durability'}]},
+  trickster:{label:'Trick',items:[
+    {n:'Card tricks',e:'🃏',w:5,q:2,o:[{w:'weapon',n:['Uno reverse card'],x:6}],d:'Uno reverse card much more likely'},
+    {n:'Smoke and mirrors',e:'🪞',w:5,q:2,fx:{dodgeB:.1},d:'Dodges more'},
+    {n:'Fake death',e:'🪦',w:4,q:2,fx:{revive:25},d:'Gets back up once with 25 HP'},
+    {n:'Pickpocket',e:'👛',w:4,q:2,fx:{drain:12},d:'Steals energy on hits'},
+    {n:'Illusion clones',e:'👥',w:3,q:2,o:[{w:'power',n:['Clone army'],x:6}],d:'Clone army much more likely'}]},
+  necro:{label:'Minion',items:[
+    {n:'Zombie rat',e:'🐀',w:6,q:1,fx:{pet:{e:'🐀',n:'zombie rat',x:0.6}},d:'A small undead rat'},
+    {n:'Skeleton squire',e:'💀',w:5,q:2,fx:{pet:{e:'💀',n:'skeleton squire',x:1.0}},d:'A loyal bony helper'},
+    {n:'Zombie horde',e:'🧟',w:3,q:2,fx:{pet:{e:'🧟',n:'zombie horde',x:1.4}},d:'Shambling, numerous, effective'},
+    {n:"Ex's ghost",e:'👻',w:3,q:1,fx:{pet:{e:'👻',n:"ex's ghost",x:0.9}},d:'Haunts the opponent out of spite'},
+    {n:'Bone dragon',e:'🐉',w:0.8,q:3,fx:{pet:{e:'🐉',n:'bone dragon',x:2.2}},d:'An actual dragon made of bones'}]},
+  tamer:{label:'Companion',items:[
+    {n:'Bear',e:'🐻',w:6,q:2,fx:{pet:{e:'🐻',n:'bear',x:1.0}},d:'Big, strong, hungry'},
+    {n:'Wolf',e:'🐺',w:5,q:2,m:{spd:1},fx:{pet:{e:'🐺',n:'wolf',x:0.9}},d:'+1 speed, bites often'},
+    {n:'Hawk',e:'🦅',w:4,q:2,fx:{critB:.06,pet:{e:'🦅',n:'hawk',x:0.7}},d:'Spots weak points: crits more'},
+    {n:'Angry swan',e:'🦢',w:3,q:2,fx:{pet:{e:'🦢',n:'angry swan',x:1.3}},d:'Pure violence'},
+    {n:'A single bee',e:'🐝',w:3,q:0,fx:{pet:{e:'🐝',n:'bee',x:0.3}},d:'It is trying its best'},
+    {n:'Baby dragon',e:'🐲',w:0.8,q:3,fx:{pet:{e:'🐲',n:'baby dragon',x:2.0}},d:'Small, adorable, breathes fire'}]},
+  monk:{label:'Discipline',items:[
+    {n:'Iron body',e:'🧱',w:5,q:2,m:{dur:2},d:'+2 durability'},
+    {n:'Flowing water',e:'🌊',w:5,q:2,m:{spd:2},d:'+2 speed'},
+    {n:'Inner peace',e:'☮️',w:4,q:2,fx:{regen:4},d:'Regenerates every round'},
+    {n:'Hundred fists',e:'👊',w:4,q:2,fx:{extra:.15},d:'More extra hits'},
+    {n:'Vow of silence',e:'🤐',w:4,q:1,m:{iq:1},d:'+1 IQ'}]},
+  slayer:{label:'Trophy',items:[
+    {n:'Goblin ear',e:'👂',w:6,q:0,d:'Not that impressive'},
+    {n:'Troll tooth',e:'🦷',w:5,q:1,m:{str:1},d:'+1 strength'},
+    {n:"Giant's toe",e:'🦶',w:4,q:2,m:{str:2},d:'+2 strength'},
+    {n:'Dragon scale',e:'🐉',w:3,q:2,m:{dur:2},d:'+2 durability'},
+    {n:"Titan's crown",e:'👑',w:0.8,q:3,m:ALL(2),d:'+2 to everything'}]},
+  resilient:{label:'Grit',items:[
+    {n:'Scrappy',e:'🩹',w:6,q:1,m:{dur:1},d:'+1 durability'},
+    {n:'Thick skin',e:'🦏',w:5,q:2,fx:{dr:.1},d:'Takes 10% less damage'},
+    {n:'Comeback kid',e:'📈',w:4,q:2,fx:{rage:40},d:'Hits harder below 40 HP'},
+    {n:'Never give up',e:'🔥',w:3,q:2,fx:{revive:20},d:'Gets back up once with 20 HP'},
+    {n:'Unbreakable',e:'💎',w:0.8,q:3,m:{dur:3},fx:{revive:30},d:'+3 durability, gets back up once'}]},
+  npc:{label:'NPC job',items:[
+    {n:'Shopkeeper',e:'🛒',w:6,q:1,m:{iq:1},d:'+1 IQ'},
+    {n:'Town guard',e:'💂',w:6,q:1,m:{dur:1},d:'+1 durability'},
+    {n:'Quest giver',e:'❗',w:5,q:1,d:'Gives quests. Does not do them'},
+    {n:'Background villager',e:'🧑‍🌾',w:5,q:0,m:ALL(-1),d:'−1 to everything'},
+    {n:'Tutorial guy',e:'🎮',w:1,q:3,m:ALL(2),d:'Knows the controls: +2 to everything'}]},
+  chosen:{label:'Prophecy',items:[
+    {n:'Fake prophecy',e:'📰',w:4,q:0,m:ALL(-2),d:'−2 to everything. It was a typo'},
+    {n:'Vague prophecy',e:'🌫️',w:6,q:1,d:'Means nothing'},
+    {n:'Destined hero',e:'🗡️',w:4,q:2,m:ALL(1),d:'+1 to everything'},
+    {n:'The one foretold',e:'✨',w:1,q:3,m:ALL(2),fx:{revive:40},d:'+2 to everything, gets back up once'}]}
+};
+
+const SIZES=[
+  {n:'Tiny',e:'🐜',w:5,q:1,m:{str:-1,spd:2,dur:-1},o:[{w:'spd',s:1},{w:'str',s:-1}]},
+  {n:'Small',e:'🐭',w:8,q:1,m:{spd:1}},
+  {n:'Average',e:'🧍',w:12,q:1,m:{}},
+  {n:'Large',e:'🦍',w:8,q:2,m:{str:1}},
+  {n:'Huge',e:'🐘',w:5,q:2,m:{str:2,dur:1,spd:-1},o:[{w:'str',s:1},{w:'spd',s:-1}]},
+  {n:'Colossal',e:'🦕',w:2,q:3,m:{str:3,dur:2,spd:-2},o:[{w:'str',s:2},{w:'spd',s:-2}]}
+];
+const BACKS=[
+  {k:'woke',n:'Just woke up here',e:'😴',w:8,q:0,d:'No idea what is going on'},
+  {k:'lab',n:'Made in a lab',e:'🧪',w:5,q:2,m:{dur:1,iq:1},o:[{w:'iq',s:1}],d:'+1 durability, +1 IQ'},
+  {k:'wolves',n:'Raised by wolves',e:'🐺',w:5,q:2,m:{spd:2,iq:-1},o:[{w:'spd',s:1}],d:'+2 speed, −1 IQ'},
+  {k:'betrayed',n:'Betrayed by the one they trusted',e:'💔',w:5,q:2,fx:{rage:40},d:'Hits harder below 40 HP'},
+  {k:'orphan',n:'Orphan with a dream',e:'🌅',w:5,q:2,fx:{dmgX:1.06},o:[{w:'chaos',n:['Main character'],x:3}],d:'+6% damage, main character energy'},
+  {k:'royal',n:'Former royalty',e:'👑',w:4,q:2,m:{iq:2},o:[{w:'iq',s:1}],d:'+2 IQ'},
+  {k:'isekai',n:"Isekai'd from another world",e:'🚚',w:3,q:2,fx:{critB:.08},o:[{w:'chaos',n:['Plot armor'],x:3}],d:'Overpowered for no reason: +8% crit'},
+  {k:'tutorial',n:'Escaped the tutorial',e:'🏃',w:4,q:1,m:{spd:1},d:'+1 speed'},
+  {k:'bet',n:'Lost a bet',e:'🎲',w:4,q:0,m:{iq:-1},o:[{w:'chaos',n:['Cooked'],x:3}],d:'That is why they are here. −1 IQ'},
+  {k:'reinc',n:'Reincarnated legend',e:'🔁',w:1.2,q:3,m:ALL(1),d:'+1 to everything and a reincarnation spin'}
+];
+const WEAPONS=[
+  {n:'Wet noodle',e:'🍜',w:3,q:0,l:-3,t:[],v:'{a} slaps {b} with a wet noodle',r:'A wet noodle 😭',o:[{w:'wm',s:-1}]},
+  {n:'Rubber chicken',e:'🐔',w:3,q:0,l:-2,t:['blunt'],v:'{a} bonks {b} with a rubber chicken'},
+  {n:'Bare fists',e:'🤜',w:7,q:1,l:0,t:['blunt'],v:'{a} punches {b}',fists:1},
+  {n:'Frying pan',e:'🍳',w:5,q:1,l:0,t:['blunt'],v:'{a} bonks {b} with a frying pan'},
+  {n:'Brick',e:'🧱',w:5,q:1,l:0,t:['blunt'],v:'{a} hits {b} with a brick'},
+  {n:'Baseball bat',e:'⚾',w:5,q:1,l:1,t:['blunt'],v:'{a} swings a bat at {b}'},
+  {n:'Dagger',e:'🔪',w:6,q:1,l:1,t:['blade'],v:'{a} stabs {b}'},
+  {n:'Bow',e:'🏹',w:5,q:2,l:2,t:['ranged'],v:'{a} shoots {b}',ranged:1,proj:'🪶'},
+  {n:'Katana',e:'⚔️',w:5,q:2,l:3,t:['blade'],v:'{a} slashes {b}',o:[{w:'wm',s:1}]},
+  {n:'War hammer',e:'🔨',w:4,q:2,l:3,t:['blunt'],v:'{a} smashes {b} with a war hammer'},
+  {n:'Scythe',e:'🌾',w:4,q:2,l:3,t:['blade'],v:'{a} reaps at {b}'},
+  {n:'Trident',e:'🔱',w:3,q:2,l:3,t:['blade','water'],v:'{a} skewers {b}'},
+  {n:'Chainsaw',e:'🪚',w:3,q:2,l:4,t:['blade'],v:'{a} revs a chainsaw into {b}'},
+  {n:'Laser rifle',e:'🔫',w:2.5,q:3,l:4,t:['ranged','lightning'],v:'{a} blasts {b} with a laser rifle',ranged:1,proj:'🔴'},
+  {n:'Uno reverse card',e:'🃏',w:2,q:2,l:0,t:[],v:'{a} flicks a card at {b}',uno:1,r:'Uno reverse?? 💀',o:[{w:'chaos',n:['Unhinged'],x:2}]},
+  {n:'Cursed blade',e:'🗡️',w:1.5,q:3,l:5,t:['blade','shadow'],v:'{a} carves into {b} with the cursed blade'},
+  {n:'Planet-cracker axe',e:'🪓',w:0.6,q:3,l:7,t:['blade','blunt'],v:'{a} cleaves {b}',o:[{w:'wm',s:-1}]}
+];
+const POWERS=[
+  {k:'none',n:'No power',e:'😶',w:9,q:0,l:0,t:[],d:'Fights with the weapon only',r:'Powerless 💀'},
+  {k:'fire',n:'Fire',e:'🔥',w:6,q:2,l:1,t:['fire'],v:'{a} torches {b}',d:'Fire damage',o:[{w:'ench',n:['Flaming'],x:3}]},
+  {k:'ice',n:'Ice',e:'❄️',w:5,q:2,l:1,t:['ice'],v:'{a} blasts {b} with ice',d:'Ice damage, can freeze',o:[{w:'ench',n:['Frost'],x:3}]},
+  {k:'lightning',n:'Lightning',e:'⚡',w:5,q:2,l:1,t:['lightning'],v:'{a} zaps {b}',d:'Lightning damage, can chain',o:[{w:'ench',n:['Thunder'],x:3}]},
+  {k:'water',n:'Water',e:'🌊',w:4,q:1,l:1,t:['water'],v:'{a} hits {b} with a tidal wave',d:'Water damage',o:[{w:'weak',n:['Water'],x:0}]},
+  {k:'shadow',n:'Shadow',e:'🌑',w:4,q:2,l:1,t:['shadow'],v:'{a} drags {b} into the shadows',d:'Shadow damage',o:[{w:'weak',n:['Fear of the dark'],x:0}]},
+  {k:'light',n:'Holy light',e:'✨',w:3,q:2,l:1,t:['light'],v:'{a} smites {b} with holy light',d:'Holy light damage',o:[{w:'ench',n:['Holy'],x:3}]},
+  {k:'tk',n:'Telekinesis',e:'🪨',w:4,q:2,l:1,t:['blunt'],v:'{a} throws a boulder at {b}',d:'Throws heavy stuff',spin:1},
+  {k:'mind',n:'Mind control',e:'🌀',w:3,q:2,l:0,t:['mind'],v:'{a} scrambles {b}\'s brain',d:'Can make opponents hit themselves',o:[{w:'weak',n:['Easily confused'],x:0}]},
+  {k:'tele',n:'Teleportation',e:'💫',w:4,q:1,l:0,t:[],passive:1,d:'Dodges a lot more'},
+  {k:'regen',n:'Regeneration',e:'💚',w:4,q:2,l:0,t:[],passive:1,d:'Heals every round'},
+  {k:'luck',n:'Absurd luck',e:'🍀',w:3,q:2,l:0,t:[],passive:1,d:'More crits and dodges'},
+  {k:'poison',n:'Poison',e:'🧪',w:4,q:1,l:0,t:['poison'],v:'{a} spits venom at {b}',d:'Damage over time',o:[{w:'weak',n:['Weak stomach'],x:0}]},
+  {k:'gravity',n:'Gravity',e:'🪐',w:3,q:2,l:1,t:['gravity'],v:'{a} crushes {b} with gravity',d:'Slows the opponent'},
+  {k:'clones',n:'Clone army',e:'👥',w:3,q:2,l:0,t:[],passive:1,d:'Clones attack every round'},
+  {k:'shape',n:'Shapeshifting',e:'🦎',w:3,q:2,l:0,t:[],passive:1,d:'Copies a stronger opponent\'s strength'},
+  {k:'time',n:'Time stop',e:'⏱️',w:1.2,q:3,l:3,t:[],v:'{a} stops time and pummels {b}',d:'Free hits before the fight, extra turns'},
+  {k:'reality',n:'Reality warping',e:'🌌',w:0.8,q:3,l:4,t:[],v:'{a} edits {b} out of reality',d:'Sometimes ignores durability'},
+  {k:'negate',n:'Power negation',e:'🚫',w:1.2,q:3,l:0,t:[],passive:1,d:'Turns off the opponent\'s power'}
+];
+const EXTRA_POWERS=[
+  {k:'smite',n:'Smite',e:'🔆',w:0,q:2,l:2,t:['light'],v:'{a} smites {b} from above',d:'Heavy holy damage',o:[{w:'ench',n:['Holy'],x:3}]},
+  {k:'ward',n:'Divine shield',e:'🔰',w:0,q:2,l:0,t:[],passive:1,d:'Takes 20% less damage'},
+  {k:'miracle',n:'Miracle',e:'🙏',w:0,q:3,l:0,t:[],passive:1,d:'Gets back up once with 50 HP'},
+  {k:'drain',n:'Life drain',e:'🩸',w:0,q:2,l:1,t:['shadow'],v:'{a} drains the life out of {b}',d:'Heals for half the damage dealt'},
+  {k:'chains',n:'Abyssal chains',e:'⛓️',w:0,q:2,l:1,t:['shadow'],v:'{a} binds {b} in abyssal chains',d:'Can lock the opponent in place'},
+  {k:'arcane',n:'Arcane missiles',e:'🔮',w:0,q:2,l:2,t:[],v:'{a} fires arcane missiles at {b}',d:'Reliable magic damage'}
+];
+const POWER_ALL=POWERS.concat(EXTRA_POWERS);
+const POWK=Object.fromEntries(POWER_ALL.map(p=>[p.k,p]));
+const pool=list=>list.map(([k,w])=>Object.assign({},POWK[k],{w}));
+const HOLY=pool([['light',8],['regen',6],['ward',5],['smite',4],['negate',2],['miracle',1.2],['time',0.6]]);
+const CURSED=pool([['shadow',7],['poison',6],['drain',5],['chains',4],['regen',3],['negate',1.5],['reality',0.8]]);
+const SPELLBOOK=pool([['fire',6],['ice',6],['lightning',6],['water',4],['arcane',6],['tk',4],['mind',3],['tele',3],['time',1.2],['reality',0.9]]);
+function powerPool(f){const a=f.arch&&f.arch.k;if(a==='paladin')return {label:'Holy powers',items:HOLY};if(a==='necro')return {label:'Cursed powers',items:CURSED};if(a==='mage')return {label:'Spellbook',items:SPELLBOOK};return {label:'Power',items:POWERS};}
+
+const ENCHANTS=[
+  {k:'none',n:'None',e:'▫️',w:10,q:0,d:'Nothing on the weapon'},
+  {k:'flame',n:'Flaming',e:'🔥',w:4,q:2,l:0.5,t:['fire'],d:'Weapon hits burn'},
+  {k:'frost',n:'Frost',e:'❄️',w:4,q:2,l:0.5,t:['ice'],d:'Weapon hits can freeze'},
+  {k:'thunder',n:'Thunder',e:'⚡',w:3,q:2,l:0.5,t:['lightning'],d:'Weapon hits shock'},
+  {k:'holy',n:'Holy',e:'✨',w:3,q:2,l:0.5,t:['light'],d:'Weapon hits with holy light'},
+  {k:'sharp',n:'Sharpness',e:'🔪',w:4,q:2,l:1.5,d:'Weapon hits harder'},
+  {k:'vamp',n:'Vampiric',e:'🩸',w:2.5,q:2,l:0,d:'Heals on weapon hits'},
+  {k:'cursed',n:'Cursed',e:'🕳️',w:2,q:1,l:2.5,d:'Big damage, sometimes bites back'},
+  {k:'godslayer',n:'Godslayer',e:'👑',w:0.8,q:3,l:1,d:'Extra damage to stronger foes'}
+];
+const WEAKS=[
+  {k:'sun',n:'Sunlight',e:'☀️',w:5,q:1,trig:['fire','light'],d:'Fire and holy light hit them extra hard'},
+  {k:'water',n:'Water',e:'💧',w:5,q:1,trig:['water','ice'],d:'Water and ice hit them extra hard'},
+  {k:'dark',n:'Fear of the dark',e:'🌑',w:4,q:1,trig:['shadow'],d:'Shadow attacks hit them extra hard'},
+  {k:'elec',n:'Electricity',e:'⚡',w:4,q:1,trig:['lightning'],d:'Lightning hits them extra hard'},
+  {k:'cold',n:'The cold',e:'🥶',w:4,q:1,trig:['ice'],d:'Ice hits them extra hard'},
+  {k:'mind',n:'Easily confused',e:'🫠',w:4,q:1,trig:['mind'],d:'Mind control works better on them'},
+  {k:'stomach',n:'Weak stomach',e:'🤢',w:3,q:1,trig:['poison'],d:'Poison hits them extra hard'},
+  {k:'back',n:'Lower back pain',e:'🪑',w:3,q:1,trig:['gravity'],d:'Gravity hits them extra hard'},
+  {k:'paper',n:'Paper cuts',e:'📄',w:3,q:0,trig:['blade'],d:'Blades hit them extra hard'},
+  {k:'bones',n:'Fragile bones',e:'🦴',w:4,q:0,trig:['blunt'],d:'Blunt hits do extra damage'},
+  {k:'jaw',n:'Glass jaw',e:'😵',w:4,q:0,d:'Critical hits do way more'},
+  {k:'ankles',n:'Bad ankles',e:'🦶',w:4,q:1,m:{spd:-2},d:'−2 speed'},
+  {k:'cats',n:'Allergic to cats',e:'🐈',w:4,q:2,skip:0.12,sfx:'🤧',st:'🤧 {a} has a sneezing fit',d:'Sometimes loses a turn sneezing'},
+  {k:'phone',n:'Short attention span',e:'📱',w:4,q:1,skip:0.14,sfx:'📱',st:'📱 {a} checks their phone mid-fight',d:'Sometimes loses a turn scrolling'},
+  {k:'sleep',n:'Sleeps 20 hours a day',e:'😴',w:3,q:0,skip:0.18,sfx:'💤',st:'😴 {a} dozes off',d:'Often falls asleep mid-fight'},
+  {k:'stage',n:'Stage fright',e:'🎤',w:3,q:1,firstSkip:1,d:'Loses their first turn'},
+  {k:'name',n:'Forgets own name',e:'❓',w:3,q:1,selfhit:0.1,d:'Sometimes hurts themself'},
+  {k:'none',n:'No weakness',e:'😐',w:0.8,q:3,d:'Built different',r:'No weakness?? 😳'}
+];
+const CURED={k:'cured',n:'Cured',e:'🩹',w:0,q:3,d:'The bonus wheel cured it'};
+const CHAOS=[
+  {k:'nothing',n:'Nothing',e:'💤',w:16,q:0,d:'Nothing happens',r:'Nothing. The wheel said no.'},
+  {k:'main',n:'Main character',e:'🎬',w:2.5,q:3,d:'+12% damage, takes 10% less',o:[{w:'title',n:['the Undisputed GOAT','Menace to Society'],x:3}]},
+  {k:'unhinged',n:'Unhinged',e:'🤪',w:2.5,q:2,d:'Damage is wildly random',o:[{w:'title',n:['Certified Goofball'],x:4}]},
+  {k:'rizz',n:'Unspoken rizz',e:'😏',w:2.5,q:2,d:'Opponents get distracted sometimes'},
+  {k:'plot',n:'Plot armor',e:'📜',w:2,q:3,d:'Survives one killing blow'},
+  {k:'cooked',n:'Cooked',e:'♨️',w:2,q:0,d:'−12% damage, takes 10% more',o:[{w:'title',n:['Fraud Watch'],x:4}]},
+  {k:'badluck',n:'Black cat luck',e:'🐈‍⬛',w:2,q:0,d:'Never lands a critical hit'}
+];
+const TITLES=[
+  {k:'none',n:'No title',e:'🏷️',w:14,q:0,d:'The wheel did not bother'},
+  {k:'unkill',n:'the Unkillable',e:'🧟',w:2,q:2,m:{dur:2},d:'+2 durability'},
+  {k:'menace',n:'Menace to Society',e:'😈',w:2,q:2,m:{str:2},d:'+2 strength'},
+  {k:'goof',n:'Certified Goofball',e:'🤡',w:3,q:1,d:'No effect. Just a goofball'},
+  {k:'speed',n:'the Speedrunner',e:'⏱️',w:2,q:2,m:{spd:2},d:'+2 speed'},
+  {k:'brain',n:'Galaxy Brain',e:'🧠',w:2,q:2,m:{iq:2},d:'+2 IQ'},
+  {k:'fraud',n:'Fraud Watch',e:'🚨',w:2,q:0,m:ALL(-1),d:'−1 to everything. The comments were right'},
+  {k:'goat',n:'the Undisputed GOAT',e:'🐐',w:0.6,q:3,m:ALL(2),d:'+2 to everything'}
+];
+const BONUS=[
+  {k:'str',n:'+1 Strength',e:'💪',w:5,q:2},
+  {k:'spd',n:'+1 Speed',e:'👟',w:5,q:2},
+  {k:'dur',n:'+1 Durability',e:'🛡️',w:5,q:2},
+  {k:'iq',n:'+1 IQ',e:'🧠',w:4,q:1},
+  {k:'wm',n:'+1 Weapon mastery',e:'🗡️',w:4,q:2},
+  {k:'pm',n:'+1 Power mastery',e:'✨',w:4,q:2},
+  {k:'cure',n:'Weakness cured',e:'🩹',w:1.6,q:3},
+  {k:'all',n:'+2 to everything',e:'👹',w:0.9,q:3},
+  {k:'nothing',n:'Nothing',e:'💀',w:4,q:0},
+  {k:'curse',n:'Cursed: −1 to everything',e:'🕳️',w:1.6,q:0}
+];
+const ELEMS=['fire','ice','lightning','water'];
+const SYN=[
+  {k:'inferno',n:'Inferno',e:'🔥',q:3,d:'Fire power and a flaming weapon: +2 power mastery',m:{pm:2},test:f=>f.power?.k==='fire'&&f.ench?.k==='flame'},
+  {k:'zero',n:'Absolute zero',e:'🧊',q:3,d:'Ice power and frost: freezes way more often',test:f=>f.power?.k==='ice'&&f.ench?.k==='frost'},
+  {k:'storm',n:'Storm caller',e:'🌩️',q:3,d:'Lightning power and a shocking weapon: chains three times as often',test:f=>f.power?.k==='lightning'&&(f.ench?.k==='thunder'||f.weapon?.n==='Laser rifle')},
+  {k:'crusader',n:'Crusader',e:'⚜️',q:2,d:'Holy paladin: +2 durability',m:{dur:2},test:f=>f.arch?.k==='paladin'&&(['light','smite'].includes(f.power?.k)||f.ench?.k==='holy')},
+  {k:'blood',n:'Bloodlust',e:'🩸',q:3,d:'Vampire with a vampiric weapon: drains twice as much',test:f=>f.race?.n==='Vampire'&&f.ench?.k==='vamp'},
+  {k:'backstab',n:'Backstabber',e:'🔪',q:2,d:'Assassin with a blade: +15% crit chance',test:f=>f.arch?.k==='assassin'&&!!f.weapon?.t.includes('blade')},
+  {k:'bonelord',n:'Bone lord',e:'🦴',q:3,d:'Skeleton necromancer: rises with 60 HP',test:f=>f.arch?.k==='necro'&&f.race?.n==='Skeleton'},
+  {k:'immovable',n:'Immovable',e:'⛰️',q:2,d:'Huge tank or golem: +2 durability',m:{dur:2},test:f=>(f.arch?.k==='tank'||f.race?.n==='Golem')&&['Huge','Colossal'].includes(f.size?.n)},
+  {k:'pure',n:'Pure element',e:'🌪️',q:2,d:'Elemental with an element power: +2 power mastery',m:{pm:2},test:f=>f.race?.n==='Elemental'&&ELEMS.includes(f.power?.k)},
+  {k:'speed',n:'Speed demon',e:'💨',q:2,d:'Fast assassin or monk: more extra hits',test:f=>(f.arch?.k==='assassin'||f.arch?.k==='monk')&&f.spd?.v>=7},
+  {k:'brain',n:'Big brain',e:'🧠',q:2,d:'Genius mage or mind controller: +2 power mastery',m:{pm:2},test:f=>(f.arch?.k==='mage'||f.power?.k==='mind')&&f.iq?.v>=7},
+  {k:'glass',n:'Glass cannon',e:'💥',q:2,d:'Huge strength, no durability: +2 strength',m:{str:2},test:f=>f.str?.v>=7&&f.dur?.v<=2},
+  {k:'feral',n:'Feral',e:'🐺',q:2,d:'Werewolf berserker: rage kicks in at 70 HP',test:f=>f.race?.n==='Werewolf'&&f.arch?.k==='berserker'},
+  {k:'pack',n:'Pack leader',e:'🐾',q:2,d:'Werewolf with a wolf companion: +2 strength',m:{str:2},test:f=>f.race?.n==='Werewolf'&&f.asub?.n==='Wolf'},
+  {k:'dragonheart',n:'Dragon heart',e:'🐲',q:3,d:'Dragon breath matches their power: +2 power mastery',m:{pm:2},test:f=>f.race?.n==='Dragonkin'&&!!f.rsub?.fx?.breath&&!!f.power?.t?.includes(f.rsub.fx.breath)},
+  {k:'lich',n:'Lich',e:'🔮',q:3,d:'Lich bones and cursed powers: +2 power mastery',m:{pm:2},test:f=>f.rsub?.n==='Lich bones'&&f.arch?.k==='necro'},
+  {k:'mega',n:'Mega pigeon',e:'🐦',q:3,d:'A colossal pigeon: +3 strength',m:{str:3},test:f=>f.race?.n==='Pigeon'&&f.size?.n==='Colossal'},
+  {k:'comedy',n:'Peak comedy',e:'🤡',q:2,d:'Silly fighter, unhinged energy: sometimes a hit does triple damage',test:f=>(['Wet noodle','Rubber chicken'].includes(f.weapon?.n)||f.race?.n==='Pigeon')&&f.chaos?.k==='unhinged'},
+  {k:'destiny',n:'Main character arc',e:'🎬',q:3,d:'Chosen one with plot armor or main character energy: +1 to everything',m:ALL(1),test:f=>f.arch?.k==='chosen'&&['main','plot'].includes(f.chaos?.k)},
+  {k:'horror',n:'Cosmic horror',e:'🌌',q:3,d:'Eldritch reality warper: +2 power mastery',m:{pm:2},test:f=>f.race?.n==='Eldritch horror'&&f.power?.k==='reality'},
+  {k:'fists',n:'Fists of fury',e:'🥊',q:2,d:'Brawler with bare fists: +1 strength',m:{str:1},test:f=>f.arch?.k==='brawler'&&!!f.weapon?.fists},
+  {k:'selfown',n:'Allergic to own kit',e:'🫵',q:0,anti:1,d:'Their own attacks trigger their weakness, so they sometimes backfire',test:f=>{const w=f.weak?.trig;if(!w)return false;const tags=[...(f.weapon?.t||[]),...(f.ench?.t||[]),...(f.power&&f.power.k!=='none'&&!f.power.passive?f.power.t:[])];return tags.some(t=>w.includes(t));}}
+];
+
+const HISTORY={champs:[],lastTop:[]};
+function reincItems(){
+  const out=[],seen=new Set();
+  for(const c of HISTORY.champs){if(!c||!c.n||seen.has(c.n))continue;seen.add(c.n);const b=c.best||'str';const m=ALL(1);m[b]+=2;out.push({n:c.n,e:'🏆',w:3,q:3,m,look:c.look,d:`Your past champion. +3 ${STATLBL[b]}, +1 to everything`});if(out.length>=6)break;}
+  for(const c of HISTORY.lastTop){if(!c||!c.n||seen.has(c.n))continue;seen.add(c.n);const b=c.best||'str';const top=c.place===1;const m=top?ALL(1):{};m[b]=(m[b]||0)+2;out.push({n:c.n,e:top?'🏆':c.place===2?'🥈':'🥉',w:top?2.5:c.place===2?2:1.5,q:top?3:2,m,look:c.look,d:`${top?'Won':c.place===2?'Reached the final of':'Made the semis of'} the last tournament. +2 ${STATLBL[b]}`});}
+  out.push({n:'A forgotten hero',e:'🗿',w:2,q:2,m:ALL(1),d:'Nobody remembers them. +1 to everything'});
+  out.push({n:'Some random nobody',e:'🫥',w:3,q:0,d:'Reincarnated as nobody in particular'});
+  return out;
+}
+const SKIPPED={n:'None',v:1,w:0,q:0,skip:true};
+const RESIL=['str','spd','dur','iq'];
+const SEQ=[
+  {k:'race',label:'Race',lc:'race',items:RACES},
+  {k:'rsub',label:f=>RSUB[f.race.n].label,lc:'sub-race',items:f=>RSUB[f.race.n].items,cond:f=>!!(f.race&&RSUB[f.race.n]),from:f=>f.race},
+  {k:'arch',label:'Archetype',lc:'archetype',items:ARCHS},
+  {k:'asub',label:f=>ASUB[f.arch.k].label,lc:'specialty',items:f=>ASUB[f.arch.k].items,cond:f=>!!(f.arch&&ASUB[f.arch.k]),from:f=>f.arch},
+  {k:'size',label:'Size',lc:'size',items:SIZES},
+  {k:'back',label:'Backstory',lc:'backstory',items:BACKS},
+  {k:'reinc',label:'Reincarnation',lc:'reincarnation',items:()=>reincItems(),cond:f=>!!(f.back&&f.back.k==='reinc'),from:f=>f.back},
+  {k:'str',label:'Strength',lc:'strength',items:tiers('str','str','strength'),tier:1},
+  {k:'spd',label:'Speed',lc:'speed',items:tiers('spd','spd','speed'),tier:1},
+  {k:'dur',label:'Durability',lc:'durability',items:tiers('dur','dur','durability'),tier:1},
+  {k:'iq',label:'IQ',lc:'IQ',items:tiers('iq','iq','IQ'),tier:1},
+  {k:'weapon',label:'Weapon',lc:'weapon',items:WEAPONS},
+  {k:'wm',label:'Weapon mastery',lc:'weapon mastery',items:tiers('mast','wm','weapon mastery'),tier:1},
+  {k:'power',label:f=>powerPool(f).label,lc:'power',items:f=>powerPool(f).items,from:f=>(f.arch&&['paladin','necro','mage'].includes(f.arch.k))?f.arch:null},
+  {k:'pm',label:'Power mastery',lc:'power mastery',items:tiers('mast','pm','power mastery'),tier:1,skipIf:f=>f.power&&f.power.k==='none'},
+  {k:'ench',label:'Enchantment',lc:'enchantment',items:ENCHANTS},
+  {k:'weak',label:'Weakness',lc:'weakness',items:WEAKS},
+  {k:'chaos',label:'Chaos factor',lc:'chaos factor',items:CHAOS},
+  {k:'title',label:'Title',lc:'title',items:TITLES}
+];
+const labelOf=(W,f)=>typeof W.label==='function'?W.label(f):W.label;
+const itemsOf=(W,f)=>typeof W.items==='function'?W.items(f):W.items;
+function spunItems(f){const out=[];for(const W of SEQ){const v=f[W.k];if(v&&!v.skip)out.push(v);}return out;}
+
+// odds shift from earlier results in this build
+function oddsFor(W,f){
+  const list=itemsOf(W,f).map(it=>({it,w:it.w,mult:1}));
+  const reasons=[];
+  for(const src of spunItems(f)){
+    if(!src.o)continue;
+    const who=`${src.e?src.e+' ':''}${src.n}${src.lab?' '+src.lab:''}`;
+    for(const o of src.o){
+      if(o.w!==W.k)continue;
+      if(o.n){
+        let hit=false;
+        list.forEach(e=>{if(o.n.includes(e.it.n)){e.mult*=o.x;hit=true;}});
+        if(hit)reasons.push({cls:o.x===0?'off':o.x>1?'up':'down',txt:`${who}: ${o.x===0?'no '+o.n.join(', '):o.n.join(', ')+' ×'+o.x}`});
+      }else if(o.s&&W.tier){
+        list.forEach(e=>{e.mult*=Math.pow(1.35,o.s*(e.it.v-5.5)/2.5);});
+        reasons.push({cls:o.s>0?'up':'down',txt:`${who}: ${o.s>0?'higher':'lower'} ${W.lc}`});
+      }
+    }
+  }
+  list.forEach(e=>{e.w=e.it.w*e.mult;});
+  return {list:list.filter(e=>e.w>1e-6),reasons};
+}
+
+function synOf(f){return SYN.filter(s=>{try{return !!s.test(f)}catch(e){return false}});}
+function randomFighter(name){
+  const f={name,bonus:{},boons:[]};
+  for(const W of SEQ){
+    if(W.cond&&!W.cond(f))continue;
+    if(W.skipIf&&W.skipIf(f)){f[W.k]=SKIPPED;continue;}
+    const od=oddsFor(W,f);
+    let it=od.list[pickW(od.list)].it;
+    if(f.arch&&f.arch.k==='resilient'&&RESIL.includes(W.k)){let n=0;while(it.v<3&&n++<8)it=od.list[pickW(od.list)].it;}
+    f[W.k]=it;
+  }
+  return f;
+}
+const MOD_SRC=['race','rsub','arch','asub','size','back','reinc','weak','title'];
+function eff(f){
+  const s={str:f.str.v,spd:f.spd.v,dur:f.dur.v,iq:f.iq.v,wm:f.wm.v,pm:f.pm.v};
+  const mods=MOD_SRC.map(k=>f[k]&&f[k].m).concat([f.bonus],synOf(f).map(x=>x.m));
+  for(const m of mods){if(!m)continue;for(const k in m)if(k in s)s[k]+=m[k];}
+  for(const k in s)s[k]=clamp(s[k],1,14);
+  return s;
+}
+function traitsOf(f){
+  const t={rizz:0,regen:0,venom:0,critB:0,dodgeB:0,dr:0,drain:0,extra:0,wlvl:0,dmgX:1,rage:0,rageAt:null,guardX:0.5,revive:0,pets:[],unholy:false,immune:false,breath:null};
+  for(const k of ['rsub','asub','back','reinc','title']){
+    const x=f[k]&&f[k].fx;if(!x)continue;
+    for(const a of ['rizz','regen','venom','critB','dodgeB','dr','drain','extra','wlvl'])if(x[a])t[a]+=x[a];
+    if(x.dmgX)t.dmgX*=x.dmgX;
+    if(x.rage)t.rage=Math.max(t.rage,x.rage);
+    if(x.rageAt!=null)t.rageAt=x.rageAt;
+    if(x.guardX)t.guardX=Math.min(t.guardX,x.guardX);
+    if(x.revive)t.revive=Math.max(t.revive,x.revive);
+    if(x.pet)t.pets.push(x.pet);
+    if(x.unholy)t.unholy=true;
+    if(x.immune)t.immune=true;
+    if(x.breath)t.breath=x.breath;
+  }
+  return t;
+}
+function activePower(f){return f.power.k!=='none'&&!f.power.passive}
+function rate(f){
+  const s=eff(f);
+  return s.str+s.spd+s.dur+0.5*s.iq+0.5*s.wm+(activePower(f)?0.8*s.pm+f.power.l:0)+f.weapon.l*0.6+(f.ench.l||0);
+}
+function bestStat(f){const s=eff(f);let b='str';for(const k of ['spd','dur','iq'])if(s[k]>s[b])b=k;return b;}
+function applyBonus(f,it){
+  f.boons.push(it);
+  const KS=['str','spd','dur','iq','wm','pm'];
+  if(KS.includes(it.k))f.bonus[it.k]=(f.bonus[it.k]||0)+1;
+  else if(it.k==='all')KS.forEach(k=>f.bonus[k]=(f.bonus[k]||0)+2);
+  else if(it.k==='curse')KS.forEach(k=>f.bonus[k]=(f.bonus[k]||0)-1);
+  else if(it.k==='cure')f.weak=CURED;
+  f._win=null;
+}
+const fullName=f=>f.name+(f.title&&f.title.k&&f.title.k!=='none'?', '+f.title.n:'');
+
+// ---- battle engine ----
+const POW_COST=25;
+const TINTS=['fire','ice','lightning','water','shadow','light','poison','gravity','mind'];
+const tintOf=tags=>tags.find(t=>TINTS.includes(t))||'';
+const DODGE=['{b} dodges','{b} sidesteps it','{a} whiffs completely','{b} is just not there anymore'];
+const wlOf=x=>((x.f.arch.k==='brawler'&&x.f.weapon.fists)?3:x.f.weapon.l)+x.tr.wlvl;
+function physOff(x){return 0.6*x.s.str+0.4*x.s.wm+0.5*wlOf(x)+(x.f.ench.l||0);}
+function powOff(x){return (x.powOn&&!x.f.power.passive)?0.75*x.s.pm+0.25*x.s.iq+0.5*x.f.power.l:-99;}
+const physTags=x=>[...x.f.weapon.t,...(x.f.ench.t||[]),...(x.tr.breath?[x.tr.breath]:[])];
+const hitsWeak=(def,tags)=>!!(def.f.weak.trig&&tags.some(t=>def.f.weak.trig.includes(t)));
+const canPower=x=>x.powOn&&!x.f.power.passive&&x.en>=POW_COST;
+const isUnholy=x=>!!(x.f.race.unholy||x.tr.unholy);
+const isImmune=x=>!!(x.f.race.immune||x.tr.immune);
+const baseDmg=(off,def)=>11*Math.pow(1.32,off-def)*rnd(0.75,1.25);
+
+function autoChoice(me,op){
+  if(me.en>=100)return 'ult';
+  if(me.hp<40&&Math.random()<0.25)return 'guard';
+  if(canPower(me)){
+    const po=physOff(me),wo=powOff(me);
+    const smart=Math.random()<clamp(0.35+me.s.iq*0.06,0,0.95);
+    const usePw=smart?(wo+(hitsWeak(op,me.f.power.t)?2:0))>(po+(hitsWeak(op,physTags(me))?2:0)):Math.random()<0.5;
+    if(usePw)return 'power';
+  }
+  if(Math.random()<0.07)return 'guard';
+  return 'strike';
+}
+
+function newBattle(A,B,quiet){
+  const mk=(f,i)=>({i,f,s:eff(f),tr:traitsOf(f),hp:100,poison:0,frozen:0,acts:0,revived:0,plot:0,rev2:0,mir:0,uno:0,powOn:f.power.k!=='none',weakShown:0,rate:rate(f),en:50,guard:0,syn:new Set(synOf(f).map(x=>x.k))});
+  const P=[mk(A,0),mk(B,1)];
+  const bt={P,round:0,over:false,w:null};
+  let ev=[];
+  const N=x=>`<b>${esc(x.f.name)}</b>`;
+  const fill=(tpl,a,b)=>tpl.replace(/\{a\}/g,N(a)).replace(/\{b\}/g,b?N(b):'');
+  const alive=x=>x.hp>0;
+  const both=()=>alive(P[0])&&alive(P[1]);
+  const gain=(x,n)=>{x.en=clamp(x.en+n,0,100);};
+  const snap=()=>({h:P.map(x=>Math.max(0,Math.ceil(x.hp))),en:P.map(x=>Math.round(x.en)),st:P.map(x=>({frozen:!!x.frozen,poison:x.poison>0,guard:!!x.guard})),r:bt.round});
+  bt.snap=snap;
+  function log(html,cls,d,pills,a){
+    if(quiet)return;
+    ev.push(Object.assign({html,cls:cls||'',d:d==null?null:Math.max(1,Math.round(d)),pills:pills||[],a:a||null},snap()));
+  }
+  const flush=()=>{const o=ev;ev=[];return o;};
+  function checkDown(t){
+    if(t.hp>0)return;
+    if(t.f.chaos.k==='plot'&&!t.plot){t.plot=1;t.hp=1;log(`📜 Plot armor! ${N(t)} refuses to go down`,'special',null,[],{t:'revive',on:t.i,fx:'📜'});}
+    else if(t.f.arch.k==='necro'&&!t.revived){t.revived=1;t.hp=t.syn.has('bonelord')?60:35;log(`⚰️ ${N(t)} rises from the dead with ${t.hp} HP`,'special',null,[],{t:'revive',on:t.i,fx:'⚰️'});}
+    else if(t.tr.revive&&!t.rev2){t.rev2=1;t.hp=t.tr.revive;log(`🪦 ${N(t)} gets back up with ${t.hp} HP`,'special',null,[],{t:'revive',on:t.i,fx:'🪦'});}
+    else if(t.powOn&&t.f.power.k==='miracle'&&!t.mir){t.mir=1;t.hp=50;log(`🙏 A miracle! ${N(t)} is back with 50 HP`,'special',null,[],{t:'revive',on:t.i,fx:'🙏'});}
+  }
+  function calc(att,def,off,tags,kind){
+    let defL=def.s.dur;const note=[];let mult=1;
+    if(kind==='power'&&att.f.power.k==='reality'&&Math.random()<0.3){defL=2;note.push('reality');}
+    const d=baseDmg(off,defL);
+    if(hitsWeak(def,tags)){mult*=1.8;note.push('weak');}
+    const cc=att.f.chaos.k==='badluck'?0:0.06+att.s.iq*0.008+(att.f.arch.k==='assassin'?0.12:0)+(att.powOn&&att.f.power.k==='luck'?0.1:0)+(att.syn.has('backstab')?0.15:0)+(kind==='ult'?0.15:0)+att.tr.critB;
+    if(Math.random()<cc){mult*=def.f.weak.k==='jaw'?2.6:1.8;note.push('crit');}
+    let th=att.tr.rage;
+    if(att.f.arch.k==='berserker')th=Math.max(th,att.tr.rageAt!=null?att.tr.rageAt:(att.syn.has('feral')?70:50));
+    if(att.hp<th)mult*=1.35;
+    if((att.f.arch.k==='slayer'||att.f.ench.k==='godslayer')&&def.rate>att.rate)mult*=1.4;
+    if(att.f.arch.k==='paladin'&&isUnholy(def))mult*=1.5;
+    const ac=att.f.chaos.k,dc=def.f.chaos.k;
+    if(ac==='main')mult*=1.12;if(ac==='cooked')mult*=0.88;if(ac==='unhinged')mult*=rnd(0.4,2.2);
+    if(att.syn.has('comedy')&&Math.random()<0.1){mult*=3;note.push('comedy');}
+    mult*=att.tr.dmgX;
+    if(dc==='main')mult*=0.9;if(dc==='cooked')mult*=1.1;
+    mult*=clamp(1-def.tr.dr,0.3,1.5);
+    if(def.powOn&&def.f.power.k==='ward')mult*=0.8;
+    if(def.guard){mult*=def.tr.guardX;note.push('guard');}
+    return {d:d*mult,note};
+  }
+  function act(att,def,kind,extra){
+    if(!both())return;
+    const pw=kind==='power',ult=kind==='ult';
+    const po=physOff(att),wo=powOff(att);
+    let off,tags,fx,tpl,ak;
+    if(ult){const usePw=wo>po;off=Math.max(po,wo)+2.5;tags=usePw?att.f.power.t:physTags(att);fx=att.f.arch.e;ak='ult';}
+    else if(pw){off=wo;tags=att.f.power.t;fx=att.f.power.e;tpl=att.f.power.v;ak='power';}
+    else{off=po;tags=physTags(att);fx=att.f.weapon.proj||att.f.weapon.e;tpl=att.f.weapon.v;ak=att.f.weapon.ranged?'ranged':'melee';}
+    if(!ult&&att.syn.has('selfown')&&hitsWeak(att,tags)&&Math.random()<0.15){
+      const d=baseDmg(off,att.s.dur)*0.6;att.hp-=d;
+      log(`🫵 ${N(att)}'s attack backfires. Allergic to their own kit`,'miss',d,[],{t:'self',on:att.i,fx:'🫵'});
+      checkDown(att);return;
+    }
+    if(pw&&att.f.power.k==='mind'){
+      const c=clamp(0.25+0.04*(att.s.pm-def.s.iq)+(def.f.weak.k==='mind'?0.2:0),0.05,0.65);
+      if(Math.random()<c){
+        const d=baseDmg(physOff(def),def.s.dur);def.hp-=d;
+        log(`🌀 ${N(att)} takes over ${N(def)}'s mind. ${N(def)} punches themself`,'special',d,[],{t:'self',on:def.i,fx:'🌀',tint:'mind'});
+        checkDown(def);return;
+      }
+    }
+    if(!ult){
+      const dg=clamp(0.04+(def.s.spd-att.s.spd)*0.05,0,0.35)+(def.f.arch.k==='trickster'?0.15:0)+(def.powOn&&def.f.power.k==='tele'?0.12:0)+(def.powOn&&def.f.power.k==='luck'?0.08:0)+def.tr.dodgeB-(ak==='ranged'?0.1:0);
+      if(Math.random()<clamp(dg,0,0.55)){log(fill(pick(DODGE),att,def),'miss',null,[],{t:'miss',by:att.i,to:def.i,fx,kind:ak});return;}
+    }
+    const {d,note}=calc(att,def,off,tags,kind);
+    if(!ult&&def.f.weapon.uno&&!def.uno&&d>=8){
+      def.uno=1;att.hp-=d;
+      log(`🃏 ${N(def)} plays the Uno reverse card. ${N(att)} eats their own attack`,'special',d,[],{t:'uno',by:def.i,to:att.i,fx:'🃏'});
+      checkDown(att);return;
+    }
+    def.hp-=d;gain(def,8);
+    const pills=[];
+    if(note.includes('crit'))pills.push('crit');
+    if(note.includes('weak'))pills.push('weak');
+    if(note.includes('guard'))pills.push('guard');
+    let line=ult?`💥 ${N(att)} unleashes ${esc(ULTS[att.f.arch.k])} on ${N(def)}`:fill(tpl,att,def)+(extra?' again':'');
+    if(note.includes('reality'))line+='. Reality bends';
+    if(note.includes('comedy'))line+='. The bit kills';
+    const tint=ult?(tintOf(tags)||'ult'):pw?(tintOf(tags)||(['time','reality','arcane'].includes(att.f.power.k)?att.f.power.k:'')):tintOf(tags);
+    log(line,ult?'ult':'',d,pills,{t:ult?'ult':'hit',by:att.i,to:def.i,fx,kind:ak,spin:!!(pw&&att.f.power.spin),tint,crit:note.includes('crit'),weak:note.includes('weak'),guarded:note.includes('guard'),name:ult?ULTS[att.f.arch.k]:''});
+    if(note.includes('weak')&&!def.weakShown){def.weakShown=1;log(`${def.f.weak.e} ${N(att)} found ${N(def)}'s weakness: ${esc(def.f.weak.n.toLowerCase())}`,'special',null,[],{t:'status',on:def.i,fx:def.f.weak.e});}
+    if(pw){
+      const k=att.f.power.k;
+      if(k==='ice'&&alive(def)&&Math.random()<(att.syn.has('zero')?0.35:0.15)){def.frozen=1;log(`❄️ ${N(def)} is frozen solid`,'special',null,[],{t:'status',on:def.i,fx:'🧊',tint:'ice'});}
+      if(k==='chains'&&alive(def)&&Math.random()<0.2){def.frozen=1;log(`⛓️ ${N(def)} is locked in chains`,'special',null,[],{t:'status',on:def.i,fx:'⛓️',tint:'shadow'});}
+      if(k==='lightning'&&alive(def)&&Math.random()<(att.syn.has('storm')?0.36:0.12)){const d2=d*0.4;def.hp-=d2;log(`⚡ The lightning chains for more`,'',d2,[],{t:'hit',by:att.i,to:def.i,fx:'⚡',kind:'power',tint:'lightning'});}
+      if(k==='drain'){const h=Math.min(100-att.hp,d*0.5);if(h>=3){att.hp+=h;log(`🩸 ${N(att)} drinks ${Math.round(h)} HP`,'heal',h,[],{t:'heal',on:att.i});}}
+      if(k==='poison'&&!isImmune(def)){def.poison=Math.min(20,def.poison+(2+att.s.pm*0.4)*(def.f.weak.k==='stomach'?2:1));}
+      if(k==='time'&&alive(def)&&Math.random()<0.25){checkDown(def);if(both()){log(`⏱️ ${N(att)} stops time again`,'special',null,[],{t:'timestop',by:att.i});act(att,def,'power',true);}return;}
+    }else if(!ult){
+      const e=att.f.ench.k;
+      if(e==='vamp'){const h=Math.min(100-att.hp,d*(att.syn.has('blood')?0.6:0.3));if(h>=3){att.hp+=h;log(`🩸 ${N(att)} drains ${Math.round(h)} HP back`,'heal',h,[],{t:'heal',on:att.i});}}
+      if(e==='frost'&&alive(def)&&Math.random()<(att.syn.has('zero')?0.25:0.1)){def.frozen=1;log(`❄️ ${N(def)} is frozen solid`,'special',null,[],{t:'status',on:def.i,fx:'🧊',tint:'ice'});}
+      if(e==='cursed'&&Math.random()<0.1){att.hp-=6;log(`🕳️ The cursed weapon bites ${N(att)} back`,'',6,[],{t:'self',on:att.i,fx:'🕳️'});checkDown(att);}
+      if(att.tr.venom&&!isImmune(def))def.poison=Math.min(20,def.poison+att.tr.venom);
+      if(att.tr.drain){const s=Math.min(def.en,att.tr.drain);def.en-=s;gain(att,s/2);}
+    }
+    checkDown(def);
+    if(def.guard&&!ult&&both()&&Math.random()<0.35){
+      const cd=baseDmg(physOff(def),att.s.dur)*0.6;att.hp-=cd;
+      log(`↩️ ${N(def)} counters`,'',cd,[],{t:'hit',by:def.i,to:att.i,fx:def.f.weapon.e,kind:'melee'});
+      checkDown(att);
+    }
+  }
+  function turn(att,def,choice){
+    if(!both())return;
+    att.acts++;
+    if(att.frozen){att.frozen=0;log(`❄️ ${N(att)} can't move and loses a turn`,'miss',null,[],{t:'skip',on:att.i,fx:'🧊'});return;}
+    if(choice==='guard')return;
+    const w=att.f.weak;
+    if(w.firstSkip&&att.acts===1){log(`🎤 ${N(att)} freezes up in front of the crowd`,'miss',null,[],{t:'skip',on:att.i,fx:'🎤'});return;}
+    if(w.skip&&Math.random()<w.skip){log(fill(w.st,att),'miss',null,[],{t:'skip',on:att.i,fx:w.sfx});return;}
+    const rz=(def.f.chaos.k==='rizz'?0.12:0)+def.tr.rizz;
+    if(rz>0&&Math.random()<rz){log(`😏 ${N(att)} gets distracted by ${N(def)}`,'miss',null,[],{t:'skip',on:att.i,fx:'😍'});return;}
+    if(w.selfhit&&Math.random()<w.selfhit){att.hp-=5;log(`❓ ${N(att)} forgets their own name and walks into a wall`,'miss',5,[],{t:'self',on:att.i,fx:'❓'});checkDown(att);return;}
+    if(choice==='ult'&&att.en<100)choice='strike';
+    if(choice==='power'&&!canPower(att))choice='strike';
+    if(choice==='ult')att.en=0;
+    else if(choice==='power')att.en-=POW_COST;
+    else gain(att,25);
+    act(att,def,choice);
+    if(choice!=='ult'&&both()&&att.s.spd>def.s.spd&&Math.random()<Math.min(0.6,(att.s.spd-def.s.spd)*0.08+(att.syn.has('speed')?0.2:0)+att.tr.extra))act(att,def,'strike',true);
+  }
+  function finish(){
+    bt.over=true;
+    let w;
+    if(alive(P[0])&&!alive(P[1]))w=0;
+    else if(alive(P[1])&&!alive(P[0]))w=1;
+    else if(!alive(P[0])&&!alive(P[1])){w=P[0].hp>=P[1].hp?0:1;P[w].hp=1;log(`💥 Double knockout. ${N(P[w])} gets up first`,'special',null,[],{t:'revive',on:w,fx:'💥'});}
+    else{w=P[0].hp>=P[1].hp?0:1;log(`🔔 Time! The judges give it to ${N(P[w])}`,'special',null,[],{t:'status',on:w,fx:'🔔'});}
+    bt.w=w;
+    if(!alive(P[1-w]))log(`${N(P[1-w])} is down. ${N(P[w])} wins`,'ko',null,[],{t:'ko',on:1-w,win:w});
+    else log(`${N(P[w])} wins on points`,'ko',null,[],{t:'win',on:w});
+  }
+  bt.start=function(){
+    const pairs=[[P[0],P[1]],[P[1],P[0]]];
+    for(const [me,op] of pairs){
+      if(me.f.power.k==='negate'&&op.powOn&&op.f.power.k!=='none'&&op.f.power.k!=='negate'){op.powOn=false;log(`🚫 ${N(me)} shuts off ${N(op)}'s ${esc(op.f.power.n.toLowerCase())}. Powerless now 💀`,'special',null,[],{t:'status',on:op.i,fx:'🚫'});}
+    }
+    for(const [me,op] of pairs){
+      if(me.powOn&&me.f.power.k==='gravity'){op.s.spd=Math.max(1,op.s.spd-2);log(`🪐 ${N(me)} cranks up the gravity. ${N(op)} slows down`,'special',null,[],{t:'status',on:op.i,fx:'🪐',tint:'gravity'});}
+      if(me.powOn&&me.f.power.k==='shape'&&op.s.str>me.s.str){me.s.str=op.s.str;log(`🦎 ${N(me)} shapeshifts and copies ${N(op)}'s strength`,'special',null,[],{t:'status',on:me.i,fx:'🦎'});}
+    }
+    for(const [me,op] of pairs){
+      if(me.powOn&&me.f.power.k==='time'&&both()){log(`⏱️ ${N(me)} stops time before the bell`,'special',null,[],{t:'timestop',by:me.i});act(me,op,'power');}
+    }
+    if(!both())finish();
+    return flush();
+  };
+  bt.step=function(c0,c1){
+    if(bt.over)return [];
+    bt.round++;
+    const ch=[c0||autoChoice(P[0],P[1]),c1||autoChoice(P[1],P[0])];
+    for(const i of [0,1]){if(ch[i]==='guard'&&!P[i].frozen){P[i].guard=1;gain(P[i],40);log(`🛡️ ${N(P[i])} raises their guard`,'',null,[],{t:'guard',on:i});}}
+    const a0=P[0].f.arch.k==='assassin'&&bt.round===1,a1=P[1].f.arch.k==='assassin'&&bt.round===1;
+    let order;
+    if(a0&&!a1)order=[0,1];else if(a1&&!a0)order=[1,0];
+    else order=(P[0].s.spd+rnd(0,2)>=P[1].s.spd+rnd(0,2))?[0,1]:[1,0];
+    for(const i of order){turn(P[i],P[1-i],ch[i]);if(!both())break;}
+    if(both()){
+      for(const i of [0,1]){
+        const me=P[i],op=P[1-i];
+        if(me.poison>0){me.hp-=me.poison;log(`🧪 Poison eats at ${N(me)}`,'',me.poison,[],{t:'dot',on:i});checkDown(me);if(!both())break;}
+        const rg=(me.powOn&&me.f.power.k==='regen'?3+me.s.pm*0.7:0)+me.tr.regen;
+        if(rg>0&&me.hp<100){const h=Math.min(100-me.hp,rg);me.hp+=h;log(`💚 ${N(me)} regenerates`,'heal',h,[],{t:'heal',on:i});}
+        for(const pet of me.tr.pets){
+          if(!both())break;
+          const d=(3+Math.random()*3)*pet.x*Math.pow(1.15,(me.s.wm+me.s.iq)/2-op.s.dur);op.hp-=d;
+          log(`${pet.e} ${N(me)}'s ${esc(pet.n)} attacks ${N(op)}`,'',d,[],{t:'pet',by:i,to:1-i,fx:pet.e});checkDown(op);
+        }
+        if(!both())break;
+        if(me.powOn&&me.f.power.k==='clones'){const d=0.35*baseDmg(physOff(me),op.s.dur);op.hp-=d;log(`👥 ${N(me)}'s clones dogpile ${N(op)}`,'',d,[],{t:'pet',by:i,to:1-i,fx:'👥'});checkDown(op);if(!both())break;}
+      }
+    }
+    P[0].guard=0;P[1].guard=0;
+    if(!both()||bt.round>=15)finish();
+    return flush();
+  };
+  return bt;
+}
+function simulate(A,B){const b=newBattle(A,B,true);b.start();while(!b.over)b.step();return b.w;}
+function winRate(f,n=220){
+  if(f._win!=null)return f._win;
+  let w=0;for(let i=0;i<n;i++)if(simulate(f,randomFighter('x'))===0)w++;
+  f._win=w/n;return f._win;
+}
+function headToHead(a,b,n=200){let w=0;for(let i=0;i<n;i++)if(simulate(a,b)===0)w++;return w/n;}
+function verdict(w){
+  if(w<0.15)return {t:'Cooked',q:0};
+  if(w<0.35)return {t:'Mid',q:1};
+  if(w<0.55)return {t:'Decent',q:1};
+  if(w<0.75)return {t:'Cracked',q:2};
+  if(w<0.9)return {t:'Goated',q:3};
+  return {t:'Absolute menace',q:3};
+}
+const NA=['Big','Lil','Sir','Lord','Mega','Grandma','Uncle','Captain','Professor','Count','DJ','Baby','Ancient','Sergeant','Doctor','Saint'];
+const NB=['Steve','Crumb','Gary','Vex','Bonk','Mildred','Toast','Gorbo','Kevin','Nugget','Pebble','Moth','Brenda','Skronk','Dave','Wobble','Fennel','Grimbo','Tusk','Pickle','Doug','Marge'];
+const NC=[' the Unwashed',' of the Swamp',' Jr.',' the Third',' the Damp',' the Mid',' Who Bites'];
+function randName(){let s;do{s=pick(NA)+' '+pick(NB);if(Math.random()<0.3)s+=pick(NC);}while(s.length>24);return s;}
+// ===== CORE END =====
+
+// ===== CHARACTER ART =====
+const OL='#2B1033';
+const SO=`stroke="${OL}" stroke-width="2"`;
+function hashStr(s){let h=7;s=String(s||'');for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return Math.abs(h);}
+const HUMAN_SKIN=['#FFDBAC','#F1C27D','#E0AC69','#C68642','#8D5524','#5C3A21'];
+const HAIR=['#2B1B12','#5A3825','#C9A25B','#A33A1D','#1F1F1F','#D8D2C8','#7B4A2D'];
+const OUTFIT={brawler:['#E53935','#37474F'],mage:['#3949AB','#1A237E'],assassin:['#2E3440','#11151C'],paladin:['#CFD8DC','#78909C'],berserker:['#8D6E63','#4E342E'],tank:['#90A4AE','#455A64'],trickster:['#8E24AA','#FDD835'],necro:['#4A148C','#1B0B2E'],tamer:['#558B2F','#33691E'],monk:['#FB8C00','#BF360C'],slayer:['#795548','#3E2723'],npc:['#BCAAA4','#8D6E63'],chosen:['#FFF8E1','#FFB300'],resilient:['#00897B','#004D40']};
+const RSKIN={Goblin:'#7CB342',Skeleton:'#EFE9DA',Orc:'#6E8B3D',Elf:'#F6D9B5',Pigeon:'#9AA3AD',Raccoon:'#8E8E93',Slime:'#5DD39E',Vampire:'#DCE1EA',Werewolf:'#8D6E63',Cyborg:'#AAB7C4',Ghost:'#F4F6FF',Golem:'#9E9A90',Demon:'#D9443F',Angel:'#FBE3C4',Elemental:'#FF9F43',Dragonkin:'#2E9E8F','Cosmic warrior':'#3B4CCA',Titan:'#B08968','Eldritch horror':'#7E57C2'};
+const SUBSKIN={'Elemental/Fire':'#FF7A2F','Elemental/Ice':'#8FDFFF','Elemental/Storm':'#FFE14D','Elemental/Water':'#3D8BFF','Elemental/Earth':'#A0805A','Elemental/Void':'#4A2C7A','Dragonkin/Red':'#D9443F','Dragonkin/White':'#E8F1F5','Dragonkin/Blue':'#3D7BFF','Dragonkin/Black':'#4A4A55','Dragonkin/Gold':'#E8B33A','Golem/Clay':'#C08457','Golem/Iron':'#6F7A85','Golem/Flesh':'#D99A8C','Golem/Diamond':'#B9F2FF','Slime/Acid slime':'#B6F23B','Slime/Metal slime':'#B0BEC5','Slime/King slime':'#4FC3F7','Demon/Ninth circle':'#7FB8FF','Angel/Fallen':'#C9B9D6'};
+const PAURA={fire:'#FF7A2F',ice:'#7FE3FF',lightning:'#FFE14D',water:'#3D8BFF',shadow:'#1B0B2E',light:'#FFE082',tk:'#A1887F',mind:'#FF4FD8',tele:'#B388FF',regen:'#4CD964',luck:'#7CB342',poison:'#B6F23B',gravity:'#6B2FBF',clones:'#B0BEC5',shape:'#26A69A',time:'#CFD8DC',reality:'#FF4F8B',negate:'#E53935',smite:'#FFD54F',ward:'#FFF3B0',miracle:'#FFFDE7',drain:'#B71C1C',chains:'#37474F',arcane:'#B388FF'};
+const EGLOW={flame:'#FF7A2F',frost:'#7FE3FF',thunder:'#FFE14D',holy:'#FFF3B0',vamp:'#D50000',cursed:'#8E24AA',godslayer:'#FFD54F',sharp:'#E0F7FA'};
+const SIZE_H={Tiny:0.72,Small:0.86,Average:1,Large:1.1,Huge:1.2,Colossal:1.32};
+const BODY={Slime:'slime',Ghost:'ghost',Pigeon:'pigeon',Golem:'golem',Elemental:'elemental','Eldritch horror':'eldritch'};
+const limb=(x1,y1,x2,y2,w,c)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${OL}" stroke-width="${w+3}" stroke-linecap="round"/><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
+const EYES=`<g class="ey"><circle cx="55" cy="33" r="2.2" fill="${OL}"/><circle cx="61.5" cy="33" r="2.2" fill="${OL}"/></g>`;
+const XEYES=`<g class="xe"><path d="M52.8 30.8l4.4 4.4M57.2 30.8l-4.4 4.4M59.3 30.8l4.4 4.4M63.7 30.8l-4.4 4.4" stroke="${OL}" stroke-width="1.7" stroke-linecap="round"/></g>`;
+const MOUTH=`<path d="M56 41 Q59 43.5 62.5 40.5" stroke="${OL}" fill="none" stroke-width="1.7" stroke-linecap="round"/>`;
+function lookOf(f){return {name:f.name,race:f.race&&f.race.n,rsub:f.rsub&&f.rsub.n,arch:f.arch&&f.arch.k,size:f.size&&f.size.n,weapon:f.weapon&&f.weapon.n,power:f.power&&f.power.k,ench:f.ench&&f.ench.k};}
+
+function weaponSVG(n,ench){
+  const glow=n&&EGLOW[ench]?`<circle cx="0" cy="-20" r="15" fill="${EGLOW[ench]}" opacity=".38"/>`:'';
+  const S=`stroke="${OL}" stroke-width="1.6"`;
+  let g='';
+  switch(n){
+    case 'Wet noodle':g=`<path d="M0 2 q-5 -6 0 -12 q5 -6 0 -12 q-5 -6 0 -12" stroke="#F4D35E" stroke-width="3.5" fill="none" stroke-linecap="round"/>`;break;
+    case 'Rubber chicken':g=`<ellipse cx="0" cy="-13" rx="5" ry="12" fill="#FFD54F" ${S}/><circle cx="0" cy="-26" r="3.2" fill="#E53935"/><path d="M3 -23 l6 2 l-6 2z" fill="#FB8C00"/>`;break;
+    case 'Frying pan':g=`<rect x="-1.6" y="-12" width="3.2" height="13" fill="#3E2723"/><circle cx="0" cy="-20" r="9" fill="#37474F" ${S}/><circle cx="-2" cy="-22" r="3" fill="#546E7A"/>`;break;
+    case 'Brick':g=`<rect x="-7" y="-13" width="14" height="10" rx="1.5" fill="#B5523B" ${S}/><path d="M-7 -8 h14 M0 -13 v5" stroke="#E8C9B8" stroke-width="1"/>`;break;
+    case 'Baseball bat':g=`<path d="M-1.6 3 L1.6 3 L4.5 -30 Q0 -34 -4.5 -30 Z" fill="#C8A26B" ${S}/>`;break;
+    case 'Dagger':g=`<rect x="-1.6" y="-3" width="3.2" height="7" fill="#5D4037"/><rect x="-5.5" y="-6" width="11" height="3" rx="1" fill="#B0BEC5" ${S}/><path d="M-2.8 -6 L2.8 -6 L0 -22 Z" fill="#ECEFF1" ${S}/>`;break;
+    case 'Bow':g=`<path d="M-2 16 Q16 0 -2 -16" stroke="#8D6E63" stroke-width="3.2" fill="none"/><line x1="-2" y1="16" x2="-2" y2="-16" stroke="#E0E0E0" stroke-width="1"/>`;break;
+    case 'Katana':g=`<rect x="-1.8" y="-2" width="3.6" height="9" fill="#212121"/><ellipse cx="0" cy="-3" rx="5" ry="1.8" fill="#FFC107"/><path d="M-1.8 -4 Q-3 -24 2 -42 L3.6 -41 Q0.5 -24 1.8 -4 Z" fill="#ECEFF1" ${S}/>`;break;
+    case 'War hammer':g=`<rect x="-1.8" y="-34" width="3.6" height="38" fill="#6D4C41" ${S}/><rect x="-10" y="-42" width="20" height="11" rx="2" fill="#90A4AE" ${S}/>`;break;
+    case 'Scythe':g=`<rect x="-1.5" y="-44" width="3" height="48" fill="#5D4037"/><path d="M0 -44 Q20 -44 26 -28 Q14 -37 0 -37 Z" fill="#CFD8DC" ${S}/>`;break;
+    case 'Trident':g=`<rect x="-1.5" y="-38" width="3" height="42" fill="#FFB300"/><path d="M-8 -48 V-38 H8 V-48 M0 -54 V-38" stroke="#FFB300" stroke-width="3" fill="none" stroke-linecap="round"/>`;break;
+    case 'Chainsaw':g=`<rect x="-6" y="-10" width="12" height="12" rx="2" fill="#FB8C00" ${S}/><rect x="-3.5" y="-36" width="7" height="27" rx="3.5" fill="#B0BEC5" ${S}/><path d="M-3.5 -34 V-11" stroke="#37474F" stroke-width="1.5" stroke-dasharray="2 2"/>`;break;
+    case 'Laser rifle':g=`<rect x="-3.5" y="-28" width="7" height="30" rx="2" fill="#37474F" ${S}/><rect x="-1.5" y="-38" width="3" height="11" fill="#78909C"/><circle cx="0" cy="-39" r="3" fill="#FF1744"/>`;break;
+    case 'Uno reverse card':g=`<g transform="rotate(20)"><rect x="-7" y="-20" width="14" height="20" rx="2" fill="#E53935" ${S}/><path d="M-7 -10 h14 v8 a2 2 0 0 1 -2 2 h-10 a2 2 0 0 1 -2 -2z" fill="#1E88E5"/><ellipse cx="0" cy="-10" rx="4" ry="6" fill="#fff" transform="rotate(30 0 -10)"/></g>`;break;
+    case 'Cursed blade':g=`<rect x="-1.8" y="-2" width="3.6" height="8" fill="#212121"/><path d="M-6 -4 h12" stroke="#4A148C" stroke-width="3"/><path d="M-3 -5 L3 -5 L1 -40 L-1 -40 Z" fill="#4A148C" stroke="#CE93D8" stroke-width="1.4"/>`;break;
+    case 'Planet-cracker axe':g=`<rect x="-2" y="-44" width="4" height="48" fill="#4E342E" ${S}/><path d="M2 -46 Q20 -52 22 -34 Q20 -22 2 -26 Z M-2 -46 Q-16 -50 -18 -36 Q-16 -26 -2 -28 Z" fill="#7E57C2" ${S}/><circle cx="12" cy="-38" r="2" fill="#FFF59D"/>`;break;
+    default:g='';
+  }
+  return glow+g;
+}
+function headAcc(a,o1,o2){
+  switch(a){
+    case 'brawler':return `<rect x="36" y="24.5" width="28.5" height="4.6" fill="#E53935" ${SO}/><path d="M37 26.5 L28 31 M37 27.5 L29 34" stroke="#E53935" stroke-width="2.6" stroke-linecap="round"/>`;
+    case 'mage':return `<ellipse cx="50" cy="22" rx="19" ry="4.2" fill="${o1}" ${SO}/><path d="M38 21 Q46 8 59 -3 Q56 11 62.5 21 Z" fill="${o1}" ${SO}/><circle cx="52" cy="11" r="2" fill="#FFEB3B"/>`;
+    case 'assassin':return `<path d="M34 40 Q31 15 50 15 Q67 15 67 30 L65 31 Q56 22 45 26 Q38 30 38 45 Z" fill="${o1}" ${SO}/><rect x="51" y="37" width="15.5" height="7" rx="3" fill="${o2}" ${SO}/>`;
+    case 'necro':return `<path d="M34 40 Q31 15 50 15 Q67 15 67 30 L65 31 Q56 22 45 26 Q38 30 38 45 Z" fill="${o1}" ${SO}/>`;
+    case 'paladin':return `<path d="M35 35 Q35 18 50 18 Q65 18 65 35 L65 39 L35 39 Z" fill="#CFD8DC" ${SO}/><rect x="52" y="30" width="13" height="2.8" fill="${OL}"/><path d="M47 18 Q45 5 53 3 Q51 10 53 18 Z" fill="#E53935" ${SO}/>`;
+    case 'tank':return `<rect x="33.5" y="17" width="33" height="27" rx="10" fill="#90A4AE" ${SO}/><rect x="51" y="29" width="14" height="3" fill="${OL}"/>`;
+    case 'berserker':return `<path d="M36 29 Q36 18 50 18 Q64 18 64 29 Z" fill="#9E9E9E" ${SO}/><path d="M37 24 Q27 20 29 7 Q33 18 41 21 Z M63 24 Q73 20 71 7 Q67 18 59 21 Z" fill="#FFF8E1" ${SO}/>`;
+    case 'trickster':return `<path d="M37 27 Q29 9 20 14 Q30 15 41 25 Z" fill="#8E24AA" ${SO}/><path d="M61 26 Q70 7 80 13 Q70 15 59 24 Z" fill="#FDD835" ${SO}/><path d="M36 28 Q50 14 64 28 Z" fill="#8E24AA" ${SO}/><circle cx="20" cy="14" r="2.4" fill="#FDD835"/><circle cx="80" cy="13" r="2.4" fill="#8E24AA"/>`;
+    case 'tamer':return `<ellipse cx="50" cy="23" rx="18.5" ry="3.6" fill="#6D4C41" ${SO}/><path d="M40 23 Q41 12 50 12 Q59 12 60 23 Z" fill="#795548" ${SO}/><path d="M58 15 Q68 5 73 7 Q66 12 60 18 Z" fill="#E53935"/>`;
+    case 'slayer':return `<path d="M35.5 27 Q50 18 64.5 27 L64.5 31 Q50 24 35.5 31 Z" fill="#B71C1C" ${SO}/><path d="M36 29 L29 33 M36 30 L30 36" stroke="#B71C1C" stroke-width="2.4" stroke-linecap="round"/><path d="M59 34 l3.5 7" stroke="#B71C1C" stroke-width="1.4"/>`;
+    case 'chosen':return `<path d="M39.5 22 L41.5 12 L46 18.5 L50 10 L54 18.5 L58.5 12 L60.5 22 Z" fill="#FFC107" ${SO}/>`;
+    case 'resilient':return `<rect x="41" y="23" width="15" height="4.2" rx="2" fill="#FFFDE7" ${SO} transform="rotate(-14 48 25)"/><path d="M58 38 h5 M60.5 35.5 v5" stroke="#E57373" stroke-width="1.6"/>`;
+    default:return '';
+  }
+}
+function torsoAcc(a,o1,o2){
+  switch(a){
+    case 'paladin':return `<path d="M50 59 v13 M45 63.5 h10" stroke="#FFC107" stroke-width="2.6"/>`;
+    case 'tank':return `<rect x="40" y="56" width="20" height="18" rx="4" fill="#B0BEC5" ${SO}/><ellipse cx="38" cy="54" rx="6" ry="4.5" fill="#78909C" ${SO}/><ellipse cx="62" cy="54" rx="6" ry="4.5" fill="#78909C" ${SO}/>`;
+    case 'berserker':return `<path d="M36 55 l4 -5 l4 5 l4 -5 l4 5 l4 -5 l4 5 l4 -5" fill="none" stroke="#D7CCC8" stroke-width="3"/>`;
+    case 'trickster':return `<path d="M50 56 l6 8 l-6 8 l-6 -8z" fill="#FDD835" ${SO}/>`;
+    case 'monk':return `<path d="M39 54 L61 80" stroke="#BF360C" stroke-width="5"/>`;
+    case 'necro':return `<circle cx="54" cy="62" r="3.6" fill="#EFE9DA" ${SO}/>`;
+    case 'chosen':return `<path d="M39 54 L61 80" stroke="#FFC107" stroke-width="4"/>`;
+    case 'mage':return `<path d="M50 54 V98" stroke="${o2}" stroke-width="2"/>`;
+    case 'assassin':return `<path d="M38 66 L62 60" stroke="${o2}" stroke-width="3"/>`;
+    case 'tamer':case 'slayer':return `<path d="M38 56 L60 78" stroke="#4E342E" stroke-width="3"/>`;
+    case 'resilient':return `<path d="M42 62 h8 M46 58 v8" stroke="#FFFDE7" stroke-width="2.4"/>`;
+    default:return '';
+  }
+}
+function face(L,skin){
+  const r=L.race;let f='';
+  if(r==='Skeleton')return `<g class="ey"><circle cx="55" cy="33" r="3.2" fill="${OL}"/><circle cx="62" cy="33" r="3.2" fill="${OL}"/></g>${XEYES}<path d="M58 37 l1.5 2.5 h-3z" fill="${OL}"/><path d="M54 41.5 h9 M56 40 v3 M59 40 v3 M62 40 v3" stroke="${OL}" stroke-width="1.2"/>`;
+  if(r==='Cyborg')return `<g class="ey"><rect x="51" y="30" width="15" height="6" rx="3" fill="#FF1744" stroke="${OL}" stroke-width="1.4"/></g>${XEYES}${MOUTH}`;
+  if(r==='Raccoon')f+=`<path d="M48 29.5 Q58 25.5 67 29.5 L66 37 Q58 34 48 37.5 Z" fill="#37373B"/><g class="ey"><circle cx="55" cy="33" r="2" fill="#fff"/><circle cx="61.5" cy="33" r="2" fill="#fff"/></g>`;
+  else if(r==='Cosmic warrior')f+=`<g class="ey"><circle cx="55" cy="33" r="2.4" fill="#fff" stroke="#80DEEA" stroke-width="1.2"/><circle cx="61.5" cy="33" r="2.4" fill="#fff" stroke="#80DEEA" stroke-width="1.2"/></g><circle cx="44" cy="30" r=".9" fill="#fff"/><circle cx="47" cy="42" r=".7" fill="#fff"/><circle cx="41" cy="37" r=".6" fill="#fff"/>`;
+  else f+=EYES;
+  f+=XEYES;
+  if(r==='Werewolf')f+=`<ellipse cx="63" cy="38.5" rx="8" ry="5" fill="#6D4C41" ${SO}/><circle cx="70" cy="37" r="2" fill="${OL}"/>`;
+  else if(r==='Dragonkin')f+=`<ellipse cx="62" cy="39" rx="8" ry="4.6" fill="${skin}" ${SO}/><circle cx="68" cy="37.5" r="1" fill="${OL}"/>`;
+  else if(r==='Goblin')f+=`<path d="M62 33 L72 38 L62 39.5 Z" fill="${skin}" ${SO}/>`+MOUTH;
+  else if(L.arch==='npc')f+=`<path d="M56 41 h6" stroke="${OL}" stroke-width="1.7"/>`;
+  else f+=MOUTH;
+  if(r==='Orc')f+=`<path d="M57 42 l1.2 -5 l1.8 5 Z M61.5 41.5 l1 -4.5 l1.6 4.5 Z" fill="#FFF8E1" stroke="${OL}" stroke-width=".8"/><path d="M52 28.5 h13" stroke="${OL}" stroke-width="2.4" stroke-linecap="round"/>`;
+  if(r==='Vampire')f+=`<path d="M57 41.3 l1 3 l1 -3 Z M60.5 41 l1 3 l1 -3 Z" fill="#fff"/>`;
+  if(r==='Titan')f+=`<path d="M48 40 Q57 56 66 40 Q57 46 48 40 Z" fill="#9E9E9E" ${SO}/>`;
+  return f;
+}
+function humanoid(L,skin,o1,o2,hair){
+  const r=L.race,a=L.arch;
+  const thin=r==='Skeleton';
+  const robe=['mage','monk','necro'].includes(a);
+  const armC=(a==='paladin'||a==='tank')?o1:skin;
+  let s='';
+  if(r==='Angel'){const wc=L.rsub==='Fallen'?'#4A4453':'#FFFFFF';s+=`<ellipse cx="30" cy="56" rx="17" ry="9" transform="rotate(-32 30 56)" fill="${wc}" ${SO}/><ellipse cx="28" cy="66" rx="15" ry="7.5" transform="rotate(-12 28 66)" fill="${wc}" ${SO}/>`;}
+  if(r==='Vampire')s+=`<path d="M38 52 L62 52 L71 110 L29 110 Z" fill="#8E1B1B" ${SO}/>`;
+  if(r==='Werewolf')s+=limb(38,82,20,66,6,skin);
+  if(r==='Dragonkin')s+=limb(40,86,14,92,9,skin)+`<path d="M14 92 L5 86 L9 97 Z" fill="${skin}" ${SO}/>`;
+  if(r==='Demon')s+=limb(40,84,22,96,3,'#3E2723')+`<path d="M22 96 L13 92 L17 103 Z" fill="#3E2723"/>`;
+  if(r==='Raccoon')s+=`<line x1="38" y1="84" x2="17" y2="74" stroke="${OL}" stroke-width="12" stroke-linecap="round"/><line x1="38" y1="84" x2="17" y2="74" stroke="${skin}" stroke-width="9" stroke-linecap="round"/><line x1="36" y1="83" x2="19" y2="75" stroke="#37373B" stroke-width="9" stroke-dasharray="3 4"/>`;
+  const lc=thin&&!robe?skin:o2,lw=thin?5:9;
+  s+=limb(45,86,43,112,lw,lc)+limb(55,86,57,112,lw,lc);
+  s+=`<ellipse cx="44" cy="114" rx="6.5" ry="3.2" fill="#3E2723"/><ellipse cx="59" cy="114" rx="6.5" ry="3.2" fill="#3E2723"/>`;
+  s+=limb(41,58,35,80,thin?5:7,armC)+`<circle cx="35" cy="81" r="3.6" fill="${skin}" ${SO}/>`;
+  s+=robe?`<path d="M37 51 H63 L68 102 H32 Z" fill="${o1}" ${SO}/>`:`<rect x="36" y="51" width="28" height="37" rx="8" fill="${o1}" ${SO}/><rect x="36.5" y="80" width="27" height="5" fill="${o2}"/>`;
+  s+=torsoAcc(a,o1,o2);
+  const covered=['paladin','tank','assassin','necro','berserker'].includes(a);
+  if(r==='Werewolf')s+=`<path d="M41 24 L43 9 L51 20 Z M52 20 L59 8 L61 23 Z" fill="${skin}" ${SO}/>`;
+  if(r==='Raccoon')s+=`<circle cx="41" cy="22" r="5" fill="${skin}" ${SO}/><circle cx="56" cy="20" r="5" fill="${skin}" ${SO}/>`;
+  s+=`<circle cx="50" cy="34" r="14" fill="${skin}" ${SO}/>`;
+  if(r==='Titan')s+=`<circle cx="44" cy="28" r="1.2" fill="#8D6E63"/><circle cx="47" cy="40" r="1" fill="#8D6E63"/>`;
+  if(!covered&&a!=='monk'&&['Human','Elf','Vampire','Cosmic warrior'].includes(r)){
+    const hc=r==='Elf'?'#F2D16B':r==='Vampire'?'#1B1B1F':r==='Cosmic warrior'?'#E1F5FE':hair;
+    s+=`<path d="M36 35 Q35 19 50 19 Q63 19 64.5 28 Q57 24 47 27 Q41 29 39 40 Z" fill="${hc}" ${SO}/>`;
+  }
+  if(r==='Elf')s+=`<path d="M39 33 L26 21 L42 38 Z" fill="${skin}" ${SO}/>`;
+  if(r==='Goblin')s+=`<path d="M39 31 L21 23 L40 40 Z" fill="${skin}" ${SO}/>`;
+  if(r==='Demon')s+=`<path d="M41 24 Q35 14 39 7 Q42 16 47 21 Z M54 21 Q57 11 63 8 Q61 17 59.5 24 Z" fill="#3E2723" ${SO}/>`;
+  if(r==='Dragonkin')s+=`<path d="M41 25 L27 17 L43 22 Z M44 21 L33 11 L48 19 Z" fill="#ECEFF1" ${SO}/>`;
+  if(r==='Cyborg')s+=`<path d="M45 21 L42 11" stroke="${OL}" stroke-width="1.6"/><circle cx="42" cy="10" r="2.2" fill="#FF1744"/>`;
+  s+=face(L,skin);
+  if(r==='Angel')s+=`<ellipse cx="50" cy="13" rx="11" ry="3.2" fill="none" stroke="#FFC107" stroke-width="2.4"/>`;
+  s+=headAcc(a,o1,o2);
+  const hx=69,hy=76,fists=L.weapon==='Bare fists';
+  let arm=limb(60,57,hx,hy-1,thin?5:7,armC);
+  arm+=`<g transform="translate(${hx} ${hy}) rotate(${L.weapon==='Bow'?8:-35})">${weaponSVG(L.weapon,L.ench)}</g>`;
+  arm+=`<circle cx="${hx}" cy="${hy}" r="${fists||a==='brawler'?5.6:3.8}" fill="${a==='brawler'?'#E53935':skin}" ${SO}/>`;
+  return {body:s,arm,sx:60,sy:57};
+}
+const held=(L,x,y,rot)=>`<g transform="translate(${x} ${y}) rotate(${rot})">${weaponSVG(L.weapon,L.ench)}</g>`;
+const NONHUM={
+  slime(L,skin,o1,o2){
+    let b=`<path d="M19 114 Q15 66 50 60 Q85 66 81 114 Z" fill="${skin}" ${SO} opacity=".96"/><ellipse cx="33" cy="82" rx="5" ry="10" fill="#fff" opacity=".45"/>`;
+    b+=`<g transform="translate(6 44)">${EYES}${XEYES}${L.arch==='npc'?'':MOUTH}${headAcc(L.arch,o1,o2)}</g>`;
+    if(L.rsub==='King slime'&&L.arch!=='chosen')b+=`<g transform="translate(6 46)">${headAcc('chosen')}</g>`;
+    const arm=limb(74,94,85,82,7,skin)+held(L,85,82,-30)+`<circle cx="85" cy="82" r="3.8" fill="${skin}" ${SO}/>`;
+    return {body:b,arm,sx:74,sy:94};
+  },
+  ghost(L,skin,o1,o2){
+    let b=`<path d="M30 106 Q27 50 50 44 Q73 50 70 106 Q65 100 60 106 Q55 100 50 106 Q45 100 40 106 Q35 100 30 106 Z" fill="${skin}" ${SO} opacity=".95"/>`;
+    b+=`<g transform="translate(2 22)"><g class="ey"><ellipse cx="55" cy="33" rx="2.4" ry="3.6" fill="${OL}"/><ellipse cx="61.5" cy="33" rx="2.4" ry="3.6" fill="${OL}"/></g>${XEYES}<ellipse cx="59" cy="42" rx="2.2" ry="2.8" fill="${OL}"/>${headAcc(L.arch,o1,o2)}</g>`;
+    const arm=limb(66,74,77,66,6,skin)+held(L,77,66,-30)+`<circle cx="77" cy="66" r="3.6" fill="${skin}" ${SO}/>`;
+    return {body:b,arm,sx:66,sy:74};
+  },
+  pigeon(L,skin,o1,o2){
+    let b=`<path d="M26 86 L9 79 L11 94 Z" fill="#7D8790" ${SO}/>`+limb(42,102,40,114,2.5,'#FF8A65')+limb(52,102,54,114,2.5,'#FF8A65');
+    b+=`<ellipse cx="46" cy="88" rx="24" ry="17" fill="${skin}" ${SO}/><path d="M54 68 Q62 78 72 68 L72 74 Q62 84 54 74 Z" fill="#5E9C76" ${SO}/><circle cx="62" cy="58" r="12" fill="${skin}" ${SO}/><path d="M73 55 L83 59 L73 62 Z" fill="#FFB74D" ${SO}/>`;
+    b+=`<g class="ey"><circle cx="66" cy="55" r="3" fill="#FF9800"/><circle cx="66.5" cy="55" r="1.4" fill="${OL}"/></g><g class="xe"><path d="M63.5 52.5l5 5M68.5 52.5l-5 5" stroke="${OL}" stroke-width="1.7"/></g>`;
+    b+=`<g transform="translate(62 58) scale(.86) translate(-50 -34)">${headAcc(L.arch,o1,o2)}</g>`;
+    const arm=held(L,62,92,-50)+`<ellipse cx="48" cy="86" rx="15" ry="8.5" fill="#7D8790" ${SO} transform="rotate(25 48 86)"/>`;
+    return {body:b,arm,sx:38,sy:82};
+  },
+  golem(L,skin,o1,o2){
+    let b=`<rect x="38" y="86" width="10" height="27" rx="2" fill="${skin}" ${SO}/><rect x="53" y="86" width="10" height="27" rx="2" fill="${skin}" ${SO}/>`+limb(34,56,27,82,10,skin);
+    b+=`<rect x="30" y="47" width="40" height="43" rx="5" fill="${skin}" ${SO}/><path d="M40 55 l6 8 l-3 7 M60 66 l-5 6" stroke="${OL}" stroke-width="1.4" fill="none"/>`;
+    b+=`<rect x="37.5" y="19" width="25" height="27" rx="4" fill="${skin}" ${SO}/><g class="ey"><rect x="52.5" y="31.5" width="5" height="3.5" fill="#4DD0E1"/><rect x="59" y="31.5" width="5" height="3.5" fill="#4DD0E1"/></g>${XEYES}<path d="M54 41 h8" stroke="${OL}" stroke-width="1.6"/>`;
+    b+=`<g transform="translate(0 -2)">${headAcc(L.arch,o1,o2)}</g>`;
+    const arm=limb(66,54,75,76,10,skin)+held(L,75,78,-35)+`<rect x="70" y="73" width="10" height="9" rx="2" fill="${skin}" ${SO}/>`;
+    return {body:b,arm,sx:66,sy:54};
+  },
+  elemental(L,skin,o1,o2){
+    let b=`<path d="M50 22 Q74 40 65 70 Q58 90 50 116 Q42 90 35 70 Q26 40 50 22 Z" fill="${skin}" ${SO}/><path d="M50 42 Q60 54 54 70 Q50 84 50 102" stroke="#fff" stroke-width="2.4" fill="none" opacity=".5"/>`+limb(40,62,31,76,6,skin);
+    b+=`<g transform="translate(1 12)">${EYES}${XEYES}${L.arch==='npc'?'':MOUTH}${headAcc(L.arch,o1,o2)}</g>`;
+    const arm=limb(60,62,72,74,6,skin)+held(L,72,76,-35)+`<circle cx="72" cy="76" r="3.6" fill="${skin}" ${SO}/>`;
+    return {body:b,arm,sx:60,sy:62};
+  },
+  eldritch(L,skin,o1,o2){
+    let b='';
+    for(const [x1,x2] of [[34,22],[44,38],[56,60],[66,80]])b+=`<path d="M${x1} 92 Q${(x1+x2)/2-6} 108 ${x2} 114" stroke="${OL}" stroke-width="9" fill="none" stroke-linecap="round"/><path d="M${x1} 92 Q${(x1+x2)/2-6} 108 ${x2} 114" stroke="${skin}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+    b+=`<ellipse cx="50" cy="76" rx="28" ry="25" fill="${skin}" ${SO}/>`;
+    const n={'Three eyes':3,'Twelve eyes':12,'Too many eyes':18,'Infinite eyes':26}[L.rsub]||5;
+    let ey='',xe='';
+    for(let k=0;k<n;k++){const ang=k*2.4,rad=Math.sqrt((k+0.5)/n)*18;const x=(53+Math.cos(ang)*rad*1.1).toFixed(1),y=(72+Math.sin(ang)*rad*0.75).toFixed(1);const rr=n>10?2.4:3.4;ey+=`<circle cx="${x}" cy="${y}" r="${rr}" fill="#fff" stroke="${OL}" stroke-width=".8"/><circle cx="${(+x+rr*0.35).toFixed(1)}" cy="${y}" r="${(rr*0.45).toFixed(1)}" fill="${OL}"/>`;if(k<3)xe+=`<path d="M${x-2} ${y-2}l4 4M${+x+2} ${y-2}l-4 4" stroke="${OL}" stroke-width="1.4"/>`;}
+    b+=`<g class="ey">${ey}</g><g class="xe">${xe}</g><path d="M40 90 l4 3 l4 -3 l4 3 l4 -3 l4 3" stroke="${OL}" stroke-width="1.6" fill="none"/>`;
+    b+=`<g transform="translate(0 26)">${headAcc(L.arch,o1,o2)}</g>`;
+    const arm=limb(70,80,84,64,6,skin)+held(L,84,64,-30);
+    return {body:b,arm,sx:70,sy:80};
+  }
+};
+function charSVG(L,opt){
+  opt=opt||{};
+  const sc=opt.sized?(SIZE_H[L.size]||1):1;
+  const hh=Math.round((opt.h||110)*sc),ww=Math.round(hh*100/120);
+  let inner;
+  if(!L.race){
+    inner=`<g opacity=".55">${limb(45,86,43,112,9,'#B9A9C9')}${limb(55,86,57,112,9,'#B9A9C9')}<rect x="36" y="51" width="28" height="37" rx="8" fill="#B9A9C9"/><circle cx="50" cy="34" r="14" fill="#B9A9C9"/></g><text x="50" y="40" text-anchor="middle" font-size="17" font-weight="700" fill="#fff" font-family="system-ui,sans-serif">?</text>`;
+  }else{
+    let skin=RSKIN[L.race]||HUMAN_SKIN[hashStr(L.name)%HUMAN_SKIN.length];
+    if(SUBSKIN[L.race+'/'+L.rsub])skin=SUBSKIN[L.race+'/'+L.rsub];
+    const [o1,o2]=OUTFIT[L.arch]||['#A79BB0','#6E6378'];
+    const hair=HAIR[hashStr((L.name||'x')+'#')%HAIR.length];
+    const t=BODY[L.race];
+    const p=t?NONHUM[t](L,skin,o1,o2):humanoid(L,skin,o1,o2,hair);
+    const aura=L.power&&L.power!=='none'&&PAURA[L.power]?`<ellipse cx="50" cy="115" rx="31" ry="5.5" fill="${PAURA[L.power]}" opacity=".55"/>`:'';
+    const halo=L.arch==='chosen'?`<circle cx="50" cy="62" r="46" fill="#FFE082" opacity=".22"/>`:'';
+    inner=`${halo}${aura}${p.body}<g class="armw" data-sx="${p.sx}" data-sy="${p.sy}">${p.arm}</g>`;
+  }
+  if(opt.mirror)inner=`<g transform="translate(100 0) scale(-1 1)">${inner}</g>`;
+  return `<svg class="ch" viewBox="0 0 100 120" width="${ww}" height="${hh}" aria-hidden="true">${inner}</svg>`;
+}
+// ===== CHARACTER ART END =====
+
+const $=s=>document.querySelector(s);
+const RM=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const STORE='wheel-has-spoken-v1';
+function loadDB(){try{const v=JSON.parse(localStorage.getItem(STORE)||'null');return v&&typeof v==='object'?v:{}}catch(e){return {}}}
+const DB=Object.assign({spins:0,entered:0,won:0,champs:[],sound:true,fast:false,tokens:0,seen:{},last:[],champIds:{},lastTop:[]},loadDB());
+if(!Array.isArray(DB.champs))DB.champs=[];
+if(!DB.seen||typeof DB.seen!=='object'||Array.isArray(DB.seen))DB.seen={};
+if(!Array.isArray(DB.last))DB.last=[];
+if(!DB.champIds||typeof DB.champIds!=='object')DB.champIds={};
+if(!Array.isArray(DB.lastTop))DB.lastTop=[];
+DB.tokens=clamp(Math.floor(+DB.tokens||0),0,10);
+function saveDB(){try{localStorage.setItem(STORE,JSON.stringify(DB))}catch(e){}}
+function syncHistory(){HISTORY.champs=DB.champs.filter(c=>c&&c.best);HISTORY.lastTop=DB.lastTop;}
+syncHistory();
+let soundOn=DB.sound!==false,fastMode=!!DB.fast;
+const SPF=()=>fastMode?0.5:1;
+
+// ---------- collection ----------
+const CX_CATS=new Set(['race','rsub','arch','asub','size','back','weapon','power','ench','weak','chaos','title']);
+function cxKey(k,it,f){if(k==='rsub')return (f.race?f.race.n:'?')+'/'+it.n;if(k==='asub')return (f.arch?f.arch.k:'?')+'/'+it.n;return it.n;}
+const plainList=list=>()=>list.map(it=>({it,key:it.n}));
+const CODEX=[
+  ['race','Races',plainList(RACES)],
+  ['rsub','Sub-races and bloodlines',()=>Object.entries(RSUB).flatMap(([r,s])=>s.items.map(it=>({it,key:r+'/'+it.n,par:r})))],
+  ['arch','Archetypes',plainList(ARCHS)],
+  ['asub','Specialties',()=>Object.entries(ASUB).flatMap(([k,s])=>s.items.map(it=>({it,key:k+'/'+it.n,par:ARCHK[k].n})))],
+  ['size','Sizes',plainList(SIZES)],
+  ['back','Backstories',plainList(BACKS)],
+  ['weapon','Weapons',plainList(WEAPONS)],
+  ['power','Powers',plainList(POWER_ALL)],
+  ['ench','Enchantments',plainList(ENCHANTS)],
+  ['weak','Weaknesses',plainList(WEAKS)],
+  ['chaos','Chaos factors',plainList(CHAOS)],
+  ['title','Titles',plainList(TITLES)],
+  ['syn','Synergies',plainList(SYN)]
+];
+function markSeen(cat,key){const a=Array.isArray(DB.seen[cat])?DB.seen[cat]:(DB.seen[cat]=[]);if(a.includes(key))return false;a.push(key);saveDB();return true;}
+function codexCount(){let f=0,t=0;for(const [k,,get] of CODEX){const list=get();t+=list.length;const s=DB.seen[k]||[];f+=list.filter(x=>s.includes(x.key)).length;}return {f,t};}
+
+// ---------- odds shaped by your history ----------
+function karmaOf(f){let k=0;for(const W of SEQ){const v=f[W.k];if(v&&!v.skip&&W.k!=='reinc')k+=((v.q==null?1:v.q)-1.4);}return k;}
+function playerOdds(W,f){
+  const od=oddsFor(W,f);
+  const list=od.list,reasons=od.reasons.slice();
+  const k=karmaOf(f);
+  let km=null;
+  if(k<=-5)km=[0.5,1,1.4,2.2];else if(k<=-2.5)km=[0.7,1,1.25,1.6];else if(k>=5)km=[1.6,1,1,0.45];else if(k>=3)km=[1.3,1,1,0.65];
+  if(km){
+    list.forEach(e=>{const m=km[e.it.q==null?1:e.it.q];e.mult*=m;e.w*=m;});
+    reasons.push(k<0?{cls:'up',txt:`😇 Bad luck streak: goated slices ×${km[3]}`}:{cls:'down',txt:`🤨 Hot streak: goated slices ×${km[3]}`});
+  }
+  if(CX_CATS.has(W.k)){
+    const last=new Set(DB.last),seen=DB.seen[W.k]||[];
+    let hitL=false,hitC=false;
+    const und=list.filter(e=>!seen.includes(cxKey(W.k,e.it,f)));
+    list.forEach(e=>{
+      const key=cxKey(W.k,e.it,f),id=W.k+'|'+key;
+      if(last.has(id)){e.mult*=0.6;e.w*=0.6;hitL=true;}
+      const c=DB.champIds[id];if(c){const m=Math.max(0.5,Math.pow(0.85,c));e.mult*=m;e.w*=m;hitC=true;}
+    });
+    if(und.length&&und.length<list.length){und.forEach(e=>{e.mult*=1.25;e.w*=1.25;});reasons.push({cls:'up',txt:'🔍 Undiscovered slices ×1.25'});}
+    if(hitL)reasons.push({cls:'down',txt:'🔁 Your last fighter had it: ×0.6'});
+    if(hitC)reasons.push({cls:'down',txt:'🏆 Past champion picks nerfed'});
+  }
+  return {list,reasons,karma:k};
+}
+
+// ---------- sound + haptics ----------
+let actx=null,lastTick=0;
+function ac(){
+  if(!actx){try{actx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){actx=null}}
+  if(actx&&actx.state==='suspended'){try{actx.resume()}catch(e){}}
+  return actx;
+}
+function beep(freq,dur,type,vol,when){
+  if(!soundOn)return;const a=ac();if(!a)return;
+  try{
+    const t=a.currentTime+(when||0);const o=a.createOscillator(),g=a.createGain();
+    o.type=type||'square';o.frequency.setValueAtTime(freq,t);
+    g.gain.setValueAtTime(vol||0.04,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g);g.connect(a.destination);o.start(t);o.stop(t+dur+0.02);
+  }catch(e){}
+}
+function tick(){const n=performance.now();if(n-lastTick<28)return;lastTick=n;beep(1500,0.025,'square',0.025);}
+function landSound(q){
+  if(q>=3)[523,659,784,1047].forEach((f,i)=>beep(f,0.18,'triangle',0.06,i*0.08));
+  else if(q===0)[392,330,262].forEach((f,i)=>beep(f,0.22,'sawtooth',0.035,i*0.14));
+  else [660,880].forEach((f,i)=>beep(f,0.12,'triangle',0.05,i*0.07));
+}
+const thud=big=>{beep(big?90:140,big?0.22:0.12,'square',0.06);};
+function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+
+// ---------- wheel drawing ----------
+const QC=[['#6E5A75','#5F4C66'],['#8E3FA6','#7A3290'],['#1A9488','#14807A'],['#FFB627','#F5A300']];
+const FONT='"Atkinson Hyperlegible",system-ui,sans-serif';
+function drawWheel(cv,items){
+  const S=Math.round(cv.clientWidth)||300;
+  const dpr=Math.min(3,window.devicePixelRatio||1);
+  cv.width=S*dpr;cv.height=S*dpr;
+  const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+  const R=S/2,rIn=R-11,TAU=Math.PI*2;
+  const tot=items.reduce((a,b)=>a+b.w,0);
+  c.clearRect(0,0,S,S);
+  c.beginPath();c.arc(R,R,R-1,0,TAU);c.fillStyle='#FFF6EA';c.fill();
+  c.lineWidth=1.5;c.strokeStyle='#2B1033';c.stroke();
+  const segs=[];let a=0;
+  items.forEach((it,i)=>{
+    const span=it.w/tot*TAU,a0=a,a1=a+span;segs.push([a0,a1]);
+    c.beginPath();c.moveTo(R,R);c.arc(R,R,rIn,a0-Math.PI/2,a1-Math.PI/2);c.closePath();
+    c.fillStyle=QC[it.q==null?1:it.q][i%2];c.fill();
+    c.strokeStyle='rgba(255,246,234,.75)';c.lineWidth=1.5;c.stroke();
+    a=a1;
+  });
+  items.forEach((it,i)=>{
+    const [a0,a1]=segs[i],span=a1-a0,mid=(a0+a1)/2;
+    const arc=span*rIn*0.6;if(arc<9)return;
+    let fs=Math.min(15,Math.max(9,S/25),arc*0.8);
+    const maxW=rIn*0.68;
+    c.save();c.translate(R,R);c.rotate(mid-Math.PI/2);
+    c.textAlign='right';c.textBaseline='middle';c.fillStyle=it.q===3?'#2B1033':'#FFF6EA';
+    const mk=it.mark==='up'?'▲ ':it.mark==='down'?'▼ ':'';
+    let label=mk+(it.e?it.e+' ':'')+it.n;
+    if(arc<fs*1.7&&it.e)label=mk+it.e;
+    c.font=`700 ${fs}px ${FONT}`;
+    while(c.measureText(label).width>maxW&&fs>10){fs-=1;c.font=`700 ${fs}px ${FONT}`;}
+    while(c.measureText(label).width>maxW&&label.length>3){label=label.slice(0,-2)+'…';}
+    c.fillText(label,rIn-9,0.5);
+    c.restore();
+  });
+  const nb=28;
+  for(let k=0;k<nb;k++){const ang=k/nb*TAU;c.beginPath();c.arc(R+Math.cos(ang)*(R-5.5),R+Math.sin(ang)*(R-5.5),2.6,0,TAU);c.fillStyle=k%2?'#FFB627':'#FF4F8B';c.fill();}
+  return segs;
+}
+
+// ---------- screens ----------
+const SCREENS=['s-title','s-spin','s-card','s-bracket','s-fight','s-codex'];
+function show(id){
+  SCREENS.forEach(s=>{$('#'+s).hidden=s!==id});
+  document.body.dataset.screen=id;
+  window.scrollTo(0,0);
+}
+
+// ---------- title ----------
+function renderTitle(){
+  let r='';
+  if(DB.spins>0){
+    r=`<div class="records"><div class="rec"><b>${DB.won}</b><span>Tournaments won</span></div><div class="rec"><b>${DB.entered}</b><span>Tournaments entered</span></div><div class="rec"><b>${DB.spins}</b><span>Wheels spun</span></div><div class="rec"><b>🎲 ${DB.tokens}</b><span>Reroll tokens banked</span></div></div>`;
+  }
+  $('#records').innerHTML=r;
+  const cc=codexCount();
+  $('#collBox').innerHTML=`<div class="coll"><div class="coll-top"><b>Collection</b><span>${cc.f} of ${cc.t} found</span></div><div class="prog-track"><i style="width:${Math.round(cc.f/cc.t*100)}%"></i></div><button class="btn ghost sm" id="codexBtn">Open the collection</button></div>`;
+  let h='<h2>Hall of fame</h2>';
+  if(!DB.champs.length)h+='<p class="empty">No champions yet. Win a bracket to get your fighter in here. Champions can come back later as reincarnations.</p>';
+  else h+='<ol>'+DB.champs.slice(0,15).map(c=>`<li><span class="mini">${c.look?charSVG(c.look,{h:46}):esc(c.e||'🏆')}</span><span><span class="n">${esc(c.n)}</span><br><span class="s">${esc(c.s)}</span></span><span class="d">${esc(c.d)}</span></li>`).join('')+'</ol>';
+  $('#hall').innerHTML=h;
+}
+const idleCv=$('#idle');
+function drawIdle(){drawWheel(idleCv,RACES);}
+$('#collBox').addEventListener('click',e=>{if(e.target.id==='codexBtn')openCodex();});
+
+function openCodex(){
+  const cc=codexCount();
+  $('#codexSum').textContent=`${cc.f} of ${cc.t} found. Everything your own fighters land gets logged here, including sub-wheels and synergies. Undiscovered slices get a small odds boost.`;
+  let h='';
+  for(const [k,label,get] of CODEX){
+    const list=get(),s=DB.seen[k]||[];const found=list.filter(x=>s.includes(x.key)).length;
+    h+=`<div class="cx-cat"><h3>${label}<span>${found} of ${list.length}</span></h3><div class="cx-grid">`;
+    h+=list.map(x=>s.includes(x.key)
+      ?`<div class="tile q${x.it.q}"><span class="e">${x.it.e}</span><span>${esc(x.it.n)}${x.par?`<small>${esc(x.par)}</small>`:''}${k==='syn'?`<small>${esc(x.it.d)}</small>`:''}</span></div>`
+      :`<div class="tile unk q${x.it.q}"><span class="e">?</span><span>???${x.par?`<small>${esc(x.par)}</small>`:''}</span></div>`).join('');
+    h+='</div></div>';
+  }
+  $('#codex').innerHTML=h;
+  show('s-codex');
+}
+$('#codexBack').addEventListener('click',()=>{renderTitle();show('s-title');});
+
+// ---------- spinning ----------
+const cv=$('#wheel');
+let F=null,mode='build',spinIdx=0,spinning=false,autoRun=false,bonusDone=false,buildDone=false,lastSpun=-1;
+let curList=[],items=[],segs=[],rot=0;
+const REACT=[["💀💀💀","Bro is cooked","It's over","Pain.","Chat, it's over"],["Mid","Could be worse","It'll do","Fine, I guess","Meh"],["Okay, we're cooking","Respectable","W spin","Now we're talking","Solid"],["👹👹👹","GOATED","Absolute cinema","The wheel loves you","Bro is HIM"]];
+
+function segAt(r){
+  const TAU=Math.PI*2,l=((-r%TAU)+TAU)%TAU;
+  for(let i=0;i<segs.length;i++)if(l>=segs[i][0]&&l<segs[i][1])return i;
+  return segs.length-1;
+}
+function setRot(r){cv.style.transform=`rotate(${r}rad)`;}
+function spinTo(idx,dur,done){
+  const TAU=Math.PI*2,[a0,a1]=segs[idx];
+  const theta=a0+(a1-a0)*rnd(0.2,0.8);
+  const target=(TAU-theta)%TAU,cur=((rot%TAU)+TAU)%TAU;
+  const delta=((target-cur)+TAU)%TAU;
+  const turns=dur<1200?2:5;
+  const start=rot,end=rot+turns*TAU+delta,t0=performance.now();
+  let last=segAt(start);
+  function fr(now){
+    const t=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-t,4);
+    rot=start+(end-start)*e;setRot(rot);
+    const s=segAt(rot);if(s!==last){last=s;tick();}
+    if(t<1)requestAnimationFrame(fr);
+    else{rot=end%TAU;setRot(rot);done();}
+  }
+  requestAnimationFrame(fr);
+}
+function spinDur(){if(RM)return 500;if(autoRun)return 800;return fastMode?1000:3400;}
+function rerollsLeft(){return (F&&F.free||0)+DB.tokens;}
+function updateReroll(){
+  const b=$('#rerollBtn');
+  if(mode!=='build'||autoRun||lastSpun<0||spinning||rerollsLeft()<=0){b.hidden=true;return;}
+  b.hidden=false;b.textContent=`🎲 Reroll ${SEQ[lastSpun].lc} (${rerollsLeft()} left)`;
+}
+function applicable(W){return !W.cond||W.cond(F);}
+function renderSheet(){
+  let h='';
+  SEQ.forEach((W,i)=>{
+    if(!applicable(W))return;
+    const v=F[W.k];
+    const now=mode==='build'&&i===spinIdx&&!v&&!buildDone;
+    h+=`<dt>${esc(labelOf(W,F))}</dt>`;
+    if(v)h+=`<dd>${v.skip?'—':esc((v.e?v.e+' ':'')+v.n)}</dd>`;
+    else h+=`<dd class="${now?'now':'pending'}">${now?'Spinning next':'?'}</dd>`;
+  });
+  const syns=synOf(F);
+  h+=`<dt>Synergies</dt><dd class="${syns.length?'':'pending'}">${syns.length?syns.map(s=>esc(s.e+' '+s.n)).join(', '):'None yet'}</dd>`;
+  $('#sheet').innerHTML=h;
+}
+function renderPreview(){
+  const bits=[F.race&&F.race.n,F.rsub&&F.rsub.n,F.arch&&F.arch.n,F.asub&&F.asub.n].filter(Boolean);
+  $('#preview').innerHTML=`<div class="pv-art">${charSVG(lookOf(F),{h:118})}</div><div class="pv-txt"><b>${esc(fullName(F))}</b><span>${bits.length?esc(bits.join(', ')):'The wheel is about to decide everything'}</span>${F.back?`<span>${esc(F.back.e+' '+F.back.n)}</span>`:''}</div>`;
+}
+function startBuild(name){
+  F={name,bonus:{},boons:[],isPlayer:true,free:1};
+  mode='build';spinIdx=0;autoRun=false;spinning=false;buildDone=false;lastSpun=-1;
+  $('#spinWho').textContent=`Spinning ${name}`;
+  $('#progWrap').hidden=false;$('#sheet').hidden=false;$('#preview').hidden=false;$('#autoBtn').hidden=false;
+  $('#landed').innerHTML='';
+  show('s-spin');
+  loadWheel();
+}
+function renderOdds(W,od){
+  let h='';
+  const src=W.from&&W.from(F);
+  if(src)h+=`<div class="unlock">${W.k==='power'?`${src.e} ${esc(src.n)}s spin the ${esc(labelOf(W,F).toLowerCase())} wheel`:`Sub-wheel unlocked by ${src.e} ${esc(src.n)}`}</div>`;
+  if(od.reasons.length){
+    const shown=od.reasons.slice(0,5);
+    h+=`<div class="chips">${shown.map(r=>`<span class="oc ${r.cls}">${r.cls==='up'?'▲':r.cls==='down'?'▼':'✕'} ${esc(r.txt)}</span>`).join('')}${od.reasons.length>5?`<span class="oc">+${od.reasons.length-5} more</span>`:''}</div>`;
+  }
+  $('#oddsBox').innerHTML=h;
+}
+function loadWheel(){
+  while(spinIdx<SEQ.length){
+    const W=SEQ[spinIdx];
+    if(W.cond&&!W.cond(F)){spinIdx++;continue;}
+    if(W.skipIf&&W.skipIf(F)){F[W.k]=SKIPPED;spinIdx++;continue;}
+    break;
+  }
+  const total=SEQ.filter(applicable).length;
+  if(spinIdx>=SEQ.length){
+    if(autoRun){finishBuild();return;}
+    buildDone=true;
+    $('#progFill').style.width='100%';
+    $('#progTxt').textContent=`${total} of ${total} spun`;
+    $('#spinBtn').textContent='See the finished fighter';$('#spinBtn').disabled=false;
+    $('#autoBtn').hidden=true;$('#oddsBox').innerHTML='';
+    renderSheet();renderPreview();updateReroll();return;
+  }
+  const W=SEQ[spinIdx];
+  const od=playerOdds(W,F);
+  curList=od.list;
+  items=curList.map(e=>({n:e.it.n,e:e.it.e,q:e.it.q,w:e.w,mark:e.mult>=1.5?'up':e.mult<=0.67?'down':''}));
+  const done=SEQ.slice(0,spinIdx).filter(w=>applicable(w)).length;
+  $('#catLabel').textContent=labelOf(W,F);
+  $('#progFill').style.width=(done/total*100)+'%';
+  $('#progTxt').textContent=`Spin ${done+1} of ${total}`;
+  $('#spinBtn').textContent=`Spin for ${W.k==='rsub'||W.k==='asub'?labelOf(W,F).toLowerCase():W.lc}`;
+  $('#spinBtn').disabled=false;$('#autoBtn').disabled=false;
+  $('#hub').textContent='?';
+  renderOdds(W,od);
+  segs=drawWheel(cv,items);
+  renderSheet();renderPreview();updateReroll();
+}
+function reaction(it){
+  if(mode==='bonus'&&it.k==='pm'&&F.power.k==='none')return "You don't even have a power 💀";
+  if(it.r)return it.r;
+  return pick(REACT[it.q==null?1:it.q]);
+}
+function doSpin(){
+  if(spinning)return;
+  spinning=true;ac();lastSpun=-1;updateReroll();
+  $('#spinBtn').disabled=true;$('#autoBtn').disabled=true;
+  $('#landed').classList.remove('pop');
+  $('#landed').innerHTML='<div class="rx">The wheel is deciding…</div>';
+  const idx=pickW(items);
+  spinTo(idx,spinDur(),()=>landed(idx));
+}
+function landed(idx){
+  const it=curList[idx].it;
+  DB.spins++;saveDB();
+  $('#hub').textContent=it.e||it.v||'✓';
+  const L=$('#landed');
+  let notes='',bestQ=it.q==null?1:it.q;
+  if(mode==='build'){
+    const W=SEQ[spinIdx];
+    if(F.arch&&F.arch.k==='resilient'&&RESIL.includes(W.k)&&it.v<3){
+      L.innerHTML=`<div class="ln">${esc(it.n)}</div><div class="rx">🩹 Resilient: below Peak human, so the wheel spins again</div>`;
+      void L.offsetWidth;L.classList.add('pop');landSound(1);
+      setTimeout(()=>{spinning=false;doSpin();},fastMode?600:1100);
+      return;
+    }
+    const before=new Set(synOf(F).map(s=>s.k));
+    F[W.k]=it;
+    if(CX_CATS.has(W.k)&&markSeen(W.k,cxKey(W.k,it,F)))notes+=`<div class="note new">New in your collection</div>`;
+    synOf(F).filter(s=>!before.has(s.k)).forEach(s=>{
+      const isNew=markSeen('syn',s.n);
+      notes+=`<div class="note ${s.anti?'anti':'syn'}">${s.anti?'Uh oh':'Synergy'}: ${s.e} ${esc(s.n)}${isNew?' (new)':''}</div>`;
+      if(!s.anti)bestQ=3;
+    });
+    const next=SEQ[spinIdx+1];
+    if(next&&next.cond&&next.cond(F)&&next.from&&next.from(F)===it)notes+=`<div class="note sub">Sub-wheel unlocked: ${esc(labelOf(next,F))}</div>`;
+  }
+  const desc=it.d?`<div class="ds">${esc(it.d)}</div>`:'';
+  L.innerHTML=`<div class="ln">${esc((it.e?it.e+' ':'')+it.n)}</div><div class="rx">${esc(reaction(it))}</div>${desc}${notes}`;
+  void L.offsetWidth;L.classList.add('pop');
+  landSound(bestQ);buzz(bestQ>=3?[30,50,60]:25);
+  if(mode==='bonus'){
+    applyBonus(F,it);
+    bonusDone=true;spinning=false;
+    $('#spinBtn').textContent='Back to the bracket';$('#spinBtn').disabled=false;
+    return;
+  }
+  lastSpun=spinIdx;spinIdx++;
+  renderSheet();renderPreview();
+  setTimeout(()=>{spinning=false;loadWheel();if(autoRun&&spinIdx<SEQ.length)setTimeout(doSpin,250);},autoRun?650:(fastMode?750:1300));
+}
+$('#spinBtn').addEventListener('click',()=>{
+  if(mode==='bonus'&&bonusDone){showBracket();return;}
+  if(mode==='build'&&buildDone){finishBuild();return;}
+  doSpin();
+});
+$('#autoBtn').addEventListener('click',()=>{autoRun=true;$('#autoBtn').hidden=true;updateReroll();doSpin();});
+$('#rerollBtn').addEventListener('click',()=>{
+  if(spinning||lastSpun<0||rerollsLeft()<=0)return;
+  if(F.free>0)F.free--;else{DB.tokens--;saveDB();}
+  for(let j=lastSpun;j<SEQ.length;j++)delete F[SEQ[j].k];
+  spinIdx=lastSpun;lastSpun=-1;buildDone=false;$('#autoBtn').hidden=false;
+  loadWheel();doSpin();
+});
+
+// ---------- fighter card ----------
+function statRows(f){
+  const s=eff(f);
+  const rows=[['Strength','str'],['Speed','spd'],['Durability','dur'],['IQ','iq'],['Weapon mastery','wm']];
+  if(f.power.k!=='none')rows.push(['Power mastery','pm']);
+  return rows.map(([lb,k])=>{
+    const base=f[k],v=s[k],diff=v-base.v;
+    const mod=diff?`<em class="${diff<0?'neg':''}">${diff>0?'+':'−'}${Math.abs(diff)}</em>`:'';
+    return `<div class="st"><span class="lb">${lb}</span><span class="vl">${esc(base.n)}${mod}</span><span class="tr"><i class="f${TQ(Math.min(10,v))}" style="width:${Math.round(v/14*100)}%"></i></span></div>`;
+  }).join('');
+}
+const row=(dt,it,extra)=>it&&!it.skip?`<dt>${esc(dt)}</dt><dd>${it.e||''} ${esc(it.n)}${it.d||extra?`<small>${esc([it.d,extra].filter(Boolean).join('. '))}</small>`:''}</dd>`:'';
+function cardHTML(f){
+  const w=winRate(f),v=verdict(w);
+  const boons=f.boons.length?`<dt>Bonus wheel</dt><dd>${f.boons.map(b=>esc(b.e+' '+b.n)).join(', ')}</dd>`:'';
+  const syns=synOf(f);
+  const synH=syns.length?`<dt>Synergies</dt><dd>${syns.map(s=>`<span class="syn${s.anti?' anti':''}">${s.e} ${esc(s.n)}<small>${esc(s.d)}</small></span>`).join('')}</dd>`:'';
+  const pw=f.power.k==='none'?row('Power',f.power):`<dt>Power</dt><dd>${f.power.e} ${esc(f.power.n)}<small>${esc(f.pm.n)}. ${esc(f.power.d)}</small></dd>`;
+  return `<div class="fcard">
+    <div class="fc-top"><div>${charSVG(lookOf(f),{h:120})}</div><div><div class="fc-name">${esc(fullName(f))}</div><div class="fc-sub">${esc(f.size.n)} ${esc(f.race.n.toLowerCase())} ${esc(f.arch.n.toLowerCase())}</div></div><div class="stamp q${v.q}">${v.t}</div></div>
+    <p class="fc-win">Beats about <b>${Math.round(w*100)}%</b> of random fighters.</p>
+    <div class="stats">${statRows(f)}</div>
+    <dl class="loadout">
+      ${f.rsub?row(RSUB[f.race.n].label,f.rsub):''}
+      ${row('Archetype',f.arch,'Signature move: '+ULTS[f.arch.k])}
+      ${f.asub?row(ASUB[f.arch.k].label,f.asub):''}
+      ${row('Backstory',f.back)}
+      ${f.reinc?row('Reincarnation of',f.reinc):''}
+      ${row('Weapon',f.weapon,f.wm.n+' with it')}
+      ${pw}
+      ${row('Enchant',f.ench)}
+      ${row('Weakness',f.weak)}
+      ${row('Chaos',f.chaos)}
+      ${f.title&&f.title.k!=='none'?row('Title',f.title):''}
+      ${synH}
+      ${boons}
+    </dl>
+  </div>`;
+}
+function finishBuild(){
+  buildDone=false;
+  $('#progFill').style.width='100%';
+  synOf(F).forEach(s=>markSeen('syn',s.n));
+  DB.last=SEQ.filter(W=>CX_CATS.has(W.k)&&F[W.k]&&!F[W.k].skip).map(W=>W.k+'|'+cxKey(W.k,F[W.k],F));saveDB();
+  F._win=null;
+  $('#cardBox').innerHTML=cardHTML(F);
+  show('s-card');
+}
+$('#enterBtn').addEventListener('click',startTournament);
+$('#scrapBtn').addEventListener('click',()=>{$('#nameIn').value=F?F.name:'';renderTitle();show('s-title');});
+
+function openSheet(f){$('#ovBody').innerHTML=cardHTML(f);$('#ov').hidden=false;$('#ovClose').focus();}
+function closeSheet(){$('#ov').hidden=true;}
+$('#ovClose').addEventListener('click',closeSheet);
+$('#ov').addEventListener('click',e=>{if(e.target.id==='ov')closeSheet();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet();});
+
+// ---------- tournament ----------
+const RN=['Quarterfinals','Semifinals','Final'];
+const RN1=['Quarterfinal','Semifinal','Final'];
+let T=null;
+const pairsOf=a=>{const o=[];for(let i=0;i<a.length;i+=2)o.push([a[i],a[i+1]]);return o;};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function startTournament(){
+  DB.entered++;saveDB();
+  const key=n=>n.split(' ').slice(0,2).join(' ').toLowerCase();
+  const used=new Set([key(F.name)]),fs=[F];
+  for(let i=0;i<7;i++){let n;do{n=randName()}while(used.has(key(n)));used.add(key(n));fs.push(randomFighter(n));}
+  shuffle(fs);
+  T={fs,me:fs.indexOf(F),rounds:[pairsOf([0,1,2,3,4,5,6,7])],res:[[null,null,null,null]],r:0,done:false,champ:null,out:false,recorded:false};
+  showBracket();
+}
+function myMatch(){const ms=T.rounds[T.r];for(let i=0;i<ms.length;i++)if(ms[i].includes(T.me))return i;return -1;}
+function closeRound(){
+  const r=T.r;
+  if(r<2)T.res[r].forEach(wi=>{if(wi!==T.me)applyBonus(T.fs[wi],BONUS[pickW(BONUS)]);});
+  if(r===2){T.done=true;T.champ=T.res[r][0];return;}
+  T.rounds.push(pairsOf(T.res[r]));T.res.push(new Array(T.res[r].length/2).fill(null));T.r++;
+}
+function resolveMyRound(winnerIdx){
+  const r=T.r,mi=myMatch();
+  T.res[r][mi]=winnerIdx;
+  T.rounds[r].forEach((m,i)=>{if(i!==mi)T.res[r][i]=m[simulate(T.fs[m[0]],T.fs[m[1]])];});
+  closeRound();
+}
+function simRest(){
+  while(!T.done){
+    const r=T.r;
+    T.rounds[r].forEach((m,i)=>{T.res[r][i]=m[simulate(T.fs[m[0]],T.fs[m[1]])];});
+    closeRound();
+  }
+}
+function recordTournament(){
+  if(!T||!T.done||T.recorded)return;T.recorded=true;
+  const finals=T.rounds[2][0];
+  DB.lastTop=T.rounds[1].flat().map(i=>({n:T.fs[i].name,best:bestStat(T.fs[i]),place:i===T.champ?1:finals.includes(i)?2:3,look:lookOf(T.fs[i])}));
+  if(T.champ===T.me){
+    for(const W of SEQ){if(!['race','rsub','arch','asub','weapon','power'].includes(W.k))continue;const it=F[W.k];if(!it||it.skip)continue;const id=W.k+'|'+cxKey(W.k,it,F);DB.champIds[id]=(DB.champIds[id]||0)+1;}
+  }
+  saveDB();syncHistory();
+}
+function chip(idx,wi,right){
+  const f=T.fs[idx];
+  const cls=wi==null?'':(wi===idx?'won':'lost');
+  const you=idx===T.me;
+  return `<button class="chip ${cls}${you?' you':''}${right?' r':''}" data-f="${idx}"><span class="mini">${charSVG(lookOf(f),{h:40,mirror:right})}</span><span class="n">${esc(f.name)}${you?' (you)':''}</span></button>`;
+}
+function showBracket(){
+  let h='';
+  if(T.done)h+=`<p class="champ-line">🏆 Champion: ${esc(fullName(T.fs[T.champ]))}${T.champ===T.me?' (you)':''}</p>`;
+  for(let r=0;r<3;r++){
+    h+=`<div class="round"><h3>${RN[r]}</h3>`;
+    const ms=T.rounds[r];
+    if(!ms){const n=4>>r;for(let i=0;i<n;i++)h+=`<div class="match"><span class="tbd">To be decided</span><span class="vs">vs</span><span class="tbd r">To be decided</span></div>`;}
+    else ms.forEach((m,i)=>{const wi=T.res[r][i];h+=`<div class="match${m.includes(T.me)?' mine':''}">${chip(m[0],wi,false)}<span class="vs">vs</span>${chip(m[1],wi,true)}</div>`;});
+    h+='</div>';
+  }
+  $('#bracket').innerHTML=h;
+  let a='';
+  if(!T.done&&!T.out){
+    const m=T.rounds[T.r][myMatch()],oi=m[0]===T.me?m[1]:m[0];
+    a=`<button class="btn" id="goFightBtn">Fight ${esc(T.fs[oi].name)}</button>`;
+  }else a=`<button class="btn" id="newBtn">Spin a new fighter</button>`;
+  $('#bracketActions').innerHTML=a;
+  show('s-bracket');
+}
+$('#bracket').addEventListener('click',e=>{const b=e.target.closest('.chip');if(b)openSheet(T.fs[+b.dataset.f]);});
+$('#bracketActions').addEventListener('click',e=>{
+  if(e.target.id==='goFightBtn')goFight();
+  if(e.target.id==='newBtn')toTitle();
+});
+function toTitle(){$('#nameIn').value='';renderTitle();show('s-title');}
+
+// ---------- arena ----------
+let curOpp=-1,BT=null,playing=false,autoBattle=false,skipFlag=false,ended=false,fightLog=[],lastFight=null,lastFightRound=0;
+const stageEl=()=>document.getElementById('stage');
+const ftrEl=i=>document.getElementById('ftr'+i);
+const bodyEl=i=>ftrEl(i).querySelector('.body');
+function ctr(i){const s=stageEl().getBoundingClientRect(),b=bodyEl(i).getBoundingClientRect();return {x:b.left+b.width/2-s.left,y:b.top+b.height/2-s.top,top:b.top-s.top};}
+function A(el,kf,opt){try{const a=el.animate(kf,opt);return a.finished.then(()=>{},()=>{});}catch(e){return wait(opt.duration||0);}}
+function spawn(cls,text,x,y,size){const el=document.createElement('span');el.className=cls;el.textContent=text;el.style.left=x+'px';el.style.top=y+'px';if(size)el.style.fontSize=size+'px';document.getElementById('fxl').appendChild(el);return el;}
+function floatAt(i,text,cls,dy){
+  const c=ctr(i);const el=spawn('float '+(cls||''),text,c.x,Math.max(4,c.top-4-(dy||0)));
+  A(el,[{transform:'translate(-50%,0) scale(.6)',opacity:0},{transform:'translate(-50%,-14px) scale(1.12)',opacity:1,offset:.22},{transform:'translate(-50%,-46px) scale(1)',opacity:0}],{duration:1000*SPF(),easing:'ease-out'}).then(()=>el.remove());
+}
+function tintFlash(k,dur){if(!k)return;const t=document.getElementById('tint');t.className='tint t-'+k;A(t,[{opacity:0},{opacity:.42},{opacity:0}],{duration:dur});}
+function shakeEl(el,amp,dur){return A(el,[{transform:'translate(0,0)'},{transform:`translate(${-amp}px,0)`},{transform:`translate(${amp}px,0)`},{transform:`translate(${-amp*.6}px,0)`},{transform:`translate(${amp*.4}px,0)`},{transform:'translate(0,0)'}],{duration:dur});}
+function popEmoji(i,emoji,dy,dur,dx){
+  const c=ctr(i);const el=spawn('fxe',emoji,c.x+(dx||0),dy==='top'?c.top-8:c.y-(dy||0));
+  return A(el,[{transform:'translate(-50%,-50%) scale(0)',opacity:0},{transform:'translate(-50%,-50%) scale(1.3)',opacity:1,offset:.3},{transform:'translate(-50%,-60%) scale(1)',opacity:1,offset:.75},{transform:'translate(-50%,-85%) scale(1)',opacity:0}],{duration:dur}).then(()=>el.remove());
+}
+function projectile(from,to,emoji,dur,o){
+  o=o||{};const a=ctr(from),b=ctr(to);const dx=b.x-a.x,dy=b.y-a.y;
+  const el=spawn('fxe',emoji,a.x,a.y,o.size);const arc=o.arc||0;const rot=o.spin?720*(dx>0?1:-1):0;
+  return A(el,[{transform:'translate(-50%,-50%) translate(0px,0px) rotate(0deg)'},{transform:`translate(-50%,-50%) translate(${dx/2}px,${dy/2-arc}px) rotate(${rot/2}deg)`},{transform:`translate(-50%,-50%) translate(${dx}px,${dy}px) rotate(${rot}deg)`}],{duration:dur,easing:'ease-in'}).then(()=>el.remove());
+}
+function showBanner(text,dur,keep){
+  const bn=document.getElementById('banner');bn.textContent=text;
+  const kf=keep?[{transform:'translate(-50%,-50%) scale(.4)',opacity:0},{transform:'translate(-50%,-50%) scale(1.12)',opacity:1,offset:.35},{transform:'translate(-50%,-50%) scale(1)',opacity:1}]
+    :[{transform:'translate(-50%,-50%) scale(.4)',opacity:0},{transform:'translate(-50%,-50%) scale(1.12)',opacity:1,offset:.25},{transform:'translate(-50%,-50%) scale(1)',opacity:1,offset:.7},{transform:'translate(-50%,-50%) scale(1.15)',opacity:0}];
+  return A(bn,kf,{duration:dur,fill:keep?'forwards':'none'});
+}
+// swings the weapon arm of a drawn character by tweening its rotation
+function armTo(i,angles,dur){
+  const f=ftrEl(i);const g=f&&f.querySelector('.armw');
+  if(!g||RM)return wait(0);
+  const sx=g.dataset.sx,sy=g.dataset.sy,n=angles.length-1;
+  return new Promise(res=>{
+    const t0=performance.now();
+    function fr(now){
+      const t=Math.min(1,(now-t0)/dur),p=t*n,k=Math.min(n-1,Math.floor(p)),u=p-k;
+      const e=u<.5?2*u*u:1-Math.pow(-2*u+2,2)/2;
+      const ang=angles[k]+(angles[k+1]-angles[k])*e;
+      g.setAttribute('transform',`rotate(${ang.toFixed(1)} ${sx} ${sy})`);
+      if(t<1)requestAnimationFrame(fr);else res();
+    }
+    requestAnimationFrame(fr);
+  });
+}
+function renderArena(a,b){
+  const hs=(f,i)=>`<div class="hs${i?' r':' me'}" id="hud${i}"><div class="hn">${esc(f.name)}</div><div class="mbar hp"><i></i></div><div class="mbar en"><i style="width:50%"></i></div><div class="hv"><span class="hpv">100 HP</span><span class="env">⚡ 50</span></div></div>`;
+  const ft=(f,i)=>`<div class="ftr side${i}" id="ftr${i}"><div class="badges"></div><div class="body">${charSVG(lookOf(f),{h:124,sized:true,mirror:i===1})}</div></div>`;
+  $('#arena').innerHTML=`<div class="hud">${hs(a,0)}<div class="rd" id="rd">Round 1</div>${hs(b,1)}</div><div class="stage" id="stage"><div class="tint" id="tint"></div><div class="floor"></div>${ft(a,0)}${ft(b,1)}<div class="fxl" id="fxl"></div><div class="banner" id="banner"></div></div>`;
+}
+function applySnap(s){
+  if(!s)return;
+  for(const i of [0,1]){
+    const hud=document.getElementById('hud'+i);if(!hud)return;
+    const hp=s.h[i],en=s.en[i];
+    const hb=hud.querySelector('.mbar.hp i');hb.style.width=hp+'%';hb.classList.toggle('low',hp<30);
+    hud.querySelector('.mbar.en i').style.width=en+'%';hud.querySelector('.mbar.en').classList.toggle('full',en>=100);
+    hud.querySelector('.hpv').textContent=hp+' HP';hud.querySelector('.env').textContent='⚡ '+en;
+    const st=s.st[i],b=bodyEl(i);
+    b.classList.toggle('frozen',st.frozen);b.classList.toggle('poisoned',st.poison);
+    ftrEl(i).querySelector('.badges').textContent=(st.guard?'🛡️':'')+(st.frozen?'❄️':'')+(st.poison?'🧪':'');
+  }
+  if(s.r)document.getElementById('rd').textContent='Round '+s.r;
+}
+
+// ---------- battle animations ----------
+function impact(e,a){
+  const sp=SPF(),t=a.to,big=a.crit||a.t==='ult';
+  applySnap(e);
+  shakeEl(ftrEl(t),big?14:8,320*sp);
+  A(bodyEl(t),[{filter:'brightness(1)'},{filter:'brightness(2.3)'},{filter:'brightness(1)'}],{duration:260*sp});
+  const c=ctr(t);
+  const burst=spawn('fxe',a.kind==='power'||a.kind==='ult'?a.fx:'💥',c.x+(a.by===0?-8:8),c.y-6,a.t==='ult'?64:40);
+  A(burst,[{transform:'translate(-50%,-50%) scale(.3)',opacity:1},{transform:'translate(-50%,-50%) scale(1.25)',opacity:1,offset:.5},{transform:'translate(-50%,-50%) scale(1.6)',opacity:0}],{duration:380*sp}).then(()=>burst.remove());
+  let dy=0;
+  if(e.d!=null){floatAt(t,'−'+e.d,big?'crit':'',dy);dy+=26;}
+  if(a.crit){floatAt(t,'Crit!','crit',dy);dy+=26;}
+  if(a.weak){floatAt(t,'Weak spot!','weak',dy);dy+=22;}
+  if(a.guarded)floatAt(t,'Guarded','info',dy);
+  if(a.tint)tintFlash(a.tint,440*sp);
+  if(big)shakeEl(stageEl(),a.t==='ult'?10:6,380*sp);
+  thud(big);if(big)buzz(30);
+}
+async function animMelee(e,a){
+  const sp=SPF(),dir=a.by===0?1:-1,A0=ctr(a.by),B0=ctr(a.to);
+  const dist=Math.max(0,Math.abs(B0.x-A0.x)-80);
+  const lunge=A(ftrEl(a.by),[{transform:'translateX(0)'},{transform:`translateX(${dir*dist}px)`,offset:.45},{transform:`translateX(${dir*dist}px)`,offset:.6},{transform:'translateX(0)'}],{duration:600*sp,easing:'ease-in-out'});
+  armTo(a.by,[0,-85,60,0],600*sp);
+  await wait(300*sp);
+  impact(e,a);
+  await lunge;await wait(150*sp);
+}
+async function animRanged(e,a){
+  const sp=SPF(),pw=a.kind==='power';
+  armTo(a.by,pw?[0,-125,-125,0]:[0,-25,-25,0],(pw?640:440)*sp);
+  if(pw)A(bodyEl(a.by),[{filter:'brightness(1)'},{filter:'brightness(1.7)'},{filter:'brightness(1)'}],{duration:340*sp});
+  await wait(160*sp);
+  await projectile(a.by,a.to,a.fx,(pw?460:340)*sp,{size:pw?40:28,arc:pw?26:10,spin:a.spin});
+  impact(e,a);await wait(320*sp);
+}
+async function animUlt(e,a){
+  const sp=SPF();
+  showBanner(a.name,1200*sp,false);
+  armTo(a.by,[0,-150,-150,70,0],1100*sp);
+  A(bodyEl(a.by),[{transform:'scale(1)'},{transform:'scale(1.25)',offset:.6},{transform:'scale(1)'}],{duration:720*sp});
+  tintFlash('ult',520*sp);
+  [392,523,659,880].forEach((f,i)=>beep(f,0.14,'sawtooth',0.04,i*0.06));
+  await wait(640*sp);
+  await projectile(a.by,a.to,a.fx,380*sp,{size:64,arc:34});
+  impact(e,a);await wait(480*sp);
+}
+async function animMiss(e,a){
+  const sp=SPF(),dir=a.by===0?1:-1;
+  if(a.kind==='melee'){
+    const A0=ctr(a.by),B0=ctr(a.to);const dist=Math.max(0,Math.abs(B0.x-A0.x)-100);
+    A(ftrEl(a.by),[{transform:'translateX(0)'},{transform:`translateX(${dir*dist}px)`,offset:.5},{transform:'translateX(0)'}],{duration:540*sp,easing:'ease-in-out'});
+    armTo(a.by,[0,-85,60,0],540*sp);
+    await wait(230*sp);
+  }else{armTo(a.by,[0,-60,0],440*sp);projectile(a.by,a.to,a.fx,340*sp,{size:a.kind==='power'?40:28,arc:20});await wait(230*sp);}
+  A(ftrEl(a.to),[{transform:'translate(0,0)'},{transform:`translate(${dir*30}px,-32px)`,offset:.4},{transform:'translate(0,0)'}],{duration:440*sp,easing:'ease-out'});
+  applySnap(e);floatAt(a.to,'Miss','info');beep(700,0.05,'triangle',0.02);
+  await wait(520*sp);
+}
+async function animGuard(e,a){
+  const sp=SPF();
+  armTo(a.on,[0,-50,-50,0],760*sp);
+  popEmoji(a.on,'🛡️',0,760*sp,a.on===0?44:-44);
+  applySnap(e);floatAt(a.on,'Guard','info');beep(520,0.1,'triangle',0.04);
+  await wait(640*sp);
+}
+async function animSkip(e,a){
+  const sp=SPF();
+  popEmoji(a.on,a.fx||'💤','top',900*sp);
+  A(bodyEl(a.on),[{transform:'rotate(0deg)'},{transform:'rotate(-8deg)'},{transform:'rotate(8deg)'},{transform:'rotate(0deg)'}],{duration:600*sp});
+  applySnap(e);beep(300,0.12,'triangle',0.03);
+  await wait(760*sp);
+}
+async function animSelf(e,a){
+  const sp=SPF();
+  popEmoji(a.on,a.fx,'top',720*sp);
+  await wait(200*sp);
+  applySnap(e);shakeEl(ftrEl(a.on),8,320*sp);
+  A(bodyEl(a.on),[{filter:'brightness(1)'},{filter:'brightness(2.2)'},{filter:'brightness(1)'}],{duration:260*sp});
+  if(a.tint)tintFlash(a.tint,420*sp);
+  if(e.d!=null)floatAt(a.on,'−'+e.d,'');
+  thud(false);await wait(560*sp);
+}
+async function animUno(e,a){
+  const sp=SPF(),c=ctr(a.by);
+  const card=spawn('fxe','🃏',c.x+(a.by===0?44:-44),c.y,40);
+  await A(card,[{transform:'translate(-50%,-50%) rotateY(0deg) scale(.5)'},{transform:'translate(-50%,-50%) rotateY(360deg) scale(1.3)'}],{duration:460*sp});
+  card.remove();floatAt(a.by,'Uno reverse!','info');
+  await projectile(a.by,a.to,'💥',300*sp,{size:36});
+  impact(e,Object.assign({},a,{kind:'power',fx:'🃏'}));await wait(360*sp);
+}
+async function animHeal(e,a){
+  const sp=SPF();
+  applySnap(e);
+  A(bodyEl(a.on),[{filter:'brightness(1)'},{filter:'brightness(1.4) drop-shadow(0 0 12px #3DD6C6)'},{filter:'brightness(1)'}],{duration:620*sp});
+  if(e.d!=null)floatAt(a.on,'+'+e.d,'heal');
+  beep(660,0.1,'triangle',0.04);beep(990,0.12,'triangle',0.04,0.08);
+  await wait(580*sp);
+}
+async function animDot(e,a){
+  const sp=SPF();
+  popEmoji(a.on,'🫧',30,640*sp);
+  applySnap(e);tintFlash('poison',360*sp);
+  if(e.d!=null)floatAt(a.on,'−'+e.d,'');
+  await wait(560*sp);
+}
+async function animStatus(e,a){
+  const sp=SPF();
+  popEmoji(a.on,a.fx,'top',900*sp);
+  if(a.tint)tintFlash(a.tint,460*sp);
+  applySnap(e);beep(440,0.12,'triangle',0.04);
+  await wait(760*sp);
+}
+async function animPet(e,a){
+  const sp=SPF();
+  await projectile(a.by,a.to,a.fx,520*sp,{size:38,arc:14});
+  impact(e,Object.assign({},a,{kind:'melee'}));await wait(300*sp);
+}
+async function animTime(e,a){
+  const sp=SPF(),st=stageEl(),r=st.getBoundingClientRect();
+  const el=spawn('fxe','⏱️',r.width/2,r.height/2-14,64);
+  A(el,[{transform:'translate(-50%,-50%) scale(.3)',opacity:0},{transform:'translate(-50%,-50%) scale(1.2)',opacity:1,offset:.3},{transform:'translate(-50%,-50%) scale(1)',opacity:1,offset:.8},{transform:'translate(-50%,-50%) scale(1.4)',opacity:0}],{duration:900*sp}).then(()=>el.remove());
+  A(st,[{filter:'grayscale(0)'},{filter:'grayscale(1) contrast(1.25)',offset:.2},{filter:'grayscale(1) contrast(1.25)',offset:.85},{filter:'grayscale(0)'}],{duration:1000*sp});
+  armTo(a.by,[0,-140,-140,0],900*sp);
+  applySnap(e);beep(1200,0.3,'sine',0.04);
+  await wait(820*sp);
+}
+async function animRevive(e,a){
+  const sp=SPF(),b=bodyEl(a.on);
+  b.classList.remove('down');
+  popEmoji(a.on,a.fx||'✨','top',820*sp);
+  A(b,[{transform:'translateY(0) scale(1)'},{transform:'translateY(-18px) scale(1.12)'},{transform:'translateY(0) scale(1)'}],{duration:620*sp});
+  applySnap(e);floatAt(a.on,'Back up!','info');
+  [330,440,660].forEach((f,i)=>beep(f,0.12,'triangle',0.04,i*0.07));
+  await wait(760*sp);
+}
+async function animKO(e,a){
+  const sp=SPF();
+  applySnap(e);
+  bodyEl(a.on).classList.add('down');
+  await wait(300*sp);
+  showBanner('K.O.',700*sp,true);
+  armTo(a.win,[0,-160],500*sp);
+  A(bodyEl(a.win),[{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'},{transform:'translateY(-12px)'},{transform:'translateY(0)'}],{duration:800*sp});
+  thud(true);
+  await wait(900*sp);
+}
+async function animWin(e,a){
+  const sp=SPF();
+  applySnap(e);
+  showBanner('Decision',700*sp,true);
+  armTo(a.on,[0,-160],500*sp);
+  A(bodyEl(a.on),[{transform:'translateY(0)'},{transform:'translateY(-22px)'},{transform:'translateY(0)'}],{duration:600*sp});
+  await wait(800*sp);
+}
+async function playOne(e){
+  const sp=SPF(),a=e.a;
+  if(!a||RM){
+    applySnap(e);
+    if(a&&a.t==='ko')bodyEl(a.on).classList.add('down');
+    if(a&&a.t==='revive')bodyEl(a.on).classList.remove('down');
+    await wait((e.cls==='special'?650:420)*sp);return;
+  }
+  try{
+    switch(a.t){
+      case 'hit':if(a.kind==='melee')await animMelee(e,a);else await animRanged(e,a);break;
+      case 'ult':await animUlt(e,a);break;
+      case 'miss':await animMiss(e,a);break;
+      case 'guard':await animGuard(e,a);break;
+      case 'skip':await animSkip(e,a);break;
+      case 'self':await animSelf(e,a);break;
+      case 'uno':await animUno(e,a);break;
+      case 'heal':await animHeal(e,a);break;
+      case 'dot':await animDot(e,a);break;
+      case 'status':await animStatus(e,a);break;
+      case 'pet':await animPet(e,a);break;
+      case 'timestop':await animTime(e,a);break;
+      case 'revive':await animRevive(e,a);break;
+      case 'ko':await animKO(e,a);break;
+      case 'win':await animWin(e,a);break;
+      default:applySnap(e);await wait(420*sp);
+    }
+  }catch(err){applySnap(e);}
+}
+
+// ---------- fight flow ----------
+function evHTML(e){
+  const names={crit:'crit',weak:'weak spot',guard:'guarded'};
+  const pills=e.pills.map(p=>`<span class="pill ${p}">${names[p]}</span>`).join('');
+  const d=e.d!=null?`<span class="dmg">${e.cls==='heal'?'+':'−'}${e.d}</span>`:'';
+  return `<li class="${e.cls}"><span>${e.html}${pills}</span>${d}</li>`;
+}
+function appendLogs(list){
+  if(!list.length)return;
+  fightLog.push(...list);
+  const log=$('#log');log.insertAdjacentHTML('beforeend',list.map(evHTML).join(''));log.scrollTop=log.scrollHeight;
+}
+function goFight(){
+  const m=T.rounds[T.r][myMatch()];curOpp=m[0]===T.me?m[1]:m[0];
+  const O=T.fs[curOpp];
+  BT=null;ended=false;skipFlag=false;playing=false;
+  $('#roundName').textContent=`${RN1[T.r]}: ${F.name} vs ${O.name}`;
+  renderArena(F,O);
+  const odds=headToHead(F,O),vo=verdict(winRate(O));
+  const syns=synOf(O);
+  const sub=[O.rsub&&O.rsub.n,O.asub&&O.asub.n].filter(Boolean).join(', ');
+  $('#scout').innerHTML=`<div class="scout">
+    <p class="odds">You win ${Math.round(odds*100)}% of simulated fights</p>
+    <p class="hint" style="margin:-4px 0 8px">${odds<0.1?'Pray. 💀':odds<0.35?'Rough. Play smart and hope the wheel was lying.':odds<0.65?'Coin flip. Your choices decide this one.':odds<0.9?'You should take this.':'Light work 👹'}</p>
+    <dl class="loadout" style="margin-top:6px">
+      <dt>Who</dt><dd>${esc(fullName(O))}<small>${esc(O.race.n+' '+O.arch.n.toLowerCase()+(sub?', '+sub:''))}</small></dd>
+      <dt>Verdict</dt><dd>${vo.t}</dd>
+      <dt>Weapon</dt><dd>${O.weapon.e} ${esc(O.weapon.n)}</dd>
+      <dt>Power</dt><dd>${O.power.e} ${esc(O.power.n)}</dd>
+      <dt>Weakness</dt><dd>${O.weak.e} ${esc(O.weak.n)}<small>${esc(O.weak.d)}</small></dd>
+      ${syns.length?`<dt>Synergies</dt><dd>${syns.map(s=>esc(s.e+' '+s.n)).join(', ')}</dd>`:''}
+    </dl>
+    <button class="linkish" id="scoutCard">See ${esc(O.name)}'s full card</button>
+    <p class="tip">Each round you pick a move. Strikes build energy, powers spend it, guarding softens the next hit, and a full bar unlocks your signature move.</p>
+  </div>`;
+  $('#moves').hidden=true;$('#moverow').hidden=true;
+  $('#log').innerHTML='';$('#result').innerHTML='';$('#narr').innerHTML='';
+  $('#fightActions').innerHTML=`<button class="btn" id="startFightBtn">Start the fight</button>`;
+  show('s-fight');
+}
+$('#scout').addEventListener('click',e=>{if(e.target.id==='scoutCard')openSheet(T.fs[curOpp]);});
+function renderMoves(){
+  const me=BT.P[0],op=BT.P[1],f=me.f;
+  const weakPill='<span class="pill weak">weak spot</span>';
+  const wPill=hitsWeak(op,physTags(me))?weakPill:'';
+  let pSub,pOk=false,pPill='';
+  if(f.power.k==='none')pSub='No power';
+  else if(!me.powOn)pSub='Shut off by negation';
+  else if(f.power.passive)pSub='Passive, always on';
+  else{pOk=me.en>=POW_COST;pSub=pOk?`Costs ${POW_COST} energy`:`Needs ${POW_COST} energy`;if(hitsWeak(op,f.power.t))pPill=weakPill;}
+  const uOk=me.en>=100;
+  const gPct=Math.round((1-me.tr.guardX)*100);
+  $('#moves').innerHTML=`
+    <button class="mv" data-m="strike"><span class="mi">${f.weapon.e}</span><span class="mt">Strike${wPill}</span><span class="ms">${esc(f.weapon.n)}, +25 energy</span></button>
+    <button class="mv" data-m="power"${pOk?'':' disabled'}><span class="mi">${f.power.e}</span><span class="mt">${esc(f.power.k==='none'?'Power':f.power.n)}${pPill}</span><span class="ms">${pSub}</span></button>
+    <button class="mv" data-m="guard"><span class="mi">🛡️</span><span class="mt">Guard</span><span class="ms">Blocks ${gPct}%, may counter, +40 energy</span></button>
+    <button class="mv ult${uOk?' ready':''}" data-m="ult"${uOk?'':' disabled'}><span class="mi">${f.arch.e}</span><span class="mt">${esc(ULTS[f.arch.k])}</span><span class="ms">${uOk?"Ready. Can't be dodged":`Needs full energy (${me.en}/100)`}</span></button>`;
+}
+function setBusy(b){$('#moves').classList.toggle('busy',b);}
+function syncAuto(){$('#autoTog').setAttribute('aria-pressed',String(autoBattle));$('#autoTog').textContent=autoBattle?'Auto-battle is on':'Auto-battle';}
+async function startFight(){
+  ac();
+  const O=T.fs[curOpp];
+  BT=newBattle(F,O,false);fightLog=[];skipFlag=false;ended=false;playing=true;lastFightRound=T.r;
+  $('#scout').innerHTML='';$('#fightActions').innerHTML='';
+  applySnap(BT.snap());
+  renderMoves();$('#moves').hidden=false;$('#moverow').hidden=false;setBusy(true);syncAuto();
+  await playEvents(BT.start());
+  playing=false;nextTurn();
+}
+async function playEvents(evs){
+  for(let i=0;i<evs.length;i++){
+    if(skipFlag){appendLogs(evs.slice(i));applySnap(evs[evs.length-1]);return;}
+    appendLogs([evs[i]]);
+    await playOne(evs[i]);
+  }
+}
+function nextTurn(){
+  if(ended||!BT)return;
+  if(skipFlag&&!BT.over){finishInstant();return;}
+  if(BT.over){finishFight();return;}
+  applySnap(BT.snap());renderMoves();
+  if(autoBattle){doRound(null);return;}
+  setBusy(false);
+}
+async function doRound(choice){
+  if(playing||ended||!BT||BT.over)return;
+  playing=true;setBusy(true);
+  const evs=BT.step(choice||autoChoice(BT.P[0],BT.P[1]));
+  await playEvents(evs);
+  playing=false;nextTurn();
+}
+function finishInstant(){
+  const rest=[];while(!BT.over)rest.push(...BT.step());
+  appendLogs(rest);
+  if(rest.length)applySnap(rest[rest.length-1]);
+  finishFight();
+}
+function finishFight(){
+  if(ended)return;ended=true;
+  $('#moves').hidden=true;$('#moverow').hidden=true;
+  const w=BT.w;
+  bodyEl(1-w).classList.toggle('down',BT.P[1-w].hp<=0);
+  endFight();
+}
+$('#moves').addEventListener('click',e=>{
+  const b=e.target.closest('.mv');if(!b||b.disabled||playing||ended)return;
+  doRound(b.dataset.m);
+});
+$('#autoTog').addEventListener('click',()=>{
+  autoBattle=!autoBattle;syncAuto();
+  if(autoBattle&&BT&&!playing&&!ended&&!BT.over)doRound(null);
+});
+$('#skipBtn').addEventListener('click',()=>{
+  if(!BT||ended)return;
+  skipFlag=true;setBusy(true);
+  if(!playing)finishInstant();
+});
+function endFight(){
+  const won=BT.w===0,r=T.r,O=T.fs[curOpp];
+  lastFight={A:F,B:O,w:BT.w,ev:fightLog.slice()};
+  if(won)resolveMyRound(T.me);
+  else{resolveMyRound(curOpp);T.out=true;simRest();}
+  if(T.done)recordTournament();
+  let html='',acts='';
+  if(won){DB.tokens=Math.min(10,DB.tokens+1);saveDB();}
+  if(won&&T.done){
+    DB.won++;DB.champs.unshift({n:fullName(F),e:F.race.e,s:`${F.race.n} ${F.arch.n.toLowerCase()}`,d:new Date().toLocaleDateString(),look:lookOf(F),best:bestStat(F)});
+    DB.champs=DB.champs.slice(0,30);saveDB();syncHistory();
+    html=`<div class="res win"><div class="big">Champion</div><p>${esc(fullName(F))} won the whole bracket and is in the hall of fame. Future fighters can now reincarnate as them. 👹</p></div>`;
+    acts=`<button class="btn" data-a="new">Spin a new fighter</button><button class="btn ghost" data-a="bracket">See the bracket</button>`;
+    landSound(3);buzz([40,60,40,60,120]);
+  }else if(won){
+    html=`<div class="res win"><div class="big">${RN1[r]} won</div><p>${esc(F.name)} advances, banks a reroll token for future fighters, and gets a spin on the bonus wheel.</p></div>`;
+    acts=`<button class="btn" data-a="bonus">Spin the bonus wheel</button>`;
+    landSound(2);buzz(40);
+  }else{
+    const c=T.fs[T.champ];
+    html=`<div class="res lose"><div class="big">Eliminated</div><p>${esc(O.name)} sends ${esc(F.name)} home. ${esc(c.name)} went on to win the whole thing. Who's next? 💀</p></div>`;
+    acts=`<button class="btn" data-a="new">Spin a new fighter</button><button class="btn ghost" data-a="bracket">See how the bracket ended</button>`;
+    landSound(0);buzz(80);
+  }
+  $('#result').innerHTML=html;
+  $('#fightActions').innerHTML=acts;
+  getSample().then(s=>{
+    if(!s||!$('#fightActions').querySelector('[data-a]')||$('#narrBtn'))return;
+    $('#fightActions').insertAdjacentHTML('beforeend',`<button class="btn ghost" id="narrBtn">Have Claude narrate this fight</button>`);
+  });
+}
+$('#fightActions').addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  if(t.id==='startFightBtn')startFight();
+  else if(t.id==='narrBtn')narrate(t);
+  else if(t.dataset.a==='new')toTitle();
+  else if(t.dataset.a==='bracket')showBracket();
+  else if(t.dataset.a==='bonus')startBonus();
+});
+
+// ---------- bonus wheel ----------
+function startBonus(){
+  mode='bonus';bonusDone=false;autoRun=false;spinning=false;lastSpun=-1;
+  curList=BONUS.map(it=>({it,w:it.w,mult:1}));
+  items=BONUS.map(it=>({n:it.n,e:it.e,q:it.q,w:it.w}));
+  $('#spinWho').textContent=`${F.name} won the ${RN1[lastFightRound].toLowerCase()}`;
+  $('#progWrap').hidden=true;$('#sheet').hidden=true;$('#preview').hidden=true;$('#autoBtn').hidden=true;$('#rerollBtn').hidden=true;
+  $('#catLabel').textContent='Bonus wheel';$('#oddsBox').innerHTML='';
+  $('#landed').innerHTML='';$('#hub').textContent='?';
+  $('#spinBtn').textContent='Spin the bonus wheel';$('#spinBtn').disabled=false;
+  show('s-spin');
+  segs=drawWheel(cv,items);
+}
+
+// ---------- Claude narration (only where the viewer supports it) ----------
+let sampleP=null;
+function getSample(){
+  if(!sampleP){
+    sampleP=(window.claude&&typeof window.claude.use==='function')?Promise.resolve(window.claude.use('sample')).catch(()=>null):Promise.resolve(null);
+  }
+  return sampleP;
+}
+function buildSummary(f){
+  const parts=[`${fullName(f)}: ${f.size.n} ${f.race.n}${f.rsub?' ('+f.rsub.n+')':''}, ${f.arch.n}${f.asub?' ('+f.asub.n+')':''}.`,`Backstory: ${f.back.n}${f.reinc?', reincarnation of '+f.reinc.n:''}.`,`Strength ${f.str.n}, speed ${f.spd.n}, durability ${f.dur.n}, IQ ${f.iq.n}.`,`Weapon: ${f.weapon.n} (${f.wm.n}). Power: ${f.power.n}${f.power.k!=='none'?' ('+f.pm.n+')':''}. Enchantment: ${f.ench.n}. Weakness: ${f.weak.n}. Chaos factor: ${f.chaos.n}. Signature move: ${ULTS[f.arch.k]}.`];
+  const s=synOf(f);if(s.length)parts.push('Synergies: '+s.map(x=>x.n).join(', ')+'.');
+  return parts.join(' ');
+}
+function plain(html){const d=document.createElement('div');d.innerHTML=html;return d.textContent;}
+async function narrate(btn){
+  const s=await getSample();if(!s){btn.remove();return;}
+  btn.disabled=true;
+  const {A:FA,B:FB,w,ev}=lastFight;
+  let lines=ev.map(e=>plain(e.html)+(e.d!=null&&e.cls!=='heal'?` (${e.d} dmg)`:'')+(e.pills.length?` [${e.pills.join(', ')}]`:''));
+  if(lines.length>30)lines=lines.slice(0,10).concat(['…'],lines.slice(-16));
+  const prompt=`You narrate fights for a chaotic, meme-heavy fantasy "spin the wheel" battle game. Write a punchy recap of this fight in 3 or 4 short sentences. Be funny and dramatic, roast the loser a little, and call out the turning point. Use at most two emoji, chosen from 💀 👹 😭 🔥. Plain text only: no lists, no headings, no quotation marks around the recap.
+
+Fighter 1 (the player): ${buildSummary(FA)}
+Fighter 2: ${buildSummary(FB)}
+
+What happened, in order:
+${lines.map(l=>'- '+l).join('\n')}
+
+Winner: ${w===0?FA.name:FB.name}.`;
+  const box=$('#narr');box.innerHTML='<span class="muted">Claude is watching the replay…</span>';
+  try{
+    const out=await s(prompt,{modelTier:'quick',onText:({text})=>{box.textContent=text;}});
+    box.textContent=out&&out.text?out.text:box.textContent;
+    btn.remove();
+  }catch(e){
+    const code=e&&e.code;
+    if(code==='not_granted'){box.innerHTML='<span class="muted">Narration needs permission to ask Claude. You can allow it from this page\'s permissions menu.</span>';btn.remove();}
+    else if(code==='rate_limited'){box.innerHTML='<span class="muted">The narrator needs a breather. Try again in a minute.</span>';btn.disabled=false;}
+    else{box.innerHTML='<span class="muted">The narration didn\'t come through. Try again.</span>';btn.disabled=false;}
+  }
+}
+
+// ---------- title actions + toggles ----------
+$('#diceBtn').addEventListener('click',()=>{$('#nameIn').value=randName();});
+$('#startBtn').addEventListener('click',()=>{
+  let n=$('#nameIn').value.trim().replace(/\s+/g,' ');
+  if(!n)n=randName();
+  startBuild(n.slice(0,24));
+});
+$('#nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#startBtn').click();});
+function syncToggles(){
+  $('#sndBtn').setAttribute('aria-pressed',String(soundOn));$('#sndBtn').textContent=soundOn?'🔊':'🔇';
+  $('#fastBtn').setAttribute('aria-pressed',String(fastMode));
+}
+$('#sndBtn').addEventListener('click',()=>{soundOn=!soundOn;DB.sound=soundOn;saveDB();syncToggles();if(soundOn){ac();beep(880,0.08,'triangle',0.05);}});
+$('#fastBtn').addEventListener('click',()=>{fastMode=!fastMode;DB.fast=fastMode;saveDB();syncToggles();});
+
+let rz=null;
+window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!$('#s-spin').hidden&&items.length)segs=drawWheel(cv,items);if(!$('#s-title').hidden)drawIdle();},150);});
+
+syncToggles();renderTitle();drawIdle();
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{drawIdle();if(!$('#s-spin').hidden&&items.length)segs=drawWheel(cv,items);});
+getSample();
+</script>
+</body>
+</html>

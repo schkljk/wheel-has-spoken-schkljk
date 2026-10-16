@@ -1,0 +1,60 @@
+/* ===================== CLARITY AND UNIFORMITY PASS ===================== */
+/* one spacing, radius and type scale everywhere */
+:root{--r-card:14px;--r-btn:12px;--pad-card:12px 14px;--fs-body:15px;--fs-small:13px;--fs-title:22px}
+body{font-size:var(--fs-body);line-height:1.4}
+small,.hint{font-size:var(--fs-small)}
+/* buttons: three sizes, always comfortable to tap */
+.btn{min-height:50px;border-radius:var(--r-btn);font-size:19px}
+.btn.ghost{min-height:46px;font-size:15.5px}
+.btn.sm,.btn.ghost.sm{min-height:40px;font-size:14px}
+.fchip,.tt-tab,.hubtabs button,.menu-i,.ch-opt,.offer,.mode,.tier,.shopitem .buy,.mnode.now{touch-action:manipulation}
+.shopitem .buy{min-height:40px;min-width:68px;border-radius:10px;font-weight:800}
+:where(button,[role="button"],a,input):focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+/* every card-like panel shares one look */
+.storycard,.rankcard,.contract,.gearline,.challenge,.mode,.tier,.slot,.shopitem,.menu-i,.offer,.ch-opt,.tt-node,.maphead,.fcard,.hubcard,.lootreveal,.fc-side{border-radius:var(--r-card);border:1px solid var(--line)}
+.storycard,.rankcard,.contract,.gearline,.challenge,.mode,.tier,.shopitem,.menu-i,.ch-opt{padding:var(--pad-card)}
+/* readable info links */
+.inf{text-decoration:underline dotted;text-underline-offset:3px;text-decoration-thickness:1px;cursor:help}
+/* card titles never break mid-word */
+.fc-name,.hubcard b,.slot-t b,.mode b,.storycard b,.ch-h b{overflow-wrap:normal;word-break:normal;hyphens:manual}
+.fcard{position:relative}
+.fcard .fc-name{font-size:clamp(18px,5.4vw,24px);line-height:1.08}
+.fcard .fc-sub{font-size:13.5px}
+/* card stats: label on top, value and bar below */
+#s-card .fcard .st .lb{color:var(--muted)}
+#s-card .fcard .st .vl{font-weight:700}
+/* fighter page summary: compact and scannable */
+#s-hub #hubTop .hubcard{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;align-items:center}
+#s-hub #hubTop .hubcard b{font-size:clamp(18px,5vw,22px);line-height:1.1}
+/* tabs: clear selected state */
+.hubtabs button[aria-selected="true"]{font-weight:800}
+.hubtabs button{min-height:52px}
+/* section label used above groups */
+.sec-label{display:block;margin:14px 2px 6px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+/* story map: the current step reads as the call to action */
+.mnode.now{min-height:58px}
+.mn-t b{font-size:17px}
+.mstep{font-size:12px}
+/* sheets: comfortable reading width and spacing */
+.sheet2{padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px))}
+.ch-h b{font-size:22px}
+.ch-body{font-size:15px;line-height:1.5}
+.ch-opt b{font-size:16px}
+.ch-opt small{font-size:13.5px}
+/* fight: bigger, clearer scoreboard text */
+body.fullfight #s-fight .hud .hn{font-size:15px}
+body.fullfight #s-fight .hud .hv{font-size:12.5px}
+body.fullfight #s-fight .rd{font-size:13px;padding:3px 9px;font-weight:800}
+.readpill{font-size:13.5px;padding:6px 14px}
+.cw-out b{font-size:18px}
+/* light theme: keep text on glass readable */
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) .mstep{color:#4A4160}
+}
+.fcard .fc-top{position:relative}
+.fcard .fc-top>div:nth-child(2){padding-right:58px;min-width:0}
+.fcard .fc-top .stamp{position:absolute;top:0;right:0;font-size:11.5px;padding:3px 7px;transform:rotate(6deg)}
+/* the verdict badge gets its own line under the name instead of crowding it */
+.fcard .fc-top{flex-wrap:wrap}
+.fcard .fc-top>div:nth-child(2){padding-right:0;flex:1 1 0}
+.fcard .fc-top .stamp{position:static;order:3;flex:0 0 auto;margin:6px 0 0;transform:none;font-size:12px;padding:3px 10px}

@@ -1,0 +1,98 @@
+/* ===================== ONE SCENE: the arena fills the whole fight screen ===================== */
+body.fullfight #s-fight{max-width:none!important;width:100%;background:var(--bg)}
+body.fullfight #s-fight .arena{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+body.fullfight #s-fight .stage,body.fullfight #s-fight.side .stage{position:absolute;inset:0;height:100%!important;min-height:0!important}
+/* scenery above the horizon, floor from the horizon down to the bottom edge */
+body.fullfight #s-fight .scene{bottom:calc(100% - var(--groundY) + 18px)}
+body.fullfight #s-fight .floor{top:calc(var(--groundY) - 24px);bottom:0;height:auto;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 14%,rgba(0,0,0,.18) 45%,rgba(0,0,0,.5) 100%),var(--floor,#2A2342)}
+body.fullfight #s-fight .floor::after{content:"";position:absolute;left:-30%;right:-30%;top:0;height:200%;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.08) 1px,transparent 1px);background-size:56px 56px;
+  transform:perspective(300px) rotateX(52deg);transform-origin:50% 0;opacity:.9}
+body.fullfight #s-fight .amb{bottom:calc(100% - var(--groundY))}
+/* fighters stand on the horizon, inside the UI column */
+body.fullfight #s-fight .ftr{bottom:calc(100% - var(--groundY))}
+body.fullfight #s-fight .ftr.side0{left:calc(var(--fcx) - var(--fspan) - 65px)}
+body.fullfight #s-fight .ftr.side1{right:calc(100% - var(--fcx) - var(--fspan) - 65px);left:auto}
+/* scoreboard stays in the column on wide screens */
+body.fullfight #s-fight .hud{left:50%!important;right:auto!important;transform:translateX(-50%);width:min(100%,var(--col,760px));box-sizing:border-box}
+body.fullfight #s-fight.side .hud{left:calc(var(--stageW)/2)!important;width:var(--stageW)}
+body.fullfight #s-fight.side .fmenu-btn{left:calc(var(--stageW)/2)}
+/* no panel behind the wheel: it sits on the arena floor */
+body.fullfight #s-fight #moves,body.fullfight #s-fight #result:not(:empty),body.fullfight #s-fight #fightDock{background:none!important;z-index:6}
+body.fullfight #s-fight #moves{top:calc(var(--groundY) + 6px)!important}
+body.fullfight #s-fight .cw{max-width:520px;margin:0 auto;width:100%}
+body.fullfight #s-fight .cw-wrap{filter:drop-shadow(0 14px 22px rgba(0,0,0,.55)) drop-shadow(0 0 2px rgba(0,0,0,.4))}
+body.fullfight #s-fight .cw-out{background:rgba(8,6,14,.62);color:#F3EEFF;padding:8px 10px;border-radius:12px;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12)}
+body.fullfight #s-fight .cw-out small{color:#CFC6E6}
+body.fullfight #s-fight .fchip{background:rgba(20,15,34,.72);color:#F3EEFF;border-color:rgba(255,255,255,.16);backdrop-filter:blur(6px)}
+body.fullfight #s-fight .fchip.on{background:var(--pink);border-color:var(--pink);color:#fff}
+body.fullfight #s-fight .fchip:disabled{opacity:.45}
+body.fullfight #s-fight #intent{top:calc(var(--groundY) - 50px)!important}
+/* results float on the floor as a glass card */
+body.fullfight #s-fight #result:not(:empty){top:calc(var(--groundY) + 10px)!important;left:50%!important;right:auto!important;transform:translateX(-50%);width:min(calc(100% - 24px),560px);
+  padding:12px 16px!important;border-radius:18px;background:rgba(10,7,20,.72)!important;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12)!important;color:#F3EEFF;box-sizing:border-box;box-shadow:0 18px 40px rgba(0,0,0,.45)!important}
+body.fullfight #s-fight #result .res p,body.fullfight #s-fight #result .gains li{color:#E6DFF5}
+body.fullfight #s-fight #fightDock{left:50%!important;right:auto!important;transform:translateX(-50%);width:min(100%,584px);box-sizing:border-box}
+/* sideways: the wheel stands on the right of the same scene */
+body.fullfight #s-fight.side #moves{left:var(--stageW)!important;top:0!important;right:0}
+body.fullfight #s-fight.side #intent{top:calc(var(--groundY) - 44px)!important;left:0!important;width:var(--stageW)}
+body.fullfight #s-fight.side #result:not(:empty){left:calc(var(--stageW) + (100% - var(--stageW))/2)!important;top:12px!important;width:min(calc(100% - var(--stageW) - 20px),420px)}
+body.fullfight #s-fight.side #fightDock{left:calc(var(--stageW) + (100% - var(--stageW))/2)!important;width:min(calc(100% - var(--stageW) - 12px),420px)}
+/* the read sits on the floor just under the horizon, never on the fighters */
+body.fullfight #s-fight:not(.side) #intent{top:calc(var(--groundY) + 4px)!important}
+body.fullfight #s-fight:not(.side) #moves{top:calc(var(--groundY) + 40px)!important}
+body.fullfight #s-fight .fchip{font-size:12px;padding:5px 6px;gap:4px}
+body.fullfight #s-fight.side #intent{top:12px!important;left:var(--stageW)!important;width:calc(100% - var(--stageW))}
+body.fullfight #s-fight.side #moves{top:44px!important}
+body.fullfight #s-fight.side .cw-out{flex:none!important;width:auto;max-width:92%;padding:6px 10px}
+body.fullfight #s-fight.side .cw-out small{-webkit-line-clamp:2}
+body.fullfight #s-fight.side .cw{gap:6px;justify-content:flex-start}
+body.fullfight #s-fight.side #intent{top:8px!important}
+body.fullfight #s-fight.side #moves{top:42px!important;justify-content:flex-start!important;padding-top:0!important}
+body.fullfight #s-fight #intent{bottom:auto!important;align-items:flex-start;height:auto}
+/* ---------- spin screen: the wheel fills the leftover space, buttons always fit ---------- */
+#s-spin .wheel-area{flex:1 1 0;min-height:96px;container-type:size;display:flex;align-items:center;justify-content:center;margin:6px 0 0}
+#s-spin .wheel-area .wheel-wrap{width:min(100cqw,100cqh,400px)!important;height:auto;aspect-ratio:1/1;margin:0!important;flex:none}
+#s-spin .landed{min-height:0;max-height:88px}
+#s-spin .dock{display:grid;gap:6px}
+#s-spin .dock .btn{margin:0}
+@media (orientation:landscape) and (max-height:560px){
+  #s-spin .wheel-area{grid-column:1;grid-row:1/-1;width:min(calc(100dvh - 80px),46vw);margin:0}
+  #s-spin>*:not(.wheel-area){grid-column:2}
+}
+/* ---------- modes on the Events tab ---------- */
+.modes{display:grid;gap:8px;margin-bottom:6px}
+.mode{appearance:none;display:flex;gap:12px;align-items:center;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;cursor:pointer;box-shadow:var(--card-shadow)}
+.mode .mo-e{font-size:28px}
+.mode b{display:block;font-family:var(--display);font-weight:800;font-size:18px;line-height:1.1}
+.mode small{display:block;color:var(--muted);font-size:13px}
+.mode.locked{opacity:.55}
+.mode:active{transform:scale(.99)}
+/* ---------- fight club ---------- */
+.fc-bets{display:flex;gap:6px;justify-content:center;margin:2px 0 10px}
+.fc-vs{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:stretch}
+.fc-v{align-self:center;font-family:var(--display);font-weight:800;font-size:22px;color:var(--gold)}
+.fc-side{display:flex;flex-direction:column;align-items:center;text-align:center;gap:2px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px}
+.fc-side b{font-size:14px;line-height:1.15}
+.fc-side small{font-size:11.5px;color:var(--muted)}
+.fc-odds{font-weight:800;color:var(--gold);font-size:13px;margin:2px 0 6px}
+.fc-side .btn{font-size:13px!important;min-height:38px;padding:4px 6px;width:100%}
+.fc-art{height:100px;display:flex;align-items:flex-end}
+.fc-live{display:grid;gap:8px;margin:4px 0 8px}
+.fc-live span{font-size:13px;font-weight:700}
+.fc-log{max-height:34vh}
+/* ---------- loot reveal ---------- */
+.lootreveal{display:flex;gap:10px;align-items:center;justify-content:center;margin:6px auto 0;padding:8px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);max-width:340px;text-align:left}
+.lootreveal .lr-e{font-size:30px}
+.lootreveal b{display:block}
+.lootreveal small{display:block;font-size:12.5px;color:var(--muted)}
+.lootreveal.r-rare{border-color:#2DD4BF}.lootreveal.r-epic{border-color:#B388FF;box-shadow:0 0 18px -6px #B388FF}
+.lootreveal.r-legendary{border-color:#F2B544;box-shadow:0 0 22px -6px #F2B544}.lootreveal.r-mythic{border-color:#FF4F8B;box-shadow:0 0 26px -4px #FF4F8B;animation:mythGlow 1.4s ease-in-out infinite alternate}
+@keyframes mythGlow{to{box-shadow:0 0 34px 0 #FF4F8B}}
+#s-spin .landed{height:76px;max-height:76px;min-height:76px;overflow-y:auto}
+#s-spin .wheel-area{position:relative}
+#s-spin .wheel-area #rerollBtn{position:absolute;right:0;bottom:2px;width:auto!important;max-width:46%;min-height:34px;padding:4px 12px!important;font-size:12.5px!important;margin:0!important;z-index:4;white-space:normal;line-height:1.15}
+@media (max-height:620px){#s-spin .landed{height:64px;max-height:64px;min-height:64px}}
+#s-spin .oddsbox{height:30px;min-height:30px;max-height:30px;overflow:hidden}
+#s-spin .who{height:18px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}

@@ -1,0 +1,244 @@
+/* ===================== APP SHELL: nothing scrolls the page ===================== */
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0}
+#app{position:fixed;inset:0;max-width:none;margin:0;padding:0}
+#app>header.bar{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:560px;z-index:40;box-sizing:border-box;padding:calc(env(safe-area-inset-top,0px) + 8px) 14px 6px;margin:0}
+main{position:absolute;inset:0}
+.screen{position:absolute;inset:0;margin:0 auto;max-width:560px;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:calc(env(safe-area-inset-top,0px) + 60px) 14px calc(env(safe-area-inset-bottom,0px) + 10px)}
+.screen[hidden]{display:none!important}
+.screen>.dock,.screen .dock{position:static!important;flex:none;margin:auto 0 0;padding:8px 0 0;background:none;box-shadow:none}
+.screen h2.screen-title{flex:none;margin:4px 0 6px;font-size:22px}
+.scroll,.tabp,#bracket,#codex,#shopList{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar,.tabp::-webkit-scrollbar,#bracket::-webkit-scrollbar,#codex::-webkit-scrollbar,#shopList::-webkit-scrollbar{display:none}
+/* panels fade instead of sliding, so nothing on screen visibly jumps */
+.screen.enter{animation:shellIn .22s ease-out}
+@keyframes shellIn{from{opacity:0}to{opacity:1}}
+
+/* ---------- title ---------- */
+#s-title{padding-top:calc(env(safe-area-inset-top,0px) + 44px)}
+#s-title .hero-wheel{flex:1 1 auto;min-height:0;max-height:190px;height:auto;margin:0 -14px}
+#s-title .hero-wheel canvas{width:min(300px,60vw);height:min(300px,60vw)}
+#s-title h1{flex:none;margin:6px 0 4px;font-size:clamp(28px,8.4vw,42px)}
+#s-title .lede{display:none}
+#s-title #careerWrap{flex:none}
+#s-title #careerWrap .screen-title{font-size:17px;margin:6px 0 6px;color:var(--muted)}
+#s-title .roster{gap:6px;margin:0}
+#s-title .slot{padding:6px 10px;gap:8px}
+#s-title .slot .mini{width:46px}
+#s-title .slot .mini svg{max-height:56px}
+#s-title .slot-t b{font-size:16px}
+#s-title .slot-t span{font-size:12px}
+#s-title .slot-b{flex-direction:row}
+#s-title .slot-b .btn{min-height:34px;padding:4px 10px;font-size:14px}
+#s-title .slot.empty{min-height:44px;padding:6px 10px}
+#s-title #newWrap{flex:none;margin-top:10px}
+#s-title #newWrap .fld{display:none}
+#s-title #newWrap .btn{margin-top:8px}
+#s-title .more-box{display:none}
+.title-menu{flex:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.title-menu .btn{margin:0;min-height:42px;font-size:14px}
+
+/* ---------- spin ---------- */
+#s-spin .who{flex:none;margin:0;font-size:13px}
+#s-spin .prog{flex:none;margin:2px 0}
+#s-spin .cat{flex:none;margin:2px 0;font-size:clamp(24px,7vw,34px)}
+#s-spin .oddsbox{flex:none;display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px;margin:2px 0;min-height:0;max-height:34px}
+#s-spin .oddsbox::-webkit-scrollbar{display:none}
+#s-spin .wheel-wrap{flex:none;width:min(84vw,calc(100dvh - 440px),370px);margin:16px auto 0}
+#s-spin .legend{flex:none;margin:8px 0 0;font-size:12px}
+#s-spin .spin-hint{flex:none;margin:4px 0 0;font-size:12px}
+#s-spin .landed{flex:none;min-height:62px;max-height:96px;overflow:hidden;margin:4px 0 0}
+#s-spin .preview,#s-spin .sheet{display:none!important}
+#s-spin .prog{display:flex;align-items:center;gap:8px}
+#s-spin .prog .prog-track{flex:1}
+.sofar-btn{flex:none;width:auto!important;margin:0!important;min-height:30px!important;padding:2px 10px!important;font-size:12.5px!important;border-radius:99px}
+
+/* ---------- card ---------- */
+#s-card #cardBox{flex:1 1 auto;min-height:0;overflow:hidden}
+#s-card .fcard{margin:0}
+#s-card .fcard>dl,#s-card .fcard .chips.syn,#s-card .fcard .help{display:none}
+#s-card .card-more{margin-top:8px}
+
+/* ---------- fighter page ---------- */
+#s-hub #hubTop{flex:none}
+#s-hub #hubTop .hubcard{padding:10px 12px}
+#s-hub #hubTop svg.ch{max-height:110px;width:auto}
+#s-hub .hubtabs{flex:none;position:static;margin:8px 0 4px}
+#s-hub .tabp{flex:1 1 auto;min-height:0;padding-bottom:4px}
+#s-hub .storycard,#s-hub .rankcard,#s-hub .contract,#s-hub .gearline,#s-hub .challenge{margin-top:8px}
+#s-hub .offer{min-height:48px;padding:7px 10px}
+#s-hub .offer small:not(.ct-r){display:none}
+#s-hub .tier{padding:10px 12px}
+
+/* ---------- map ---------- */
+#s-map #mapHead{flex:none}
+#s-map .maphead{margin-bottom:6px;padding:10px 14px}
+#s-map .maprows{flex:1 1 auto;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:center}
+#s-map .mrow.far{display:none}
+#s-map .mgap{flex:none;text-align:center;color:var(--muted);font-size:13px;letter-spacing:.3em;margin:2px 0 2px 60px}
+
+/* ---------- lists live in their own scrolling panels ---------- */
+#s-bracket #bracket,#s-codex #codex,#s-shop #shopList{flex:1 1 auto;min-height:0}
+#s-shop #gearList{display:none}
+#s-codex .hint,#s-shop .hint,#s-bracket .hint{flex:none;margin:0 0 6px}
+
+/* ===================== FIGHT: a fixed full-screen scene with the wheel under it ===================== */
+#s-fight{--stageH:clamp(250px,52dvh,560px)}
+body.fullfight #s-fight .arena{flex:none;height:var(--stageH)!important;min-height:0!important}
+body.fullfight #s-fight .stage{flex:none!important;height:var(--stageH)!important;min-height:0!important}
+body.fullfight #s-fight #roundName,body.fullfight #s-fight #scout,body.fullfight #s-fight .fstrip,body.fullfight #s-fight #moverow,body.fullfight #s-fight #log,body.fullfight #s-fight #narr{display:none!important}
+body.fullfight #s-fight #intent{position:absolute;z-index:8;left:0;right:0;top:calc(var(--stageH) - 44px);padding:0;display:flex;justify-content:center;pointer-events:none}
+body.fullfight #s-fight #moves{position:absolute!important;left:0;right:0;top:var(--stageH);bottom:0;padding:8px 12px calc(env(safe-area-inset-bottom,0px) + 10px)!important;display:flex;flex-direction:column;justify-content:center}
+body.fullfight #s-fight #moves[hidden]{display:none!important}
+body.fullfight #s-fight #result:not(:empty){position:absolute!important;left:0;right:0;top:var(--stageH);bottom:calc(env(safe-area-inset-bottom,0px) + 70px);padding:10px 16px 0!important;overflow-y:auto;max-height:none!important}
+body.fullfight #s-fight #fightDock{position:absolute!important;left:0;right:0;bottom:0;margin:0;padding:6px 14px calc(env(safe-area-inset-bottom,0px) + 10px)!important;background:none}
+body.fullfight #s-fight #fightActions{display:grid;gap:6px}
+body.fullfight #s-fight #fightActions .btn{margin:0;min-height:48px}
+body.fullfight #s-fight #fightActions .btn.ghost{min-height:38px;font-size:14px}
+/* the read on the opponent: one small pill on the floor of the stage */
+.readpill{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:99px;background:rgba(8,6,14,.72);color:#fff;font-size:13px;font-weight:700;backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.14);box-shadow:0 4px 14px rgba(0,0,0,.35);animation:tickIn .25s ease}
+.readpill .rp-acc{opacity:.7;font-weight:600}
+.readpill.good{border-color:#2DD4BF}
+/* combat wheel area */
+body.fullfight #s-fight .cw{gap:8px;height:auto}
+body.fullfight #s-fight .cw-chips{justify-content:flex-start;gap:5px}
+body.fullfight #s-fight .cw-chips>:first-child{margin-left:auto}
+body.fullfight #s-fight .cw-chips>:last-child{margin-right:auto}
+body.fullfight #s-fight .fchip{padding:6px 10px;font-size:13px;min-height:34px}
+body.fullfight #s-fight .cw-help{display:none}
+body.fullfight #s-fight .cw-row{gap:14px}
+body.fullfight #s-fight .cw-wrap{cursor:pointer}
+body.fullfight #s-fight .cw-out{max-width:140px}
+body.fullfight #s-fight .cw-out small{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+body.fullfight #s-fight .cw-spin{display:none}
+.cw-tap{position:absolute;inset:36%;z-index:3;display:flex;align-items:center;justify-content:center;pointer-events:none;font-family:var(--display);font-weight:800;font-size:13px;letter-spacing:.08em;color:#2A1A05;opacity:.0}
+.cw-wrap.ready .cw-hub{animation:hubBreath 1.6s ease-in-out infinite}
+@keyframes hubBreath{50%{transform:scale(1.08);box-shadow:0 0 0 6px rgba(242,181,68,.25),0 4px 10px rgba(0,0,0,.35)}}
+/* the menu button sits on the scoreboard */
+.fmenu-btn{position:absolute;z-index:9;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 38px);width:40px;height:32px;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(8,6,14,.55);color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);cursor:pointer}
+.fmenu-btn:active{transform:translateX(-50%) scale(.94)}
+/* results in the lower half, short and sweet */
+body.fullfight #s-fight #result .res .big{font-size:clamp(30px,9vw,44px);margin:0}
+body.fullfight #s-fight #result .res>p{margin:2px 0 6px;font-size:14px}
+body.fullfight #s-fight #result .gains li{font-size:13.5px;padding:3px 0}
+.fm-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.fm-grid .menu-i{grid-template-columns:30px 1fr;padding:10px 12px}
+.fm-grid .menu-i span{font-size:20px}
+.fm-grid .menu-i.on{border-color:var(--pink);box-shadow:inset 0 0 0 1px var(--pink)}
+.fm-scout{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+
+/* short phones */
+@media (max-height:700px){
+  #s-title .hero-wheel{max-height:110px}
+  #s-spin .wheel-wrap{margin-top:10px}
+  #s-spin .legend,#s-spin .spin-hint{display:none}
+  #s-fight{--stageH:clamp(230px,50dvh,560px)}
+  .fmenu-btn{top:calc(env(safe-area-inset-top,0px) + 30px);height:28px}
+}
+/* roster rows stay one line each */
+#s-title .slot-t b,#s-title .slot-t span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#s-title #fullNote{display:none}
+/* card: stats as a tight two-column grid */
+#s-card .fcard .stats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px}
+#s-card .fcard .st{display:grid;grid-template-columns:1fr;gap:1px;margin:0}
+#s-card .fcard .st .lb{font-size:12px}
+#s-card .fcard .st .vl{font-size:13.5px}
+#s-card .fcard .fc-win{margin:6px 0 8px;font-size:14px}
+@media (max-height:700px){
+  #s-card .fcard svg.ch{max-height:96px;width:auto}
+  #s-card .fcard .fc-name{font-size:20px}
+  #s-hub #hubTop svg.ch{max-height:84px}
+  #s-hub #hubTop .hubcard{padding:8px 10px}
+  body.fullfight #s-fight .fchip{padding:5px 8px;font-size:12px;min-height:32px}
+  #s-title .slot .mini svg{max-height:46px}
+  #s-title .slot{padding:4px 8px}
+  #s-title h1{font-size:26px}
+}
+#s-title .slot-b{flex-direction:column;gap:4px}
+#s-title .slot-b .btn{min-height:28px;padding:2px 10px;font-size:13px}
+@media (max-width:380px){body.fullfight #s-fight .fchip{padding:5px 7px;font-size:11.5px}body.fullfight #s-fight .cw-chips{gap:4px}}
+/* ===================== responsive fixes for every common screen ===================== */
+/* roster rows never push their buttons off screen */
+#s-title .roster{display:grid;grid-template-columns:minmax(0,1fr)}
+#s-title .slot{min-width:0}
+/* content that can run long scrolls inside its own panel instead of being cut */
+#s-card #cardBox{overflow-y:auto;overscroll-behavior:contain;scrollbar-width:none}
+#s-card #cardBox::-webkit-scrollbar{display:none}
+#s-map .maprows{overflow-y:auto;justify-content:flex-start;scrollbar-width:none}
+#s-map .maprows::-webkit-scrollbar{display:none}
+#s-spin .landed{overflow-y:auto;scrollbar-width:none}
+#s-card .dock{display:grid;grid-template-columns:1fr;gap:6px}
+#s-card .dock .btn{margin:0}
+/* fight: the scene and wheel share one centred column, capped on big screens */
+body.fullfight #s-fight{left:0;right:0;margin:0 auto;width:100%;max-width:var(--fw,760px)}
+body.fullfight #s-fight .cw-chips{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;width:100%;max-width:420px;margin:0 auto}
+body.fullfight #s-fight .cw-chips>*{margin:0!important;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;justify-content:center;text-align:center}
+body.fullfight #s-fight .cw-row{justify-content:center}
+/* very small phones */
+@media (max-height:620px){
+  #s-title .hero-wheel{display:none}
+  #s-title h1{font-size:24px;margin:2px 0}
+  #s-title #careerWrap .screen-title{display:none}
+  #s-title .title-menu .btn{min-height:36px;font-size:13px}
+  #s-hub #hubTop svg.ch{max-height:64px}
+  #s-hub #hubTop .hubcard{padding:6px 10px}
+  #s-hub .hubtabs button{padding:4px 2px;font-size:11.5px}
+  #s-hub .hubtabs button span{font-size:16px}
+  #s-map .maphead{padding:8px 12px}
+  #s-map .mh-t b{font-size:19px}
+  #s-spin .cat{font-size:22px}
+  #s-spin .wheel-wrap{width:min(80vw,calc(100dvh - 380px),370px)}
+}
+@media (max-width:340px){
+  #app>header.bar .brand{display:none}
+  .fchip{font-size:11px}
+}
+
+/* ===================== phones held sideways ===================== */
+@media (orientation:landscape) and (max-height:560px){
+  .screen{max-width:min(100vw,1000px);padding:calc(env(safe-area-inset-top,0px) + 52px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 8px) calc(env(safe-area-inset-left,0px) + 16px)}
+  #app>header.bar{max-width:min(100vw,1000px)}
+  /* title: logo left, fighters right */
+  #s-title{display:grid;grid-template-columns:minmax(0,0.9fr) minmax(0,1.1fr);grid-template-rows:minmax(0,1fr) auto auto;column-gap:22px;padding-top:calc(env(safe-area-inset-top,0px) + 50px)}
+  #s-title .hero-wheel{display:flex;grid-column:1;grid-row:1;max-height:none;margin:0;align-self:end}
+  #s-title h1{grid-column:1;grid-row:2;align-self:start;font-size:clamp(24px,4vw,36px)}
+  #s-title .title-menu{grid-column:1;grid-row:3}
+  #s-title #careerWrap{grid-column:2;grid-row:1;min-height:0;overflow-y:auto;scrollbar-width:none}
+  #s-title #newWrap{grid-column:2;grid-row:2/4;margin-top:6px}
+  /* spin: wheel left, everything else right */
+  #s-spin{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto auto auto minmax(0,1fr) auto;column-gap:22px;align-content:start}
+  #s-spin .wheel-wrap{grid-column:1;grid-row:1/-1;align-self:center;width:min(calc(100dvh - 90px),46vw)!important;margin:0}
+  #s-spin>*:not(.wheel-wrap){grid-column:2}
+  #s-spin .legend,#s-spin .spin-hint{display:none}
+  /* new fighter: card on the left, buttons on the right */
+  #s-card{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);column-gap:18px}
+  #s-card #cardBox{grid-column:1;grid-row:1}
+  #s-card .dock{grid-column:2;grid-row:1;align-self:end;margin:0}
+  /* fighter page: fighter left, tabs right */
+  #s-hub{display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr);grid-template-rows:auto minmax(0,1fr);column-gap:18px}
+  #s-hub #hubTop{grid-column:1;grid-row:1/3;overflow-y:auto;scrollbar-width:none}
+  #s-hub .hubtabs{grid-column:2;grid-row:1;margin:0 0 6px}
+  #s-hub .tabp{grid-column:2;grid-row:2}
+  /* map: chapter on the left, path on the right */
+  #s-map{display:grid;grid-template-columns:minmax(0,0.8fr) minmax(0,1.2fr);grid-template-rows:minmax(0,1fr) auto;column-gap:18px}
+  #s-map #mapHead{grid-column:1;grid-row:1}
+  #s-map .maprows{grid-column:2;grid-row:1/3}
+  #s-map .dock{grid-column:1;grid-row:2}
+  /* lists */
+  #s-shop,#s-codex,#s-bracket{max-width:720px}
+}
+/* fight sideways: scene on the left, wheel on the right */
+body.fullfight #s-fight.side{max-width:var(--fw,1100px)}
+body.fullfight #s-fight.side .arena{position:absolute;left:0;top:0;width:var(--stageW);height:100%!important}
+body.fullfight #s-fight.side .stage{height:100%!important}
+body.fullfight #s-fight.side #intent{top:auto;bottom:10px;width:var(--stageW);right:auto}
+body.fullfight #s-fight.side #moves{left:var(--stageW)!important;top:0!important;padding:12px 14px calc(env(safe-area-inset-bottom,0px) + 10px)!important}
+body.fullfight #s-fight.side #result:not(:empty){left:var(--stageW)!important;top:0!important;bottom:calc(env(safe-area-inset-bottom,0px) + 64px)}
+body.fullfight #s-fight.side #fightDock{left:var(--stageW)!important}
+body.fullfight #s-fight.side .cw-row{flex-direction:column;gap:8px}
+body.fullfight #s-fight.side .cw-out{max-width:none;text-align:center}
+body.fullfight #s-fight.side .hud{padding-top:calc(env(safe-area-inset-top,0px) + 6px)}
+body.fullfight #s-fight.side .fmenu-btn{top:calc(env(safe-area-inset-top,0px) + 30px)}
+@media (max-height:620px){#s-title #careerWrap{flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none}}
+body.fullfight #s-fight.side .cw-chips{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-width:300px}
+@media (max-width:350px){body.fullfight #s-fight:not(.side) .cw-chips{grid-template-columns:repeat(2,minmax(0,1fr))!important;max-width:260px}}

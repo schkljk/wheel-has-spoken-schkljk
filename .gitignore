@@ -1,0 +1,10 @@
+node_modules/
+dist/
+!legacy/dist/
+legacy/src/core_new.js
+legacy/src/page.js
+legacy/tests/shots/*.png
+.DS_Store
+test-results/
+playwright-report/
+*.tsbuildinfo

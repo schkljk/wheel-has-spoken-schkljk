@@ -1,0 +1,31 @@
+{
+  "name": "wheel-has-spoken",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @whs/game",
+    "build": "npm run build -w @whs/game",
+    "typecheck": "tsc -b && tsc -p tools",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "sim": "tsx tools/sim/run.ts",
+    "legacy:build": "cd legacy/src && python3 build_core.py && python3 assemble.py"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.0",
+    "@preact/preset-vite": "^2.10.2",
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "~5.9.2",
+    "vite": "7.3.6",
+    "vite-plugin-pwa": "^1.0.3",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
