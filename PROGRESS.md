@@ -30,6 +30,22 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 
 That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system health" (14 to 18).
 
+- [x] 14. Developer balance dashboard (hidden)
+
+### 14. Developer balance dashboard (hidden)
+
+- **How to open it:** Settings, then tap the build line at the bottom ("The Wheel Has Spoken · build …") five times. It's not mentioned anywhere else.
+- **The Balance lab** runs 2,000, 10,000 or 40,000 same-level fights between random fighters in a Web Worker, with a progress bar, so the game stays responsive. Fighters have random levels 1 to 30 and random gear in 0 to 6 slots; 40% wear 2, 4 or 6 pieces of one set. It shows win rates in tabs for classes, races, weapons, sidekicks, gear sets, growth and personalities: a bar with a 50% line, the exact rate and the sample size. Anything above 58% is flagged red and anything below 42% blue. The last run stays while the app is open.
+- `labRun(fights, seed)` in `packages/core/src/game/lab.ts` is plain core code: the same seed always gives the same report. The build line shows the commit on CI builds and the date otherwise.
+- What a 20,000-fight run says today, for the next upgrades:
+  - Classes: Necromancer 66%, Chosen one 64%, Paladin 62% and Resilient 59% are flagged high; Mage 42% and NPC 27% low.
+  - Races: Treant 64%, Golem 60% and Titan 60% high; Pigeon 42% low.
+  - Weapons: the Rubber chicken (42%) and Wet noodle (41%) are the weakest.
+  - Gear sets: the Knight set wins 60%, 66% and 70% at 2, 4 and 6 pieces; the other sets are near even.
+  - Growth: Prodigy 57% is the best and Plateau 44% the worst.
+  - Sidekicks all land between 47% and 57%.
+- Tested: `lab.test.ts` checks the same seed gives the same report, that every fighter is counted once per table, that the overall rate averages exactly 50%, and that set wearers show up. A new e2e test does the five taps, runs 2,000 fights, opens every tab, and checks for clipping and page scroll at 320×568, 1280×720 and 844×390.
+
 ### 13. A visible momentum meter
 
 - Momentum used to be three faint dashes. Now each fighter has a meter under their name: a climbing double-chevron pixel icon, three thicker gold pips and a label ("+20%"). A new pip pops in when you win a matchup. At three pips the meter burns orange and pulses. When momentum is lost the pips flash red as they empty. The opponent's meter mirrors yours.

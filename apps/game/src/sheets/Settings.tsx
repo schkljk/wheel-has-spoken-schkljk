@@ -3,6 +3,9 @@ import { commit, settings } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Segmented, Sheet, Toggle } from '../ui/kit';
 import { SaveSheet } from './Save';
+import { LabSheet } from './Lab';
+
+const taps = { n: 0 };
 import { startTutorial } from './Tutorial';
 
 export function SettingsSheet() {
@@ -45,6 +48,18 @@ export function SettingsSheet() {
           Your save and backups
         </button>
       </div>
+      {/* five taps open the hidden balance lab */}
+      <p
+        class="fine build"
+        onClick={() => {
+          if (++taps.n >= 5) {
+            taps.n = 0;
+            openSheet(<LabSheet />);
+          }
+        }}
+      >
+        The Wheel Has Spoken · build {__BUILD__}
+      </p>
     </Sheet>
   );
 }

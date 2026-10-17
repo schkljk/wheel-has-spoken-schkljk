@@ -347,3 +347,29 @@ test('the knockout blow plays in slow motion with the camera pushed in, then the
   expect(await page.evaluate('window.__whsFight.world.scale.x')).toBe(1);
   expect(errors).toEqual([]);
 });
+
+test('the hidden balance lab: five taps on the build line, a mass simulation, tables that fit', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await open(page, careerSaveKV({ seed: 4, lvl: 3 }));
+  await page.getByRole('button', { name: 'Settings' }).first().click();
+  const build = page.getByText(/^The Wheel Has Spoken · build /);
+  for (let i = 0; i < 5; i++) await build.click();
+  await expect(page.getByRole('heading', { name: 'Balance lab' })).toBeVisible();
+  await page.getByRole('button', { name: '2,000' }).click();
+  await page.getByRole('button', { name: 'Run the simulation' }).click();
+  await expect(page.getByRole('button', { name: 'Run again' })).toBeVisible({ timeout: 120_000 });
+  await expect(page.getByText(/^2,000 fights, seed \d+\. Flagged: above 58% or below 42%\.$/)).toBeVisible();
+  for (const tab of ['Classes', 'Races', 'Weapons', 'Sidekicks', 'Gear sets', 'Growth', 'Personalities']) {
+    await page.getByRole('tab', { name: tab }).click();
+    expect(await page.locator('.lab-list li').count(), tab).toBeGreaterThan(1);
+  }
+  for (const [width, height] of [[320, 568], [1280, 720], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(300);
+    const p = await layoutProblems(page);
+    expect(p.clipped, `${width}x${height}`).toEqual([]);
+    expect(p.pageScrolls, `${width}x${height}`).toBe(false);
+  }
+  expect(errors).toEqual([]);
+});
