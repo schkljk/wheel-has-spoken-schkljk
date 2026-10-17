@@ -1270,7 +1270,8 @@
 }
 .maprows {
   min-height: 0;
-  overflow: hidden;
+  /* the steps are picked to fit; on the smallest screens the list scrolls inside itself */
+  overflow-y: auto;
   padding: 0.5rem var(--gutter);
   display: grid;
   align-content: start;
@@ -1295,6 +1296,10 @@
   gap: 0.4rem;
   min-width: 0;
 }
+/* the choices you can take: two to a line when three don't fit with their names */
+.mrow.now .mnodes {
+  flex-wrap: wrap;
+}
 .mnode {
   position: relative;
   display: grid;
@@ -1317,7 +1322,7 @@
   display: flex;
   gap: 0.5rem;
   width: auto;
-  flex: 1 1 0;
+  flex: 1 1 6.2rem;
   min-width: 0;
   height: auto;
   min-height: 3.2rem;
@@ -1330,6 +1335,27 @@
 }
 .mnode.now.t-boss {
   border-color: var(--gold);
+}
+/* the nemesis step: an inverted card that pulses (upgrade 19) */
+.mnode.t-nemesis {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--danger);
+}
+.mnode.now.t-nemesis {
+  border-color: var(--danger);
+  animation: nemglow 1.4s ease-in-out infinite;
+}
+.mnode.now.t-nemesis .mn-t small {
+  color: color-mix(in srgb, var(--bg) 75%, var(--ink));
+}
+@keyframes nemglow {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 30%, transparent);
+  }
+}
+.nem-art {
+  filter: drop-shadow(0 0 16px color-mix(in srgb, var(--danger) 60%, transparent));
 }
 .mn-t {
   display: grid;
@@ -1480,18 +1506,16 @@
   font-style: italic;
   margin: 0;
 }
-.typed {
-  display: inline-block;
-  overflow: hidden;
-  white-space: nowrap;
-  vertical-align: bottom;
-  max-width: 100%;
-  animation: typing calc(var(--n) * 26ms) steps(var(--n)) both;
+.typed-rest {
+  visibility: hidden;
 }
-@keyframes typing {
-  from {
-    width: 0;
-  }
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---------- fighter page ---------- */

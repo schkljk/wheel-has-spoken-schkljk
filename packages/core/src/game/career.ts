@@ -10,7 +10,7 @@ import { pick, pickW, shuffle } from '../random';
 import { STATLBL, setCount, synOf, talEcon, talMap, fullName, bestStat } from '../stats';
 import { deserFighter, serFighter, type CareerFighter, type Json, type SerFighter } from '../save/fighter';
 import { lgLvl, legacyFx, xpNeed, LEVEL_CAP } from '../save/career';
-import type { Profile } from '../save/schema';
+import type { Profile, Slot } from '../save/schema';
 import type { Fighter, Injury, StatKey, Synergy } from '../types';
 import { addCoins, ctxOf, newCid, freeSlot, pl, slotOf, type Game } from './game';
 import { ACHK, ARCHK, CODEX, CX_CATS, cxKey, lookOf, type Look } from './lookups';
@@ -39,11 +39,9 @@ export interface Rival {
   score: number;
   at: number;
 }
-export interface Nemesis {
-  f: SerFighter;
-  beats?: number;
-  owner?: string;
-}
+export type Nemesis = NonNullable<Slot['nemesis']>;
+/** One fight with the nemesis: did you win, where, in which round, and the winner's HP left. */
+export type NemLog = NonNullable<Nemesis['log']>[number];
 export const champsOf = (p: Profile) => p.champs as unknown as Champ[];
 export const rivalsOf = (g: Game) => g.save.roster.rivals as unknown as Rival[];
 

@@ -28,6 +28,8 @@ export interface Balance {
   jokeSynergies: boolean;
   /** growth types scale by `GROWTH_TUNE` instead of the wheel's own numbers (upgrade 18) */
   growth: boolean;
+  /** the nemesis follows you into the story, and story losses make one (upgrade 19) */
+  storyNemesis: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -43,6 +45,7 @@ export const LEGACY_BALANCE: Balance = {
   softCaps: false,
   jokeSynergies: false,
   growth: false,
+  storyNemesis: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -82,6 +85,7 @@ export const BALANCE: Balance = {
   softCaps: true,
   jokeSynergies: true,
   growth: true,
+  storyNemesis: true,
 };
 
 /**

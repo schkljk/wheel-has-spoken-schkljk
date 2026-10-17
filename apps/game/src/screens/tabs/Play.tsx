@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { CHAPTERS, TIERS_T, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure } from '../../state/game';
 import { Icon } from '../../ui/Icon';
 import { Inf } from '../../ui/Info';
@@ -89,8 +89,10 @@ export function PlayTab() {
         </button>
       )}
       {NM && (
-        <Inf k="rule|nemesis" class="nem card">
-          😈 Nemesis: <b>{NM.f.name}</b> has beaten you {NM.beats === 1 ? 'once' : `${NM.beats} times`}. They'll show up in your next tournament, a level stronger each time they win.
+        <Inf k={BALANCE.storyNemesis ? 'rule|nemstory' : 'rule|nemesis'} class="nem card">
+          😈 Nemesis: <b>{NM.f.name}</b> has beaten you {NM.beats === 1 ? 'once' : `${NM.beats} times`}
+          {NM.lost ? `, you've beaten them ${NM.lost === 1 ? 'once' : 'twice'}` : ''}. They'll show up in your next tournament
+          {BALANCE.storyNemesis ? ' and on your story map' : ''}, a level stronger each time they win.
         </Inf>
       )}
       <span class="sec-label">More ways to play</span>

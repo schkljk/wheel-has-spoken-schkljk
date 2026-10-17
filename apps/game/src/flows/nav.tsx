@@ -21,6 +21,8 @@ import {
   prizeMoney,
   salvageValue,
   storyEnsure,
+  placeNemesis,
+  myNemesis,
   storyOf,
   upgradeChoose,
   upgradeLists,
@@ -319,6 +321,7 @@ export function goMap() {
     storyEnsure(g);
     const m = act2Migrate(g);
     if (m) toast(m);
+    if (placeNemesis(g)) toast(`😈 ${myNemesis(g)!.f.name} is somewhere on this map. Waiting.`);
   });
   go({ screen: 'map', key: Math.random() });
 }

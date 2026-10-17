@@ -458,7 +458,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     }
     let r: FightResult;
     try {
-      r = act(() => end({ w: bt.w!, me: bt.P[0], round: bt.round, sd: !!bt.sd }));
+      r = act(() => end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd }));
     } catch (err) {
       console.error(err);
       r = {

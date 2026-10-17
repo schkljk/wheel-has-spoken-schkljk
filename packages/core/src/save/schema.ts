@@ -24,7 +24,20 @@ export interface Settings {
 export interface Slot {
   career: SerFighter;
   /** the opponent who beat them, back for revenge */
-  nemesis: { f: SerFighter; beats?: number; owner?: string } | null;
+  nemesis: {
+    f: SerFighter;
+    beats?: number;
+    owner?: string;
+    /** the last few fights with them (upgrade 19) */
+    log?: { w: boolean; where: string; r: number; hp: number }[];
+    /** story meetings, story wins against them, skipped steps, and the story chapter they show up again */
+    met?: number;
+    lost?: number;
+    dodged?: number;
+    at?: number;
+    /** you walked past their last step */
+    skip?: boolean;
+  } | null;
   /** an unfinished cup or gauntlet run */
   tourney: Json;
   coins: number;

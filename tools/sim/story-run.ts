@@ -1,7 +1,7 @@
 /**
  * Whole story runs with weak, average and strong builds (see story.ts for the player's choices), spread
  * over worker threads.
- *   npx tsx tools/sim/story-run.ts [--runs 30] [--seed 1] [--to 20] [--cups 0]
+ *   npx tsx tools/sim/story-run.ts [--runs 30] [--seed 1] [--to 20] [--cups 0] [--off storyNemesis]
  */
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -78,6 +78,11 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
     });
     console.log(`${String(ch).padStart(2)} ${CHAPTERS[ch - 1]!.n.slice(0, 21).padEnd(22)}${pad(CHAPTERS[ch - 1]!.lvl, 4)}${cells.map((c) => pad(c, 32)).join('')}`);
   }
+  const sum = (s: Strength, k: 'nem' | 'nemWins' | 'nemRetired') => all[s].reduce((a, r) => a + r.chapters.reduce((b, c) => b + c[k], 0), 0);
+  if (STRENGTHS.some((s) => sum(s, 'nem')))
+    console.log(
+      `Nemesis fights per run (won, retired): ${STRENGTHS.map((s) => `${s} ${(sum(s, 'nem') / runs).toFixed(1)} (${Math.round((sum(s, 'nemWins') / Math.max(1, sum(s, 'nem'))) * 100)}%, ${(sum(s, 'nemRetired') / runs).toFixed(2)})`).join(', ')}`,
+    );
   if (cups) console.log(`Cups played per run: ${STRENGTHS.map((s) => `${s} ${(all[s].reduce((a, r) => a + r.chapters.reduce((b, c) => b + c.cups, 0), 0) / runs).toFixed(1)}`).join(', ')}`);
   console.log(`(${runs * 3} runs in ${((Date.now() - t0) / 1000).toFixed(0)} s on ${Math.min(availableParallelism(), jobs.length)} threads)`);
 }
@@ -95,5 +100,7 @@ if (!isMainThread) {
     const i = process.argv.indexOf(`--${name}`);
     return i > 0 ? Number(process.argv[i + 1]) : def;
   };
+  // --off <switch> plays without one of the balance table's switches (they reach the workers too)
+  process.argv.forEach((a, i) => a === '--off' && Object.assign(BALANCE, { [process.argv[i + 1]!]: false }));
   await storyTables(arg('runs', 30), arg('seed', 1), arg('to', CHAPTERS.length), arg('cups', 0));
 }

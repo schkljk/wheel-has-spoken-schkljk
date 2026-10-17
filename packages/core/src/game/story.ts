@@ -1,7 +1,8 @@
-import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
+import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, NODE, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
 import { GEAR } from '../data/gear';
 import { BALANCE } from '../data/balance';
 import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
+import { NODE_MORE } from '../data/content/nemesis';
 import { LEVELUP } from '../data/misc';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
@@ -20,7 +21,7 @@ export const LASTCH = CHAPTERS.length;
 export const maxGrit = (g: Game) => 3 + lgLvl(g.save.profile, 'grit');
 
 // ---------------------------------------------------------------- chapters and the map
-export type NodeKind = 'fight' | 'elite' | 'event' | 'rest' | 'shop' | 'treasure' | 'boss';
+export type NodeKind = 'fight' | 'elite' | 'event' | 'rest' | 'shop' | 'treasure' | 'boss' | 'nemesis';
 
 /** Story state with the fields the rules use (the save keeps it as loose JSON). */
 export interface Story extends StoryState {
@@ -39,6 +40,9 @@ export interface Story extends StoryState {
   v3?: number;
   v4?: number;
   fixedOrder?: number;
+  /** the step the nemesis waits on this chapter, and whether that is settled (upgrade 19) */
+  nemRow?: number;
+  nemOk?: number;
 }
 export const storyOf = (g: Game) => g.F!.story as Story;
 
@@ -627,5 +631,7 @@ export function useItem(g: Game, k: string): string | null {
 export const healAmount = (g: Game, k: string) => (k === 'bandage' ? 35 : k === 'ration' ? 25 : 0) + 10 * talEcon(g.F!, 'heal');
 
 export const chapterOf = (ch: number) => CHAPTERS[ch - 1]!;
+/** A map step's icon, name and line. */
+export const nodeOf = (t: NodeKind) => (NODE[t] ?? NODE_MORE[t])!;
 export const bossOf = (ch: number) => BOSSES[ch - 1]!;
 export const gritLeft = (g: Game) => pl(storyOf(g).grit, 'grit', 'grit');

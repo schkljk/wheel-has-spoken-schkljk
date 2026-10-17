@@ -33,6 +33,7 @@ import {
 import { ACHK, CONTRACTK } from './lookups';
 import { RNAME1, nextGauntletOpp, recordCup, resolveMyRound, saveRun, simRest, type Cup, type Gauntlet, type Tier } from './cups';
 import { LASTCH, hpTxt, newChapter, storyOf } from './story';
+import { nemFought, storyNemesisEnd } from './nemesis';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
@@ -50,7 +51,7 @@ export interface FightSpec {
   tier: FightTier | Tier;
   opp: CareerFighter;
   /** story node */
-  node?: 'fight' | 'elite' | 'boss';
+  node?: 'fight' | 'elite' | 'boss' | 'nemesis';
   run?: Cup | Gauntlet;
   /** boss rush HP carried between fights (0-100) */
   rushHp?: number;
@@ -128,7 +129,7 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
 /** Round limits: bosses get 30 rounds and sudden death; elites, legends and cup finals get 20. */
 export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run' | 'tier'>): Pick<BattleOpts, 'maxRounds' | 'suddenDeath'> {
   if (spec.kind === 'rush' || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
-  if (spec.kind === 'story' && spec.node === 'elite') return { maxRounds: 20 };
+  if (spec.kind === 'story' && (spec.node === 'elite' || spec.node === 'nemesis')) return { maxRounds: 20 };
   if (spec.kind === 'challenge' && spec.opp && spec.opp.isRival === 'legend') return { maxRounds: 20 };
   if (spec.kind === 'cup') {
     const T = spec.run as Cup;
@@ -154,6 +155,8 @@ export interface FightOutcome {
   w: 0 | 1;
   /** the player's side at the end */
   me: Side;
+  /** the opponent's side at the end (newer callers) */
+  them?: Side;
   round: number;
   /** ended in sudden death */
   sd: boolean;
@@ -262,6 +265,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
   }
   if (!won && !chal) {
     setNemesis(g, O);
+    nemFought(g, O, false, o, gaunt ? 'the gauntlet' : `the ${tier.n}`);
     lines.push(`😈 ${O.name} is now your nemesis`);
   }
   if (!won && g.rng() < 0.35) {
@@ -431,9 +435,9 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   const lines: string[] = [];
   const got: FightResult['got'] = [];
   const keys: string[] = [];
-  let xp = won ? { fight: 8, elite: 14, boss: 30 }[node] + ch * 2 : 4;
-  let coins = won ? { fight: 2, elite: 4, boss: 14 }[node] + Math.floor(ch / 2) : 0;
-  let fame = won ? { fight: 2, elite: 5, boss: 20 }[node] + ch : 0;
+  let xp = won ? { fight: 8, elite: 14, boss: 30, nemesis: 14 }[node] + ch * 2 : 4;
+  let coins = won ? { fight: 2, elite: 4, boss: 14, nemesis: 4 }[node] + Math.floor(ch / 2) : 0;
+  let fame = won ? { fight: 2, elite: 5, boss: 20, nemesis: 5 }[node] + ch : 0;
   if (won) {
     S.hp = Math.min(100, Math.max(1, Math.ceil(me.hp)) + 10);
     if (spec.odds < 0.35) keys.push('giant');
@@ -460,6 +464,10 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     fame += 4;
     lines.push(`📜 Contract done: ${c.e} ${c.n}, +${c.coins} 🪙, +${c.xp} XP`);
   }
+  const nem = storyNemesisEnd(g, node, O, o, lines, keys);
+  xp += nem.xp;
+  coins += nem.coins;
+  fame += nem.fame;
   if (won) coins = Math.round((coins + 2 * talEcon(F, 'coins')) * (1 + 0.25 * talEcon(F, 'gold')));
   let cleared = false;
   let reset = false;
@@ -487,7 +495,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   addCoins(g, coins);
   award(g, keys, got);
   lines.unshift(`+${xp} XP, +${coins} 🪙`);
-  if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) : node === 'elite' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
   if (won) {
     track(g, 'wins');
     addMasteryWin(g, F);
@@ -513,7 +521,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   if (won) {
     if (node === 'boss') next.push({ t: 'loot', table: 'boss' });
     else {
-      if (node === 'elite') next.push({ t: 'loot', table: 'elite' });
+      if (node === 'elite' || node === 'nemesis') next.push({ t: 'loot', table: 'elite' });
       next.push({ t: 'reward' });
     }
   }
