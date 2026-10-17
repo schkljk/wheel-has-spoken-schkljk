@@ -107,6 +107,13 @@ for (const [width, height] of VIEWS) {
       await page.getByRole('button', { name: /^Skip/ }).click();
       await page.locator('.fresult').waitFor({ timeout: 60_000 });
       await check(page, 'fight result');
+      const share = page.getByRole('button', { name: /Save this win/ });
+      if (await share.count()) {
+        await share.click();
+        await page.locator('.share-prev img').waitFor({ timeout: 30_000 });
+        await check(page, 'share card');
+        await sheetClose(page);
+      }
       await page.locator('.fresult .btn').first().click();
       await page.locator('.ch-opt, .tabbar, .maphead, .spin-foot').first().waitFor();
       await check(page, 'after the fight');
