@@ -1,16 +1,38 @@
-import { route } from './state/game';
+import type { CareerFighter } from '@whs/core';
+import { route, type Tab } from './state/game';
 import { Hub } from './screens/Hub';
 import { Title } from './screens/Title';
+import { BuildScreen, SpinScreen, type SpinSpec } from './screens/Spin';
+import { CardScreen } from './screens/Card';
 import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
+import { InfoHost } from './ui/Info';
+import { StatPopHost } from './ui/StatPop';
+
+function Screen() {
+  const r = route.value as { screen: string; [k: string]: unknown };
+  switch (r.screen) {
+    case 'hub':
+      return <Hub tab={r.tab as Tab} />;
+    case 'build':
+      return <BuildScreen key={r.name as string} name={r.name as string} />;
+    case 'card':
+      return <CardScreen f={r.f as CareerFighter} />;
+    case 'spin':
+      return <SpinScreen key={r.key as number} spec={r.spec as SpinSpec} done={r.done as (it: unknown) => void} />;
+    default:
+      return <Title />;
+  }
+}
 
 export function App() {
-  const r = route.value;
   return (
     <>
-      {r.screen === 'title' ? <Title /> : <Hub tab={r.tab} />}
+      <Screen />
       <SheetHost />
       <ConfirmHost />
       <CineHost />
+      <InfoHost />
+      <StatPopHost />
       <ToastHost />
     </>
   );

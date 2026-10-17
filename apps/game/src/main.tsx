@@ -8,6 +8,7 @@ import { installPressFeedback } from './ui/kit';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/screens.css';
+import './styles/game.css';
 
 installPressFeedback();
 render(<App />, document.getElementById('app')!);

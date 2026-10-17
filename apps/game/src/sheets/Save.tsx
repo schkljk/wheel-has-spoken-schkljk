@@ -1,6 +1,6 @@
 import { useSignal } from '@preact/signals';
 import { SaveFormatError, exportFileName, exportText, migrate, newSave, summarize, type SaveData } from '@whs/core';
-import { go, replaceSave, save, store, toast } from '../state/game';
+import { go, loadSave, replaceSave, save, store, toast } from '../state/game';
 import { closeSheet, confirm } from '../state/ui';
 import { Icon } from '../ui/Icon';
 import { Sheet } from '../ui/kit';
@@ -99,7 +99,7 @@ export function SaveSheet() {
       danger: true,
     });
     if (!ok) return;
-    save.value = store.erase(s);
+    loadSave(store.erase(s));
     closeSheet();
     go({ screen: 'title' });
     toast('Everything erased');

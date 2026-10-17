@@ -3,11 +3,15 @@ import type { ComponentChildren } from 'preact';
 
 /** The open bottom sheet (one at a time; opening another replaces it). */
 export const sheet: Signal<ComponentChildren | null> = signal(null);
-export const openSheet = (c: ComponentChildren) => {
+/** A locked sheet can only be closed by picking one of its options. */
+export const sheetLocked = signal(false);
+export const openSheet = (c: ComponentChildren, locked = false) => {
   sheet.value = c;
+  sheetLocked.value = locked;
 };
 export const closeSheet = () => {
   sheet.value = null;
+  sheetLocked.value = false;
 };
 
 /** The full-screen story card overlay (tutorial, intros). */
@@ -23,3 +27,9 @@ export interface ConfirmOpts {
 }
 export const confirmReq = signal<(ConfirmOpts & { resolve: (ok: boolean) => void }) | null>(null);
 export const confirm = (o: ConfirmOpts) => new Promise<boolean>((resolve) => (confirmReq.value = { ...o, resolve }));
+
+/** The tap-for-info card (stacks over sheets). */
+export const infoKey = signal<string | null>(null);
+export const openInfo = (key: string) => {
+  infoKey.value = key;
+};

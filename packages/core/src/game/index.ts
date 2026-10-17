@@ -8,3 +8,5 @@ export * from './cups';
 export * from './fight';
 export * from './modes';
 export * from './progression';
+export * from './build';
+export * from './info';

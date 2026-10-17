@@ -51,7 +51,7 @@ export interface SpriteProps {
  * A fighter's pixel sprite, same markup as legacy charSVG: shadow, chosen-one halo, power aura, body layer, and
  * the weapon arm in `g.armw` (data-sx/data-sy = shoulder pivot in viewBox units, for swing animations).
  */
-export function Sprite({ look, h = 110, sized, mirror, class: cls }: SpriteProps) {
+export function FighterSprite({ look, h = 110, sized, mirror, class: cls }: SpriteProps) {
   const sc = sized ? (look.size !== undefined && SIZE_H[look.size]) || 1 : 1;
   const hh = Math.round(h * sc),
     ww = Math.round((hh * 100) / 120);
