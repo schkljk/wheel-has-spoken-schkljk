@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  ARENAS, MUTATORS, ULT_WHEEL, kitMoves, mulberry32, newBattle, randomFighter, type Battle, type BattleEvent, type Fighter, type Move,
-  type Rng, type RoundMod,
+  ARENAS, BALANCE, LEGACY_BALANCE, MUTATORS, ULT_WHEEL, kitMoves, mulberry32, newBattle, randomFighter, useBalance, type Battle, type BattleEvent,
+  type Fighter, type Move, type Rng, type RoundMod,
 } from '../../packages/core/src';
 import { decorate, legacyCore, randomExtras } from './fixtures';
+
+// the old game had no AI personalities: compare with them switched off
+const tuned = { ...BALANCE };
+beforeAll(() => useBalance(LEGACY_BALANCE));
+afterAll(() => useBalance(tuned));
 
 const L = legacyCore();
 type LF = Record<string, unknown>;

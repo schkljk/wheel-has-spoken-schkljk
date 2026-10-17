@@ -126,4 +126,19 @@ export const EXTRA_ICONS: Record<string, string[]> = {
     '...kkkkk....',
     '............',
   ],
+  // momentum: a double chevron climbing
+  momentum: [
+    '............',
+    '.....kk.....',
+    '....kYYk....',
+    '...kYyyYk...',
+    '..kYykkyYk..',
+    '..kkk..kkk..',
+    '.....kk.....',
+    '....kYYk....',
+    '...kYyyYk...',
+    '..kYykkyYk..',
+    '..kkk..kkk..',
+    '............',
+  ],
 };

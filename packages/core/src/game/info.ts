@@ -4,7 +4,8 @@ import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc'
 import { GEAR, RARITY } from '../data/gear';
 import { SYN } from '../data/synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
+import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { findMove } from '../kits';
 import { STATLBL } from '../stats';
@@ -186,7 +187,7 @@ export function infoFor(key: string): Info | null {
     };
   }
   if (kind === 'rule') {
-    const r = RULES[a];
+    const r = RULES[a] ?? RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }
   if (kind === 'stat') {
@@ -211,6 +212,18 @@ export function infoFor(key: string): Info | null {
     if (a === 'combo') return { e: '⚗️', title: b, sub: 'Element combo', p: COMBO_INFO[b] || '', lines: RULES.combos![2].slice(1) };
     const p = PILL_INFO[a];
     return p ? { e: p[0], title: p[1], p: p[2], lines: [] } : null;
+  }
+  if (kind === 'pers') {
+    const p = PERSONALITIES[a as PersonalityKey];
+    if (!p) return null;
+    return {
+      e: p.e,
+      title: p.n,
+      sub: 'AI personality',
+      p: p.d,
+      lines: ['Read off their build: the stance first, then the stats that stand out.', 'It only changes how the AI picks moves: theirs, and yours on auto-battle.'],
+      flavor: p.flavor,
+    };
   }
   if (kind === 'move') return infoFor('rule|moves');
   if (kind === 'tier') {

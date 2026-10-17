@@ -73,3 +73,15 @@ export function procFeed(): (e: BattleEvent) => Proc | null {
     return p;
   };
 }
+
+/** The blow that knocks someone out in a batch of events: the last thing that hurt the fallen before the K.O. (or -1). */
+export function finisherOf(evs: readonly BattleEvent[]): number {
+  const k = evs.findIndex((e) => e.a?.t === 'ko');
+  if (k < 0) return -1;
+  const on = evs[k]!.a!.on;
+  for (let i = k - 1; i >= 0; i--) {
+    const a = evs[i]!.a;
+    if (a && ['hit', 'ult', 'pet', 'dot', 'self', 'uno'].includes(a.t) && (a.to ?? a.on) === on) return i;
+  }
+  return -1;
+}

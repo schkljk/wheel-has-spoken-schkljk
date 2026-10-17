@@ -15,8 +15,10 @@ import {
   peekSlice,
   phaseKitOf,
   phaseSlice,
+  personalityOf,
   pickW,
   powerScale,
+  finisherOf,
   procFeed,
   procOf,
   rankOf,
@@ -149,18 +151,33 @@ function Hud({
   last: { m: Move[]; n: number };
   onMenu: () => void;
 }) {
+  // momentum changes replay their animation: a pop when it grows, a red flash when it's lost
+  const momRef = useRef({ v: [0, 0], fx: ['', ''], n: [0, 0] });
   const side = (i: 0 | 1) => {
     const hp = snap ? snap.h[i]! : 100;
     const en = snap ? snap.en[i]! : 50;
     const mo = snap ? snap.mo[i]! : 0;
+    const M = momRef.current;
+    if (mo !== M.v[i]) {
+      M.fx[i] = mo > M.v[i]! ? 'gain' : 'lost';
+      M.v[i] = mo;
+      M.n[i]!++;
+    }
     return (
       <div class={`hs${i ? ' r' : ' me'}`}>
         <div class="hn ellipsis">{names[i]}</div>
-        <div class="mom" aria-label={`Momentum ${mo}`}>
+        <Inf
+          key={`mom${M.n[i]}`}
+          k="rule|momentum"
+          class={`mom${mo > 0 ? ' up' : ''}${mo >= 3 ? ' max' : ''} ${M.fx[i]}`}
+          label={`Momentum ${mo} of 3${mo ? `: +${mo * 10}% damage` : ''}`}
+        >
+          <Icon name="momentum" />
           {[0, 1, 2].map((k) => (
-            <i key={k} class={k < mo ? 'on' : ''} />
+            <i key={k} class={k < mo ? `on${k === mo - 1 ? ' new' : ''}` : ''} />
           ))}
-        </div>
+          {mo > 0 && <small>+{mo * 10}%</small>}
+        </Inf>
         <div class="mbar hp" role="progressbar" aria-label={`${names[i]} HP`} aria-valuenow={hp} aria-valuemin={0} aria-valuemax={100}>
           <b class="ghost" style={{ width: `${hp}%` }} />
           <i class={hp < 30 ? 'low' : ''} style={{ width: `${hp}%` }} />
@@ -310,6 +327,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
 
   async function playEvents(evs: BattleEvent[]) {
     const sc = sceneRef.current!;
+    const fin = finisherOf(evs);
     for (let i = 0; i < evs.length; i++) {
       if (S.skip || S.ended) {
         S.log.push(...evs.slice(i));
@@ -333,7 +351,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
           S.music = phaseMusic(kit.tune);
         }
       }
-      await sc.play(e, S.procs(e));
+      await sc.play(e, S.procs(e), i === fin);
     }
   }
 
@@ -637,6 +655,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const ctx = ctxOf(G);
     // what is on each fighter right now (the icons over their heads, tappable here)
     const sx = bt?.snap().sx;
+    const theirs = personalityOf(O, ctx);
     openSheet(
       <Sheet icon="menu" title={fightLabel(spec)} sub={`Round ${bt?.round || 1}`}>
         <div class="fm-scout">
@@ -647,6 +666,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             📈 {powerScale(F, ctx).n} vs {powerScale(O, ctx).n}
           </Inf>
           {rankTxt(O) && <span class="chip">🏅 {rankTxt(O)} of 1000</span>}
+          <Inf k={`pers|${theirs.k}`} class="chip">
+            {theirs.e} {theirs.n}
+          </Inf>
           {spec.arena && (
             <Inf k={`it|arena|${spec.arena.n}`} class="chip">
               {spec.arena.e} {spec.arena.n}

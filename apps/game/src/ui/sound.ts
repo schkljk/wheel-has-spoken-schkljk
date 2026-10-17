@@ -211,3 +211,11 @@ export function phaseMusic(tune: { root: number; bpm: number }): () => void {
     }
   };
 }
+
+/** The knockout blow in slow motion: a deep boom with a falling shimmer. */
+export const finisherSound = () =>
+  play([
+    { noise: 'lowpass', f: 900, to: 120, d: 0.9, v: 0.25 },
+    { f: 90, to: 30, d: 0.9, w: 'sine', v: 0.22 },
+    { f: 1400, to: 300, d: 0.55, w: 'triangle', v: 0.03, at: 0.05 },
+  ]);

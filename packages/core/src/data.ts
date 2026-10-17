@@ -12,3 +12,4 @@ export * from './data/content/economy';
 export * from './data/content/text';
 export * from './data/balance';
 export * from './data/content/phase';
+export * from './data/content/personality';

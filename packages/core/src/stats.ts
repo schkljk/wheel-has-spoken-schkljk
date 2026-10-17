@@ -1,6 +1,7 @@
 import { GEAR } from './data/gear';
 import { INJURIES } from './data/misc';
 import { SYN } from './data/synergies';
+import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
 import { clamp } from './random';
@@ -310,3 +311,26 @@ export function bestStat(f: Fighter, ctx: GameContext = {}): StatKey {
 }
 
 export const fullName = (f: Fighter) => f.name + (f.title && f.title.k && f.title.k !== 'none' ? ', ' + f.title.n : '');
+
+/** Quirks that make a fighter play like a gambler. */
+const GAMBLER_CHAOS = new Set(['unhinged', 'lucky', 'badluck', 'glitch']);
+/**
+ * A fighter's AI personality, read off their build: the stance first, then which stats stand out against
+ * their own average (strength and speed play aggressive, durability turtle, IQ tactician, power mastery,
+ * charisma and chaos quirks gamble). The weights spread random fighters about evenly over the four.
+ */
+export function personalityOf(f: Fighter, ctx: GameContext = {}): Personality {
+  const s = eff(f, ctx);
+  const st = f.stance?.k ?? '';
+  const base = (s.str + s.spd + s.dur + s.iq + s.wm + s.pm) / 6;
+  const stance = (...ks: string[]) => (ks.includes(st) ? 1.5 : 0);
+  const score: Record<PersonalityKey, number> = {
+    aggressive: (s.str - base + 0.5 * (s.spd - base)) / 6 + stance('aggressive', 'reckless'),
+    turtle: (s.dur - base) / 5 - 0.15 + stance('defensive', 'counter'),
+    tactician: (s.iq - base) / 4.5 + 0.5 + stance('tactical'),
+    gambler: (s.pm - base + 0.5 * ((s.cha || 5) - 7)) / 5.5 + 0.35 + (GAMBLER_CHAOS.has(f.chaos?.k ?? '') ? 1 : 0) + stance('showboat'),
+  };
+  let best: PersonalityKey = 'aggressive';
+  for (const k of ['turtle', 'tactician', 'gambler'] as const) if (score[k] > score[best]) best = k;
+  return PERSONALITIES[best];
+}

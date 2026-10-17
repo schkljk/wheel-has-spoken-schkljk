@@ -4,7 +4,9 @@ import { ULTS } from './data/wheels';
 import { kitMoves } from './kits';
 import { clamp, pick, pickW, rnd } from './random';
 import type { Rng } from './rng';
-import { LS, eff, rate, synOf, traitsOf, type GameContext, type Traits } from './stats';
+import { LS, eff, personalityOf, rate, synOf, traitsOf, type GameContext, type Traits } from './stats';
+import { BALANCE } from './data/balance';
+import type { Personality } from './data/content/personality';
 import type { Arena, BuffKey, Fighter, Move, Pet, RoundMod, Stats, StatusKey } from './types';
 
 // The fight engine, ported from the legacy game with exact parity: same rules, same random draws
@@ -43,6 +45,8 @@ export interface Side {
   rate: number;
   powOn: boolean;
   syn: Set<string>;
+  /** how the AI plays this fighter (null with the old game's balance) */
+  pers: Personality | null;
   // statuses
   poison: number;
   frozen: number;
@@ -218,17 +222,18 @@ const synCue = (x: Side, k: string) => (x.syn.has(k) ? { syn: k, sb: x.i } : nul
 export function aiFlavor(rng: Rng, me: Side, c: Move): [Move, RoundMod] {
   const r = rng();
   if (!me.f.isBoss && rng() < Math.max(0.01, 0.05 - me.s.iq * 0.003)) return ['fumble', {}];
+  const P = me.pers;
   if (c === 'strike') {
-    const h = 0.15 + me.s.str * 0.012;
+    const h = 0.15 + me.s.str * 0.012 + (P?.heavy || 0);
     const j = 0.12 + me.s.spd * 0.012;
     if (r < h) return ['strike', { dmgX: 1.45, slow: 1, label: 'Heavy blow' }];
     if (r < h + j) return ['strike', { dmgX: 0.75, first: 1, label: 'Quick jab' }];
   }
   if (c === 'guard') {
-    if (r < 0.12 + me.s.iq * 0.012) return ['guard', { counterX: 1.7, label: 'Counter' }];
+    if (r < 0.12 + me.s.iq * 0.012 + (P?.counter || 0)) return ['guard', { counterX: 1.7, label: 'Counter' }];
     if (r < 0.2 + me.s.spd * 0.01) return ['dodge', { dodge: 0.45 }];
   }
-  if (c === 'power' && me.en >= 40 && r < 0.2 + me.s.pm * 0.01) return ['power', { dmgX: 1.4, enCost: 15, label: 'Overcharge' }];
+  if (c === 'power' && me.en >= 40 && r < 0.2 + me.s.pm * 0.01 + (P?.overcharge || 0)) return ['power', { dmgX: 1.4, enCost: 15, label: 'Overcharge' }];
   return [c, {}];
 }
 
@@ -252,7 +257,8 @@ export function ultRoll(rng: Rng, x: Side) {
 
 /** AI move choice: plays to its strengths and adapts to the opponent's recent habits. */
 export function autoChoice(rng: Rng, me: Side, op: Side, hist: Move[] | undefined): Move {
-  if (me.en >= 100 && rng() < 0.85) return 'ult';
+  const P = me.pers;
+  if (me.en >= 100 && rng() < (P?.ultNow ? 1 : 0.85)) return 'ult';
   const w: Record<string, number> = { strike: 1, power: 0, guard: 0.45, feint: 0.18, focus: me.en >= 55 && me.en < 100 ? 0.35 : 0.1 };
   if (canPower(me)) {
     const po = physOff(me);
@@ -263,7 +269,7 @@ export function autoChoice(rng: Rng, me: Side, op: Side, hist: Move[] | undefine
   if (me.hp / me.maxHp < 0.4) w.guard! *= 1.6;
   if (op.en >= 100) w.guard! *= 1.8;
   if (hist && hist.length >= 2) {
-    const smart = clamp(0.15 + me.s.iq * 0.05 + me.tr.readB + (me.f.aiSkill || 0), 0, 0.92);
+    const smart = clamp(0.15 + me.s.iq * 0.05 + me.tr.readB + (me.f.aiSkill || 0) + (P?.smart || 0), 0, 0.92);
     const c: Record<string, number> = { strike: 0, power: 0, guard: 0 };
     hist.slice(-3).forEach((m) => {
       if (c[m] != null) c[m]++;
@@ -271,12 +277,13 @@ export function autoChoice(rng: Rng, me: Side, op: Side, hist: Move[] | undefine
     const fav = Object.keys(c).sort((a, b) => c[b]! - c[a]!)[0]!;
     if (c[fav]! >= 2 && rng() < smart) {
       const ctr = Object.keys(BEATS).find((k) => BEATS[k] === fav)!;
-      if (w[ctr]! > 0) w[ctr]! *= 3.5;
-      if (fav === 'guard') w.feint! *= 4;
+      if (w[ctr]! > 0) w[ctr]! *= 3.5 * (P?.punish || 1);
+      if (fav === 'guard') w.feint! *= 4 * (P?.punish || 1);
     }
   }
   const ai = (me.f.stance && me.f.stance.ai) || {};
   for (const k in ai) if (w[k]! > 0) w[k]! *= ai[k as keyof typeof ai]!;
+  if (P) for (const k in P.w) if (w[k]! > 0) w[k]! *= P.w[k as keyof typeof P.w]!;
   const arr = Object.keys(w)
     .filter((k) => w[k]! > 0)
     .map((k) => ({ k, w: w[k]! }));
@@ -302,7 +309,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       i, f, s, tr, mod, maxHp: hp0, hp: hp0,
       poison: 0, frozen: 0, frzFx: '', frzTxt: '', soaked: AR.soak ? 3 : 0, burning: 0, wdebuff: 0, acts: 0,
       revived: 0, plot: 0, rev2: 0, mir: 0, uno: 0, powOn: f.power.k !== 'none', weakShown: 0, rate: rate(f, ctx), en: 50,
-      guard: 0, move: null, syn: new Set(synOf(f).map((q) => q.k)),
+      guard: 0, move: null, syn: new Set(synOf(f).map((q) => q.k)), pers: BALANCE.personalities ? personalityOf(f, ctx) : null,
       st: { dodges: 0, combos: 0, rps: 0, taken: 0, ults: 0, guards: 0 }, snacked: 0,
       buffs: [], summoned: {}, ls: 1, rm: {},
     };
