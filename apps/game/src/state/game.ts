@@ -15,7 +15,7 @@ import {
   type NumStats,
   type SaveData,
 } from '@whs/core';
-import { kv, persistent } from './storage';
+import { keepSave, kv, persistent } from './storage';
 
 export const store = new SaveStore(kv);
 const first = store.load();
@@ -43,6 +43,7 @@ export const fver = signal(0);
 /** Writes the game and publishes a new snapshot. */
 export function sync(): void {
   persistFighter(G);
+  if (G.save.roster.slots.some(Boolean)) keepSave();
   try {
     store.write(G.save);
   } catch (e) {

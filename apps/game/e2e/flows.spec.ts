@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { deserFighter, migrate, numStats } from '@whs/core';
+import { careerSaveKV } from '../../../tools/fixtures/career-save';
 import { legacySave, open, watchErrors } from './helpers';
 
 const skipTour = (page: Page) => page.getByRole('button', { name: 'Skip the tour' }).click();
@@ -141,5 +142,18 @@ test("today's ranked pool builds in a worker and is cached", async ({ page }) =>
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('tab', { name: 'More' }).click();
   await expect(page.getByText("today's 1,000 are ranked")).toBeVisible({ timeout: 2000 });
+  expect(errors).toEqual([]);
+});
+
+test('a damaged save comes back from its backup, and the player is told', async ({ page }) => {
+  const errors = watchErrors(page);
+  const kv = careerSaveKV({ seed: 31, name: 'Backup Bob', lvl: 6 });
+  expect(Object.keys(kv).some((k) => k.startsWith('whs:backup:'))).toBe(true);
+  // the records section got cut off mid-write
+  kv['whs:profile'] = kv['whs:profile']!.slice(0, 20);
+  await open(page, kv);
+  await expect(page.getByText('About your save')).toBeVisible();
+  await expect(page.getByText(/Restored the backup/)).toBeVisible();
+  await expect(page.getByText('Backup Bob').first()).toBeVisible();
   expect(errors).toEqual([]);
 });

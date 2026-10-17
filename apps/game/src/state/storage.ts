@@ -17,3 +17,18 @@ function pickKV(): { kv: KV; persistent: boolean } {
   }
 }
 export const { kv, persistent } = pickKV();
+
+let asked = false;
+/**
+ * Asks the browser to keep this site's data when space runs low (phones clear unprotected sites first).
+ * Once per visit, and only once there is a fighter to lose.
+ */
+export function keepSave() {
+  if (asked || !persistent) return;
+  asked = true;
+  try {
+    void navigator.storage?.persist?.().catch(() => {});
+  } catch {
+    // not supported: the backups and export still cover it
+  }
+}

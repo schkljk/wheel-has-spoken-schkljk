@@ -16,6 +16,15 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 
 - [x] 1. Balance pass for the numeric system
 - [x] 2. Pixel-art content icons
+- [x] 3. Save safety net
+
+### 3. Save safety net
+
+Phase 2 already had versioned migrations, split storage, three rolling backups and export/import. This made it bulletproof:
+- **Repair on every load and import** (`packages/core/src/save/repair.ts`): any field the game reads gets its default when missing or of the wrong kind (settings, records, purses, the active fighter), the roster always has its three slots, and nothing is thrown away: damaged or extra slots and unknown fields are kept in the save. What was repaired is shown on the title screen, and in the import confirmation.
+- **Damage goes to the backup:** a section that is cut off, not an object, or missing its core (no fighter slots, no settings) counts as damaged, and the newest good backup is restored instead of patching it with defaults.
+- **The browser is asked to keep the save** (`navigator.storage.persist`) once there is a fighter, so phones don't clear it when space runs low.
+- **Tests (44 new):** every storage key damaged seven ways (deleted, cut off, null, a list, a number, empty, random bytes) still loads a playable save with all fighters; a write cut off at any point still loads; every listed backup restores; junk and saves from a newer version are refused with a reason; legacy imports and current saves migrate the same way twice; 20 random saves round-trip through export and import. A browser test damages a real save and checks it comes back from its backup with a notice.
 
 ### 2. Pixel-art content icons
 

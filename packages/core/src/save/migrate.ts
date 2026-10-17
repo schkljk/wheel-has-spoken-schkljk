@@ -1,4 +1,5 @@
 import { deserFighter, type Json, type SerFighter } from './fighter';
+import { repair } from './repair';
 import { SAVE_GAME_ID, SAVE_VERSION, defaultProfile, defaultSettings, type Profile, type SaveData, type Slot } from './schema';
 
 /**
@@ -27,8 +28,8 @@ export function saveVersion(v: unknown): number | null {
   return null;
 }
 
-/** Brings any supported save (legacy or newer) up to the current version. */
-export function migrate(input: unknown, now = Date.now()): SaveData {
+/** Brings any supported save (legacy or newer) up to the current version and repairs it (notes say what was fixed). */
+export function migrate(input: unknown, now = Date.now(), notes?: string[]): SaveData {
   let s = typeof input === 'string' ? parseJson(input) : input;
   let v = saveVersion(s);
   if (v === null) throw new SaveFormatError("That doesn't look like a save from this game");
@@ -38,7 +39,9 @@ export function migrate(input: unknown, now = Date.now()): SaveData {
     v++;
     (s as Raw).version = v;
   }
-  return s as SaveData;
+  const r = repair(s as SaveData);
+  notes?.push(...r.fixed);
+  return r.save;
 }
 
 function parseJson(txt: string): unknown {
