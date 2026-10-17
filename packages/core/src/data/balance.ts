@@ -1,4 +1,4 @@
-import { BOSSES, CHAPTERS } from './content/story';
+import { BOSSES, CHAPTERS, CH_PCT } from './content/story';
 
 /**
  * Story balance knobs. `LEGACY_BALANCE` is the old game's tuning (the parity tests switch to it);
@@ -15,6 +15,8 @@ export interface Balance {
   bossLvl: (ch: number, ng: number) => number;
   /** added to every stat tier of the boss's table (1 to 14) */
   bossStatShift: (ch: number) => number;
+  /** the slice of the ranked pool (0 weakest, 1 strongest) a chapter's regular opponents come from */
+  chPct: (ch: number) => readonly [lo: number, hi: number];
   /** a boss the player has less than this chance against eases off (at most `easeMax` times) */
   easeBelow: number;
   easeMax: number;
@@ -26,6 +28,7 @@ export const LEGACY_BALANCE: Balance = {
   bossHp: (ch, ng) => BOSSES[ch - 1]!.maxHp + ng * 40,
   bossLvl: (ch, ng) => CHAPTERS[ch - 1]!.lvl + 3 + ng * 4,
   bossStatShift: () => 0,
+  chPct: (ch) => CH_PCT[ch - 1]!,
   easeBelow: 0.18,
   easeMax: 3,
 };
@@ -43,12 +46,20 @@ export const BOSS_STAT_SHIFT: number[] = [-5, -4, -3, -5, -3, -3, -6, -3, -6, -6
 // prettier-ignore
 export const BOSS_HP: number[] = [142, 160, 200, 147, 133, 144, 114, 222, 181, 126, 272, 226, 334, 160, 367, 266, 507, 176, 209, 210];
 
+/** Gentler first chapters, so the weakest builds can get going (the rest of CH_PCT is unchanged). */
+export const CH_PCT_EASY: (readonly [number, number])[] = [
+  [0, 0.18],
+  [0.06, 0.32],
+  [0.15, 0.45],
+];
+
 export const BALANCE: Balance = {
   bossTarget: (ch, ng) => BOSS_AIM(ch) + 0.04 - 0.02 * ng,
   bossTuneCap: 3,
   bossHp: (ch, ng) => BOSS_HP[ch - 1]! + ng * 40,
   bossLvl: (ch, ng) => Math.max(1, CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4),
   bossStatShift: (ch) => BOSS_STAT_SHIFT[ch - 1]!,
+  chPct: (ch) => CH_PCT_EASY[ch - 1] ?? CH_PCT[ch - 1]!,
   easeBelow: 0.18,
   easeMax: 3,
 };

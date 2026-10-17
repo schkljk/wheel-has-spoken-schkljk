@@ -1,4 +1,4 @@
-import { BOSSES, CHAPTERS, CH_PCT, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
+import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
 import { GEAR } from '../data/gear';
 import { BALANCE } from '../data/balance';
 import { LEVELUP } from '../data/misc';
@@ -162,7 +162,7 @@ export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
   const S = storyOf(g);
   const C = CHAPTERS[S.ch - 1]!;
   const ng = S.ng || 0;
-  let [lo, hi] = CH_PCT[S.ch - 1]!;
+  let [lo, hi] = BALANCE.chPct(S.ch);
   if (kind === 'elite') {
     lo = Math.min(0.96, lo + 0.15);
     hi = Math.min(1, hi + 0.12);
