@@ -68,7 +68,7 @@ for (const br of TREE)
 export const TIER_LVL = (t: number) => 3 * (t - 1) + 1;
 export const TIER_PTS = (t: number) => 2 * (t - 1);
 
-/** Talent ranks by node key. Very old saves stored an array of old talent keys. */
+/** Talent ranks by node key. Very old saves stored an array of old talent keys: it becomes a map (in place, as in legacy). */
 export function talMap(f: Fighter | null | undefined): TalentMap {
   if (!f) return {};
   if (Array.isArray(f.talents)) {
@@ -77,7 +77,7 @@ export function talMap(f: Fighter | null | undefined): TalentMap {
       const n = OLD_TAL[k];
       if (n) m[n] = (m[n] || 0) + 1;
     }
-    return m;
+    f.talents = m;
   }
   return f.talents || {};
 }

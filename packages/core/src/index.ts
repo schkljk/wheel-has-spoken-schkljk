@@ -9,3 +9,4 @@ export * from './names';
 export * from './battle';
 export * from './save';
 export * from './pool';
+export * from './game/index';
