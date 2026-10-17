@@ -98,6 +98,10 @@ export interface Snap {
 /** Animation cue for the fight scene. */
 export interface Anim {
   t: string;
+  /** the synergy that made this happen (a UI cue for its banner; legacy has no such field) */
+  syn?: string;
+  /** whose synergy it is */
+  sb?: number;
   by?: number;
   to?: number;
   on?: number;
@@ -168,6 +172,8 @@ export const softGap = (d: number) => {
 };
 const baseDmg = (rng: Rng, off: number, def: number) => 10 * Math.pow(1.17, softGap(off - def)) * rnd(rng, 0.8, 1.2);
 const gxOf = (x: Side) => (x.syn.has('tank2') ? 0.15 : clamp(x.tr.guardX + x.tr.guardAdd, 0.1, 0.9));
+/** Tags an event with the synergy behind it, when the fighter has it (no effect on the fight). */
+const synCue = (x: Side, k: string) => (x.syn.has(k) ? { syn: k, sb: x.i } : null);
 
 /** How a fighter flavors a move: heavy or quick strikes, counters, overcharged powers, the odd fumble. */
 export function aiFlavor(rng: Rng, me: Side, c: Move): [Move, RoundMod] {
@@ -330,7 +336,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     } else if (t.f.arch.k === 'necro' && !t.revived) {
       t.revived = 1;
       t.hp = t.syn.has('bonelord') ? 60 : 35;
-      log(`⚰️ ${N(t)} rises from the dead with ${real(t, t.hp)} HP`, 'special', null, [], { t: 'revive', on: t.i, fx: '⚰️' });
+      log(`⚰️ ${N(t)} rises from the dead with ${real(t, t.hp)} HP`, 'special', null, [], { t: 'revive', on: t.i, fx: '⚰️', ...synCue(t, 'bonelord') });
     } else if (t.tr.revive && !t.rev2) {
       t.rev2 = 1;
       t.hp = t.tr.revive;
@@ -487,7 +493,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     if (!ult && att.syn.has('selfown') && hitsWeak(att, tags) && rng() < 0.15) {
       const d = baseDmg(rng, off, att.s.dur) * 0.6;
       hurt(att, d);
-      log(`🫵 ${N(att)}'s attack backfires. Allergic to their own kit`, 'miss', d, [], { t: 'self', on: att.i, fx: '🫵' });
+      log(`🫵 ${N(att)}'s attack backfires. Allergic to their own kit`, 'miss', d, [], { t: 'self', on: att.i, fx: '🫵', syn: 'selfown', sb: att.i });
       checkDown(att);
       return;
     }
@@ -562,6 +568,15 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     log(line, ult ? 'ult' : '', d, pills, {
       t: ult ? 'ult' : 'hit', by: att.i, to: def.i, fx, kind: ak, spin: !!(pw && att.f.power.spin), tint, crit: note.includes('crit'),
       weak: note.includes('weak'), guarded: note.includes('guard') && !breaking, combo: r.combo, broke: breaking, name: ult ? ULTS[att.f.arch.k] : '',
+      ...(note.includes('comedy')
+        ? synCue(att, 'comedy')
+        : extra && (att.syn.has('speed') || att.syn.has('storm2'))
+          ? synCue(att, att.syn.has('speed') ? 'speed' : 'storm2')
+          : note.includes('crit')
+            ? synCue(att, 'backstab')
+            : note.includes('guard') && !breaking
+              ? synCue(def, 'tank2')
+              : null),
     });
     if (r.combo === 'Flash freeze' && alive(def)) freeze(def, '🧊', 'is frozen solid');
     if (r.combo === 'Shatter') def.frozen = 0;
@@ -584,7 +599,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       const stun = (p: number, fxs: string, txt: string) => {
         if (alive(def) && !def.frozen && rng() < p) {
           freeze(def, fxs, txt);
-          log(`${fxs} ${N(def)} ${txt}`, 'special', null, [], { t: 'status', on: def.i, fx: fxs, tint: k === 'ice' ? 'ice' : '' });
+          log(`${fxs} ${N(def)} ${txt}`, 'special', null, [], { t: 'status', on: def.i, fx: fxs, tint: k === 'ice' ? 'ice' : '', ...(k === 'ice' ? synCue(att, 'zero') : null) });
         }
       };
       if (k === 'ice') stun((att.syn.has('zero') ? 0.35 : 0.15) + fb, '🧊', 'is frozen solid');
@@ -595,7 +610,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       if (k === 'lightning' && alive(def) && rng() < (att.syn.has('storm') ? 0.36 : 0.12)) {
         const d2 = d * 0.4;
         hurt(def, d2);
-        log(`⚡ The lightning chains for more`, '', d2, [], { t: 'hit', by: att.i, to: def.i, fx: '⚡', kind: 'power', tint: 'lightning' });
+        log(`⚡ The lightning chains for more`, '', d2, [], { t: 'hit', by: att.i, to: def.i, fx: '⚡', kind: 'power', tint: 'lightning', ...synCue(att, 'storm') });
       }
       if (k === 'drain') {
         const h = Math.min(att.maxHp - att.hp, d * 0.5);
@@ -629,12 +644,12 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
         const h = Math.min(att.maxHp - att.hp, d * (att.syn.has('blood') ? 0.6 : 0.3));
         if (h >= 3) {
           att.hp += h;
-          log(`🩸 ${N(att)} drains ${real(att, h)} HP back`, 'heal', h, [], { t: 'heal', on: att.i });
+          log(`🩸 ${N(att)} drains ${real(att, h)} HP back`, 'heal', h, [], { t: 'heal', on: att.i, ...synCue(att, 'blood') });
         }
       }
       if (e === 'frost' && alive(def) && !def.frozen && rng() < (att.syn.has('zero') ? 0.25 : 0.1) + fb) {
         freeze(def, '🧊', 'is frozen solid');
-        log(`❄️ ${N(def)} is frozen solid`, 'special', null, [], { t: 'status', on: def.i, fx: '🧊', tint: 'ice' });
+        log(`❄️ ${N(def)} is frozen solid`, 'special', null, [], { t: 'status', on: def.i, fx: '🧊', tint: 'ice', ...synCue(att, 'zero') });
       }
       if (e === 'cursed' && rng() < 0.1) {
         hurt(att, 6);

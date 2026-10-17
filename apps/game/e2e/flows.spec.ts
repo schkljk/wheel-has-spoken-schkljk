@@ -159,27 +159,33 @@ test('a damaged save comes back from its backup, and the player is told', async 
 });
 
 test('the combat wheel can be nudged one slice, once a fight', async ({ page }) => {
+  // story, map, arena and two rounds take most of two minutes with software rendering on CI: fast mode and room
+  test.setTimeout(240_000);
   const errors = watchErrors(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await open(page, careerSaveKV({ seed: 4, lvl: 12, ch: 3 }));
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'nudge' });
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
   await page.getByRole('button', { name: 'Spin the arena' }).click();
-  const spin = page.getByRole('button', { name: 'Spin your move' });
+  // a full energy bar turns the spin button into the signature
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
-  await spin.click();
-  // take the offer the moment it shows: it only lasts a couple of seconds
-  const offer = await (
-    await page.waitForFunction(`(() => {
+  // take the offer the moment it shows (it lasts a couple of seconds, and a software-rendered frame can take
+  // longer than that, so the click comes from a DOM observer rather than a per-frame poll)
+  await page.evaluate(`(() => {
+    const w = window;
+    new MutationObserver((_, ob) => {
       const b = document.querySelector('.btn.nudge');
-      if (!b) return null;
-      const t = b.textContent;
+      if (!b || w.__nudged) return;
+      w.__nudged = b.textContent;
       b.click();
-      return t;
-    })()`)
-  ).jsonValue();
+      ob.disconnect();
+    }).observe(document.body, { childList: true, subtree: true });
+  })()`);
+  await spin.click();
+  const offer = await (await page.waitForFunction('window.__nudged', null, { polling: 100, timeout: 60_000 })).jsonValue();
   const to = String(offer).replace('↷ Nudge to', '').replace('once a fight', '').trim();
   await expect(page.locator('.cw-out b')).toHaveText(to);
   // the next spin offers no second nudge

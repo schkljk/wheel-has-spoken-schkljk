@@ -1,7 +1,7 @@
 import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Text, TextStyle } from 'pixi.js';
-import type { Arena, BattleEvent, Snap } from '@whs/core';
+import { COMBOS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
-import { beep, thud } from '../ui/sound';
+import { beep, procSound, thud } from '../ui/sound';
 import { buzz } from '../state/game';
 import { FighterView } from './fighter-view';
 import { Ambient, drawFloor, sceneSVG } from './scenery';
@@ -27,6 +27,8 @@ export interface FightDims {
   fcx: number;
   panelX: number;
   panelW: number;
+  /** height of the HP bars along the top */
+  hud: number;
 }
 export function fightDims(W: number, H: number): FightDims {
   const side = W > H * 1.15 && H < 600;
@@ -52,7 +54,7 @@ export function fightDims(W: number, H: number): FightDims {
   const byW = ((side ? stageW : col) * 0.42 * 1.2) / 1.32;
   const chH = Math.round(clamp(Math.min(byH, byW), 70, 240));
   const cw = Math.round(clamp(side ? Math.min(panelW * 0.55, panelH - 205) : Math.min(panelW * 0.5, panelH - 150), 90, 260));
-  return { W, H, side, col, stageW, groundY, chH, cw, span, fcx: side ? stageW / 2 : W / 2, panelX: side ? stageW : (W - col) / 2, panelW };
+  return { W, H, side, col, stageW, groundY, chH, cw, span, fcx: side ? stageW / 2 : W / 2, panelX: side ? stageW : (W - col) / 2, panelW, hud };
 }
 
 const TINT_COL: Record<string, number> = {
@@ -345,6 +347,72 @@ export class FightScene {
   clearBanner() {
     this.bannerText?.destroy();
     this.bannerText = null;
+    this.dropProc();
+  }
+  private dropProc() {
+    this.procBox?.destroy({ children: true });
+    this.procBox = null;
+  }
+
+  private procBox: Container | null = null;
+  /** Where the combo or synergy banner sits at full size, in stage pixels (for the layout tests). */
+  procBounds() {
+    const b = this.procBox;
+    if (!b || b.destroyed) return null;
+    const lb = b.getLocalBounds();
+    return { left: b.x + lb.x, top: b.y + lb.y, right: b.x + lb.x + lb.width, bottom: b.y + lb.y + lb.height };
+  }
+  private pendingProc: Proc | null = null;
+  /**
+   * A combo or synergy going off: its name and what it did, over the fighter it belongs to, with its own
+   * sound. Shown at the moment of impact for hits.
+   */
+  showProc(p: Proc) {
+    this.procBox?.destroy({ children: true });
+    const d = this.dims;
+    const mine = p.side === 0;
+    const fill = p.kind === 'combo' ? (TINT_COL[COMBOS[p.k]?.tint ?? ''] ?? 0xffd166) : p.anti ? 0xc9c1dc : mine ? 0xffd166 : 0xff9db0;
+    const box = new Container();
+    const name = new Text({
+      text: `${p.n.toUpperCase()}!`,
+      style: { fontFamily: FONT, fontWeight: '800', fontSize: Math.round(clamp(d.stageW / 12, 24, 44)), fill, stroke: { color: 0x1a1328, width: 6 }, align: 'center' },
+    });
+    name.anchor.set(0.5, 1);
+    const kind = p.kind === 'combo' ? 'Element combo' : `${mine ? 'Your' : 'Their'} synergy`;
+    const sub = new Text({
+      text: `${kind} · ${p.sub}`,
+      style: { fontFamily: FONT, fontWeight: '700', fontSize: Math.round(clamp(d.stageW / 30, 12, 17)), fill: 0xf3eeff, stroke: { color: 0x1a1328, width: 4 }, align: 'center' },
+    });
+    sub.anchor.set(0.5, 0);
+    sub.y = 2;
+    // long names shrink to fit narrow phones
+    for (const t of [name, sub]) {
+      const max = d.stageW - 20;
+      if (t.width > max) t.style.fontSize = Math.floor((t.style.fontSize * max) / t.width);
+    }
+    box.addChild(name, sub);
+    // over its owner, kept on the stage; in the gap between the HP bars and the fighters' heads
+    const half = Math.max(name.width, sub.width) / 2 + 8;
+    const x = d.fcx + (mine ? -1 : 1) * d.span * 0.55;
+    const heads = d.groundY - d.chH;
+    box.position.set(clamp(x, half, Math.max(half, d.stageW - half)), Math.max(d.hud + name.height + 4, d.hud + (heads - d.hud) * 0.55));
+    this.top.addChild(box);
+    this.procBox = box;
+    procSound(p.k);
+    buzz(p.kind === 'combo' ? [20, 30, 20] : 20);
+    const dur = 1500 * this.sp;
+    const still = this.reduced;
+    void this.tw
+      .run(dur, (k) => {
+        if (box.destroyed) return;
+        if (!still) box.scale.set(k < 0.18 ? 0.4 + 0.75 * (k / 0.18) : k < 0.32 ? 1.15 - 0.15 * ((k - 0.18) / 0.14) : 1);
+        box.alpha = k < 0.12 ? k / 0.12 : k < 0.78 ? 1 : 1 - (k - 0.78) / 0.22;
+        if (!still && k > 0.78) box.y -= 0.6;
+      })
+      .then(() => {
+        if (!box.destroyed) box.destroy({ children: true });
+        if (this.procBox === box) this.procBox = null;
+      });
   }
   tintFlash(k: string | undefined, dur: number) {
     if (!k) return;
@@ -387,6 +455,10 @@ export class FightScene {
 
   private impact(e: BattleEvent, a: Record<string, unknown>) {
     const sp = this.sp;
+    if (this.pendingProc) {
+      this.showProc(this.pendingProc);
+      this.pendingProc = null;
+    }
     const t = a.to as 0 | 1;
     const big = !!a.crit || a.t === 'ult';
     this.applySnap(e);
@@ -424,10 +496,6 @@ export class FightScene {
       this.floatAt(t, 'Weak spot!', 'weak', dy);
       dy += 22;
     }
-    if (a.combo) {
-      this.floatAt(t, a.combo + '!', 'crit', dy);
-      dy += 26;
-    }
     if (a.broke) {
       this.floatAt(t, 'Guard broken', 'info', dy);
       dy += 22;
@@ -440,9 +508,14 @@ export class FightScene {
   }
 
   // ---------------------------------------------------------------- battle animations
-  async play(e: BattleEvent): Promise<void> {
+  /** Plays one event; `p` is the combo or synergy behind it that gets a banner, if any. */
+  async play(e: BattleEvent, p: Proc | null = null): Promise<void> {
     const sp = this.sp;
     const a = e.a as (Record<string, unknown> & { t: string; by?: 0 | 1; to?: 0 | 1; on?: 0 | 1 }) | null;
+    if (p) {
+      if (!a || this.reduced || (a.t !== 'hit' && a.t !== 'ult')) this.showProc(p);
+      else this.pendingProc = p;
+    }
     if (!a || this.reduced) {
       this.applySnap(e);
       if (a && a.t === 'ko') this.F[a.on!].setDown(true);
@@ -575,6 +648,7 @@ export class FightScene {
           const c = this.ctr(a.on!);
           setTimeout(() => this.particles(c.x, c.y + 40, [0xb0a49c, 0xd7ccc8, 0x8d6e63], 14, 50), 380 * sp);
           await this.tw.wait(300 * sp);
+          this.dropProc();
           void this.banner('K.O.', 700 * sp, true);
           const w = a.win as 0 | 1;
           const cw = this.ctr(w);
@@ -631,6 +705,10 @@ export class FightScene {
       }
     } catch {
       this.applySnap(e);
+    }
+    if (this.pendingProc) {
+      this.showProc(this.pendingProc);
+      this.pendingProc = null;
     }
   }
 
@@ -721,6 +799,8 @@ export class FightScene {
   /** Skips whatever is animating (skip, forfeit). */
   settle() {
     this.tw.clear();
+    this.dropProc();
+    this.pendingProc = null;
     this.world.scale.set(1);
     this.world.position.set(0, 0);
     this.world.filters = null;

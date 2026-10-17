@@ -14,6 +14,8 @@ import {
   numStats,
   pickW,
   powerScale,
+  procFeed,
+  procOf,
   rankOf,
   rankTxt,
   readClue,
@@ -54,6 +56,7 @@ const NUDGE_MS = (fast: boolean) => (fast ? 1500 : 2200);
 const FOCUS_ICON: Record<string, string> = { atk: 'sword', def: 'shield', pow: 'spark', ult: 'star' };
 
 function LogLine({ e, names }: { e: BattleEvent; names: [string, string] }) {
+  const syn = e.a?.syn ? procOf(e) : null;
   return (
     <li class={e.cls}>
       <span>
@@ -68,6 +71,11 @@ function LogLine({ e, names }: { e: BattleEvent; names: [string, string] }) {
               {PILLN[p] || p}
             </Inf>
           ),
+        )}
+        {syn && (
+          <Inf k={`it|syn|${syn.n}`} class={`pill syn${syn.anti ? ' anti' : ''}`}>
+            {syn.n}
+          </Inf>
         )}
       </span>
       {e.d != null && (
@@ -135,7 +143,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
   const btRef = useRef<Battle | null>(null);
-  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false, nudged: false, dir: 1, landTimer: 0 }).current;
+  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false, nudged: false, dir: 1, landTimer: 0, procs: procFeed() }).current;
   const [nudgeTo, setNudgeTo] = useState<number | null>(null);
   const nudgeRef = useRef<number | null>(null);
   nudgeRef.current = nudgeTo;
@@ -179,6 +187,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     };
     sc.layout(d.W, d.H);
     sceneRef.current = sc;
+    // the end-to-end tests reach into the scene (combo banners on every screen size)
+    if (navigator.webdriver) (window as unknown as { __whsFight?: FightScene }).__whsFight = sc;
     setDims(d);
     let lastW = d.W;
     let lastH = d.H;
@@ -228,12 +238,13 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       const e = evs[i]!;
       S.log.push(e);
       setSnap(e);
-      await sc.play(e);
+      await sc.play(e, S.procs(e));
     }
   }
 
   async function start(sc: FightScene) {
     ac();
+    S.procs = procFeed();
     await sc.intro();
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;

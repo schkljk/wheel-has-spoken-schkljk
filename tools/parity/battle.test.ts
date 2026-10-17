@@ -91,6 +91,13 @@ const normalize = (e: LEvent) => {
   const { html, ...rest } = e;
   return { text: unescape(html.replaceAll(`<b>${NAMES[0]}</b>`, '{0}').replaceAll(`<b>${NAMES[1]}</b>`, '{1}')), ...rest };
 };
+/** The new engine tags synergy cues for the banners (`a.syn`, `a.sb`); legacy has none, so they are left out. */
+const uncue = (e: unknown) => {
+  const x = e as BattleEvent;
+  if (!x.a || x.a.syn == null) return x;
+  const { syn: _s, sb: _b, ...a } = x.a;
+  return { ...x, a };
+};
 const state = (b: { P: { hp: number; maxHp: number; en: number; st: unknown }[]; round: number; w: number | null }) => ({
   w: b.w,
   round: b.round,
@@ -140,7 +147,7 @@ describe('battle engine parity', () => {
       const pev: BattleEvent[] = pbt.start();
       while (!lbt.over) lev.push(...lbt.step().map(normalize));
       while (!pbt.over) pev.push(...pbt.step());
-      expect(pev, `seed ${seed}`).toEqual(lev);
+      expect(pev.map(uncue), `seed ${seed}`).toEqual(lev);
     }
   });
 
@@ -179,7 +186,7 @@ describe('battle engine parity', () => {
       }
       expect(pbt.over).toBe(lbt.over);
       expect(state(pbt), `seed ${seed}`).toEqual(state(lbt));
-      expect(pev, `seed ${seed}`).toEqual(lev);
+      expect(pev.map(uncue), `seed ${seed}`).toEqual(lev);
       expect(pr()).toBe(lr());
     }
   });
