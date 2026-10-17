@@ -40,11 +40,11 @@ export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.4
 export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
 /** Stat tiers taken off (or added to) each boss's table, calibrated with the HP below (chapters 1 to 20). */
 // prettier-ignore
-export const BOSS_STAT_SHIFT: number[] = [-5, -4, -3, -5, -3, -3, -6, -3, -6, -6, -3, -6, -5, -6, -4, -1, 0, -6, -6, -6];
+export const BOSS_STAT_SHIFT: number[] = [-6, -4, -3, -5, -3, -3, -5, -2, -5, -6, 0, -4, -1, -5, -2, 2, 2, -5, -6, -5];
 
 /** Boss HP by chapter, calibrated with the stat shift so an average build hits BOSS_AIM (tools/sim/calibrate-bosses.ts). */
 // prettier-ignore
-export const BOSS_HP: number[] = [142, 160, 200, 147, 133, 144, 114, 222, 181, 126, 272, 226, 334, 160, 367, 266, 507, 176, 209, 210];
+export const BOSS_HP: number[] = [133, 142, 160, 208, 248, 176, 148, 240, 265, 126, 432, 406, 340, 380, 424, 608, 624, 296, 403, 500];
 
 /** Gentler first chapters, so the weakest builds can get going (the rest of CH_PCT is unchanged). */
 export const CH_PCT_EASY: (readonly [number, number])[] = [

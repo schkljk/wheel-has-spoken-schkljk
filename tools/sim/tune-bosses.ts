@@ -35,7 +35,7 @@ for (let round = 1; round <= arg('rounds', 5); round++) {
       const want = Math.round(hp[i]! * Math.min(1.35, Math.max(0.75, Math.exp(d * 2.2))));
       if (Math.abs(d) > 0.14 || (Math.abs(d) > 0.05 && (want > base * 1.6 || want < base * 0.6))) {
         // far off, or HP would leave its range: a stat tier, with HP back to the middle
-        ns[i] = Math.max(-6, Math.min(2, shift[i]! + (d > 0 ? 1 : -1)));
+        ns[i] = Math.max(-6, Math.min(4, shift[i]! + (d > 0 ? 1 : -1)));
         if (ns[i] !== shift[i]) nh[i] = base;
         else nh[i] = Math.round(Math.min(base * 1.6, Math.max(base * 0.6, want)));
       } else if (Math.abs(d) > 0.05) nh[i] = want;
