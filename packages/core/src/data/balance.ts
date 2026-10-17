@@ -34,7 +34,7 @@ export const LEGACY_BALANCE: Balance = {
 };
 
 /** Boss win odds the HP table below is calibrated for: an average build at the level the chapter expects. */
-export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.45 - 0.01 * (ch - 11));
+export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.37 - 0.01 * (ch - 11));
 
 /** How many levels each boss is above its chapter. */
 export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
