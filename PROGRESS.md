@@ -23,6 +23,43 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 7. Opponent move history
 - [x] 8. Status icons with round counters
 - [x] 9. Long-press a slice for a damage preview
+- [x] 10. Boss phase two: lighting, music and a unique slice
+
+### 10. Boss phase two: lighting, music and a unique slice
+
+- When a boss drops below half HP and enters phase two, three things now happen on top of the old stat boost and banner:
+  - **Lighting:** over about a second and a half the arena takes on the boss's own colour (Big Tony's orange, Lady Venom's toxic green, Null's bruised violet...). It's a tinted layer over the sky, scenery and floor that breathes in time with the music; the fighters keep their own colours. Reduced motion holds it steady.
+  - **Music:** a driving minor-key loop (bass, kick, hats and a stab every other bar) starts in the boss's own key and tempo, from 90 bpm for Null to 160 for the Clockmaker. It follows the sound setting while it plays and fades out when the fight ends.
+  - **A unique slice:** one wheel (the chip gets a breathing gold ring) gains a boss-specific gold slice, usable once: Antidote jab against Lady Venom (cures poison, hits harder), Harpoon against Leviathan Rex (through guards, can't be dodged), Sunglasses against Aurelion, Throw a wrench against the Clockmaker, and so on for all 20. Each has a mechanics line and a joke ("Sunglasses: Huge dodge chance. *Style and safety. Mostly style.*"). Hold it to see both. The panel tells you which wheel it's on.
+- The table is `packages/core/src/data/content/phase.ts`, one row per boss; a new boss is one line. It works in every mode bosses fight in (story and boss rush).
+- **Balance (simulated):** `npx tsx tools/sim/phase-slice.ts` (or `npm run sim -- --phase 16`). Average builds at each chapter's level fought each boss 800 times on auto-play, and again with the same seeds taking the phase-two slice the first time it showed up:
+
+| Chapter boss | Without | With | Slice reached |
+|---|---|---|---|
+| 1 Big Tony | 60% | 59% | 87% |
+| 2 Mama Gnocchi | 56% | 61% | 91% |
+| 3 Lady Venom | 47% | 56% | 73% |
+| 4 Admiral Saltbeard | 43% | 48% | 82% |
+| 5 The Professor | 37% | 37% | 83% |
+| 6 Count Crypt | 31% | 35% | 95% |
+| 7 Titan Prime | 28% | 27% | 78% |
+| 8 Neon Ronin | 35% | 40% | 77% |
+| 9 Queen Hivemind | 28% | 24% | 69% |
+| 10 The Wheelmaster | 20% | 22% | 71% |
+| 11 Captain Cumulus | 27% | 30% | 69% |
+| 12 Baron Brimstone | 16% | 14% | 58% |
+| 13 The Clockmaker | 26% | 28% | 81% |
+| 14 Leviathan Rex | 8% | 8% | 43% |
+| 15 Mister Giggles | 18% | 21% | 72% |
+| 16 The Frost Queen | 22% | 24% | 79% |
+| 17 The Sandman | 23% | 26% | 84% |
+| 18 Null | 9% | 8% | 52% |
+| 19 Aurelion | 7% | 8% | 70% |
+| 20 The First Wheel | 9% | 12% | 51% |
+| **Average** | **27%** | **29%** | |
+
+  That's about +2 points on average. It's a small, opt-in edge for players who reach phase two and land the slice, so no bosses were retuned. (These are bare same-level builds without the story's items and side modes, so they sit below the story-run numbers in upgrade 1.) The dips are the bosses whose slice heals or defends, which trades a turn of damage for safety, and noise.
+- Tested: `packages/core/test/phase.test.ts` checks there's a kit for every boss, that a slice's family matches its move, and that the slice appears only in phase two, only on its own wheel and not once used. It also plays every slice through the engine for all 20 bosses. A new e2e test runs a boss rush fight, knocks the boss under half HP and checks the phase light comes on, the gold ring and hint appear, and the slice is on that wheel. It then checks for clipping at 320×568 and 844×390. All of it is off for regular opponents.
 
 ### 9. Long-press a slice for a damage preview
 
