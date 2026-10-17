@@ -7,6 +7,8 @@ afterEach(() => useBalance(tuned));
 
 /** Share of A's hits that crit, and of B's defences that dodge, when A has huge crit and B huge dodge. */
 function rates(seed: number) {
+  // only the caps under test: no hidden synergies changing who hits whom
+  useBalance({ ...BALANCE, jokeSynergies: false });
   const rng = mulberry32(seed);
   const bt = newBattle(randomFighter('A', rng), randomFighter('B', rng), rng, { maxRounds: 200 });
   const [A, B] = bt.P;

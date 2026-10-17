@@ -148,6 +148,9 @@ const PROC_SOUND: Record<string, Voice[]> = {
   selfown: [{ f: 311, d: 0.22, w: 'sawtooth', v: 0.035 }, { f: 294, at: 0.24 }, { f: 277, at: 0.48 }, { f: 262, to: 247, d: 0.5, at: 0.72 }],
 };
 const PROC_DEFAULT: Voice[] = [{ f: 784, d: 0.14, w: 'triangle', v: 0.05 }, { f: 1175, at: 0.08 }];
+/** A secret found: a rising sparkle (hidden synergies). */
+const SECRET: Voice[] = [523, 659, 784, 1047, 1319].map((f, i) => ({ f, d: 0.22, w: 'triangle', v: 0.045, at: i * 0.07 }));
+for (const k of ['h_bgchar', 'h_underdog', 'h_irony', 'h_comic', 'h_dumpster', 'h_trashking']) PROC_SOUND[k] = SECRET;
 
 /** The sound of a combo (by name) or a synergy (by key) going off. */
 export const procSound = (k: string) => play(PROC_SOUND[k] ?? PROC_DEFAULT);

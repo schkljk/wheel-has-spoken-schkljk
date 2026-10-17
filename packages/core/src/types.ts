@@ -156,6 +156,10 @@ export interface Synergy {
   fx?: TraitFx;
   /** a joke synergy that works against you */
   anti?: number;
+  /** a secret: not shown anywhere until it turns up in a fight (upgrade 16) */
+  hidden?: number;
+  /** the joke under the mechanics */
+  flavor?: string;
 }
 
 export interface Arena extends WheelItem {

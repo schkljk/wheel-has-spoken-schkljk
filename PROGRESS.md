@@ -32,6 +32,30 @@ That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system h
 
 - [x] 14. Developer balance dashboard (hidden)
 - [x] 15. Soft caps on crit, dodge and damage reduction
+- [x] 16. Hidden synergies for joke picks
+
+### 16. Hidden synergies for joke picks
+
+- **What changed (balance and content):** six secret synergies make the joke picks quietly viable. Each has a mechanics line and a joke:
+  - 🫥 **Unnamed extra** (NPC): +2 to everything, +12% dodge, +25% damage while behind on HP. *Nobody remembers their name. That is the whole plan.*
+  - 🎬 **The underdog story** (NPC with a joke weapon): gets back up once with 30 HP. *Every sports movie ever. Cue the montage.*
+  - 🎭 **Weaponized irony** (Wet noodle, Pool noodle, Rubber chicken, Giant lollipop, Fishing rod): +25% strike damage, and opponents sometimes laugh too hard to act. *Getting hit with a pool noodle is funny until it is not.*
+  - 🎪 **Comic relief** (the joke races: Goblin, Pigeon, Frogfolk, Sentient toaster, Clown, Snowman, Rubber duck): +30% damage below a quarter HP, and opponents sometimes stop to wave. *Everyone roots for the goblin.*
+  - 🗑️ **Dumpster chic** (3+ junk gear pieces): +6% dodge. 👑 **Trash king** (5+): +1 to everything. *Long live the king. The king smells like a bin.*
+- **They're secret.** The build screen doesn't announce them, and the card shows "❓ ???" with "Something about this build is off. In a good way. A fight will tell." The first fight reveals them with a banner and a sparkle jingle; from then on they show on the card, in a violet-edged row, and in the collection, where they count as six new entries.
+- **Simulated** (balance lab, 40,000 paired fights, off → on; the lab now also dresses 12% of fighters in junk outfits):
+
+| Pick | Off | On |
+|---|---|---|
+| NPC (class) | 26.3% | 45.7% |
+| Pigeon / Clown / Rubber duck (race) | 39.6% / 44.1% / 45.5% | 43.1% / 47.4% / 48.3% |
+| Rubber chicken / Pool noodle / Wet noodle (weapon) | 42.6% / 42.1% / 41.1% | 47.2% / 44.9% / 43.6% |
+| Fishing rod / Giant lollipop (weapon) | 46.5% / 47.8% | 49.5% / 49.8% |
+| Junk outfit, 5+ pieces | 52.2% | 59.4% |
+
+  NPC goes from the worst thing in the game by 13 points to just under average, and the joke picks gain 2 to 5 points without passing anything. The first pass was too generous: Comic relief had +1 to everything and pushed Frogfolk to 56%, and Trash king had +2 more and pushed full junk to 71%. Both were cut back before shipping.
+- They're a separate table (`data/content/hidden-synergies.ts`, one row with a `test` each) behind a `jokeSynergies` switch, so the ported synergy table and parity are untouched. `npx tsx tools/sim/lab-compare.ts jokeSynergies` prints the comparison.
+- Tested: `hidden-synergies.test.ts` checks who gets which (and that normal builds get none), that each has an info card with its joke, that they're found once and then show, and that they're off under the old balance. A new e2e test opens a fresh NPC's full card ("???"), plays a fight, and checks the card now says "Unnamed extra". One fix along the way: the NPC already has a kit move called "Background character", so the synergy got a different name.
 
 ### 15. Soft caps on crit, dodge and damage reduction
 

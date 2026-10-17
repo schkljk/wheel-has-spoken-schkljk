@@ -14,6 +14,7 @@ import {
   playerOdds,
   reaction,
   reroll,
+  synFound,
   synOf,
   wheelsDone,
   wheelsTotal,
@@ -126,7 +127,8 @@ function Preview({ f }: { f: Partial<Fighter> & { name: string } }) {
 
 /** Everything landed so far, as a sheet. */
 function SoFarSheet({ f }: { f: BuildFighter }) {
-  const syns = f.race ? synOf(f as Fighter) : [];
+  // hidden synergies stay secret until a fight shows them
+  const syns = f.race ? synOf(f as Fighter).filter((s) => synFound(G, s)) : [];
   return (
     <Sheet icon="scroll" title={f.name} sub="Everything landed so far">
       <Preview f={f} />

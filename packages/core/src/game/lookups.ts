@@ -3,6 +3,7 @@ import { ARCH_KIT, RACE_KIT } from '../data/kits';
 import { ARENAS } from '../data/arenas';
 import { GEAR } from '../data/gear';
 import { SYN } from '../data/synergies';
+import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { CONTRACTS, TIERS_T } from '../data/content/economy';
 import { ITEMS } from '../data/content/story';
@@ -51,7 +52,7 @@ export const CODEX: [k: string, label: string, list: () => CodexEntry[]][] = [
   ['quirk', 'Quirks', plain(QUIRKS)],
   ['side', 'Sidekicks', plain(SIDEKICKS)],
   ['title', 'Titles', plain(TITLES)],
-  ['syn', 'Synergies', plain(SYN)],
+  ['syn', 'Synergies', plain([...SYN, ...SYN_HIDDEN])],
   ['arena', 'Arenas', plain(ARENAS)],
   ['gear', 'Gear', plain(GEAR)],
   ['ach', 'Achievements', plain(ACHIEVEMENTS)],

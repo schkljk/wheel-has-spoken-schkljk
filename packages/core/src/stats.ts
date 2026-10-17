@@ -2,7 +2,8 @@ import { GEAR } from './data/gear';
 import { INJURIES } from './data/misc';
 import { SYN } from './data/synergies';
 import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
-import { SOFT_CAP, soft } from './data/balance';
+import { BALANCE, SOFT_CAP, soft } from './data/balance';
+import { SYN_HIDDEN } from './data/content/hidden-synergies';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
 import { clamp } from './random';
@@ -135,13 +136,15 @@ export function talentsOf(f: Fighter | null | undefined): { m?: StatMods; fx?: T
 
 // ---------- synergies ----------
 export function synOf(f: Fighter): Synergy[] {
-  return SYN.filter((s) => {
+  const out = SYN.filter((s) => {
     try {
       return !!SYN_TESTS[s.k]?.(f);
     } catch {
       return false;
     }
   });
+  if (BALANCE.jokeSynergies) for (const s of SYN_HIDDEN) if (s.test(f)) out.push(s);
+  return out;
 }
 
 // ---------- effective stats ----------

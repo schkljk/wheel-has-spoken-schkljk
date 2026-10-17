@@ -16,6 +16,7 @@ import {
   numStats,
   personalityOf,
   powerScale,
+  synFound,
   synOf,
   verdict,
   winRate,
@@ -235,14 +236,22 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
           <>
             <dt>Synergies</dt>
             <dd>
-              {syns.map((s) => (
-                <span key={s.k} class={`syn${s.anti ? ' anti' : ''}`}>
-                  <Inf k={`it|syn|${s.n}`}>
-                    {s.e} {s.n}
-                  </Inf>
-                  <small>{s.d}</small>
-                </span>
-              ))}
+              {syns.map((s) =>
+                synFound(G, s) ? (
+                  <span key={s.k} class={`syn${s.anti ? ' anti' : ''}${s.hidden ? ' secret' : ''}`}>
+                    <Inf k={`it|syn|${s.n}`}>
+                      {s.e} {s.n}
+                    </Inf>
+                    <small>{s.d}</small>
+                  </span>
+                ) : (
+                  // a hidden synergy nobody has found yet
+                  <span key={s.k} class="syn secret">
+                    <span>❓ ???</span>
+                    <small>Something about this build is off. In a good way. A fight will tell.</small>
+                  </span>
+                ),
+              )}
             </dd>
           </>
         )}

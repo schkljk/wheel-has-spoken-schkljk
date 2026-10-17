@@ -11,7 +11,7 @@ import { STATLBL, setCount, synOf, talEcon, talMap, fullName, bestStat } from '.
 import { deserFighter, serFighter, type CareerFighter, type Json, type SerFighter } from '../save/fighter';
 import { lgLvl, legacyFx, xpNeed, LEVEL_CAP } from '../save/career';
 import type { Profile } from '../save/schema';
-import type { Fighter, Injury, StatKey } from '../types';
+import type { Fighter, Injury, StatKey, Synergy } from '../types';
 import { addCoins, ctxOf, newCid, freeSlot, pl, slotOf, type Game } from './game';
 import { ACHK, ARCHK, CODEX, CX_CATS, cxKey, lookOf, type Look } from './lookups';
 
@@ -255,6 +255,13 @@ export function award(g: Game, keys: string[], out: (typeof ACHK)[string][]) {
 }
 
 /** Logs a collection entry; true if it is new. */
+/** A fighter's hidden synergies found in a fight: marks them seen and returns the ones that are new. */
+export function discoverHidden(g: Game, f: Fighter): Synergy[] {
+  return synOf(f).filter((s) => s.hidden && markSeen(g, 'syn', s.n));
+}
+/** Whether the player has found this synergy (hidden ones show as ??? until then). */
+export const synFound = (g: Game, s: Synergy) => !s.hidden || (g.save.profile.seen.syn || []).includes(s.n);
+
 export function markSeen(g: Game, cat: string, key: string): boolean {
   const seen = g.save.profile.seen;
   const a = Array.isArray(seen[cat]) ? seen[cat]! : (seen[cat] = []);
@@ -529,7 +536,7 @@ export const STATN: Record<string, string> = {
 
 /** A finished build: synergies and the landed slices go into the collection's "new" markers. */
 export function finishBuild(g: Game, f: Fighter) {
-  for (const s of synOf(f)) markSeen(g, 'syn', s.n);
+  for (const s of synOf(f)) if (!s.hidden) markSeen(g, 'syn', s.n);
   g.save.profile.last = WHEELS.filter((W) => CX_CATS.has(W.k) && f[W.k] && !(f[W.k] as { skip?: unknown }).skip).map(
     (W) => W.k + '|' + cxKey(W.k, f[W.k] as { n: string }, f),
   );
