@@ -14,3 +14,4 @@ export * from './data/balance';
 export * from './data/content/phase';
 export * from './data/content/personality';
 export * from './data/content/hidden-synergies';
+export * from './data/content/charisma';

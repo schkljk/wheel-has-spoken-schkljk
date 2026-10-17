@@ -507,6 +507,22 @@
 .ch-opt:active:not(:disabled) {
   transform: translateY(2px);
 }
+/* charisma options: a violet edge, and a chip saying what they need */
+.ch-opt.talk {
+  border-color: color-mix(in srgb, #b388ff 55%, var(--line));
+  background: color-mix(in srgb, #b388ff 10%, var(--surface));
+}
+.ch-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  font: 800 0.66rem/1.5 var(--display);
+  letter-spacing: 0.04em;
+  vertical-align: middle;
+  background: #b388ff;
+  color: #1a1426;
+}
 .ch-opt:disabled {
   opacity: 0.5;
 }

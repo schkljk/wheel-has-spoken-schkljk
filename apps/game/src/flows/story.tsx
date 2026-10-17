@@ -28,6 +28,7 @@ import {
   pl,
   powerScale,
   storyEvent,
+  talkOf,
   storyOf,
   storyOpponent,
   trainLand,
@@ -158,11 +159,26 @@ export async function enterNode(i: number) {
 // ---------------------------------------------------------------- encounters
 async function encounter() {
   const ev = act((g) => storyEvent(g));
+  // the charisma option comes last; below what it needs it shows locked, as a tease
+  const t = talkOf(G, ev.k);
   const i = await choose({
     emoji: ev.e,
     title: ev.t,
     body: ev.d,
-    options: ev.o.map((o) => ({ label: o.l, sub: o.s, disabled: !eventOptionOk(G, o) })),
+    options: [
+      ...ev.o.map((o) => ({ label: o.l, sub: o.s, disabled: !eventOptionOk(G, o) })),
+      ...(t
+        ? [
+            {
+              label: `🗣️ ${t.o.l}`,
+              sub: t.have >= t.o.need ? t.o.s : `Needs ${t.o.need} charisma, you have ${t.have}. ${t.o.s}`,
+              disabled: !t.ok,
+              tag: `Charisma ${t.o.need}`,
+              talk: true,
+            },
+          ]
+        : []),
+    ],
   });
   const r = act((g) => eventOption(g, ev.k, i));
   if ('fight' in r) return storyFight(r.fight);

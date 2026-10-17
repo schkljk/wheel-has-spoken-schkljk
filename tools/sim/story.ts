@@ -48,6 +48,7 @@ import {
   startBattle,
   storyEnsure,
   storyEvent,
+  talkOf,
   storyOf,
   storyOpponent,
   trainLand,
@@ -238,6 +239,9 @@ function visit(g: Game, kind: NodeKind) {
   if (kind === 'event') {
     const ev = storyEvent(g);
     const ok = ev.o.map((o, i) => ({ o, i })).filter((x) => eventOptionOk(g, x.o));
+    // a charming bot also gets the charisma option (WHS_NO_TALK=1 for runs without it, upgrade 17)
+    const t = process.env.WHS_NO_TALK ? null : talkOf(g, ev.k);
+    if (t?.ok) ok.push({ o: t.o, i: ev.o.length });
     const r = eventOption(g, ev.k, ok[Math.floor(g.rng() * ok.length)]!.i);
     if ('fight' in r) return void fight(g, r.fight);
     if ('wheel' in r) mysteryLand(g, spin(g.rng, mysteryList()));

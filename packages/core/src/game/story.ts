@@ -1,6 +1,7 @@
 import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
 import { GEAR } from '../data/gear';
 import { BALANCE } from '../data/balance';
+import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
 import { LEVELUP } from '../data/misc';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
@@ -263,9 +264,76 @@ export function storyEvent(g: Game) {
 }
 export const eventOptionOk = (g: Game, o: { cost?: number }) => !o.cost || coinsOf(g) >= o.cost;
 
+/** The charisma the card shows (the stat x5). */
+export const charismaOf = (g: Game) => numStats(g.F!, ctxOf(g)).cha;
+/**
+ * An encounter's charisma option (upgrade 17): offered after the normal ones, as option index `ev.o.length`.
+ * `ok` is false below the charisma it needs (it still shows, locked, as a tease).
+ */
+export function talkOf(g: Game, k: string): { o: TalkOption; ok: boolean; have: number } | null {
+  const o = EVENT_TALK[k];
+  if (!o) return null;
+  const have = charismaOf(g);
+  return { o, ok: have >= o.need && eventOptionOk(g, o), have };
+}
+
+/** What a charisma option does. */
+function talk(g: Game, k: string): EventOutcome {
+  const F = g.F!;
+  const t = EVENT_TALK[k]!;
+  if (t.cost) spend(g, t.cost);
+  const done = (extra = '') => ({ txt: [t.done, extra].filter(Boolean).join(' ') });
+  switch (k) {
+    case 'promoter':
+      addCoins(g, 25);
+      return done('+25 coins.');
+    case 'doctor':
+      storyOf(g).hp = 100;
+      F.inj = [];
+      return done();
+    case 'street':
+      return done(gainFameText(g, 4));
+    case 'mystery':
+      return done(blessing(g));
+    case 'trainer':
+      hurtS(g, 30);
+      applyBonus(F, { k: 'str', n: '+1 ' + STATN.str, e: '🥋' });
+      applyBonus(F, { k: 'spd', n: '+1 ' + STATN.spd, e: '🥋' });
+      return done('+1 strength and +1 speed for good (−30% HP).');
+    case 'gambler':
+      if (g.rng() < 0.7) {
+        addCoins(g, 20);
+        return { txt: 'They blink first. You win! +20 coins' };
+      }
+      return { txt: 'They do not blink. You lose anyway. The rings jingle smugly.' };
+    case 'shrine':
+      healS(g, 40);
+      return done('+40% HP.');
+    case 'spy':
+      nextBuff(F, { readB: 0.25 });
+      return done();
+    case 'fans':
+      addCoins(g, 12);
+      return done(`+12 coins. ${gainFameText(g, 5)}`);
+    case 'ambush':
+      return done(gainFameText(g, 2));
+    case 'smith':
+      applyBonus(F, { k: 'wm', n: '+1 Weapon mastery', e: '⚒️' });
+      return done();
+    case 'box':
+      return { loot: 'treasure', bit: 0 };
+  }
+  return done();
+}
+
 /** Plays an encounter option (legacy SEVENTS option functions). */
 export function eventOption(g: Game, k: string, i: number): EventOutcome {
   const ev = SEVENTS.find((e) => e.k === k)!;
+  if (i === ev.o.length) {
+    const r = talk(g, k);
+    invalidate(g.F!);
+    return r;
+  }
   const o = ev.o[i]!;
   const F = g.F!;
   if (o.cost) spend(g, o.cost);

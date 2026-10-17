@@ -42,6 +42,10 @@ export interface ChoiceOpt {
   label: string;
   sub?: string;
   disabled?: boolean;
+  /** a small chip by the label (charisma options say what they need) */
+  tag?: string;
+  /** styled as a charisma option */
+  talk?: boolean;
 }
 /** Asks the player to pick one option (legacy askChoice). Resolves with its index. */
 export function choose(o: { emoji?: string; title: string; sub?: string; body?: ComponentChildren; options: ChoiceOpt[] }): Promise<number> {
@@ -53,14 +57,17 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
           {o.options.map((x, i) => (
             <button
               key={x.label}
-              class="ch-opt"
+              class={`ch-opt${x.talk ? ' talk' : ''}`}
               disabled={x.disabled}
               onClick={() => {
                 closeSheet();
                 resolve(i);
               }}
             >
-              <b>{x.label}</b>
+              <b>
+                {x.label}
+                {x.tag && <span class="ch-tag">{x.tag}</span>}
+              </b>
               {x.sub && <small>{x.sub}</small>}
             </button>
           ))}
