@@ -157,3 +157,36 @@ test('a damaged save comes back from its backup, and the player is told', async 
   await expect(page.getByText('Backup Bob').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('the combat wheel can be nudged one slice, once a fight', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, careerSaveKV({ seed: 4, lvl: 12, ch: 3 }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  const spin = page.getByRole('button', { name: 'Spin your move' });
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  await spin.click();
+  // take the offer the moment it shows: it only lasts a couple of seconds
+  const offer = await (
+    await page.waitForFunction(`(() => {
+      const b = document.querySelector('.btn.nudge');
+      if (!b) return null;
+      const t = b.textContent;
+      b.click();
+      return t;
+    })()`)
+  ).jsonValue();
+  const to = String(offer).replace('↷ Nudge to', '').replace('once a fight', '').trim();
+  await expect(page.locator('.cw-out b')).toHaveText(to);
+  // the next spin offers no second nudge
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  await spin.click();
+  await page.locator('.cw-out b').waitFor();
+  await page.waitForTimeout(400);
+  await expect(page.locator('.btn.nudge')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});

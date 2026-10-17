@@ -18,6 +18,14 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 2. Pixel-art content icons
 - [x] 3. Save safety net
 - [x] 4. Fight replay and share card
+- [x] 5. More agency on the combat wheel
+
+### 5. More agency on the combat wheel: the nudge
+
+- Once a fight, when the combat wheel lands, a gold **Nudge to (the next slice)** button shows for a couple of seconds (2.2 s, 1.5 s in fast mode, with a bar running down). Tap it and the wheel clicks one slice on, in the direction it was spinning, and that slice becomes your move. Tap nothing and the fight carries on as before.
+- It names the slice it would move to, so the choice is visible and simple: keep the heavy blow, or push it onto the strike that beats their power move.
+- Auto-battle never nudges; the opponent never gets one. No random draws change, so fights without a nudge play exactly as before.
+- Tested in the browser: the nudge moves the move to the offered slice, and the next spin offers no second one.
 
 ### 4. Fight replay and share card
 

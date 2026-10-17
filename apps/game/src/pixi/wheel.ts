@@ -302,6 +302,21 @@ export class WheelView extends Container {
     this.tween = { from: this.rot, to: end, t0: performance.now(), dur: Math.max(1, opts.dur), idx, seg: this.segAt(), dir };
   }
 
+  /** The slice next to `idx` in the direction the wheel last turned (where a nudge would move it). */
+  nextSlice(idx: number, dir: number): number {
+    const n = this.segs.length;
+    const fwd = (j: number) => {
+      const [a, b] = this.segs[j]!;
+      const want = ((-(a + b) / 2) % TAU + TAU) % TAU;
+      const cur = ((this.rot % TAU) + TAU) % TAU;
+      const d = dir >= 0 ? want - cur : cur - want;
+      return ((d % TAU) + TAU) % TAU || TAU;
+    };
+    const a = (idx + 1) % n;
+    const b = (idx - 1 + n) % n;
+    return fwd(a) <= fwd(b) ? a : b;
+  }
+
   /** Advances spins and the pointer flap; call every frame with the elapsed seconds. */
   update(dt: number) {
     if (this.flap) {
