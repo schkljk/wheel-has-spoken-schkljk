@@ -5,6 +5,7 @@ import { G, enterSlot, go, loadProblems, save, store } from '../state/game';
 import { closeSheet, openSheet } from '../state/ui';
 import { offerImport, describeSave } from '../sheets/Save';
 import { SettingsSheet } from '../sheets/Settings';
+import { RecordsSheet } from '../sheets/Records';
 import { startTutorial } from '../sheets/Tutorial';
 import { Icon } from '../ui/Icon';
 import { Sheet, rise } from '../ui/kit';
@@ -123,8 +124,14 @@ export function Title() {
         })}
       </div>
       <div class="title-foot pad row">
-        <button class="btn ghost grow" onClick={startTutorial}>
-          <Icon name="book" /> How to play
+        <button class="btn ghost grow" onClick={() => openSheet(<RecordsSheet />)}>
+          <Icon name="cup" /> Records
+        </button>
+        <button class="btn ghost grow" onClick={() => go({ screen: 'codex' })}>
+          <Icon name="card" /> Collection
+        </button>
+        <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
+          <Icon name="book" />
         </button>
         <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
           <Icon name="gear" />

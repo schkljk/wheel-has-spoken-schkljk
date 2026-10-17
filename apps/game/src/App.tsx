@@ -6,6 +6,11 @@ import { BuildScreen, SpinScreen, type SpinSpec } from './screens/Spin';
 import { CardScreen } from './screens/Card';
 import { FightScreen } from './screens/Fight';
 import { MapScreen } from './screens/Map';
+import { BracketScreen } from './screens/Bracket';
+import { CodexScreen } from './screens/Codex';
+import type { Run } from '@whs/core';
+import { G, go } from './state/game';
+import { goHub } from './flows/nav';
 import type { FightOutcome, FightResult, FightSpec } from '@whs/core';
 import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
 import { InfoHost } from './ui/Info';
@@ -26,6 +31,10 @@ function Screen() {
       return <FightScreen key={r.key as number} spec={r.spec as FightSpec} end={r.end as (o: FightOutcome) => FightResult} done={r.done as (x: FightResult) => void} />;
     case 'map':
       return <MapScreen key={r.key as number} />;
+    case 'bracket':
+      return <BracketScreen key={r.key as number} run={r.run as Run} />;
+    case 'codex':
+      return <CodexScreen back={() => (G.F ? void goHub('more') : go({ screen: 'title' }))} />;
     default:
       return <Title />;
   }

@@ -37,6 +37,7 @@ try {
     }
   }
   if (script === 'build') await buildScript(page);
+  else if (script === 'modes') await modesScript(page);
   else await storyScript(page);
   console.log('errors:', errors);
   await browser.close();
@@ -98,4 +99,46 @@ async function storyScript(page: Page) {
   await page.locator('.fresult .btn').first().click();
   await page.waitForTimeout(600);
   await shot(page, 'after');
+}
+
+async function modesScript(page: Page) {
+  const kv = careerSaveKV({ seed: 5, lvl: 12, ch: 3, coins: 300, gems: 30, fast: true, auto: true });
+  await page.evaluate((s) => {
+    localStorage.clear();
+    for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+  }, kv);
+  await page.reload();
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await shot(page, 'play');
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await shot(page, 'fighter');
+  await page.getByRole('button', { name: /Talents/ }).click();
+  await shot(page, 'talents');
+  await page.keyboard.press('Escape');
+  await page.getByRole('tab', { name: 'Goals' }).click();
+  await shot(page, 'goals');
+  await page.getByRole('tab', { name: 'Play' }).click();
+  await page.getByRole('button', { name: /daily wheel/ }).click();
+  await page.getByRole('button', { name: 'Spin the daily wheel' }).click();
+  await page.getByRole('button', { name: 'Back to your fighter' }).waitFor({ timeout: 30_000 });
+  await shot(page, 'daily-wheel');
+  await page.getByRole('button', { name: 'Back to your fighter' }).click();
+  await page.getByRole('button', { name: /Base shop/ }).click();
+  await shot(page, 'shop');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: /Fight club/ }).click();
+  await shot(page, 'club');
+  await page.locator('.fc-side .btn').first().click();
+  await page.getByRole('button', { name: 'Another fight' }).waitFor({ timeout: 60_000 });
+  await shot(page, 'club-end');
+  await page.getByRole('button', { name: 'Leave' }).click();
+  await page.getByRole('button', { name: /Local brawl/ }).click();
+  await shot(page, 'bracket');
+  await page.getByRole('button', { name: /^Fight / }).click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await page.locator('.fresult').waitFor({ timeout: 120_000 });
+  await shot(page, 'cup-result');
+  await page.locator('.fresult .btn').first().click();
+  await page.waitForTimeout(800);
+  await shot(page, 'cup-after');
 }

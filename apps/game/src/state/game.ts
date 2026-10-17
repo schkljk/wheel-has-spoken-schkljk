@@ -10,6 +10,7 @@ import {
   newCid,
   numStats,
   persistFighter,
+  serFighter,
   type Game,
   type NumStats,
   type SaveData,
@@ -58,6 +59,18 @@ export function act<T>(fn: (g: Game) => T): T {
   G.clock = clockAt();
   const r = fn(G);
   sync();
+  return r;
+}
+
+/**
+ * Runs a rule while a screen renders (e.g. today's offers or deal get rolled the first time they are shown).
+ * Saves afterwards only if something changed, so rendering never loops.
+ */
+export function ensure<T>(fn: (g: Game) => T): T {
+  const snap = () => JSON.stringify(G.save) + JSON.stringify(G.F ? serFighter(G.F) : null);
+  const before = snap();
+  const r = fn(G);
+  if (snap() !== before) queueMicrotask(sync);
   return r;
 }
 

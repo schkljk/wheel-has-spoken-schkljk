@@ -1284,3 +1284,564 @@
     width: 0;
   }
 }
+
+/* ---------- fighter page ---------- */
+.story-card {
+  display: grid;
+  gap: 0.5rem;
+  border-top: 4px solid var(--ch, var(--primary));
+}
+.sc-prog {
+  display: flex;
+  gap: 3px;
+}
+.sc-prog i {
+  flex: 1;
+  height: 0.35rem;
+  border-radius: 9px;
+  background: var(--surface-2);
+}
+.sc-prog i.d {
+  background: var(--teal);
+}
+.sc-prog i.c {
+  background: var(--primary);
+}
+.reclvl {
+  color: var(--primary);
+  font-weight: 700;
+}
+.mode {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.mode small {
+  display: block;
+}
+.mode.locked,
+.tier.locked {
+  opacity: 0.6;
+}
+.tier .te {
+  font-size: 1.7rem;
+}
+.challenge,
+.resume {
+  display: grid;
+  gap: 0.35rem;
+  border-color: var(--gold);
+}
+.btn.daily {
+  background: linear-gradient(90deg, var(--q3), var(--primary));
+}
+.nem {
+  display: block;
+  font-size: 0.92rem;
+  text-decoration: none;
+  border-color: var(--primary);
+}
+.hubcard {
+  display: flex;
+  gap: 0.7rem;
+  align-items: center;
+}
+.hubcard .grow {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+.hubcard small {
+  color: var(--muted);
+}
+.lvl {
+  font: 800 1.05rem/1.2 var(--display);
+  text-decoration: none;
+}
+.belts {
+  display: flex;
+  gap: 0.3rem;
+}
+.belt {
+  opacity: 0.3;
+  filter: grayscale(1);
+  font-size: 1.2rem;
+  text-decoration: none;
+}
+.belt.on {
+  opacity: 1;
+  filter: none;
+}
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: center;
+}
+.chips.left {
+  justify-content: flex-start;
+}
+.rankcard {
+  display: grid;
+  gap: 0.35rem;
+}
+.rk-e {
+  font-size: 1.8rem;
+}
+.rankcard small {
+  display: block;
+  color: var(--muted);
+}
+.contract {
+  display: grid;
+  gap: 0.3rem;
+}
+.contract small {
+  display: block;
+  color: var(--muted);
+}
+.ct-r {
+  color: var(--gold) !important;
+  font-weight: 700;
+}
+.offers {
+  display: grid;
+  gap: 0.35rem;
+}
+.offer {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+.oe {
+  font-size: 1.4rem;
+}
+.linkish {
+  justify-self: start;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.2rem 0;
+}
+.gearline {
+  display: grid;
+  gap: 0.4rem;
+}
+.gl-icons {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+.gl-i {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--surface-2);
+  font-size: 1.3rem;
+}
+.gl-i i {
+  font-style: normal;
+  opacity: 0.35;
+}
+.goal {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.goal.done {
+  opacity: 0.7;
+}
+.g-e {
+  font-size: 1.5rem;
+  flex: none;
+}
+.g-t {
+  flex: 1 1 0;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+}
+.g-t small {
+  color: var(--muted);
+}
+.g-r {
+  flex: none;
+  font-weight: 700;
+}
+.mast-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.4rem;
+}
+.mast {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding: 0.5rem;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+.mast.max {
+  border-color: var(--gold);
+}
+.mast small {
+  color: var(--muted);
+}
+.mast-pips,
+.tt-pips {
+  display: flex;
+  gap: 0.2rem;
+}
+.mast-pips i,
+.tt-pips i {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+.mast-pips i.on,
+.tt-pips i.on {
+  background: var(--gold);
+}
+
+/* ---------- talents ---------- */
+.tt-tabs {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+}
+.tt-tab {
+  flex: 1 0 auto;
+  display: grid;
+  justify-items: center;
+  gap: 0.05rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  font-weight: 800;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.tt-tab.on {
+  border-color: var(--c);
+}
+.tt-body {
+  display: grid;
+  gap: 0.45rem;
+}
+.tt-tier {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: stretch;
+}
+.tt-req {
+  font: 800 0.8rem/1.1 var(--display);
+  color: var(--muted);
+  align-self: center;
+}
+.tt-req small {
+  display: block;
+  font-size: 0.68rem;
+}
+.tt-node {
+  display: grid;
+  gap: 0.1rem;
+  justify-items: start;
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  min-width: 0;
+}
+.tt-node small {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.tt-node.has {
+  border-color: var(--c);
+}
+.tt-node.max {
+  background: color-mix(in srgb, var(--c) 14%, var(--surface));
+}
+.tt-node:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.tt-tier.locked .tt-node {
+  opacity: 0.4;
+}
+.tt-e {
+  font-size: 1.2rem;
+}
+
+/* ---------- bracket, club, shop tabs, records ---------- */
+.bracket-screen,
+.codex-screen {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+.codex-screen {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.bracket-body {
+  padding-top: 0.6rem;
+  padding-bottom: 0.8rem;
+}
+.round h3,
+.round summary {
+  font: 800 1rem/1.2 var(--display);
+  margin: 0.3rem 0;
+}
+.round summary {
+  cursor: pointer;
+}
+.tbd {
+  color: var(--muted);
+  margin: 0;
+}
+.match {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.35rem;
+}
+.match.mine {
+  padding: 0.25rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.vs {
+  font: 800 0.8rem/1 var(--display);
+  color: var(--muted);
+}
+.bchip {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.25rem 0.4rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.bchip.r {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+.bchip.won {
+  border-color: var(--teal);
+}
+.bchip.lost {
+  opacity: 0.5;
+}
+.bchip.you {
+  border-width: 2px;
+  border-color: var(--primary);
+}
+.bchip .mini {
+  flex: none;
+  width: 2.1rem;
+  display: grid;
+  place-items: center;
+}
+.ntx {
+  display: grid;
+  min-width: 0;
+  font-size: 0.82rem;
+}
+.ntx .lv {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+.champ-line {
+  font-weight: 800;
+  text-align: center;
+}
+.gaunt .streak {
+  font: 800 2.4rem/1 var(--display);
+  color: var(--gold);
+}
+.fc-bets,
+.shop-tabs {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.fchip.light {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+  backdrop-filter: none;
+}
+.fchip.light.on {
+  background: var(--primary);
+  color: var(--primary-ink);
+  border-color: var(--primary);
+}
+.fc-vs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.4rem;
+  align-items: center;
+}
+.fc-side {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  text-align: center;
+  min-width: 0;
+}
+.fc-side b {
+  max-width: 100%;
+}
+.fc-side small {
+  color: var(--muted);
+}
+.fc-odds {
+  font-weight: 800;
+}
+.fc-v {
+  font: 800 1.2rem/1 var(--display);
+  color: var(--primary);
+}
+.fc-live {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.4rem;
+}
+.fc-log {
+  max-height: 34dvh;
+  overflow-y: auto;
+}
+.lockbar {
+  padding: 0.55rem 0.7rem;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--q3) 18%, var(--surface));
+  font-size: 0.9rem;
+}
+.price {
+  flex: none;
+  font-weight: 800;
+  color: var(--muted);
+}
+.shopitem.deal {
+  border-width: 2px;
+}
+.pn {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.4rem;
+}
+.pn li small {
+  display: block;
+  color: var(--muted);
+}
+.pn li.up b {
+  color: var(--teal);
+}
+.pn li.down b {
+  color: var(--primary);
+}
+.hall {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+.hall li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.hall li .grow {
+  min-width: 0;
+  display: grid;
+}
+.hall small {
+  color: var(--muted);
+}
+.hall .mini {
+  width: 2.4rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.codex-body {
+  padding-top: 0.6rem;
+  padding-bottom: 1rem;
+}
+.cx-cat h3 {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.1rem;
+  margin: 0.8rem 0 0.4rem;
+}
+.cx-cat h3 span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.cx-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: 0.35rem;
+}
+.tile {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+  font-size: 0.8rem;
+  min-width: 0;
+  cursor: pointer;
+}
+.tile.unk {
+  opacity: 0.45;
+  cursor: default;
+}
+.tile .e {
+  font-size: 1.2rem;
+  flex: none;
+}
+.tile .t {
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+}
+.tile small {
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+.tile.q3 {
+  border-color: color-mix(in srgb, var(--q3) 60%, var(--line));
+}

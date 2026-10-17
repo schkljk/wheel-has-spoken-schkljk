@@ -4,11 +4,12 @@ import { SaveStore, clockAt, enterCareer, mulberry32, newChapter, newSave, persi
  * A save with a career fighter ready to play, as the localStorage entries the app reads.
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
-export function careerSaveKV(o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; fast?: boolean } = {}): Record<string, string> {
+export function careerSaveKV(o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; fast?: boolean; auto?: boolean } = {}): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
   save.settings.tutorialSeen = true;
   if (o.fast) save.settings.fast = true;
+  if (o.auto) save.settings.autoBattle = true;
   const g: Game = { save, F: null, rng, clock: clockAt(), pool: null, notes: [] };
   const f = randomFighter(o.name ?? 'Test Hero', rng) as CareerFighter;
   enterCareer(g, f);

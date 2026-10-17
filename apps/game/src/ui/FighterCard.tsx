@@ -25,7 +25,7 @@ import {
 import type { ComponentChildren } from 'preact';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
-import { G } from '../state/game';
+import { G, ensure } from '../state/game';
 import { Inf } from './Info';
 
 export const NS_META: [keyof NumStats, string, string, string?][] = [
@@ -113,7 +113,7 @@ function StatRows({ f }: { f: CareerFighter }) {
 export function KitStrip({ f }: { f: CareerFighter }) {
   const ks = kitMoves(f);
   if (!ks.length) return null;
-  if (f === G.F) for (const m of ks) markSeen(G, 'moves', 'mv/' + m.n);
+  if (f === G.F) ensure((g) => ks.forEach((m) => markSeen(g, 'moves', 'mv/' + m.n)));
   return (
     <div class="card-kit">
       <span class="ck-l">Moves</span>
