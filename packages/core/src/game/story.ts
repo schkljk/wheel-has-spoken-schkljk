@@ -3,6 +3,7 @@ import { GEAR } from '../data/gear';
 import { BALANCE } from '../data/balance';
 import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
 import { NODE_MORE } from '../data/content/nemesis';
+import { CH_EVENTS, type ChapterEvent, type ChapterOpt, type EventFx } from '../data/content/chapter-events';
 import { LEVELUP } from '../data/misc';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
@@ -14,7 +15,7 @@ import { lgLvl } from '../save/career';
 import type { CareerFighter, Json, StoryState } from '../save/fighter';
 import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
-import { addInjury, gainFame, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
+import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
 
 export const LASTCH = CHAPTERS.length;
@@ -255,12 +256,136 @@ const nextBuff = (F: CareerFighter, b: Record<string, number>) => {
   F.next = { ...((F.next as Record<string, Json>) || {}), ...b };
 };
 
-/** What the encounter option leads to: a line of text, a fight, the mystery wheel or a loot spin. */
-export type EventOutcome = { txt: string } | { fight: 'fight' | 'elite' } | { wheel: true } | { loot: string; bit: number };
+/**
+ * What the encounter option leads to: a line of text (with the mechanics line `fx` when it is kept apart from
+ * the joke), a fight, the mystery wheel or a loot spin.
+ */
+export type EventOutcome = { txt: string; fx?: string } | { fight: 'fight' | 'elite' } | { wheel: true } | { loot: string; bit: number };
 
-/** Picks the next unseen encounter of this chapter. */
-export function storyEvent(g: Game) {
+/** An encounter as the screen shows it: options with their mechanics lines. */
+export interface StoryEventView {
+  k: string;
+  e: string;
+  t: string;
+  d: string;
+  o: { l: string; s: string; cost?: number; fight?: string; wheel?: number; loot?: string; risk?: number }[];
+}
+
+// ---------------------------------------------------------------- chapter-themed encounters (upgrade 20)
+const CH_EVENTK: Record<string, ChapterEvent> = Object.fromEntries(CH_EVENTS.map((e) => [e.k, e]));
+const pct = (p: number) => `${Math.round(p * 100)}%`;
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+/** The mechanics of some effects, in words, what you get before what it costs: "+12 coins, lose 10% HP". */
+export function fxText(fx: EventFx = {}): string {
+  const gain: string[] = [];
+  const cost: string[] = [];
+  if (fx.coins) (fx.coins > 0 ? gain : cost).push(fx.coins > 0 ? `+${fx.coins} coins` : `lose ${-fx.coins} coins`);
+  if (fx.heal) (fx.heal > 0 ? gain : cost).push(fx.heal > 0 ? `heal ${fx.heal}% HP` : `lose ${-fx.heal}% HP`);
+  if (fx.fame) (fx.fame > 0 ? gain : cost).push(fx.fame > 0 ? `+${fx.fame} fame` : `lose ${-fx.fame} fame`);
+  if (fx.stat) gain.push(`+1 ${STATN[fx.stat]!.toLowerCase()} for good`);
+  if (fx.readB) gain.push(`read your next opponent ${pct(fx.readB)} better`);
+  if (fx.en) gain.push('full energy in your next fight');
+  if (fx.dmgX) gain.push(`+${pct(fx.dmgX - 1)} damage in your next fight`);
+  if (fx.revive) gain.push(`get back up once in your next fight, with ${fx.revive}% HP`);
+  if (fx.item) gain.push(`a free ${ITEMK[fx.item]!.e} ${ITEMK[fx.item]!.n}`);
+  if (fx.cure) gain.push('injuries cured');
+  if (fx.blessing) gain.push('a random blessing');
+  if (fx.injury) cost.push(fx.injury >= 1 ? 'an injury' : `a ${pct(fx.injury)} chance of an injury`);
+  return [...gain, ...cost].join(', ');
+}
+
+/** A chapter event option's mechanics line, written from what it does. */
+export function optText(o: Pick<ChapterOpt, 'cost' | 'fight' | 'wheel' | 'loot' | 'risk' | 'fx' | 'p' | 'no'>): string {
+  let s: string;
+  if (o.fight) s = o.fight === 'elite' ? 'An elite fight with guaranteed loot' : 'A fight at your current HP';
+  else if (o.wheel) s = 'Spin the mystery wheel';
+  else if (o.loot) s = `A loot spin, but a 40% chance it bites for ${o.risk || 0}% HP`;
+  else if (o.p != null) s = `${pct(o.p)}: ${fxText(o.fx) || 'nothing'}. ${pct(1 - o.p)}: ${fxText(o.no) || 'nothing'}`;
+  else s = cap(fxText(o.fx)) || 'Nothing happens';
+  if (!o.cost) return s;
+  return o.p != null ? `${o.cost} coins. ${s}` : `${o.cost} coins: ${s.charAt(0).toLowerCase()}${s.slice(1)}`;
+}
+
+const viewOf = (ev: ChapterEvent): StoryEventView => ({
+  k: ev.k,
+  e: ev.e,
+  t: ev.t,
+  d: ev.d,
+  o: ev.o.map((o) => ({ l: o.l, s: optText(o), cost: o.cost, fight: o.fight, wheel: o.wheel, loot: o.loot, risk: o.risk })),
+});
+/** An encounter by its key: one of the classic twelve or a chapter's own. */
+export const eventOf = (k: string): StoryEventView | undefined => SEVENTS.find((e) => e.k === k) ?? (CH_EVENTK[k] && viewOf(CH_EVENTK[k]));
+
+/** Does what some effects say; returns the mechanics line of what happened. */
+function applyFx(g: Game, fx: EventFx = {}): string {
+  const F = g.F!;
+  const extra: string[] = [];
+  if (fx.coins) addCoins(g, fx.coins);
+  if (fx.heal) {
+    if (fx.heal > 0) healS(g, fx.heal);
+    else hurtS(g, -fx.heal);
+  }
+  if (fx.fame) {
+    if (fx.fame > 0) extra.push(...gainFame(g, fx.fame));
+    else F.fame = Math.max(0, (F.fame || 0) + fx.fame);
+  }
+  if (fx.stat) applyBonus(F, { k: fx.stat, n: '+1 ' + STATN[fx.stat], e: '📖' });
+  const next: Record<string, number> = {};
+  for (const k of ['readB', 'en', 'dmgX', 'revive'] as const) if (fx[k]) next[k] = fx[k]!;
+  if (Object.keys(next).length) nextBuff(F, next);
+  if (fx.item) {
+    F.bag = F.bag || {};
+    F.bag[fx.item] = (F.bag[fx.item] || 0) + 1;
+  }
+  if (fx.cure) F.inj = [];
+  let s = cap(fxText({ ...fx, injury: undefined, blessing: undefined }));
+  if (fx.injury && g.rng() < fx.injury) {
+    const j = addInjury(g, F);
+    if (j) extra.push(`${j.e} Injury: ${j.n} (${injText(j)})`);
+  }
+  if (fx.blessing) extra.push(blessing(g));
+  if (extra.length) s = [s, ...extra].filter(Boolean).join('. ');
+  invalidate(F);
+  return s;
+}
+
+/** A chapter event option, or its charisma option at index `ev.o.length`. */
+function chapterOption(g: Game, ev: ChapterEvent, i: number): EventOutcome {
+  if (i === ev.o.length) {
+    const t = ev.talk;
+    if (t.cost) spend(g, t.cost);
+    return { fx: applyFx(g, t.fx), txt: t.txt };
+  }
+  const o = ev.o[i]!;
+  if (o.cost) spend(g, o.cost);
+  if (o.fight) return { fight: o.fight };
+  if (o.wheel) return { wheel: true };
+  if (o.loot) {
+    let bit = 0;
+    if (g.rng() < 0.4) {
+      hurtS(g, o.risk || 0);
+      bit = o.risk || 0;
+    }
+    return { loot: o.loot, bit };
+  }
+  const win = o.p == null || g.rng() < o.p;
+  const fx = applyFx(g, win ? o.fx : o.no);
+  const txt = (win ? o.txt : o.noTxt) || '';
+  return { fx: fx || 'Nothing happens.', txt };
+}
+
+/** Picks the next unseen encounter of this chapter (more often one of the chapter's own, when it has any left). */
+export function storyEvent(g: Game): StoryEventView {
   const S = storyOf(g);
+  if (BALANCE.themedEvents) {
+    const mine = CH_EVENTS.filter((e) => e.ch === S.ch && !(S.used || []).includes(e.k));
+    if (mine.length && g.rng() < 0.6) {
+      const ev = pick(g.rng, mine);
+      S.used = (S.used || []).concat(ev.k);
+      return viewOf(ev);
+    }
+  }
   const pool = SEVENTS.filter((e) => !(S.used || []).includes(e.k));
   const ev = pick(g.rng, pool.length ? pool : SEVENTS);
   S.used = (S.used || []).concat(ev.k);
@@ -275,7 +400,8 @@ export const charismaOf = (g: Game) => numStats(g.F!, ctxOf(g)).cha;
  * `ok` is false below the charisma it needs (it still shows, locked, as a tease).
  */
 export function talkOf(g: Game, k: string): { o: TalkOption; ok: boolean; have: number } | null {
-  const o = EVENT_TALK[k];
+  const c = CH_EVENTK[k]?.talk;
+  const o = EVENT_TALK[k] ?? (c && { need: c.need, l: c.l, s: optText({ fx: c.fx, cost: c.cost }), cost: c.cost, done: c.txt });
   if (!o) return null;
   const have = charismaOf(g);
   return { o, ok: have >= o.need && eventOptionOk(g, o), have };
@@ -332,6 +458,11 @@ function talk(g: Game, k: string): EventOutcome {
 
 /** Plays an encounter option (legacy SEVENTS option functions). */
 export function eventOption(g: Game, k: string, i: number): EventOutcome {
+  if (CH_EVENTK[k]) {
+    const r = chapterOption(g, CH_EVENTK[k], i);
+    invalidate(g.F!);
+    return r;
+  }
   const ev = SEVENTS.find((e) => e.k === k)!;
   if (i === ev.o.length) {
     const r = talk(g, k);

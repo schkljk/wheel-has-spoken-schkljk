@@ -20,7 +20,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -37,6 +37,8 @@ export function careerSaveKV(
     S.row = o.row < 0 ? S.rows.length + o.row : o.row;
     S.seenIntro = true;
   }
+  // an encounter on the step you stand on
+  if (o.event && f.story) (f.story as unknown as Story).rows[(f.story as unknown as Story).row] = ['event'];
   if (o.nemesis && f.story) {
     // Gary beat you in the City Circuit and now waits on the step you stand on, next to a fight and an elite
     setNemesis(g, randomFighter('Gary', rng) as CareerFighter);

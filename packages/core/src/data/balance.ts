@@ -30,6 +30,8 @@ export interface Balance {
   growth: boolean;
   /** the nemesis follows you into the story, and story losses make one (upgrade 19) */
   storyNemesis: boolean;
+  /** each chapter has encounters of its own (upgrade 20) */
+  themedEvents: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -46,6 +48,7 @@ export const LEGACY_BALANCE: Balance = {
   jokeSynergies: false,
   growth: false,
   storyNemesis: false,
+  themedEvents: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -86,6 +89,7 @@ export const BALANCE: Balance = {
   jokeSynergies: true,
   growth: true,
   storyNemesis: true,
+  themedEvents: true,
 };
 
 /**

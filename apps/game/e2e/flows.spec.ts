@@ -440,3 +440,31 @@ test('the nemesis waits on the story map with a speech about your last fight', a
   await expect(page.locator('.fresult')).toContainText('😈');
   expect(errors).toEqual([]);
 });
+
+test("a chapter's own encounter: what it does under each option, then what happened and the joke", async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  // the Night Market's own are skewers and the noodle challenge; a few pinned seeds, until one deals them
+  let skewers = false;
+  for (const seed of ['market', 'stall', 'lantern', 'gnocchi', 'noodle', 'skewer']) {
+    await open(page, { ...careerSaveKV({ seed: 3, lvl: 4, ch: 2, row: 2, fast: true, event: true }), 'whs:seed': seed });
+    await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+    await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+    await page.locator('.mnode.now').first().click();
+    await page.locator('.ch-opts').waitFor();
+    if ((await page.getByText(/^(Mystery skewers|The noodle challenge)$/).count()) === 0) continue;
+    skewers = (await page.getByText('Mystery skewers').count()) > 0;
+    break;
+  }
+  await expect(page.getByText(/^(Mystery skewers|The noodle challenge)$/)).toBeVisible();
+  await expect(page.getByText(skewers ? '4 coins. 70%: heal 30% HP. 30%: lose 10% HP' : '5 coins. 50%: +20 coins, +3 fame. 50%: lose 15% HP')).toBeVisible();
+  await expect(page.locator('.ch-opt.talk')).toHaveCount(1);
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: skewers ? /Just one, to be polite/ : /Watch from a stool/ }).click();
+  await expect(page.locator('.ev-fx')).toHaveText(skewers ? 'Heal 10% HP' : 'Heal 15% HP');
+  await expect(page.locator('.ev-flav')).toContainText(skewers ? 'Crunchy' : 'restorative');
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  expect(errors).toEqual([]);
+});
