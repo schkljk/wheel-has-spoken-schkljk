@@ -1,6 +1,7 @@
 import { CODEX, codexCount } from '@whs/core';
 import { G, save } from '../state/game';
 import { openInfo } from '../state/ui';
+import { ContentIcon } from '../ui/ContentIcon';
 import { Icon } from '../ui/Icon';
 
 /** The collection: every race, class, weapon, power, gear, arena, title... found by your fighters. */
@@ -38,7 +39,9 @@ export function CodexScreen({ back }: { back: () => void }) {
                 {list.map((x) =>
                   s.includes(x.key) ? (
                     <button key={x.key} class={`tile q${x.it.q == null ? 1 : x.it.q}`} onClick={() => openInfo(k === 'moves' ? `mv|${x.it.n}` : `it|${k}|${x.key}`)}>
-                      <span class="e">{x.it.e}</span>
+                      <span class="e">
+                        <ContentIcon cat={k} name={x.key} e={x.it.e} />
+                      </span>
                       <span class="t">
                         {x.it.n}
                         {x.par && <small>{x.par}</small>}

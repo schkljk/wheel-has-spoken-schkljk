@@ -36,6 +36,8 @@ import { Sheet } from '../ui/kit';
 import { beep } from '../ui/sound';
 import { gearChoice } from './nav';
 import { haggleFlow } from './story';
+import { GearIcon, ItemIcon } from '../ui/GearIcon';
+import { Icon, type IconName } from '../ui/Icon';
 
 type Tab = 'basics' | 'deal' | 'vault' | 'services';
 const flav = (n: string) => (FLAVOR[n] ? <i class="flav"> {FLAVOR[n]}</i> : null);
@@ -43,7 +45,7 @@ const flav = (n: string) => (FLAVOR[n] ? <i class="flav"> {FLAVOR[n]}</i> : null
 function GearRow({ g, price, sold, star }: { g: Gear; price: ComponentChildren; sold?: boolean; star?: boolean }) {
   return (
     <div class={`shopitem r-${g.r}${star ? ' deal' : ''}`}>
-      <span class="se">{g.e}</span>
+      <span class="se"><GearIcon g={g} /></span>
       <div class="st2">
         <b>
           {star ? '⭐ ' : ''}
@@ -81,7 +83,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
       const p = basicPrice(G, k);
       return (
         <div class="shopitem" key={k}>
-          <span class="se">{i.e}</span>
+          <span class="se"><ItemIcon k={k} /></span>
           <div class="st2">
             <b>
               {i.n}
@@ -221,7 +223,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
         {equippedGear(G).length > 0 && <h3 class="sec-label">Sell gear</h3>}
         {equippedGear(G).map((g) => (
           <div class="shopitem" key={g.k}>
-            <span class="se">{g.e}</span>
+            <span class="se"><GearIcon g={g} /></span>
             <div class="st2">
               <b>{g.n}</b>
               <small>
@@ -244,11 +246,11 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
       </>
     );
   }
-  const tabs: [Tab, string][] = [
-    ['basics', '🎒 Basics'],
-    ['deal', '⭐ Deal'],
-    ['vault', '💎 Premium'],
-    ['services', '🧰 Services'],
+  const tabs: [Tab, IconName, string][] = [
+    ['basics', 'bag', 'Basics'],
+    ['deal', 'star', 'Deal'],
+    ['vault', 'gem', 'Premium'],
+    ['services', 'gear', 'Services'],
   ];
   return (
     <Sheet
@@ -261,9 +263,9 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
           <div class="lockbar">🔒 You're in the middle of chapter {F.story!.ch}. The base shop opens again once you finish it. Merchants on the map sell supplies on the road.</div>
         )}
         <div class="shop-tabs" role="tablist">
-          {tabs.map(([k, n]) => (
+          {tabs.map(([k, ic, n]) => (
             <button key={k} role="tab" aria-selected={tab === k} class={`fchip light${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>
-              {n}
+              <Icon name={ic} /> {n}
             </button>
           ))}
         </div>

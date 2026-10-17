@@ -5,7 +5,6 @@ import {
   GEAR_SLOTS,
   INJK,
   RANKS,
-  SLOT_E,
   SLOT_N,
   TIERS_T,
   contractOffers,
@@ -27,6 +26,7 @@ import { Inf } from '../../ui/Info';
 import { Sheet, rise } from '../../ui/kit';
 import { openArmory } from '../../flows/armory';
 import { openTalents } from '../../flows/talents';
+import { GearIcon, SlotIcon } from '../../ui/GearIcon';
 
 /** The fighter page: level, rank, talents, contract, gear and the full card. */
 export function FighterTab() {
@@ -169,7 +169,7 @@ export function FighterTab() {
             const g = GEARK[(F.gear || {})[sl]!];
             return (
               <span key={sl} class={`gl-i${g ? ' r-' + g.r : ''}`} title={SLOT_N[sl]}>
-                {g ? g.e : <i>{SLOT_E[sl]}</i>}
+                {g ? <GearIcon g={g} /> : <SlotIcon slot={sl} />}
               </span>
             );
           })}

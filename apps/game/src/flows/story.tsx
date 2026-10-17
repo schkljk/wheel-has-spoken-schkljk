@@ -48,6 +48,7 @@ import { spinWheel } from '../screens/Spin';
 import { fight } from './fight';
 import { choose, goMap, lootFlow, runSteps, showCine } from './nav';
 import { openArmory } from './armory';
+import { GearIcon, ItemIcon } from '../ui/GearIcon';
 
 /** The step is done: on to the next one. */
 export function backToMap() {
@@ -262,7 +263,7 @@ function MerchantBody() {
           const p = itemPriceM(G, i);
           return (
             <div class="shopitem" key={k}>
-              <span class="se">{i.e}</span>
+              <span class="se"><ItemIcon k={k} /></span>
               <div class="st2">
                 <b>
                   {i.n}
@@ -291,7 +292,7 @@ function MerchantBody() {
           const cur = F.gear![g.slot];
           return (
             <div class={`shopitem r-${g.r}`} key={k}>
-              <span class="se">{g.e}</span>
+              <span class="se"><GearIcon g={g} /></span>
               <div class="st2">
                 <b>{g.n}</b>
                 <small>
@@ -367,7 +368,7 @@ export function openBag(back?: () => void) {
         {keys.length ? (
           keys.map((i) => (
             <div class="shopitem" key={i.k}>
-              <span class="se">{i.e}</span>
+              <span class="se"><ItemIcon k={i.k} /></span>
               <div class="st2">
                 <b>
                   {i.n} ×{bag[i.k]}

@@ -1,9 +1,10 @@
-import { ARMORY_CAP, GEARK, GEAR_SLOTS, RARITY, SLOT_E, SLOT_N, salvageStored, syncArmory, synOf, takeOff, wear, type Gear } from '@whs/core';
+import { ARMORY_CAP, GEARK, GEAR_SLOTS, RARITY, SLOT_N, salvageStored, syncArmory, synOf, takeOff, wear, type Gear } from '@whs/core';
 import { G, act, toast } from '../state/game';
 import { confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
 import { beep } from '../ui/sound';
+import { GearIcon, SlotIcon } from '../ui/GearIcon';
 
 const ORDER = ['premium', 'mythic', 'legendary', 'epic', 'rare', 'common', 'junk'];
 const pl = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
@@ -24,7 +25,7 @@ export function openArmory(slot?: string) {
             const n = own.filter((x) => x.slot === s).length;
             return (
               <button key={s} class={`arm-slot${g ? ' r-' + g.r : ''}`} onClick={() => openArmory(s)}>
-                <span class="as-e">{g ? g.e : SLOT_E[s]}</span>
+                <span class="as-e">{g ? <GearIcon g={g} /> : <SlotIcon slot={s} />}</span>
                 <span class="as-t">
                   <small>{SLOT_N[s]}</small>
                   <b class="ellipsis">{g ? g.n : 'Empty'}</b>
@@ -63,7 +64,7 @@ export function openArmory(slot?: string) {
             const on = F.gear![g.slot] === g.k;
             return (
               <div class={`shopitem r-${g.r}`} key={g.k}>
-                <span class="se">{g.e}</span>
+                <span class="se"><GearIcon g={g} /></span>
                 <div class="st2">
                   <b>
                     <Inf k={`it|gear|${g.n}`}>{g.n}</Inf>
