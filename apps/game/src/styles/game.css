@@ -1905,3 +1905,41 @@ img.pxi.race {
   object-fit: contain;
   display: block;
 }
+
+/* ---------- the once-a-fight nudge ---------- */
+.btn.nudge {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  gap: 0;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.3rem 0.5rem;
+  min-height: 0;
+  font-size: 0.8rem;
+  line-height: 1.15;
+  background: #f2b544;
+  color: #2a1a05;
+}
+.btn.nudge::after {
+  /* the time left to decide */
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  width: 100%;
+  background: #2a1a05;
+  transform-origin: left;
+  animation: nudge-time var(--nudge-ms, 2s) linear forwards;
+}
+@keyframes nudge-time {
+  to {
+    transform: scaleX(0);
+  }
+}
+.btn.nudge small {
+  color: #5a3d0a;
+  font-size: 0.68rem;
+  font-weight: 700;
+}

@@ -48,6 +48,8 @@ const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 
 /** A narration line with the fighters' names in it. */
 export const evText = (e: BattleEvent, names: [string, string]) => e.text.replace(/\{0\}/g, names[0]).replace(/\{1\}/g, names[1]);
 
+/** How long the once-a-fight nudge is offered after the combat wheel lands. */
+const NUDGE_MS = (fast: boolean) => (fast ? 1500 : 2200);
 /** Pixel icons for the combat wheel's focus chips. */
 const FOCUS_ICON: Record<string, string> = { atk: 'sword', def: 'shield', pow: 'spark', ult: 'star' };
 
@@ -133,7 +135,10 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
   const btRef = useRef<Battle | null>(null);
-  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false }).current;
+  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false, nudged: false, dir: 1, landTimer: 0 }).current;
+  const [nudgeTo, setNudgeTo] = useState<number | null>(null);
+  const nudgeRef = useRef<number | null>(null);
+  nudgeRef.current = nudgeTo;
   const [phase, setPhase] = useState<Phase>('intro');
   const [snap, setSnap] = useState<ReturnType<Battle['snap']> | null>(null);
   const [plan, setPlan] = useState<{ shown: Move; acc: number } | null>(null);
@@ -349,6 +354,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     ac();
     const idx = pickW(G.rng, list);
     const dir = flickW && flickW < 0 ? -1 : 1;
+    S.dir = dir;
     const turns = flickW ? Math.max(2, Math.min(6, Math.round(Math.abs(flickW) / 5))) : 3 + Math.floor(Math.random() * 2);
     setPhase('spinning');
     setOut(null);
@@ -363,8 +369,14 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     buzz(it.q >= 3 ? [30, 40, 50] : 20);
     if (it.q >= 3) burst(sc.wheel.x, sc.wheel.y);
     setOut({ it });
-    setTimeout(
+    // once per fight the player may push the wheel one more slice: offer it for a moment longer
+    const offer = !S.nudged && !autoRef.current && list.length > 1;
+    const nx = offer ? sc.wheel.nextSlice(idx, S.dir) : -1;
+    setNudgeTo(offer ? nx : null);
+    const fast = settings.value.fast;
+    S.landTimer = window.setTimeout(
       () => {
+        setNudgeTo(null);
         const bt = btRef.current!;
         if (it.c === 'ult') {
           if (it.ultIdx != null) bt.P[0].ultSpin = ULT_WHEEL[it.ultIdx]!;
@@ -373,8 +385,20 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
         }
         void doRound(it.c as Move, { ...(it.m || {}) });
       },
-      settings.value.fast ? 350 : 650,
+      offer ? NUDGE_MS(fast) : fast ? 350 : 650,
     );
+  }
+  /** The once-per-fight nudge: the wheel clicks one slice on, and that slice is the move. */
+  function nudge() {
+    const sc = sceneRef.current;
+    const to = nudgeRef.current;
+    if (!sc || to == null || S.nudged) return;
+    clearTimeout(S.landTimer);
+    S.nudged = true;
+    setNudgeTo(null);
+    tick(true);
+    buzz(15);
+    sc.wheel.spinTo(to, { turns: 0, dir: S.dir, dur: reducedMotion() ? 120 : 320 });
   }
 
   // flicks and taps on the wheel
@@ -607,7 +631,14 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
                   <b class={`q${out.it.q}`}>
                     {out.it.e} {out.it.n}
                   </b>
-                  <small>{out.it.d}</small>
+                  {nudgeTo != null && list[nudgeTo] ? (
+                    <button class="btn sm nudge" style={{ '--nudge-ms': `${NUDGE_MS(settings.value.fast)}ms` } as Record<string, string>} onClick={nudge} aria-label={`Nudge the wheel one slice, to ${list[nudgeTo]!.it.n}. Once a fight`}>
+                      ↷ Nudge to {list[nudgeTo]!.it.e} {list[nudgeTo]!.it.n}
+                      <small>once a fight</small>
+                    </button>
+                  ) : (
+                    <small>{out.it.d}</small>
+                  )}
                 </>
               ) : phase === 'spinning' ? (
                 <b>Spinning…</b>
