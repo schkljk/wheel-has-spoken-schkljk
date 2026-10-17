@@ -26,7 +26,10 @@
 - `screens.spec.ts`: every screen (building, landed wheel, so-far sheet, card, title, all four tabs, talents, armory, full card, shop tabs, fight club, bag, records, collection, chapter intro, map, arena wheel, fight, fight menu, result, bracket, gauntlet) at all 12 required sizes, nothing clipped, no page scroll, no console errors.
 - `modes.spec.ts`: a whole story chapter including the boss, a cup from round one to the end, the gauntlet until it ends, the daily challenge, a boss rush and a fight club bet, all end to end with no console errors.
 
-**60 fps check** (`tools/dev/fps.ts`: Chrome with the CPU 4× slower, 390×844 at 2× density, full animation, a story fight on auto): result pending.
+**60 fps check** (`npx tsx tools/dev/fps.ts`: Chrome with the CPU 4× slower, 390×844 at 2× density, full animation, a story fight on auto):
+- The game's work per frame (fight updates plus Pixi's drawing) is 5–6 ms at the median, a third of the 16.7 ms a 60 fps frame allows. All JavaScript together used 3.8% of the main thread over 15 s of fighting; the biggest single cost is measuring text for floating damage numbers.
+- The cloud machine has no GPU, so it draws in software: even a static page only reaches 40 fps there (19 fps at 2× density) and the fight shows 2–4 fps. A trace showed 94% of that time is Chrome copying the WebGL canvas back in software, which phones with a GPU don't do. So the frame rate itself can only be confirmed on a phone; the CPU budget, which is what the 4× slowdown tests, has plenty of room.
+- The hit-flash shader now compiles during the fighters' entrance instead of on the first hit (a 34 ms hitch at 4× slowdown).
 
 **Fixes to old text and one exploit** (no gameplay or balance change):
 - Reaching Eternal said "1 talent point" but gave 3; the text now says 3.

@@ -175,8 +175,14 @@ export class FightScene {
 
   /** The fighters walk in. */
   async intro() {
-    if (this.reduced) return;
     const [a, b] = this.F;
+    // the hit flash's shader compiles on first use: do it now, not on the first hit
+    a.setBrightness(1.001);
+    if (this.reduced) {
+      await this.tw.run(1, () => {});
+      a.setBrightness(1);
+      return;
+    }
     const d = this.dims;
     await Promise.all([
       this.tw.run(700 * this.sp, (k) => {
@@ -188,6 +194,7 @@ export class FightScene {
         b.alpha = k;
       }, ease.out),
     ]);
+    a.setBrightness(1);
   }
 
   applySnap(s: Snap | null) {

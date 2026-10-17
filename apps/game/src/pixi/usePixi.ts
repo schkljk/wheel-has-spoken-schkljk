@@ -19,6 +19,7 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement) => void 
         if (disposed) return a.destroy(true, { children: true });
         a.canvas.style.display = 'block';
         el.appendChild(a.canvas);
+        if (location.search.includes('perf')) timeFrames(a);
         cleanup = setup(a, el);
         setApp(a);
       });
@@ -29,4 +30,16 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement) => void 
     };
   }, []);
   return { host, app };
+}
+
+/** `?perf`: records how long each frame's Pixi work takes (updates and drawing), for tools/dev/fps.ts. */
+function timeFrames(a: Application) {
+  const w = window as unknown as { __pixiFrames?: number[] };
+  const out = (w.__pixiFrames ??= []);
+  const update = a.ticker.update.bind(a.ticker);
+  a.ticker.update = (t?: number) => {
+    const s = performance.now();
+    update(t);
+    out.push(performance.now() - s);
+  };
 }
