@@ -13,6 +13,8 @@ import {
   fullName,
   numStats,
   peekSlice,
+  phaseKitOf,
+  phaseSlice,
   pickW,
   powerScale,
   procFeed,
@@ -45,7 +47,7 @@ import { FighterCard } from '../ui/FighterCard';
 import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
-import { ac, landSound, tick } from '../ui/sound';
+import { ac, landSound, phaseMusic, tick } from '../ui/sound';
 import { CHIP_ICON } from '../ui/status-icons';
 
 const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 'guarded', broke: 'guard broken', interrupted: 'interrupted', caught: 'caught mid-cast' };
@@ -124,6 +126,11 @@ function SlicePeekView({ it, bt, foe }: { it: CwSlice; bt: Battle; foe: string }
         )}
       </small>
       <small>{p.beats}</small>
+      {it.flavor && (
+        <small class="peek-fl">
+          <i>{it.flavor}</i>
+        </small>
+      )}
     </div>
   );
 }
@@ -206,7 +213,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
   const btRef = useRef<Battle | null>(null);
-  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false, nudged: false, dir: 1, landTimer: 0, procs: procFeed() }).current;
+  const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false, nudged: false, dir: 1, landTimer: 0, procs: procFeed(), music: () => {} }).current;
   const [nudgeTo, setNudgeTo] = useState<number | null>(null);
   const nudgeRef = useRef<number | null>(null);
   nudgeRef.current = nudgeTo;
@@ -217,6 +224,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const [last, setLast] = useState<{ m: Move[]; n: number }>({ m: [], n: 0 });
   /** the slice being held for a preview */
   const [peek, setPeek] = useState<number | null>(null);
+  /** the boss's phase-two slice has been landed (it's once a fight) */
+  const [phaseUsed, setPhaseUsed] = useState(false);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
   const [result, setResult] = useState<FightResult | null>(null);
   const [auto, setAuto] = useState(settings.value.autoBattle);
@@ -227,7 +236,16 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const root = useRef<HTMLDivElement>(null);
 
   const me = () => btRef.current!.P[0];
-  const list = useMemo(() => (btRef.current && phase !== 'over' ? cwSlices(me(), focus) : []), [focus, phase, snap]);
+  const list = useMemo(() => {
+    const bt = btRef.current;
+    if (!bt || phase === 'over') return [];
+    const l = cwSlices(bt.P[0], focus);
+    // a boss in phase two adds its one-use slice to the wheel it belongs on
+    const ps = phaseSlice(bt, focus, phaseUsed);
+    return ps ? [{ it: ps, w: ps.w, mult: 1 }, ...l] : l;
+  }, [focus, phase, snap, phaseUsed]);
+  /** the focus whose wheel has the boss's phase-two slice right now */
+  const phaseFam = btRef.current && !phaseUsed && btRef.current.P[1].phased ? phaseKitOf(btRef.current.P[1].f)?.slice : undefined;
   const items = useMemo(() => toSlices(list), [list]);
 
   // the wheel follows the slot the DOM leaves for it
@@ -251,6 +269,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       tick: () => tick(),
       land: (i) => cwLandRef.current(i),
     };
+    const kit = phaseKitOf(O);
+    if (kit) sc.phaseKit = { light: kit.light, bpm: kit.tune.bpm };
     sc.layout(d.W, d.H);
     sceneRef.current = sc;
     // the end-to-end tests reach into the scene (combo banners on every screen size)
@@ -272,6 +292,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     return () => {
       app.renderer.off('resize', onResize);
       S.ended = true;
+      S.music();
       sc.destroy();
     };
   });
@@ -304,6 +325,14 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       const e = evs[i]!;
       S.log.push(e);
       setSnap(e);
+      // a boss's phase two brings its own music
+      if (e.a?.t === 'phase' && e.a.on === 1) {
+        const kit = phaseKitOf(O);
+        if (kit) {
+          S.music();
+          S.music = phaseMusic(kit.tune);
+        }
+      }
       await sc.play(e, S.procs(e));
     }
   }
@@ -394,6 +423,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   function finish() {
     if (S.ended) return;
     S.ended = true;
+    S.music();
     const bt = btRef.current!;
     const sc = sceneRef.current!;
     sc.wheel.visible = false;
@@ -458,6 +488,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       () => {
         setNudgeTo(null);
         const bt = btRef.current!;
+        if (it.src === 'phase') setPhaseUsed(true);
         if (it.c === 'ult') {
           if (it.ultIdx != null) bt.P[0].ultSpin = ULT_WHEEL[it.ultIdx]!;
           void doRound('ult', { ...(it.m || {}) });
@@ -747,7 +778,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             {CW_FOCUS.map(([k, , n]) => (
               <button
                 key={k}
-                class={`fchip${focus === k ? ' on' : ''}${rec === k ? ' rec' : ''}${k === 'ult' && ult ? ' gold' : ''}`}
+                class={`fchip${focus === k ? ' on' : ''}${rec === k ? ' rec' : ''}${k === 'ult' && ult ? ' gold' : ''}${phaseFam?.fam === k ? ' new' : ''}`}
                 aria-pressed={focus === k}
                 disabled={busy || (k === 'ult' && !ult)}
                 onClick={() => {
@@ -788,7 +819,13 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
               ) : (
                 <>
                   <b>{CW_FOCUS.find((x) => x[0] === focus)![2]} moves</b>
-                  <small>{auto ? 'Auto-battle is on.' : 'Tap or flick the wheel to spin. Hold a slice to see what it does.'}</small>
+                  <small>
+                    {auto
+                      ? 'Auto-battle is on.'
+                      : phaseFam
+                        ? `Phase two: ${phaseFam.e} ${phaseFam.n} is on your ${CW_FOCUS.find((x) => x[0] === phaseFam.fam)![2]} wheel. Once.`
+                        : 'Tap or flick the wheel to spin. Hold a slice to see what it does.'}
+                  </small>
                 </>
               )}
             </div>

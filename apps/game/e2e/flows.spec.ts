@@ -276,3 +276,40 @@ test('holding a combat wheel slice previews it, and letting go does not spin', a
   await expect(page.locator('.cw-out b').first()).toHaveText(/moves$/);
   expect(errors).toEqual([]);
 });
+
+test("a boss's phase two changes the light and adds its slice to one wheel", async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, { ...careerSaveKV({ seed: 25, lvl: 10, fast: true }), 'whs:seed': 'phase two' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Boss rush/ }).click();
+  await page.getByRole('button', { name: 'Fight', exact: true }).click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  await expect(page.locator('.fchip.new')).toHaveCount(0);
+  expect(await page.evaluate('window.__whsFight.phaseAmt')).toBe(0);
+  // knock the boss under half HP; the next round sets off phase two
+  await page.evaluate('(() => { const b = window.__whsBattle.P[1]; b.hp = b.maxHp * 0.45; })()');
+  await page.getByRole('button', { name: 'Defend', exact: true }).click();
+  await spin.click();
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  expect(await page.evaluate('window.__whsBattle.P[1].phased')).toBe(1);
+  expect(await page.evaluate('window.__whsFight.phaseAmt')).toBeGreaterThan(0);
+  const chip = page.locator('.fchip.new');
+  await expect(chip).toHaveCount(1);
+  // on that wheel, the hint names the slice and the wheel carries it
+  await chip.click();
+  await page.waitForTimeout(300);
+  const hint = page.locator('.cw-out small').filter({ hasText: /^Phase two: / });
+  await expect(hint).toHaveCount(1);
+  const named = (await hint.innerText()).replace(/^Phase two: \S+ /, '').replace(/ is on your .*$/, '');
+  expect((await page.evaluate('window.__whsFight.wheel.items.map((i) => i.n)')) as string[]).toContain(named);
+  for (const [width, height] of [[320, 568], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(400);
+    expect((await layoutProblems(page)).clipped, `${width}x${height}`).toEqual([]);
+  }
+  expect(errors).toEqual([]);
+});

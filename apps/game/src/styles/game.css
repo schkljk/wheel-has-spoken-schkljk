@@ -906,6 +906,20 @@
   border-color: #f2b544;
   color: #ffd166;
 }
+/* the boss's phase-two slice is on this wheel: a gold ring that breathes */
+.fchip.new {
+  box-shadow:
+    0 0 0 2px #ffd166,
+    0 0 10px rgba(255, 209, 102, 0.55);
+  animation: ring-pulse 1.4s ease-in-out infinite;
+}
+@keyframes ring-pulse {
+  50% {
+    box-shadow:
+      0 0 0 2px #ffd166,
+      0 0 18px rgba(255, 209, 102, 0.9);
+  }
+}
 .fchip.on.gold {
   background: #f2b544;
   color: #2a1a05;
