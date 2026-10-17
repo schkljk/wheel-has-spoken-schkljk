@@ -17,6 +17,13 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 1. Balance pass for the numeric system
 - [x] 2. Pixel-art content icons
 - [x] 3. Save safety net
+- [x] 4. Fight replay and share card
+
+### 4. Fight replay and share card
+
+- After any win, **Save this win as a picture** draws a 1080x1350 card (`apps/game/src/ui/share-card.ts`): the fight's arena and scenery, the winner standing with their weapon up and the loser flat on the floor (the real pixel sprites), the final blow's damage in big numbers and its narration line ("Test Hero fires a crossbow bolt at The Massive Ravioli"), both fighters' names, titles, levels, race and class, the result headline (Victory, Boss down, Chapter 3 cleared...), where it happened and how many rounds it took.
+- The sheet previews it, then **Share** hands it to the phone's share sheet (WhatsApp, Messages...), or **Save picture** downloads it.
+- The replay side is the fight log in the ☰ menu, which keeps every line of the fight; the card is the moment worth sending.
 
 ### 3. Save safety net
 

@@ -10,6 +10,7 @@ import {
   cwPowOk,
   cwSlices,
   fightLabel,
+  fullName,
   numStats,
   pickW,
   powerScale,
@@ -19,6 +20,7 @@ import {
   startBattle,
   type Battle,
   type BattleEvent,
+  type CareerFighter,
   type CwSlice,
   type FightOutcome,
   type FightResult,
@@ -37,6 +39,7 @@ import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet, Toggle } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
+import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
 import { ac, landSound, tick } from '../ui/sound';
@@ -126,6 +129,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const F = G.F!;
   const O = spec.opp;
   const names: [string, string] = [F.name, O.name];
+  // the label as the fight starts (a cup's round moves on once it is won)
+  const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
   const btRef = useRef<Battle | null>(null);
   const S = useRef({ skip: false, ended: false, playing: false, log: [] as BattleEvent[], forfeit: false }).current;
@@ -536,6 +541,35 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     '--cw': `${dims.cw}px`,
   } as Record<string, string>;
   const busy = phase !== 'input';
+  /** The share card: both fighters, the final blow, names and titles. */
+  const shareWin = () => {
+    if (!result) return;
+    const w = result.won ? 0 : 1;
+    // the last real blow (not a bleed or burn tick), falling back to any last damage
+    const dealt = [...S.log].reverse().filter((e) => e.d != null && e.d > 0 && e.a && e.a.by === w);
+    const last = dealt.find((e) => e.a!.t === 'hit' || e.a!.t === 'ult' || e.a!.t === 'pet') ?? dealt[0];
+    const who = (f: CareerFighter) => ({
+      name: f.isBoss && f.bossTitle ? `${f.name}, ${f.bossTitle}` : fullName(f),
+      line: `Level ${f.lvl || 1} ${f.race.n.toLowerCase()} ${f.arch.n.toLowerCase()}`,
+      look: lookOf(f),
+    });
+    const ar = spec.arena as { k: string; n: string; sky?: string; floor?: string } | null | undefined;
+    openSheet(
+      <ShareSheet
+        d={{
+          big: result.big,
+          winner: who(result.won ? F : O),
+          loser: who(result.won ? O : F),
+          playerWon: result.won,
+          arena: ar ? { k: ar.k, n: ar.n, sky: ar.sky, floor: ar.floor } : null,
+          blow: last ? { text: evText(last, names), d: Math.round(last.d!) } : null,
+          rounds: btRef.current?.round || 1,
+          where,
+        }}
+      />,
+    );
+  };
+
   return (
     <main class={`fight${dims.side ? ' side' : ''}`} ref={root} style={style}>
       <div ref={host} class="fight-canvas" />
@@ -616,6 +650,11 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
           <button class="btn block" onClick={() => done(result)}>
             {result.button}
           </button>
+          {result.won && (
+            <button class="btn ghost block" onClick={shareWin}>
+              <Icon name="download" /> Save this win as a picture
+            </button>
+          )}
           {result.bracket && (
             <button class="btn ghost block" onClick={() => done({ ...result, next: [{ t: 'bracket' }] })}>
               See how the bracket ended
