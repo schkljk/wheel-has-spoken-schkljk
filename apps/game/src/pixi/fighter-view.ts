@@ -1,4 +1,6 @@
-import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import type { StatusChip } from '@whs/core';
+import { CHIP_ICON } from '../ui/status-icons';
 import { iconTexture } from './icon-tex';
 import { PAURA, SIZE_H, SPRITE_H, SPRITE_W, buildSprite, type Look } from '../art/sprite';
 
@@ -35,6 +37,9 @@ export function spriteTextures(look: Look) {
 
 // the sprite box is 100 x 120 units; the feet stand at y 116.5
 const FOOT = 116.5 / 120;
+
+/** Chips per row over the head. */
+const CHIP_ROW = 4;
 
 /**
  * A fighter on the stage: shadow, aura, halo, body and a weapon arm that swings around the shoulder.
@@ -102,7 +107,7 @@ export class FighterView extends Container {
     if (this.mythic) g.circle(0, -hh * 0.45, ww * 0.62).fill({ color: 0xf2b544, alpha: 0.16 });
     this.badges.position.set(0, -hh * 0.98);
     this.badgeSize = Math.max(14, Math.round(hh * 0.13));
-    this.setBadges(this.badgeKey ? this.badgeKey.split(',') : [], true);
+    this.setChips(this.chips, true);
   }
 
   /** Middle of the body, in stage coordinates. */
@@ -127,21 +132,45 @@ export class FighterView extends Container {
     this.body.filters = this.statusOn ? [this.statusFilter, this.flash] : [this.flash];
   }
   private statusOn = false;
-  private setBadges(names: string[], force = false) {
-    const key = names.join(',');
+  private chips: StatusChip[] = [];
+  /** Status and buff icons over the head, each in a green (helps) or red (hurts) frame with its counter. */
+  private setChips(chips: StatusChip[], force = false) {
+    const key = chips.map((c) => `${c.k}${c.t}`).join(',');
     if (key === this.badgeKey && !force) return;
     this.badgeKey = key;
-    for (const c of this.badges.removeChildren()) c.destroy();
+    this.chips = chips;
+    for (const c of this.badges.removeChildren()) c.destroy({ children: true });
     const s = this.badgeSize;
-    names.forEach((n, i) => {
-      const sp = new Sprite(iconTexture(n));
+    const pad = 2;
+    const cell = s + pad * 2 + 2;
+    const rows = Math.ceil(chips.length / CHIP_ROW);
+    chips.forEach((c, i) => {
+      const row = Math.floor(i / CHIP_ROW);
+      const inRow = Math.min(CHIP_ROW, chips.length - row * CHIP_ROW);
+      const box = new Container();
+      box.position.set((i % CHIP_ROW) * cell - (inRow * cell) / 2, -(rows - row) * cell);
+      const frame = new Graphics()
+        .roundRect(0, 0, s + pad * 2, s + pad * 2, 4)
+        .fill({ color: 0x0a0714, alpha: 0.7 })
+        .stroke({ color: c.k === 'guard' ? 0x9cc7ff : c.bad ? 0xff6b6b : 0x5cf2a0, width: 1.5, alpha: 0.95 });
+      const sp = new Sprite(iconTexture(CHIP_ICON[c.k] ?? 'question'));
       sp.width = sp.height = s;
-      sp.position.set((i - names.length / 2) * (s + 2) + 1, -s);
-      this.badges.addChild(sp);
+      sp.position.set(pad, pad);
+      box.addChild(frame, sp);
+      if (c.t) {
+        const t = new Text({
+          text: c.t,
+          style: { fontFamily: 'Saira Condensed, Arial Narrow, sans-serif', fontWeight: '800', fontSize: Math.max(10, Math.round(s * 0.62)), fill: 0xffffff, stroke: { color: 0x0a0714, width: 3 } },
+        });
+        t.anchor.set(1, 1);
+        t.position.set(s + pad * 2 + 2, s + pad * 2 + 3);
+        box.addChild(t);
+      }
+      this.badges.addChild(box);
     });
   }
-  /** Frozen fighters go pale and icy; poisoned ones turn a little green. */
-  setStatus(st: { frozen?: boolean; poison?: boolean; guard?: boolean; soaked?: boolean; burning?: boolean }) {
+  /** Frozen fighters go pale and icy; poisoned ones turn a little green. Every status shows as an icon with its counter. */
+  setStatus(st: { frozen?: boolean; poison?: boolean; guard?: boolean; soaked?: boolean; burning?: boolean }, chips: StatusChip[]) {
     const m = this.statusFilter;
     if (st.frozen) {
       m.saturate(-0.7, false);
@@ -153,7 +182,7 @@ export class FighterView extends Container {
     this.statusOn = !!(st.frozen || st.poison);
     if (!this.statusOn) this.body.filters = null;
     else this.body.filters = [m];
-    this.setBadges([st.guard && 'shield', st.frozen && 'st_frozen', st.soaked && 'st_soaked', st.burning && 'st_burn', st.poison && 'st_poison'].filter((x): x is string => !!x));
+    this.setChips(chips);
   }
 
   /** Knocked out: lies on the floor, faded (or gets back up). */

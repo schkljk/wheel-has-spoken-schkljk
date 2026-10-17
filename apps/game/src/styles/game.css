@@ -726,6 +726,85 @@
 .hv .env {
   pointer-events: auto;
 }
+/* the opponent's last moves, newest last */
+.mhist {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.2rem;
+  height: 1.15rem;
+  pointer-events: auto;
+}
+.mhist small {
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.15rem;
+  padding: 0 0.3rem;
+  border-radius: 6px;
+  background: rgba(10, 7, 20, 0.6);
+  color: #cfc6e6;
+}
+.mhist i {
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 6px;
+  background: rgba(10, 7, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  opacity: 0.75;
+}
+.fm-status {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.5rem;
+}
+.fm-st {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.fm-st b {
+  font-size: 0.8rem;
+  max-width: 40%;
+  margin-right: 0.2rem;
+}
+.stchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 7px;
+  font: 800 0.8rem/1 var(--display);
+  background: var(--surface-2);
+  border: 1.5px solid #9cc7ff;
+}
+.stchip.good {
+  border-color: #5cf2a0;
+}
+.stchip.bad {
+  border-color: #ff6b6b;
+}
+.stchip .pxi {
+  width: 1rem;
+  height: 1rem;
+}
+.mhist i.new {
+  opacity: 1;
+  border-color: #ff9db0;
+  animation: chip-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+}
+.mhist .pxi {
+  width: 0.8rem;
+  height: 0.8rem;
+}
 .rd {
   display: grid;
   justify-items: center;

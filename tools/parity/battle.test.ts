@@ -91,9 +91,12 @@ const normalize = (e: LEvent) => {
   const { html, ...rest } = e;
   return { text: unescape(html.replaceAll(`<b>${NAMES[0]}</b>`, '{0}').replaceAll(`<b>${NAMES[1]}</b>`, '{1}')), ...rest };
 };
-/** The new engine tags synergy cues for the banners (`a.syn`, `a.sb`); legacy has none, so they are left out. */
+/**
+ * The new engine adds UI cues legacy doesn't have: synergy tags for the banners (`a.syn`, `a.sb`) and the
+ * status icons with their counters (`sx`). They are left out of the comparison.
+ */
 const uncue = (e: unknown) => {
-  const x = e as BattleEvent;
+  const { sx: _x, ...x } = e as BattleEvent;
   if (!x.a || x.a.syn == null) return x;
   const { syn: _s, sb: _b, ...a } = x.a;
   return { ...x, a };

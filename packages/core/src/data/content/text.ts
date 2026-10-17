@@ -649,6 +649,35 @@ export const STATUS_INFO: Record<string, [e: string, n: string, d: string]> = {
   poison: ['🧪', 'Poisoned', 'Takes damage at the end of every round for the rest of the fight.'],
 };
 
+/** Statuses and buffs the new fight screen shows as icons that the old game had no help card for. */
+export const STATUS_MORE: Record<string, [e: string, n: string, d: string]> = {
+  opened: ['🎭', 'Opening', 'A feint worked: their next hit lands 40% harder.'],
+  focused: ['🧘', 'Charged up', 'Their next hit lands 25% harder.'],
+  dmgX: ['💪', 'Hitting harder', 'A move boosted their damage for a few rounds.'],
+  dr: ['🧱', 'Toughened', 'Takes less damage for a few rounds.'],
+  critB: ['🎯', 'Eagle-eyed', 'Higher crit chance for a few rounds.'],
+  vuln: ['🩻', 'Exposed', 'Takes more damage for a few rounds.'],
+  weak: ['🥀', 'Weakened', 'Deals less damage for a few rounds.'],
+  bent: ['🧲', 'Bent weapon', 'Magnetism bent their weapon: −1 weapon level per bend, up to 3, for the rest of the fight.'],
+};
+
+/** The joke under each status (the line above it is the mechanics). */
+export const STATUS_FLAVOR: Record<string, string> = {
+  guard: 'Turtling is a strategy. Ask any turtle.',
+  frozen: 'Chill out. Literally. For one turn.',
+  soaked: 'Wet, cold and conductive. Bad combo for a Tuesday.',
+  burning: 'This is fine.',
+  poison: 'Should have read the label.',
+  opened: 'They fell for it. They always fall for it.',
+  focused: 'Inner peace, outer violence.',
+  dmgX: 'The pre-workout kicked in.',
+  dr: 'Skin like a forgotten steak.',
+  critB: 'Spotted the weak spot. Judging it silently.',
+  vuln: 'Every crack is showing.',
+  weak: 'Noodle arms, temporarily.',
+  bent: "It's not broken. It's abstract art.",
+};
+
 export const PILL_INFO: Record<string, [e: string, n: string, d: string]> = {
   crit: [
     '💥', 'Critical hit',

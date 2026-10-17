@@ -37,7 +37,7 @@ import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import { G, act, buzz, reducedMotion, settings, commit, SPF } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
-import { Icon } from '../ui/Icon';
+import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet, Toggle } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
@@ -45,6 +45,7 @@ import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
 import { ac, landSound, tick } from '../ui/sound';
+import { CHIP_ICON } from '../ui/status-icons';
 
 const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 'guarded', broke: 'guard broken', interrupted: 'interrupted', caught: 'caught mid-cast' };
 /** A narration line with the fighters' names in it. */
@@ -52,6 +53,17 @@ export const evText = (e: BattleEvent, names: [string, string]) => e.text.replac
 
 /** How long the once-a-fight nudge is offered after the combat wheel lands. */
 const NUDGE_MS = (fast: boolean) => (fast ? 1500 : 2200);
+/** The opponent's recent moves, as pixel icons by their HP bar. */
+const MOVE_ICON: Record<Move, [IconName, string]> = {
+  strike: ['sword', 'Strike'],
+  power: ['spark', 'Power'],
+  guard: ['shield', 'Guard'],
+  ult: ['star', 'Signature'],
+  feint: ['mv_feint', 'Feint'],
+  focus: ['mv_focus', 'Charge up'],
+  dodge: ['wing', 'Sidestep'],
+  fumble: ['swirl', 'Fumble'],
+};
 /** Pixel icons for the combat wheel's focus chips. */
 const FOCUS_ICON: Record<string, string> = { atk: 'sword', def: 'shield', pow: 'spark', ult: 'star' };
 
@@ -88,7 +100,20 @@ function LogLine({ e, names }: { e: BattleEvent; names: [string, string] }) {
   );
 }
 
-function Hud({ bt, snap, names, onMenu }: { bt: Battle | null; snap: BattleEvent | ReturnType<Battle['snap']> | null; names: [string, string]; onMenu: () => void }) {
+function Hud({
+  bt,
+  snap,
+  names,
+  last,
+  onMenu,
+}: {
+  bt: Battle | null;
+  snap: BattleEvent | ReturnType<Battle['snap']> | null;
+  names: [string, string];
+  /** the opponent's last moves, oldest first, and how many rounds they have played */
+  last: { m: Move[]; n: number };
+  onMenu: () => void;
+}) {
   const side = (i: 0 | 1) => {
     const hp = snap ? snap.h[i]! : 100;
     const en = snap ? snap.en[i]! : 50;
@@ -114,6 +139,16 @@ function Hud({ bt, snap, names, onMenu }: { bt: Battle | null; snap: BattleEvent
             ⚡ {en}
           </Inf>
         </div>
+        {i === 1 && (
+          <Inf k="rule|moves" class="mhist" label={last.m.length ? `Their last moves: ${last.m.map((m) => MOVE_ICON[m][1]).join(', ')}` : 'Their last moves'}>
+            {last.m.length > 0 && <small>Lately</small>}
+            {last.m.map((m, k) => (
+              <i key={last.n - last.m.length + k} class={k === last.m.length - 1 ? 'new' : ''} title={MOVE_ICON[m][1]}>
+                <Icon name={MOVE_ICON[m][0]} />
+              </i>
+            ))}
+          </Inf>
+        )}
       </div>
     );
   };
@@ -151,6 +186,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const [snap, setSnap] = useState<ReturnType<Battle['snap']> | null>(null);
   const [plan, setPlan] = useState<{ shown: Move; acc: number } | null>(null);
   const [focus, setFocus] = useState<Focus>('atk');
+  const [last, setLast] = useState<{ m: Move[]; n: number }>({ m: [], n: 0 });
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
   const [result, setResult] = useState<FightResult | null>(null);
   const [auto, setAuto] = useState(settings.value.autoBattle);
@@ -248,6 +284,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     await sc.intro();
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
+    if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = bt;
     S.playing = true;
     setSnap(bt.snap());
     sc.applySnap(bt.snap());
@@ -278,6 +315,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     setSnap(s);
     const p = bt.plan();
     setPlan(p);
+    // their moves show once the round has played out, never ahead of it
+    setLast({ m: bt.hist[1].slice(-3), n: bt.hist[1].length });
     const ult = bt.P[0].en >= 100;
     setFocus((f) => (f === 'ult' && !ult ? 'atk' : ult ? 'ult' : f));
     setOut(null);
@@ -498,6 +537,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const bt = btRef.current;
     const pct = Math.round(spec.odds * 100);
     const ctx = ctxOf(G);
+    // what is on each fighter right now (the icons over their heads, tappable here)
+    const sx = bt?.snap().sx;
     openSheet(
       <Sheet icon="menu" title={fightLabel(spec)} sub={`Round ${bt?.round || 1}`}>
         <div class="fm-scout">
@@ -514,6 +555,23 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             </Inf>
           )}
         </div>
+        {sx && sx.some((l) => l.length > 0) && (
+          <div class="fm-status">
+            {([0, 1] as const).map((i) =>
+              sx[i]!.length ? (
+                <div key={i} class="fm-st">
+                  <b class="ellipsis">{i ? O.name : F.name}</b>
+                  {sx[i]!.map((c) => (
+                    <Inf key={c.k} k={`status|${c.k}`} class={`stchip${c.k === 'guard' ? '' : c.bad ? ' bad' : ' good'}`}>
+                      <Icon name={CHIP_ICON[c.k]} />
+                      {c.t && <span>{c.t}</span>}
+                    </Inf>
+                  ))}
+                </div>
+              ) : null,
+            )}
+          </div>
+        )}
         <Toggle label="Auto-battle" sub="Your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />
         <Toggle label="Fast mode" sub="Quicker animations" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />
         <div class="fm-grid">
@@ -608,7 +666,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   return (
     <main class={`fight${dims.side ? ' side' : ''}`} ref={root} style={style}>
       <div ref={host} class="fight-canvas" />
-      <Hud bt={bt} snap={snap} names={names} onMenu={openMenu} />
+      <Hud bt={bt} snap={snap} names={names} last={last} onMenu={openMenu} />
       {phase !== 'over' && (
         <section class="fpanel" aria-label="Your move">
           <div class="readpill-row">

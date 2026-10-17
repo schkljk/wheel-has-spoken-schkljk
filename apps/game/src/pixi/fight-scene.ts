@@ -48,7 +48,8 @@ export function fightDims(W: number, H: number): FightDims {
     panelW = col;
     panelH = H - groundY;
   }
-  const hud = H < 700 ? 70 : 86;
+  // the HP bars, energy and the opponent's last moves (measured: 91 to 93 px on every size)
+  const hud = 94;
   const span = side ? stageW * 0.26 : col * 0.28;
   const byH = (groundY - hud - 10) / 1.32;
   const byW = ((side ? stageW : col) * 0.42 * 1.2) / 1.32;
@@ -201,7 +202,7 @@ export class FightScene {
 
   applySnap(s: Snap | null) {
     if (!s) return;
-    for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!);
+    for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!, s.sx?.[i] ?? []);
   }
 
   // ---------------------------------------------------------------- effect helpers

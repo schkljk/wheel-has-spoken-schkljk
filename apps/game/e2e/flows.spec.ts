@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { deserFighter, migrate, numStats } from '@whs/core';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
-import { legacySave, open, watchErrors } from './helpers';
+import { layoutProblems, legacySave, open, watchErrors } from './helpers';
 
 const skipTour = (page: Page) => page.getByRole('button', { name: 'Skip the tour' }).click();
 const confirmLoad = (page: Page) => page.getByRole('alertdialog').getByRole('button', { name: /^Load / }).click();
@@ -194,5 +194,42 @@ test('the combat wheel can be nudged one slice, once a fight', async ({ page }) 
   await page.locator('.cw-out b').waitFor();
   await page.waitForTimeout(400);
   await expect(page.locator('.btn.nudge')).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("the opponent's last three moves show by their HP bar, after each round", async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  // four rounds with software rendering: fast mode, and room for slow machines
+  test.setTimeout(240_000);
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'move history' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // a full energy bar turns the spin button into the signature
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
+  const moves = page.locator('.mhist i');
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  await expect(moves).toHaveCount(0);
+  const over = page.locator('.fresult');
+  let rounds = 0;
+  for (let r = 1; r <= 4; r++) {
+    await spin.click();
+    await expect(over.or(spin.and(page.locator(':enabled')))).toBeVisible({ timeout: 60_000 });
+    if (await over.count()) break;
+    rounds = r;
+    // only rounds that have played out, and never more than three
+    await expect(moves).toHaveCount(Math.min(r, 3));
+  }
+  expect(rounds, 'the fight lasts long enough to fill the row').toBeGreaterThanOrEqual(3);
+  await expect(page.locator('.mhist')).toHaveAttribute('aria-label', /^Their last moves: (Strike|Power|Guard|Signature|Feint|Charge up|Sidestep)(, .+){2}$/);
+  for (const [width, height] of [[320, 568], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(400);
+    const p = await layoutProblems(page);
+    expect(p.clipped, `${width}x${height}`).toEqual([]);
+  }
   expect(errors).toEqual([]);
 });
