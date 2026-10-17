@@ -5,9 +5,11 @@
  *   npm run sim -- --fights 5000 --seed 7
  *   npm run sim -- --story-runs 40 --cups 1   # more story runs; a cup after each chapter restart
  *   npm run sim -- --story-runs 0             # skip the story runs
+ *   npm run sim -- --phase 16                 # also: boss wins with and without the phase-two slice
  */
 import { mulberry32, randomFighter, simulate, type Fighter, type Rng } from '../../packages/core/src';
 import { storyTables } from './story-run';
+import { phaseSliceTable } from './phase-slice';
 
 const arg = (name: string, def: number) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -89,4 +91,11 @@ byPick(rng, 'Races vs random same-level opponents (top and bottom 8)', (f) => `$
 byPick(rng, 'Growth types vs random same-level opponents', (f) => `${f.growth?.e} ${f.growth?.n}`);
 const STORY_RUNS = arg('story-runs', 20);
 if (STORY_RUNS > 0) await storyTables(STORY_RUNS, SEED, undefined, arg('cups', 0));
+const PHASE = arg('phase', 0);
+if (PHASE > 0)
+  table(
+    `Boss wins on auto-play, without and with the phase-two slice (${PHASE} average builds x 20 fights per chapter)`,
+    ['Chapter', 'Without', 'With', 'Slice reached'],
+    phaseSliceTable(PHASE, 20).map((r) => [`${r.ch} ${r.name}`, pct(r.before), pct(r.after), pct(r.offered)]),
+  );
 console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)} s`);

@@ -1,9 +1,11 @@
 import { ULTS } from '../data/wheels';
+import { BOSSES } from '../data/content/story';
+import { BOSS_PHASE, type BossPhaseKit } from '../data/content/phase';
 import { ULT_WHEEL } from '../data/kits';
 import { POW_COST, canPower, ultWeights, type Battle, type Side } from '../battle';
 import { kitMoves } from '../kits';
 import { clamp } from '../random';
-import type { RoundMod } from '../types';
+import type { Fighter, RoundMod } from '../types';
 
 /** The four focuses of the combat wheel. */
 export type Focus = 'atk' | 'def' | 'pow' | 'ult';
@@ -33,6 +35,8 @@ export interface CwSlice {
   m?: RoundMod;
   src?: string;
   ultIdx?: number;
+  /** the joke under the mechanics (boss phase-two slices) */
+  flavor?: string;
 }
 
 export const cwPowOk = (me: Side) => me.f.power.k !== 'none' && !me.f.power.passive && me.powOn && canPower(me) && me.en >= POW_COST;
@@ -111,4 +115,23 @@ export function peekSlice(bt: Battle, it: CwSlice): SlicePeek {
   const p = kind ? bt.preview(0, kind, rm, ultM) : null;
   const c = it.c === 'guard' ? bt.counterPreview(0, rm) : null;
   return { dmg: p ? [p.lo, p.hi] : null, counter: c ? [c.lo, c.hi] : null, weak: !!p?.weak, beats: MATCHUP[it.c] ?? '' };
+}
+
+/** A boss's phase-two kit, found by name so it works in every mode bosses fight in. */
+export function phaseKitOf(f: Fighter): BossPhaseKit | null {
+  if (!f.isBoss) return null;
+  const i = BOSSES.findIndex((b) => b.name === f.name);
+  return i >= 0 ? (BOSS_PHASE[i] ?? null) : null;
+}
+
+/**
+ * The slice a boss's phase two adds to the player's wheel of that focus: only while the boss (side 1) is in
+ * phase two, and only until the player has landed it once.
+ */
+export function phaseSlice(bt: Battle, focus: Focus, used: boolean): CwSlice | null {
+  const boss = bt.P[1];
+  const kit = phaseKitOf(boss.f);
+  if (!kit || used || !boss.phased || focus !== kit.slice.fam) return null;
+  const s = kit.slice;
+  return { k: `phase_${s.n}`, n: s.n, e: s.e, c: s.c, q: 3, w: 1.3, d: s.d, m: { ...s.rm, label: s.n, e: s.e }, src: 'phase', flavor: s.flavor };
 }

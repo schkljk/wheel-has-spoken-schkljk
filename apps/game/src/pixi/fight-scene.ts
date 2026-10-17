@@ -99,6 +99,12 @@ export class FightScene {
   private fx = new Container();
   private tint = new Graphics();
   private vignette = new Graphics();
+  /** phase two: the boss's light over the backdrop (the fighters stay in their own colors) */
+  private phaseGlow = new Graphics();
+  /** set when the opponent is a boss: its phase-two light and music tempo */
+  phaseKit: { light: number; bpm: number } | null = null;
+  private phaseAmt = 0;
+  private phaseT = 0;
   private top = new Container();
   readonly wheel = new WheelView();
   readonly F: [FighterView, FighterView];
@@ -119,13 +125,21 @@ export class FightScene {
     this.ambient = new Ambient(arena?.k);
     this.F = [new FighterView(looks[0], 0, { mythic: opts.mythic }), new FighterView(looks[1], 1)];
     this.fighters.addChild(this.F[0], this.F[1]);
-    this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.fighters, this.fx, this.tint, this.vignette);
+    this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.phaseGlow, this.fighters, this.fx, this.tint, this.vignette);
+    this.phaseGlow.blendMode = 'multiply';
+    this.phaseGlow.alpha = 0;
     this.wheel.visible = false;
     app.stage.addChild(this.world, this.wheel, this.top);
     app.ticker.add((t) => {
       this.tw.update(t.deltaMS);
       if (!this.reduced) this.ambient.update(t.deltaMS / 1000);
       this.wheel.update(t.deltaMS / 1000);
+      if (this.phaseAmt > 0) {
+        // the light breathes with the phase-two music, two beats a breath
+        this.phaseT += t.deltaMS / 1000;
+        const beat = 120 / (this.phaseKit?.bpm || 120);
+        this.phaseGlow.alpha = this.phaseAmt * (this.reduced ? 0.55 : 0.52 + 0.1 * Math.sin((this.phaseT / beat) * Math.PI * 2));
+      }
     });
   }
 
@@ -162,6 +176,7 @@ export class FightScene {
     });
     this.grads.push(vg);
     this.vignette.clear().rect(0, 0, W, H).fill(vg);
+    if (this.phaseKit) this.phaseGlow.clear().rect(0, 0, W, H).fill({ color: this.phaseKit.light });
     for (const f of this.F) f.setHeight(d.chH);
     this.F[0].position.set(d.fcx - d.span, d.groundY);
     this.F[1].position.set(d.fcx + d.span, d.groundY);
@@ -509,10 +524,19 @@ export class FightScene {
   }
 
   // ---------------------------------------------------------------- battle animations
+  /** Phase two: the arena slowly takes on the boss's light. */
+  phaseLight() {
+    if (!this.phaseKit || this.phaseAmt > 0) return;
+    this.phaseGlow.clear().rect(0, 0, this.dims.W, this.dims.H).fill({ color: this.phaseKit.light });
+    this.phaseAmt = 0.001;
+    void this.tw.run(this.reduced ? 1 : 1400, (k) => (this.phaseAmt = Math.max(0.001, k)));
+  }
+
   /** Plays one event; `p` is the combo or synergy behind it that gets a banner, if any. */
   async play(e: BattleEvent, p: Proc | null = null): Promise<void> {
     const sp = this.sp;
     const a = e.a as (Record<string, unknown> & { t: string; by?: 0 | 1; to?: 0 | 1; on?: 0 | 1 }) | null;
+    if (a?.t === 'phase' && a.on === 1) this.phaseLight();
     if (p) {
       if (!a || this.reduced || (a.t !== 'hit' && a.t !== 'ult')) this.showProc(p);
       else this.pendingProc = p;
@@ -800,6 +824,7 @@ export class FightScene {
   /** Skips whatever is animating (skip, forfeit). */
   settle() {
     this.tw.clear();
+    if (this.phaseAmt > 0) this.phaseAmt = 1;
     this.dropProc();
     this.pendingProc = null;
     this.world.scale.set(1);

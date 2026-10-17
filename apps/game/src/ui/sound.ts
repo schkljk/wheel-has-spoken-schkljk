@@ -74,12 +74,12 @@ interface Voice {
   noise?: BiquadFilterType;
 }
 let noiseBuf: AudioBuffer | null = null;
-function voice(a: AudioContext, x: Required<Omit<Voice, 'to' | 'noise'>> & Pick<Voice, 'to' | 'noise'>) {
-  const t = a.currentTime + x.at;
+function voice(a: AudioContext, x: Required<Omit<Voice, 'to' | 'noise'>> & Pick<Voice, 'to' | 'noise'>, out: AudioNode = a.destination, t0 = a.currentTime) {
+  const t = t0 + x.at;
   const g = a.createGain();
   g.gain.setValueAtTime(x.v, t);
   g.gain.exponentialRampToValueAtTime(0.0001, t + x.d);
-  g.connect(a.destination);
+  g.connect(out);
   if (x.noise) {
     if (!noiseBuf) {
       noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
@@ -152,3 +152,62 @@ const PROC_DEFAULT: Voice[] = [{ f: 784, d: 0.14, w: 'triangle', v: 0.05 }, { f:
 /** The sound of a combo (by name) or a synergy (by key) going off. */
 export const procSound = (k: string) => play(PROC_SOUND[k] ?? PROC_DEFAULT);
 export const hasProcSound = (k: string) => k in PROC_SOUND;
+
+const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
+/** Root movement per bar of the phase-two loop (minor: i, i, III, VII). */
+const PHASE_BARS = [0, 0, 3, -2];
+
+/**
+ * The phase-two music: a driving minor-key loop (bass, kick, hats and a stab every other bar) around the
+ * boss's root note and tempo, until the returned stop is called. It follows the sound setting while it plays.
+ */
+export function phaseMusic(tune: { root: number; bpm: number }): () => void {
+  const a = ac();
+  if (!a) return () => {};
+  const master = a.createGain();
+  master.gain.value = 0;
+  master.connect(a.destination);
+  const step = 60 / tune.bpm / 4;
+  let next = a.currentTime + 0.1;
+  let n = 0;
+  let on = false;
+  const tick = () => {
+    const want = settings.value.sound;
+    if (want !== on) {
+      on = want;
+      master.gain.cancelScheduledValues(a.currentTime);
+      master.gain.setTargetAtTime(on ? 0.7 : 0, a.currentTime, 0.3);
+    }
+    while (next < a.currentTime + 0.12) {
+      const s = n % 16;
+      const bar = Math.floor(n / 16);
+      const root = tune.root + PHASE_BARS[bar % PHASE_BARS.length]!;
+      const at = { at: 0 };
+      try {
+        if (s % 2 === 0) voice(a, { f: hz(root + (s === 6 || s === 14 ? 12 : 0)), d: step * 1.6, w: 'sawtooth', v: 0.05, ...at }, master, next);
+        if (s === 0 || s === 8 || (s === 10 && bar % 2 === 1)) voice(a, { f: 120, to: 42, d: 0.16, w: 'sine', v: 0.22, ...at }, master, next);
+        if (s % 4 === 2) voice(a, { f: 7500, d: 0.035, w: 'square', v: 0.05, noise: 'highpass', ...at }, master, next);
+        if (s === 0 && bar % 2 === 0) for (const iv of [24, 27, 31]) voice(a, { f: hz(root + iv), d: step * 3, w: 'square', v: 0.014, ...at }, master, next);
+      } catch {
+        // audio is optional
+      }
+      next += step;
+      n++;
+    }
+  };
+  tick();
+  const timer = setInterval(tick, 40);
+  let stopped = false;
+  return () => {
+    if (stopped) return;
+    stopped = true;
+    clearInterval(timer);
+    try {
+      master.gain.cancelScheduledValues(a.currentTime);
+      master.gain.setTargetAtTime(0, a.currentTime, 0.25);
+      setTimeout(() => master.disconnect(), 1500);
+    } catch {
+      // already gone
+    }
+  };
+}
