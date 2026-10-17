@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  BALANCE,
+  LEGACY_BALANCE,
+  useBalance,
   CHAPTERS,
   TIERK,
   autoChoice,
@@ -40,6 +43,10 @@ import { decorate, randomExtras } from './fixtures';
 
 // The career, story and cup rules (they live in the legacy UI files) match the legacy game: both
 // run from the same seeded random source in the real legacy page, and every number has to agree.
+// They play by the old game's tuning here; the Phase 4 balance pass changed some story numbers.
+const tuned = { ...BALANCE };
+beforeAll(() => useBalance(LEGACY_BALANCE));
+afterAll(() => useBalance(tuned));
 
 const MULBERRY = `(seed)=>{let a=seed>>>0;return()=>{a=(a+0x6d2b79f5)>>>0;let t=a;t=Math.imul(t^(t>>>15),t|1);t^=t+Math.imul(t^(t>>>7),t|61);return((t^(t>>>14))>>>0)/4294967296;};}`;
 

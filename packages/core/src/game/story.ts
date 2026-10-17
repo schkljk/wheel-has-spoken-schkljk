@@ -1,5 +1,6 @@
-import { BOSSES, CHAPTERS, CH_PCT, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
+import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
 import { GEAR } from '../data/gear';
+import { BALANCE } from '../data/balance';
 import { LEVELUP } from '../data/misc';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
@@ -161,7 +162,7 @@ export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
   const S = storyOf(g);
   const C = CHAPTERS[S.ch - 1]!;
   const ng = S.ng || 0;
-  let [lo, hi] = CH_PCT[S.ch - 1]!;
+  let [lo, hi] = BALANCE.chPct(S.ch);
   if (kind === 'elite') {
     lo = Math.min(0.96, lo + 0.15);
     hi = Math.min(1, hi + 0.12);
@@ -190,25 +191,25 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
     }
     const list = itemsOf(W, f, ctx) as Slice[];
     let it: Slice | undefined;
-    if (W.tier) it = list.find((x) => x.v === clamp(def.stats[W.k] || 5, 1, 14));
+    if (W.tier) it = list.find((x) => x.v === clamp((def.stats[W.k] || 5) + BALANCE.bossStatShift(ch), 1, 14));
     else if (def.picks[W.k] != null) it = list.find((x) => x.n === def.picks[W.k] || x.k === def.picks[W.k]);
     if (!it) it = W.k === 'title' ? list[0] : list[pickW(g.rng, list)];
     set[W.k] = it;
   }
   Object.assign(f, {
     title: TITLES[0],
-    maxHp: def.maxHp + ng * 40,
+    maxHp: BALANCE.bossHp(ch, ng),
     bossFx: def.fx,
     phase: def.phase,
     aiSkill: def.aiSkill + ng * 0.05,
     wheelBoss: def.wheelBoss,
     isBoss: true,
     bossTitle: def.title,
-    lvl: CHAPTERS[ch - 1]!.lvl + 3 + ng * 4,
+    lvl: BALANCE.bossLvl(ch, ng),
   });
   if (ng) for (const k of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[k] = (f.bonus[k] || 0) + ng * 2;
-  tuneUp(g, f, 0.45 - 0.02 * (ch - 1 + ng), 8);
-  for (let i = 0; i < 3 && storyOdds(g, f) < 0.18; i++) {
+  tuneUp(g, f, BALANCE.bossTarget(ch, ng), BALANCE.bossTuneCap);
+  for (let i = 0; i < BALANCE.easeMax && storyOdds(g, f) < BALANCE.easeBelow; i++) {
     applyBonus(f, { k: 'curse', n: 'Eased off', e: '🕊️' });
     invalidate(f);
   }
