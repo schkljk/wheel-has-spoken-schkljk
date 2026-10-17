@@ -1,26 +1,51 @@
-import { fullName, deserFighter } from '@whs/core';
-import { commit, go, loadProblems, save, store } from '../state/game';
-import { openSheet } from '../state/ui';
+import { fullName, deserFighter, randName } from '@whs/core';
+import { useState } from 'preact/hooks';
+import { goHub } from '../flows/nav';
+import { G, enterSlot, go, loadProblems, save, store } from '../state/game';
+import { closeSheet, openSheet } from '../state/ui';
 import { offerImport, describeSave } from '../sheets/Save';
 import { SettingsSheet } from '../sheets/Settings';
+import { RecordsSheet } from '../sheets/Records';
 import { startTutorial } from '../sheets/Tutorial';
 import { Icon } from '../ui/Icon';
 import { Sheet, rise } from '../ui/kit';
 import { careerLine, raceEmoji } from '../ui/fighter';
 import { WheelStage } from '../WheelStage';
 
-const OLD_VERSION = `${import.meta.env.BASE_URL}legacy/`;
-
+/** Name a new fighter (or roll a silly name), then spin every wheel. */
 function NewFighterSheet() {
+  const [name, setName] = useState('');
+  const start = () => {
+    const n = name.trim().replace(/\s+/g, ' ') || randName(G.rng);
+    closeSheet();
+    go({ screen: 'build', name: n.slice(0, 24) });
+  };
   return (
-    <Sheet icon="plus" title="New fighter" sub="The wheels are being rebuilt">
-      <p>
-        Spinning a fighter, the story and every mode arrive in the next update of the new version. Until then the current version has all of it, and
-        your save there can be brought over here any time from More, Your save.
-      </p>
-      <a class="btn block" href={OLD_VERSION}>
-        Play the current version
-      </a>
+    <Sheet icon="plus" title="New fighter" sub="Name them, then let the wheels decide everything else">
+      <form
+        class="stack"
+        onSubmit={(e) => {
+          e.preventDefault();
+          start();
+        }}
+      >
+        <div class="row">
+          <input
+            class="field grow"
+            aria-label="Fighter name"
+            placeholder="Name (or roll one)"
+            maxLength={24}
+            value={name}
+            onInput={(e) => setName((e.target as HTMLInputElement).value)}
+          />
+          <button type="button" class="iconbtn" aria-label="Roll a random name" onClick={() => setName(randName(G.rng))}>
+            <Icon name="dice" />
+          </button>
+        </div>
+        <button class="btn block" type="submit">
+          Spin a new fighter
+        </button>
+      </form>
     </Sheet>
   );
 }
@@ -31,8 +56,7 @@ export function Title() {
   const hasFighters = slots.some(Boolean);
   const legacy = !hasFighters ? store.readLegacy() : null;
   const play = (i: number) => {
-    commit((x) => (x.roster.active = i));
-    go({ screen: 'hub', tab: 'play' });
+    if (enterSlot(i)) void goHub();
   };
   let n = 0;
   return (
@@ -100,8 +124,14 @@ export function Title() {
         })}
       </div>
       <div class="title-foot pad row">
-        <button class="btn ghost grow" onClick={startTutorial}>
-          <Icon name="book" /> How to play
+        <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
+          <Icon name="cup" /> <span class="ellipsis">Records</span>
+        </button>
+        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex' })}>
+          <Icon name="card" /> <span class="ellipsis">Collection</span>
+        </button>
+        <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
+          <Icon name="book" />
         </button>
         <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
           <Icon name="gear" />

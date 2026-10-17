@@ -2,6 +2,7 @@ import { signal } from '@preact/signals';
 import { hashStr, poolSeed, type GameContext, type PoolRanking } from '@whs/core';
 import type { PoolMessage } from '../workers/pool.worker';
 import { kv } from './storage';
+import { G } from './game';
 
 // The ranked pool is built in a Web Worker once per day and cached.
 const CACHE = 'whs:pool';
@@ -23,6 +24,7 @@ export function ensurePool(ctx: GameContext): void {
     const c = JSON.parse(kv.getItem(CACHE) || 'null') as { day: string; key: number; ranking: PoolRanking } | null;
     if (c && c.day === day && c.key === key && c.ranking?.order?.length) {
       pool.value = c.ranking;
+      G.pool = c.ranking;
       poolProgress.value = 1;
       return;
     }
@@ -40,6 +42,7 @@ export function ensurePool(ctx: GameContext): void {
     else {
       const ranking: PoolRanking = { seed: m.seed, n: m.n, order: m.order };
       pool.value = ranking;
+      G.pool = ranking;
       poolProgress.value = 1;
       try {
         kv.setItem(CACHE, JSON.stringify({ day, key, ranking }));

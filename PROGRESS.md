@@ -7,8 +7,45 @@
 - [x] Phase 0: study and set up
 - [x] Phase 1: core parity
 - [x] Phase 2: app shell, saves, performance foundations
-- [ ] Phase 3: every screen ported
+- [x] Phase 3: every screen ported
 - [ ] Phase 4: upgrades (see docs/UPGRADES.md)
+
+## Phase 3 log: every screen ported
+
+**What you can do in the new version now:** everything the old version does. Spin a fighter (flick the wheel with your finger or tap Spin, one free reroll, or "spin the rest for me"), read their card, then play the 20-chapter story (map, events, campfires, merchants with haggling, the bag, bosses), cups with brackets and nemeses, the gauntlet, the daily challenge and daily wheel, boss rush and the fight club. Gear in the armory, the base shop (with the lock rule and the daily deal), talents, goals and class mastery, the collection, records and legacy all work. Old saves keep working.
+
+**Rules** (`packages/core/src/game`): career, story, loot, shops, cups, gauntlet, daily, rush and fight club rules act on the save with an injected random source, no DOM. Story fights, gauntlet runs and whole cups (with season rolls) match the old game exactly in seeded side-by-side tests.
+
+**Screens** (`apps/game`):
+- Every wheel is a PixiJS wheel with real physics: a flick's speed sets the spin, friction varies a little each time, pegs can bounce a crawling wheel back, and a spin under 1½ turns doesn't count. Combat and signature wheels pick the result first and spin to it (as before, so the odds are unchanged).
+- The fight is one Pixi scene: arena scenery with ambient particles, both fighters on the horizon (pixel sprites ported pixel for pixel), the combat wheel on the floor below them, hits, floating numbers and banners. Only HP, energy, round x/limit and the read are on screen; the rest is in the ☰ fight menu (odds, auto-battle, fast mode, skip, fight log, their card, help, settings, forfeit). Fighters keep their place when the layout changes.
+- Flows that used to be a task queue are plain async steps, so every screen can be reached and left cleanly.
+- Reduced motion (phone setting or Settings, Animations: calm): wheels land in half a second and fights only pause briefly per event.
+
+**Tests:** unit and parity tests (`npm run test`), and Playwright:
+- `screens.spec.ts`: every screen (building, landed wheel, so-far sheet, card, title, all four tabs, talents, armory, full card, shop tabs, fight club, bag, records, collection, chapter intro, map, arena wheel, fight, fight menu, result, bracket, gauntlet) at all 12 required sizes, nothing clipped, no page scroll, no console errors.
+- `modes.spec.ts`: a whole story chapter including the boss, a cup from round one to the end, the gauntlet until it ends, the daily challenge, a boss rush and a fight club bet, all end to end with no console errors.
+
+**60 fps check** (`npx tsx tools/dev/fps.ts`: Chrome with the CPU 4× slower, 390×844 at 2× density, full animation, a story fight on auto):
+- The game's work per frame (fight updates plus Pixi's drawing) is 5–6 ms at the median, a third of the 16.7 ms a 60 fps frame allows. All JavaScript together used 3.8% of the main thread over 15 s of fighting; the biggest single cost is measuring text for floating damage numbers.
+- The cloud machine has no GPU, so it draws in software: even a static page only reaches 40 fps there (19 fps at 2× density) and the fight shows 2–4 fps. A trace showed 94% of that time is Chrome copying the WebGL canvas back in software, which phones with a GPU don't do. So the frame rate itself can only be confirmed on a phone; the CPU budget, which is what the 4× slowdown tests, has plenty of room.
+- The hit-flash shader now compiles during the fighters' entrance instead of on the first hit (a 34 ms hitch at 4× slowdown).
+
+**Fixes to old text and one exploit** (no gameplay or balance change):
+- Reaching Eternal said "1 talent point" but gave 3; the text now says 3.
+- Winning a rival challenge said "+10 coins" but paid 6; the text now says 6.
+- The daily challenge intro now shows the coins a win really pays.
+- The gauntlet's info said the wrong coin reward per win; it now says 1 coin.
+- Selling a gear piece from the armory left a copy behind, so it could be sold again. Selling now removes it.
+
+**Decisions**
+- The old game's optional "Claude narration" button only worked inside the Claude app's artifact viewer, so it is not ported.
+- The "who is this?" figure shown before the race wheel lands is the old game's no-race silhouette; its older vector renderer is not ported.
+- Layout bugs found by the 12-size check were fixed at the root: sheets and the build screen now give content one column that can shrink, so a long odds chip or name can't push the page wider than the phone.
+- Screens that show the live fighter re-render after every change (a bug where abandoning a cup still showed it "in progress" until you left the tab).
+- Under reduced motion, "spin the rest" could pick from the previous wheel's slices (and freeze if that wheel had more slices). Spins now always use the wheel on screen.
+
+**Next (Phase 4):** the upgrades in `docs/UPGRADES.md`, top to bottom.
 
 ## Phase 2 log: app shell, saves, performance foundations
 

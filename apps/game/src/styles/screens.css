@@ -99,6 +99,10 @@
 .bar-name {
   min-width: 0;
 }
+.bar-name small {
+  display: block;
+  white-space: nowrap;
+}
 .bar-name b {
   font: 800 1.15rem/1.1 var(--display);
   display: block;
@@ -108,6 +112,21 @@
 }
 .bar .chip {
   padding: 0.2rem 0.5rem;
+}
+/* the narrowest phones: room for the fighter's name */
+@media (max-width: 360px) {
+  .bar.row {
+    gap: 0.35rem;
+  }
+  .bar .iconbtn {
+    width: 2.3rem;
+    height: 2.3rem;
+  }
+  .bar .chip {
+    padding: 0.15rem 0.35rem;
+    gap: 0.2rem;
+    font-size: 0.85rem;
+  }
 }
 .tabpanel {
   padding-top: 0.8rem;

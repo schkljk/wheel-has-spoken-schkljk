@@ -31,7 +31,7 @@ export interface CareerFighter extends Fighter {
   rec?: { w: number; l: number };
   earned?: string[];
   next?: Json;
-  belts?: Record<string, number>;
+  belts?: Record<string, boolean | number>;
   defenses?: number;
   tourneys?: number;
   fights?: number;
@@ -46,6 +46,13 @@ export interface CareerFighter extends Fighter {
   armory?: string[];
   contract?: Json;
   offers?: Json;
+  /** cached rating against random level 1 fighters (runtime only; cleared when the build changes) */
+  _win?: number | null;
+  /** challenge opponents: 'rival' or 'legend' */
+  isRival?: string;
+  /** pool opponents: where they rank (0 weakest, 1 strongest) */
+  poolPct?: number;
+  bossTitle?: string;
 }
 
 /** A fighter as saved: every wheel pick by name, plus career fields. Same format as the legacy game. */
@@ -70,7 +77,7 @@ export interface SerFighter {
   earned: string[];
   inj: { k: string; left?: number }[];
   next: Json;
-  belts: Record<string, number>;
+  belts: Record<string, boolean | number>;
   defenses: number;
   tourneys: number;
   fights: number;

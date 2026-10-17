@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  OLD_TAL,
   CHA_TIERS, SAVE_VERSION, SaveFormatError, WEAKS, deserFighter, eff, hashStr, loadCareer, migrate, mulberry32, newSave, numStats, randomFighter,
   saveVersion, serFighter, summarize, type CareerFighter, type SaveData,
 } from '../src';
@@ -84,8 +85,10 @@ describe('legacy save import', () => {
     // a turn-skip weakness saved as "__skip" comes back as a matching one
     const sk = WEAKS.filter((x) => x.skip && x.st);
     expect(f.weak).toBe(sk[hashStr(f.name) % sk.length]);
-    // old talent arrays and story state stay as they were, for the rules that read them
-    expect(f.talents).toEqual(['o1', 'o2', 'd1']);
+    // old talent lists become talent tree ranks the first time they are read, as in legacy; story state stays as it was
+    const ranks: Record<string, number> = {};
+    for (const k of ['o1', 'o2', 'd1']) ranks[OLD_TAL[k]!] = (ranks[OLD_TAL[k]!] || 0) + 1;
+    expect(f.talents).toEqual(ranks);
     expect(f.story).toEqual((raw.career as { story: unknown }).story);
   });
 

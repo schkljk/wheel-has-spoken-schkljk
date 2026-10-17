@@ -307,6 +307,7 @@ small {
   width: min(100%, 34rem);
   max-height: min(88dvh, 44rem);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
   background: var(--bg);
   border-radius: 20px 20px 0 0;
