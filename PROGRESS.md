@@ -10,6 +10,38 @@
 - [x] Phase 3: every screen ported
 - [ ] Phase 4: upgrades (see docs/UPGRADES.md)
 
+## Phase 4 log: upgrades
+
+Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
+
+- [x] 1. Balance pass for the numeric system
+
+### 1. Balance pass (story difficulty)
+
+**How it was measured.** `npm run sim` now also plays whole stories: a headless player (`tools/sim/story.ts`) walks the map with the real rules (fights on auto-battle, rewards, loot, level-ups, talents, campfires, events) with weak, average and strong builds (the worst, median and best of 8 random fighters). It reports, per chapter, how many runs clear it, the level at the clear, the win rate of regular fights and bosses, and chapter restarts. `--cups 1` lets the player win some levels in a cup after each restart (the side modes). Auto-battle is the same AI the opponents use, so a player who reads the clues does better than these numbers.
+
+**What was wrong.** Bosses re-tuned themselves to the player (up to 8 extra levels) toward odds that fell 2 points per chapter, and some bosses were walls (Titan Prime, Queen Hivemind and the Wheelmaster gave an average build at the chapter's level 2-8% per try). Levels barely helped, so players restarted chapters until the dice agreed, which made them over-leveled (level 21 at the end of Act I) and still stuck. The weakest builds mostly could not finish chapter 1.
+
+**What changed** (all in `packages/core/src/data/balance.ts`; the old numbers stay in `LEGACY_BALANCE`, which the parity tests use):
+- Bosses sit one level above their chapter (was three) and only toughen when the player is well above the aimed odds, by at most 3 levels (was 8), so levels won anywhere count.
+- Each boss has a stat tier shift and an HP value, tuned over 13 rounds of 90 whole story runs (`tools/sim/tune-bosses.ts`) toward an average build winning about 72% of tries in chapter 1, falling to 54% at the end of Act I, and 42% to 28% across Act II. HP stays within 60-160% of the old values.
+- Regular opponents in chapters 1-3 come from a slightly weaker slice of the ranked pool (chapter 1: the weakest 18% instead of 3-30%), so the weakest builds can get going. Later chapters are unchanged.
+- XP, chapter levels and rewards are unchanged: nothing got grindier.
+
+**Before and after** (40 runs per build, story only unless noted):
+
+| | Old game | Now |
+|---|---|---|
+| Weak builds that clear chapter 1 | 40% | 63% (95% with side modes) |
+| Average build: finishes Act I | 60%, at level 21 | 70%, at level 18 |
+| Average build: boss wins per try, Act I | 16-49% | 32-72% |
+| Average build: finishes Act II, story only | 55% | 55% |
+| Average build: finishes Act II, a cup after each restart | not measured | 98% (about 10 cups per run) |
+| Weak build: finishes Act II with side modes | not measured | 78% (about 17 cups) |
+| Strong build: finishes Act I / Act II | 90% / 60% | 95% / 80% |
+
+So an average build clears Act I around level 18 (16 for strong builds) with few restarts; Act II bosses are tougher and most players who play only the story stall somewhere in it, while a few cups get almost everyone through. Notes: Frost Queen and the Sandman (chapters 16-17) stay a little easier than aimed even at their caps (a breather); the First Wheel is the hardest boss at about 30% per try.
+
 ## Phase 3 log: every screen ported
 
 **What you can do in the new version now:** everything the old version does. Spin a fighter (flick the wheel with your finger or tap Spin, one free reroll, or "spin the rest for me"), read their card, then play the 20-chapter story (map, events, campfires, merchants with haggling, the bag, bosses), cups with brackets and nemeses, the gauntlet, the daily challenge and daily wheel, boss rush and the fight club. Gear in the armory, the base shop (with the lock rule and the daily deal), talents, goals and class mastery, the collection, records and legacy all work. Old saves keep working.

@@ -33,16 +33,20 @@ export const LEGACY_BALANCE: Balance = {
   easeMax: 3,
 };
 
-/** Boss win odds the HP table below is calibrated for: an average build at the level the chapter expects. */
+/** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
 export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.37 - 0.01 * (ch - 11));
 
 /** How many levels each boss is above its chapter. */
 export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
-/** Stat tiers taken off (or added to) each boss's table, calibrated with the HP below (chapters 1 to 20). */
+/**
+ * Stat tiers taken off (or added to) each boss's table, chapters 1 to 20. Tuned with the HP below over whole
+ * story runs (tools/sim/tune-bosses.ts): an average build wins about 72% of tries in chapter 1, 54% at the end
+ * of Act I, and 42% to 28% across Act II.
+ */
 // prettier-ignore
 export const BOSS_STAT_SHIFT: number[] = [-6, -4, -3, -5, -3, -3, -5, -2, -5, -5, 2, -4, 3, -5, 0, 4, 4, -5, -5, -6];
 
-/** Boss HP by chapter, calibrated with the stat shift so an average build hits BOSS_AIM (tools/sim/calibrate-bosses.ts). */
+/** Boss HP by chapter (see the stat shift above). */
 // prettier-ignore
 export const BOSS_HP: number[] = [90, 142, 180, 245, 250, 225, 182, 240, 312, 205, 320, 533, 340, 493, 360, 608, 624, 471, 440, 331];
 
