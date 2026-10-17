@@ -94,7 +94,8 @@ export function buildLand(g: Game, f: BuildFighter, W: Wheel, it: Slice, i: numb
   (f as Record<string, unknown>)[W.k] = it;
   const out: BuildLanding = { syns: [], best };
   if (CX_CATS.has(W.k) && markSeen(g, W.k, cxKey(W.k, it, f))) out.newInCollection = true;
-  for (const s of synOf(f as Fighter).filter((x) => !before.has(x.k))) {
+  // hidden synergies stay secret until a fight shows them
+  for (const s of synOf(f as Fighter).filter((x) => !before.has(x.k) && !x.hidden)) {
     out.syns.push({ s, isNew: markSeen(g, 'syn', s.n) });
     if (!s.anti) best = 3;
   }

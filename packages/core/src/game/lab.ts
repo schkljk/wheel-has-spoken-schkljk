@@ -2,7 +2,8 @@ import { GEAR } from '../data/gear';
 import { simulate } from '../battle';
 import { randomFighter, levelUp } from '../fighter';
 import { mulberry32, type Rng } from '../rng';
-import { pick } from '../random';
+import { pick, shuffle } from '../random';
+import { junkCount } from '../data/content/hidden-synergies';
 import { personalityOf } from '../stats';
 import type { Fighter } from '../types';
 import { invalidate, randomGear } from './career';
@@ -32,6 +33,8 @@ export interface LabReport {
 }
 
 const SETS = [...new Set(GEAR.filter((g) => g.set).map((g) => g.set!))];
+/** One junk piece per slot, for junk outfits. */
+const JUNK = [...new Map(GEAR.filter((g) => g.r === 'junk').map((g) => [g.slot, g])).values()];
 
 /** A lab fighter: random build, level, gear, and in 40% of cases 2, 4 or 6 pieces of one set. */
 export function labFighter(rng: Rng, lvl: number): Fighter {
@@ -46,6 +49,11 @@ export function labFighter(rng: Rng, lvl: number): Fighter {
     f.gear = f.gear || {};
     for (const g of pieces.slice(0, want)) f.gear[g.slot] = g.k;
     invalidate(f);
+  } else if (rng() < 0.2) {
+    // a junk outfit: 3 to 6 pieces of the worst gear in the game
+    f.gear = f.gear || {};
+    for (const g of shuffle(rng, JUNK).slice(0, 3 + Math.floor(rng() * 4))) f.gear[g.slot] = g.k;
+    invalidate(f);
   }
   return f;
 }
@@ -57,13 +65,18 @@ function keysOf(f: Fighter): Record<string, [k: string, label: string, e: string
   );
   const [set, n] = sets.sort((a, b) => b[1] - a[1])[0] ?? ['', 0];
   const tier = n >= 6 ? 6 : n >= 4 ? 4 : 2;
+  const junk = junkCount(f);
   const p = personalityOf(f);
   return {
     arch: [f.arch.k, f.arch.n, f.arch.e],
     race: [f.race.n, f.race.n, f.race.e],
     weapon: [f.weapon.n, f.weapon.n, f.weapon.e],
     side: f.side ? [f.side.n, f.side.n, f.side.e] : ['none', 'No sidekick', '·'],
-    set: set ? [`${set}${tier}`, `${set[0]!.toUpperCase()}${set.slice(1)} set, ${tier} pieces`, '🛡️'] : ['none', 'No set', '·'],
+    set: set
+      ? [`${set}${tier}`, `${set[0]!.toUpperCase()}${set.slice(1)} set, ${tier} pieces`, '🛡️']
+      : junk >= 3
+        ? [`junk${junk >= 5 ? 5 : 3}`, `Junk outfit, ${junk >= 5 ? '5+' : '3-4'} pieces`, '🗑️']
+        : ['none', 'No set', '·'],
     growth: f.growth ? [f.growth.n, f.growth.n, f.growth.e] : ['none', 'No growth', '·'],
     pers: [p.k, p.n, p.e],
   };

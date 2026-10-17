@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { deserFighter, migrate, numStats } from '@whs/core';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
-import { layoutProblems, legacySave, open, watchErrors } from './helpers';
+import { autopilot, layoutProblems, legacySave, open, watchErrors } from './helpers';
 
 const skipTour = (page: Page) => page.getByRole('button', { name: 'Skip the tour' }).click();
 const confirmLoad = (page: Page) => page.getByRole('alertdialog').getByRole('button', { name: /^Load / }).click();
@@ -371,5 +371,36 @@ test('the hidden balance lab: five taps on the build line, a mass simulation, ta
     expect(p.clipped, `${width}x${height}`).toEqual([]);
     expect(p.pageScrolls, `${width}x${height}`).toBe(false);
   }
+  expect(errors).toEqual([]);
+});
+
+test('a hidden synergy is a mystery on the card until the first fight gives it away', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  // seed 12 rolls an NPC: the Unnamed extra
+  await open(page, { ...careerSaveKV({ seed: 12, lvl: 3, ch: 1, fast: true }), 'whs:seed': 'secret' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await page.getByRole('button', { name: 'Every wheel result and trait' }).click();
+  await expect(page.locator('.syn.secret').filter({ hasText: '???' })).toHaveCount(1);
+  await expect(page.getByText('Unnamed extra')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Close' }).last().click();
+  await page.getByRole('tab', { name: 'Play' }).click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await page.locator('.fresult .btn').first().click();
+  await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);
+  await page.getByRole('button', { name: 'Fighter page' }).click();
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await page.getByRole('button', { name: 'Every wheel result and trait' }).click();
+  await expect(page.locator('.syn.secret').filter({ hasText: 'Unnamed extra' })).toHaveCount(1);
+  await expect(page.locator('.syn.secret').filter({ hasText: '???' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });

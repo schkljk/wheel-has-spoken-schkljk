@@ -3,6 +3,7 @@ import { ARENAS } from '../data/arenas';
 import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc';
 import { GEAR, RARITY } from '../data/gear';
 import { SYN } from '../data/synergies';
+import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
 import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
@@ -127,7 +128,7 @@ function findItem(cat: string, name: string): AnyItem | null {
       list = TITLES;
       break;
     case 'syn':
-      list = SYN;
+      list = [...SYN, ...SYN_HIDDEN];
       break;
     case 'arena':
       list = ARENAS;
@@ -301,7 +302,7 @@ export function infoFor(key: string): Info | null {
     sub,
     p: it.d,
     lines: lines.filter((l, i, arr) => l && arr.indexOf(l) === i && l !== it.d),
-    flavor: FLAVOR[flavorKey],
+    flavor: FLAVOR[flavorKey] ?? (it as { flavor?: string }).flavor,
   };
 }
 

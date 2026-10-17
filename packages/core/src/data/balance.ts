@@ -24,6 +24,8 @@ export interface Balance {
   personalities: boolean;
   /** crit, dodge and damage reduction stack with diminishing returns past a knee (upgrade 15) */
   softCaps: boolean;
+  /** joke picks have hidden synergies (upgrade 16) */
+  jokeSynergies: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -37,6 +39,7 @@ export const LEGACY_BALANCE: Balance = {
   easeMax: 3,
   personalities: false,
   softCaps: false,
+  jokeSynergies: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -74,6 +77,7 @@ export const BALANCE: Balance = {
   easeMax: 3,
   personalities: true,
   softCaps: true,
+  jokeSynergies: true,
 };
 
 /**

@@ -412,6 +412,16 @@
   display: block;
   margin-bottom: 0.2rem;
 }
+/* a hidden synergy: found ones get a violet edge, unfound ones are a dashed mystery */
+.loadout .syn.secret {
+  border-left: 3px solid #b388ff;
+  padding-left: 0.4rem;
+}
+.loadout .syn.secret > span:first-child:not(.inf) {
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: #b388ff;
+}
 .loadout .syn.anti {
   color: var(--primary);
 }

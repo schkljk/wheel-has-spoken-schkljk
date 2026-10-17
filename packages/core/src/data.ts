@@ -13,3 +13,4 @@ export * from './data/content/text';
 export * from './data/balance';
 export * from './data/content/phase';
 export * from './data/content/personality';
+export * from './data/content/hidden-synergies';

@@ -18,6 +18,7 @@ import {
   personalityOf,
   pickW,
   powerScale,
+  discoverHidden,
   finisherOf,
   procFeed,
   procOf,
@@ -361,6 +362,11 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     await sc.intro();
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
+    // the first fight with a hidden synergy gives it away
+    const found = act((g) => discoverHidden(g, F));
+    found.forEach((s, i) =>
+      setTimeout(() => sceneRef.current?.showProc({ kind: 'synergy', k: s.k, n: s.n, e: s.e, sub: 'Hidden synergy found', side: 0, anti: false }), i * 1700),
+    );
     if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = bt;
     S.playing = true;
     setSnap(bt.snap());
