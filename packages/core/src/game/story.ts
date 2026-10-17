@@ -1,5 +1,6 @@
 import { BOSSES, CHAPTERS, CH_PCT, ITEMS, MERCHANTS, MYSTERY, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
 import { GEAR } from '../data/gear';
+import { BALANCE } from '../data/balance';
 import { LEVELUP } from '../data/misc';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
@@ -197,7 +198,7 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
   }
   Object.assign(f, {
     title: TITLES[0],
-    maxHp: def.maxHp + ng * 40,
+    maxHp: BALANCE.bossHp(ch, ng),
     bossFx: def.fx,
     phase: def.phase,
     aiSkill: def.aiSkill + ng * 0.05,
@@ -207,8 +208,8 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
     lvl: CHAPTERS[ch - 1]!.lvl + 3 + ng * 4,
   });
   if (ng) for (const k of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[k] = (f.bonus[k] || 0) + ng * 2;
-  tuneUp(g, f, 0.45 - 0.02 * (ch - 1 + ng), 8);
-  for (let i = 0; i < 3 && storyOdds(g, f) < 0.18; i++) {
+  tuneUp(g, f, BALANCE.bossTarget(ch, ng), BALANCE.bossTuneCap);
+  for (let i = 0; i < BALANCE.easeMax && storyOdds(g, f) < BALANCE.easeBelow; i++) {
     applyBonus(f, { k: 'curse', n: 'Eased off', e: '🕊️' });
     invalidate(f);
   }

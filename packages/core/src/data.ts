@@ -10,3 +10,4 @@ export * from './data/content/story';
 export * from './data/content/progression';
 export * from './data/content/economy';
 export * from './data/content/text';
+export * from './data/balance';

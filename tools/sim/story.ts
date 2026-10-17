@@ -115,7 +115,7 @@ export function fighterOfStrength(strength: 'weak' | 'average' | 'strong') {
 }
 
 // ---------------------------------------------------------------- the player's choices
-function spendTalents(g: Game) {
+export function spendTalents(g: Game) {
   const F = g.F!;
   for (let guard = 0; guard < 60 && (F.tp || 0) > 0; guard++) {
     const open = Object.values(TNODE).filter((n) => canRank(F, n));
