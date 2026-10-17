@@ -5,10 +5,11 @@ import { iconForInfoKey } from './ContentIcon';
 import { Icon } from './Icon';
 
 /** Something you can tap to learn what it does. */
-export function Inf(props: { k: string; children: ComponentChildren; class?: string }) {
+export function Inf(props: { k: string; children: ComponentChildren; class?: string; label?: string }) {
   return (
     <span
       class={`inf${props.class ? ' ' + props.class : ''}`}
+      aria-label={props.label}
       role="button"
       tabIndex={0}
       onClick={(e) => {

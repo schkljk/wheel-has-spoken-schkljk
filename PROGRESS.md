@@ -20,6 +20,16 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 4. Fight replay and share card
 - [x] 5. More agency on the combat wheel
 - [x] 6. Named combo and synergy banners with distinct sounds
+- [x] 7. Opponent move history
+
+### 7. Opponent move history
+
+- Under the opponent's HP and energy there is now a slim **Lately** row: their last three moves as pixel icons (sword for Strike, spark for Power, shield for Guard, star for their signature, and so on), oldest to newest. The newest has a pink outline and springs in.
+- It updates when a round has finished playing, never before, so it can't spoil a round you're watching. Tap it for the move rules (what beats what). Screen readers get "Their last moves: Guard, Strike, Strike".
+- It's there to check the read against: "Probably: Strike" means more when they've struck twice in a row.
+- The HUD is about 20 px taller (91 to 93 px on every size, measured), and the fight layout now allows for that. Fighters are up to 6 px shorter on desktop and unchanged on phones.
+- Tested in the browser over four rounds: the row only shows rounds that have finished and never more than three moves. It's then checked at 320×568 and 844×390 for clipping.
+- Also fixed: the upgrade 5 nudge test failed once on CI. It checked for the short-lived nudge button once per animation frame, and with software rendering a single frame can outlast the offer. It now clicks from a DOM observer, with a fixed game seed.
 
 ### 6. Named combo and synergy banners
 
