@@ -1,10 +1,10 @@
 /**
- * Finds each boss's level (relative to its chapter) and HP so an average build at the level the chapter expects
+ * Finds each boss's stat tier shift and HP so an average build at the level the chapter expects
  * wins BOSS_AIM of the time, with the boss toughening and easing off as the game does. Prints the tables for
  * data/balance.ts.
  *   npx tsx tools/sim/calibrate-bosses.ts [--from 1] [--to 20] [--n 24]
  */
-import { BOSS_AIM, BOSS_HP, BOSS_LVL_UP, BOSSES, CHAPTERS, LEGACY_BALANCE, headToHead, levelUp, makeBoss, mulberry32, randomGear, rankPool, storyOf, type CareerFighter } from '../../packages/core/src';
+import { BOSS_AIM, BOSS_HP, BOSS_STAT_SHIFT, BOSSES, CHAPTERS, LEGACY_BALANCE, headToHead, levelUp, makeBoss, mulberry32, randomGear, rankPool, storyOf, type CareerFighter } from '../../packages/core/src';
 import { fighterOfStrength, newRun, spendTalents } from './story';
 
 const arg = (name: string, def: number) => {
@@ -17,9 +17,9 @@ const pool = rankPool(1, { n: 1000, games: 2000 });
 export const expectedLevel = (ch: number) => CHAPTERS[ch - 1]!.lvl + (ch <= 10 ? 1 : 0);
 
 /** Average win odds of N average builds against this chapter's boss. */
-function odds(ch: number, hp: number, up: number) {
+function odds(ch: number, hp: number, shift: number) {
   BOSS_HP[ch - 1] = hp;
-  BOSS_LVL_UP[ch - 1] = up;
+  BOSS_STAT_SHIFT[ch - 1] = shift;
   let s = 0;
   for (let i = 0; i < N; i++) {
     const rng = mulberry32(ch * 7717 + i * 31 + 5);
@@ -39,28 +39,29 @@ function odds(ch: number, hp: number, up: number) {
 }
 
 const hpOut: string[] = [];
-const upOut: string[] = [];
+const shiftOut: string[] = [];
 for (let ch = arg('from', 1); ch <= arg('to', CHAPTERS.length); ch++) {
   const base = LEGACY_BALANCE.bossHp(ch, 0);
   const aim = BOSS_AIM(ch);
-  // the level first: the highest that gets within reach with the old HP
-  let up = 3;
-  let o = odds(ch, base, up);
-  while (o < aim - 0.04 && up > -6 && CHAPTERS[ch - 1]!.lvl + up > 1) o = odds(ch, base, --up);
+  // stat tiers first (in either direction) until the old HP gets within reach
+  let sh = 0;
+  let o = odds(ch, base, sh);
+  while (o < aim - 0.04 && sh > -6) o = odds(ch, base, --sh);
+  while (o > aim + 0.08 && sh < 3) o = odds(ch, base, ++sh);
   // then HP for the last few points
   let lo = Math.round(base * 0.4);
   let hi = Math.round(base * 1.6);
   let best = { hp: base, o };
   for (let it = 0; it < 6 && hi - lo > 4; it++) {
     const mid = Math.round((lo + hi) / 2);
-    const m = odds(ch, mid, up);
+    const m = odds(ch, mid, sh);
     if (Math.abs(m - aim) < Math.abs(best.o - aim)) best = { hp: mid, o: m };
     if (m > aim) lo = mid;
     else hi = mid;
   }
   hpOut.push(`${ch}:${best.hp}`);
-  upOut.push(`${ch}:${up}`);
-  console.log(`${ch}\t${BOSSES[ch - 1]!.name}\tlevel ${up >= 0 ? '+' : ''}${up} (was +3), HP ${base} -> ${best.hp}\todds ${(best.o * 100).toFixed(0)}% (aim ${(aim * 100).toFixed(0)}%)`);
+  shiftOut.push(`${ch}:${sh}`);
+  console.log(`${ch}\t${BOSSES[ch - 1]!.name}\tstats ${sh >= 0 ? '+' : ''}${sh}, HP ${base} -> ${best.hp}\todds ${(best.o * 100).toFixed(0)}% (aim ${(aim * 100).toFixed(0)}%)`);
 }
 console.log(`HP ${hpOut.join(' ')}`);
-console.log(`UP ${upOut.join(' ')}`);
+console.log(`SHIFT ${shiftOut.join(' ')}`);

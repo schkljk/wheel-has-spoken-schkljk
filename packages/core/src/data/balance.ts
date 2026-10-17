@@ -13,6 +13,8 @@ export interface Balance {
   bossHp: (ch: number, ng: number) => number;
   /** boss level */
   bossLvl: (ch: number, ng: number) => number;
+  /** added to every stat tier of the boss's table (1 to 14) */
+  bossStatShift: (ch: number) => number;
   /** a boss the player has less than this chance against eases off (at most `easeMax` times) */
   easeBelow: number;
   easeMax: number;
@@ -23,6 +25,7 @@ export const LEGACY_BALANCE: Balance = {
   bossTuneCap: 8,
   bossHp: (ch, ng) => BOSSES[ch - 1]!.maxHp + ng * 40,
   bossLvl: (ch, ng) => CHAPTERS[ch - 1]!.lvl + 3 + ng * 4,
+  bossStatShift: () => 0,
   easeBelow: 0.18,
   easeMax: 3,
 };
@@ -30,10 +33,12 @@ export const LEGACY_BALANCE: Balance = {
 /** Boss win odds the HP table below is calibrated for: an average build at the level the chapter expects. */
 export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.45 - 0.01 * (ch - 11));
 
-/** How many levels each boss is above its chapter (calibrated with the HP below). */
-export const BOSS_LVL_UP: number[] = BOSSES.map(() => 3);
+/** How many levels each boss is above its chapter. */
+export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
+/** Stat tiers taken off (or added to) each boss's table, calibrated with the HP below. */
+export const BOSS_STAT_SHIFT: number[] = BOSSES.map(() => 0);
 
-/** Boss HP by chapter, calibrated so an average build hits BOSS_AIM (tools/sim/calibrate-bosses.ts). */
+/** Boss HP by chapter, calibrated with the stat shift so an average build hits BOSS_AIM (tools/sim/calibrate-bosses.ts). */
 export const BOSS_HP: number[] = BOSSES.map((b) => b.maxHp);
 
 export const BALANCE: Balance = {
@@ -41,6 +46,7 @@ export const BALANCE: Balance = {
   bossTuneCap: 3,
   bossHp: (ch, ng) => BOSS_HP[ch - 1]! + ng * 40,
   bossLvl: (ch, ng) => Math.max(1, CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4),
+  bossStatShift: (ch) => BOSS_STAT_SHIFT[ch - 1]!,
   easeBelow: 0.18,
   easeMax: 3,
 };

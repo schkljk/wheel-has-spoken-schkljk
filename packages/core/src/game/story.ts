@@ -191,7 +191,7 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
     }
     const list = itemsOf(W, f, ctx) as Slice[];
     let it: Slice | undefined;
-    if (W.tier) it = list.find((x) => x.v === clamp(def.stats[W.k] || 5, 1, 14));
+    if (W.tier) it = list.find((x) => x.v === clamp((def.stats[W.k] || 5) + BALANCE.bossStatShift(ch), 1, 14));
     else if (def.picks[W.k] != null) it = list.find((x) => x.n === def.picks[W.k] || x.k === def.picks[W.k]);
     if (!it) it = W.k === 'title' ? list[0] : list[pickW(g.rng, list)];
     set[W.k] = it;
