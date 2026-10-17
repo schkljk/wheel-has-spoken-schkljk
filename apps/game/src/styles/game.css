@@ -1040,6 +1040,12 @@
 .pill.combo {
   background: color-mix(in srgb, var(--q3) 30%, var(--surface));
 }
+.pill.syn {
+  background: color-mix(in srgb, var(--q2) 30%, var(--surface));
+}
+.pill.syn.anti {
+  background: color-mix(in srgb, var(--q0) 30%, var(--surface));
+}
 
 /* ---------- story map ---------- */
 .map-screen {
