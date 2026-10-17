@@ -247,7 +247,16 @@ async function encounter() {
     await lootFlow(r.loot as 'treasure');
     return backToMap();
   }
-  await choose({ emoji: ev.e, title: ev.t, body: r.txt, options: [{ label: 'Continue' }] });
+  // chapter events keep the mechanics apart from the joke: what happened, then the italic flavor line
+  const body = 'fx' in r && r.fx ? (
+    <>
+      <b class="ev-fx">{r.fx}</b>
+      {r.txt && <i class="ev-flav">{r.txt}</i>}
+    </>
+  ) : (
+    r.txt
+  );
+  await choose({ emoji: ev.e, title: ev.t, body, options: [{ label: 'Continue' }] });
   backToMap();
 }
 
