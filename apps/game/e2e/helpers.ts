@@ -101,3 +101,51 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
     return { clipped: [...new Set(out)].slice(0, 8), pageScrolls: se.scrollHeight > vh + 1 || se.scrollWidth > vw + 1 };
   });
 }
+
+/**
+ * Plays on its own: taps whatever the current screen asks for (spin, continue, the first open choice,
+ * the current map step, fight results...) until `done` says stop. Fights should run on auto-battle.
+ * Returns how many taps it made.
+ */
+export async function autopilot(page: Page, done: () => Promise<boolean>, max = 400, o: { skipFights?: boolean } = {}): Promise<number> {
+  const src = `(${TAP_NEXT})(${JSON.stringify(o)})`;
+  for (let i = 0; i < max; i++) {
+    if (await done()) return i;
+    const tapped = await page.evaluate(src);
+    await page.waitForTimeout(tapped ? 250 : 400);
+  }
+  return max;
+}
+
+// plain source (not a function) so compilers can't add helpers the page doesn't have
+const TAP_NEXT = `((o) => {
+  const vis = (el) => {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0 && !el.disabled && getComputedStyle(el).visibility !== 'hidden';
+  };
+  const tap = (el) => {
+    if (!vis(el)) return false;
+    el.click();
+    return true;
+  };
+  const dlg = document.querySelector('[role=alertdialog]');
+  if (dlg) return tap(dlg.querySelector('.btn'));
+  if (o.skipFights && document.querySelector('.fmenu') && !document.querySelector('.fresult')) {
+    const skip = [...document.querySelectorAll('.sheet .menu-i')].find((b) => b.querySelector('b')?.textContent === 'Skip');
+    return skip ? tap(skip) : tap(document.querySelector('.fmenu'));
+  }
+  if (tap(document.querySelector('.cine-btn'))) return true;
+  const opt = [...document.querySelectorAll('.ch-opt')].find((b) => vis(b));
+  if (opt) return tap(opt);
+  const sheet = document.querySelector('.sheet');
+  if (sheet) {
+    const out = [...sheet.querySelectorAll('button')].find((b) => /^(Leave|Close|Back|Done)$/i.test(b.textContent.trim()) || b.getAttribute('aria-label') === 'Close');
+    return tap(out || null);
+  }
+  if (tap(document.querySelector('.fresult .btn'))) return true;
+  if (tap(document.querySelector('.spin-foot .btn'))) return true;
+  if (tap(document.querySelector('.mnode.now'))) return true;
+  if (tap(document.querySelector('.bracket-screen .dock .btn'))) return true;
+  return false;
+})`;

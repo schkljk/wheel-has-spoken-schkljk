@@ -52,7 +52,7 @@ test('the Fighter tab shows the engine numbers', async ({ page }) => {
   await page.getByRole('tab', { name: 'Fighter' }).click();
   const s = migrate(legacySave());
   const ns = numStats(deserFighter(s.roster.slots[0]!.career)!, { patch: s.profile.patch });
-  const stat = (label: string) => page.locator('.stat', { hasText: label }).locator('b');
+  const stat = (label: string) => page.locator('.nb-i', { hasText: label }).locator('b');
   await expect(stat('HP')).toHaveText(String(ns.hp));
   await expect(stat('Attack')).toHaveText(String(ns.atk));
   await expect(stat('Defense')).toHaveText(String(ns.def));

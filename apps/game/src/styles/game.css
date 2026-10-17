@@ -9,6 +9,7 @@
   grid-area: head;
   padding-top: 0.5rem;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.35rem;
   min-width: 0;
 }
@@ -51,9 +52,7 @@
 }
 .oc,
 .unlock {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
+  display: inline-block;
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
   font-size: 0.78rem;
@@ -248,14 +247,17 @@
   max-width: 40rem;
   margin: 0 auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.6rem;
 }
 .fc-top {
   display: flex;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
   align-items: center;
 }
 .fc-top .grow {
+  flex: 1 1 9rem;
   min-width: 0;
 }
 .fc-name {
@@ -716,8 +718,10 @@
 .hv {
   display: flex;
   justify-content: space-between;
-  font-size: 0.78rem;
+  gap: 0.3rem;
+  font-size: clamp(0.66rem, 2.3vw, 0.78rem);
   font-weight: 700;
+  white-space: nowrap;
 }
 .hv .env {
   pointer-events: auto;
@@ -880,6 +884,15 @@
 }
 .cw-spin.gold {
   background: linear-gradient(90deg, #f2b544, #e5484d);
+}
+@media (max-width: 360px) {
+  .fchip {
+    padding: 0.3rem 0.4rem;
+    font-size: 0.76rem;
+  }
+  .cw-chips {
+    gap: 0.25rem;
+  }
 }
 @media (max-height: 640px) {
   .cw-out {
@@ -1523,21 +1536,23 @@
 
 /* ---------- talents ---------- */
 .tt-tabs {
-  display: flex;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 0.3rem;
-  overflow-x: auto;
 }
 .tt-tab {
-  flex: 1 0 auto;
+  min-width: 0;
   display: grid;
   justify-items: center;
   gap: 0.05rem;
-  padding: 0.35rem 0.5rem;
+  padding: 0.35rem 0.15rem;
+  overflow-wrap: anywhere;
   border-radius: 10px;
   border: 2px solid var(--line);
   background: var(--surface);
   font-weight: 800;
-  font-size: 0.8rem;
+  font-size: clamp(0.66rem, 2.3vw, 0.8rem);
   cursor: pointer;
 }
 .tt-tab.on {
@@ -1844,4 +1859,13 @@
 }
 .tile.q3 {
   border-color: color-mix(in srgb, var(--q3) 60%, var(--line));
+}
+
+.title-foot .btn.grow {
+  min-width: 0;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.title-foot .btn .ellipsis {
+  min-width: 0;
 }

@@ -9,6 +9,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { careerSaveKV } from '../fixtures/career-save';
+import { autopilot } from '../../apps/game/e2e/helpers';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const [out = resolve(ROOT, 'test-results/play'), script = 'build', size = '390x844'] = process.argv.slice(2);
@@ -38,6 +39,7 @@ try {
   }
   if (script === 'build') await buildScript(page);
   else if (script === 'modes') await modesScript(page);
+  else if (script === 'more') await moreScript(page);
   else await storyScript(page);
   console.log('errors:', errors);
   await browser.close();
@@ -141,4 +143,43 @@ async function modesScript(page: Page) {
   await page.locator('.fresult .btn').first().click();
   await page.waitForTimeout(800);
   await shot(page, 'cup-after');
+}
+
+async function moreScript(page: Page) {
+  const kv = careerSaveKV({ seed: 9, lvl: 12, ch: 3, coins: 300, gems: 30, fast: true, auto: true });
+  await page.evaluate((s) => {
+    localStorage.clear();
+    for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+  }, kv);
+  await page.reload();
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  const atHub = async () => (await page.locator('.tabbar').count()) > 0 && (await page.locator('.scrim, .cine').count()) === 0;
+  // the gauntlet until it ends
+  await page.getByRole('button', { name: /The gauntlet/ }).click();
+  await shot(page, 'gauntlet');
+  console.log('gauntlet taps', await autopilot(page, atHub, 120));
+  await shot(page, 'after-gauntlet');
+  const home = async () => {
+    if (await atHub()) return;
+    await page.reload();
+    await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+    await autopilot(page, atHub, 20);
+  };
+  await home();
+  // daily challenge
+  await page.getByRole('button', { name: /Daily challenge/ }).click();
+  console.log('daily taps', await autopilot(page, atHub, 200));
+  await shot(page, 'after-daily');
+  await home();
+  // boss rush until it ends
+  await page.getByRole('button', { name: /Boss rush/ }).click();
+  console.log('rush taps', await autopilot(page, atHub, 300));
+  await shot(page, 'after-rush');
+  await home();
+  // a whole story chapter
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  const ch = async () => (await page.locator('.maphead small').first().textContent()) || '';
+  const start = await ch();
+  console.log('story taps', await autopilot(page, async () => (await page.locator('.maphead').count()) > 0 && (await ch()) !== start, 1500));
+  await shot(page, 'after-chapter');
 }

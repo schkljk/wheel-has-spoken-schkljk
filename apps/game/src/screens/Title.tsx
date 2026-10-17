@@ -124,11 +124,11 @@ export function Title() {
         })}
       </div>
       <div class="title-foot pad row">
-        <button class="btn ghost grow" onClick={() => openSheet(<RecordsSheet />)}>
-          <Icon name="cup" /> Records
+        <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
+          <Icon name="cup" /> <span class="ellipsis">Records</span>
         </button>
-        <button class="btn ghost grow" onClick={() => go({ screen: 'codex' })}>
-          <Icon name="card" /> Collection
+        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex' })}>
+          <Icon name="card" /> <span class="ellipsis">Collection</span>
         </button>
         <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
           <Icon name="book" />

@@ -108,11 +108,16 @@ export const activeSlot = computed(() => {
   const r = save.value.roster;
   return r.active != null ? (r.slots[r.active] ?? null) : null;
 });
-/** The fighter being played (live). */
-export const activeFighter = computed(() => {
-  void fver.value;
-  return G.F;
-});
+/**
+ * The fighter being played (live). Rules change it in place, so it never becomes a new object: reading it
+ * subscribes to `fver` instead, and whoever shows it renders again after every change.
+ */
+export const activeFighter = {
+  get value() {
+    void fver.value;
+    return G.F;
+  },
+};
 
 // ---------- navigation ----------
 export type Tab = 'play' | 'fighter' | 'goals' | 'more';

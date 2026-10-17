@@ -189,9 +189,15 @@ export function BuildScreen({ name }: { name: string }) {
 
   const W = WHEELS[S.idx];
   const items = useMemo(() => toSlices(S.list), [S.list]);
+  // timers outlive the render that set them, so spins read the current slices from here
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const prep = () => {
     ac();
+    // the next wheel may not be drawn yet (effects wait for a paint): draw it before spinning
+    const v = wheel.current?.view;
+    if (v && v.items !== itemsRef.current) v.setItems(itemsRef.current, v.size, null);
     S.spinning = true;
     S.lastSpun = -1;
     setLanded(null);
@@ -204,7 +210,7 @@ export function BuildScreen({ name }: { name: string }) {
     if (!v || S.done) return;
     prep();
     if (reducedMotion()) {
-      v.spinTo(pickW(G.rng, items), { dur: 500, turns: 1 });
+      v.spinTo(pickW(G.rng, itemsRef.current), { dur: 500, turns: 1 });
       return;
     }
     v.spinPhysics(S.auto ? 'auto' : 'button', fast);

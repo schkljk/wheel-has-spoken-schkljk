@@ -320,6 +320,7 @@ export class FightScene {
     this.top.addChild(t);
     this.bannerText = t;
     return this.tw.run(dur, (k) => {
+      if (t.destroyed) return;
       if (keep) {
         t.scale.set(k < 0.35 ? 0.4 + 0.72 * (k / 0.35) : 1.12 - 0.12 * Math.min(1, (k - 0.35) / 0.3));
         t.alpha = Math.min(1, k / 0.35);
@@ -328,7 +329,7 @@ export class FightScene {
         t.alpha = k < 0.25 ? k / 0.25 : k < 0.7 ? 1 : 1 - (k - 0.7) / 0.3;
       }
     }).then(() => {
-      if (!keep) {
+      if (!keep && !t.destroyed) {
         t.destroy();
         if (this.bannerText === t) this.bannerText = null;
       }

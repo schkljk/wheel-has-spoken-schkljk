@@ -19,4 +19,21 @@ jobs:
       # the content parity tests read the legacy game in a real browser
       - run: npx playwright install --with-deps chromium
       - run: npm test
-      - run: npm run e2e
+
+  # every screen at 12 sizes plus whole game modes: split over parallel machines
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test --shard=${{ matrix.shard }}/3

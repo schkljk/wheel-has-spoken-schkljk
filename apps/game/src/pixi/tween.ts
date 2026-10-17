@@ -57,7 +57,13 @@ export class Tweens {
     for (const j of cur) {
       j.t += ms;
       const k = Math.min(1, j.t / j.dur);
-      j.fn(j.ease(k));
+      try {
+        j.fn(j.ease(k));
+      } catch {
+        // the thing being animated is gone: finish the job so nothing waits on it forever
+        j.done();
+        continue;
+      }
       if (k >= 1) j.done();
       else keep.push(j);
     }
