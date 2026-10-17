@@ -18,6 +18,7 @@ import {
   personalityOf,
   pickW,
   powerScale,
+  finisherOf,
   procFeed,
   procOf,
   rankOf,
@@ -311,6 +312,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
 
   async function playEvents(evs: BattleEvent[]) {
     const sc = sceneRef.current!;
+    const fin = finisherOf(evs);
     for (let i = 0; i < evs.length; i++) {
       if (S.skip || S.ended) {
         S.log.push(...evs.slice(i));
@@ -334,7 +336,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
           S.music = phaseMusic(kit.tune);
         }
       }
-      await sc.play(e, S.procs(e));
+      await sc.play(e, S.procs(e), i === fin);
     }
   }
 

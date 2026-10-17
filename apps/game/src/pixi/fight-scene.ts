@@ -1,7 +1,7 @@
 import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Text, TextStyle } from 'pixi.js';
 import { COMBOS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
-import { beep, procSound, thud } from '../ui/sound';
+import { beep, finisherSound, procSound, thud } from '../ui/sound';
 import { buzz } from '../state/game';
 import { FighterView } from './fighter-view';
 import { Ambient, drawFloor, sceneSVG } from './scenery';
@@ -439,7 +439,7 @@ export class FightScene {
   }
   shake(amp: number, dur: number) {
     if (this.reduced) return Promise.resolve();
-    return this.tw.keys(dur, [0, -amp, amp, -amp * 0.6, amp * 0.4, 0], (v) => (this.world.x = v)).then(() => (this.world.x = 0));
+    return this.tw.keys(dur, [0, -amp, amp, -amp * 0.6, amp * 0.4, 0], (v) => (this.world.pivot.x = v)).then(() => (this.world.pivot.x = 0));
   }
   private hitStop(ms: number) {
     return this.reduced ? Promise.resolve() : this.tw.wait(ms);
@@ -479,7 +479,10 @@ export class FightScene {
     const big = !!a.crit || a.t === 'ult';
     this.applySnap(e);
     void this.knockback(t, big ? 26 : 12);
-    if (big && !this.reduced) {
+    if (this.finOn) {
+      this.tintFlash('ult', 380 * sp);
+      void this.shake(12, 420 * sp);
+    } else if (big && !this.reduced) {
       const d = this.dims;
       void this.tw.keys(320 * sp, [1, 1.05, 1], (v) => {
         this.world.scale.set(v);
@@ -532,8 +535,79 @@ export class FightScene {
     void this.tw.run(this.reduced ? 1 : 1400, (k) => (this.phaseAmt = Math.max(0.001, k)));
   }
 
-  /** Plays one event; `p` is the combo or synergy behind it that gets a banner, if any. */
-  async play(e: BattleEvent, p: Proc | null = null): Promise<void> {
+  /**
+   * Plays one event; `p` is the combo or synergy behind it that gets a banner, if any. The `finisher` (the blow
+   * that leads into a knockout) plays in slow motion with the camera pushed in on its target.
+   */
+  async play(e: BattleEvent, p: Proc | null = null, finisher = false): Promise<void> {
+    if (!finisher || this.reduced) return this.playOne(e, p);
+    const base = this.sp;
+    const a = e.a as { to?: 0 | 1; on?: 0 | 1 } | null;
+    this.finisherIn((a?.to ?? a?.on ?? 1) as 0 | 1);
+    this.sp = base * 2.4;
+    try {
+      await this.playOne(e, p);
+    } finally {
+      this.sp = base;
+    }
+  }
+
+  // ---------------------------------------------------------------- the finisher
+  private finOn = false;
+  private bars: Graphics | null = null;
+  /** how many finishers played (for the tests) */
+  finishers = 0;
+  /** Slow motion starts: cinema bars slide in and the camera pushes in on the fighter about to fall. */
+  private finisherIn(t: 0 | 1) {
+    const d = this.dims;
+    const c = this.ctr(t);
+    this.finOn = true;
+    this.finishers++;
+    const zoom = 1.3;
+    const cx = clamp(c.x, d.stageW * 0.3, d.stageW * 0.7);
+    const cy = c.y;
+    void this.tw.run(420, (k) => {
+      const s = 1 + (zoom - 1) * ease.out(k);
+      this.world.scale.set(s);
+      this.world.position.set(cx * (1 - s), cy * (1 - s));
+    });
+    this.bars?.destroy();
+    const bars = (this.bars = new Graphics());
+    this.top.addChildAt(bars, 0);
+    const bh = Math.round(d.H * 0.07);
+    void this.tw.run(300, (k) => {
+      if (bars.destroyed) return;
+      const h = bh * ease.out(k);
+      bars.clear().rect(0, 0, d.stageW, h).rect(0, d.H - h, d.stageW, h).fill({ color: 0x000000, alpha: 0.85 });
+    });
+    finisherSound();
+    buzz([20, 40, 80]);
+  }
+  /** Back to normal speed and framing (after the K.O., or at once when skipping). */
+  private finisherOut(instant = false) {
+    if (!this.finOn) return;
+    this.finOn = false;
+    const bars = this.bars;
+    this.bars = null;
+    const s0 = this.world.scale.x;
+    const p0 = { x: this.world.position.x, y: this.world.position.y };
+    const done = () => {
+      this.world.scale.set(1);
+      this.world.position.set(0, 0);
+      bars?.destroy();
+    };
+    if (instant) return done();
+    void this.tw
+      .run(450, (k) => {
+        const u = ease.inOut(k);
+        this.world.scale.set(s0 + (1 - s0) * u);
+        this.world.position.set(p0.x * (1 - u), p0.y * (1 - u));
+        if (bars && !bars.destroyed) bars.alpha = 1 - u;
+      })
+      .then(done);
+  }
+
+  private async playOne(e: BattleEvent, p: Proc | null): Promise<void> {
     const sp = this.sp;
     const a = e.a as (Record<string, unknown> & { t: string; by?: 0 | 1; to?: 0 | 1; on?: 0 | 1 }) | null;
     if (a?.t === 'phase' && a.on === 1) this.phaseLight();
@@ -675,6 +749,7 @@ export class FightScene {
           await this.tw.wait(300 * sp);
           this.dropProc();
           void this.banner('K.O.', 700 * sp, true);
+          this.finisherOut();
           const w = a.win as 0 | 1;
           const cw = this.ctr(w);
           setTimeout(() => this.particles(cw.x, cw.y - 30, [0xffb627, 0xff4f8b, 0x3dd6c6, 0xb388ff, 0xffffff], 30, 90), 200 * sp);
@@ -824,6 +899,8 @@ export class FightScene {
   /** Skips whatever is animating (skip, forfeit). */
   settle() {
     this.tw.clear();
+    this.finisherOut(true);
+    this.world.pivot.set(0, 0);
     if (this.phaseAmt > 0) this.phaseAmt = 1;
     this.dropProc();
     this.pendingProc = null;

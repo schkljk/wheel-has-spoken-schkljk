@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COMBOS, SYN_PROC, levelUp, mulberry32, newBattle, procFeed, procOf, randomFighter, synOf, type BattleEvent, type Fighter } from '../src';
+import { COMBOS, SYN_PROC, finisherOf, levelUp, mulberry32, newBattle, procFeed, procOf, randomFighter, synOf, type BattleEvent, type Fighter } from '../src';
 
 // Upgrade 6: element combos and synergies get a named banner when they go off. The engine tags the events
 // where a synergy made the difference; these tests check the tags are true and the banners are not spam.
@@ -60,5 +60,36 @@ describe('combo and synergy banners', () => {
       expect(new Set(syn).size).toBe(syn.length);
       expect(shown.filter((p) => p.kind === 'combo')).toHaveLength(ev.filter((e) => e.a?.combo).length);
     }
+  });
+
+  it('finds the knockout blow (upgrade 12): the last hit on the fighter who falls', () => {
+    let kos = 0;
+    let found = 0;
+    for (let seed = 1; seed <= 600; seed++) {
+      const rng = mulberry32(seed);
+      const A = randomFighter('A', rng);
+      const B = randomFighter('B', rng);
+      const bt = newBattle(A, B, rng);
+      const batches: BattleEvent[][] = [bt.start()];
+      while (!bt.over) batches.push(bt.step());
+      for (const b of batches) {
+        const i = finisherOf(b);
+        const ko = b.find((e) => e.a?.t === 'ko');
+        if (!ko) {
+          expect(i).toBe(-1);
+          continue;
+        }
+        kos++;
+        if (i < 0) continue;
+        found++;
+        const a = b[i]!.a!;
+        expect(a.to ?? a.on).toBe(ko.a!.on);
+        expect(b.indexOf(ko)).toBeGreaterThan(i);
+        // the fallen is at 0 HP from that blow on
+        expect(b[i]!.hr[ko.a!.on as 0 | 1]).toBe(0);
+      }
+    }
+    expect(kos).toBeGreaterThan(200);
+    expect(found / kos).toBeGreaterThan(0.95);
   });
 });

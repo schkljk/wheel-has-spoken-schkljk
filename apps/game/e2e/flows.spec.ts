@@ -313,3 +313,28 @@ test("a boss's phase two changes the light and adds its slice to one wheel", asy
   }
   expect(errors).toEqual([]);
 });
+
+test('the knockout blow plays in slow motion with the camera pushed in, then the view comes back', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'finisher' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
+  await expect(spin).toBeEnabled({ timeout: 120_000 });
+  // one touch from the floor, round after round (revives and misses happen), until they go down
+  const result = page.locator('.fresult');
+  for (let r = 0; r < 8 && !(await result.count()); r++) {
+    await page.evaluate('(() => { const o = window.__whsBattle.P[1]; o.hp = 1; })()');
+    await spin.click();
+    await expect(result.or(spin.and(page.locator(':enabled')))).toBeVisible({ timeout: 120_000 });
+  }
+  await expect(result).toBeVisible();
+  expect(await page.evaluate('window.__whsBattle.w')).toBe(0);
+  expect(await page.evaluate('window.__whsFight.finishers')).toBe(1);
+  expect(await page.evaluate('window.__whsFight.world.scale.x')).toBe(1);
+  expect(errors).toEqual([]);
+});
