@@ -754,6 +754,42 @@
   border: 1px solid rgba(255, 255, 255, 0.14);
   opacity: 0.75;
 }
+.fm-status {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.2rem 0 0.5rem;
+}
+.fm-st {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.fm-st b {
+  font-size: 0.8rem;
+  max-width: 40%;
+  margin-right: 0.2rem;
+}
+.stchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 7px;
+  font: 800 0.8rem/1 var(--display);
+  background: var(--surface-2);
+  border: 1.5px solid #9cc7ff;
+}
+.stchip.good {
+  border-color: #5cf2a0;
+}
+.stchip.bad {
+  border-color: #ff6b6b;
+}
+.stchip .pxi {
+  width: 1rem;
+  height: 1rem;
+}
 .mhist i.new {
   opacity: 1;
   border-color: #ff9db0;

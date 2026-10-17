@@ -45,6 +45,7 @@ import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
 import { ac, landSound, tick } from '../ui/sound';
+import { CHIP_ICON } from '../ui/status-icons';
 
 const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 'guarded', broke: 'guard broken', interrupted: 'interrupted', caught: 'caught mid-cast' };
 /** A narration line with the fighters' names in it. */
@@ -283,6 +284,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     await sc.intro();
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
+    if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = bt;
     S.playing = true;
     setSnap(bt.snap());
     sc.applySnap(bt.snap());
@@ -535,6 +537,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const bt = btRef.current;
     const pct = Math.round(spec.odds * 100);
     const ctx = ctxOf(G);
+    // what is on each fighter right now (the icons over their heads, tappable here)
+    const sx = bt?.snap().sx;
     openSheet(
       <Sheet icon="menu" title={fightLabel(spec)} sub={`Round ${bt?.round || 1}`}>
         <div class="fm-scout">
@@ -551,6 +555,23 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             </Inf>
           )}
         </div>
+        {sx && sx.some((l) => l.length > 0) && (
+          <div class="fm-status">
+            {([0, 1] as const).map((i) =>
+              sx[i]!.length ? (
+                <div key={i} class="fm-st">
+                  <b class="ellipsis">{i ? O.name : F.name}</b>
+                  {sx[i]!.map((c) => (
+                    <Inf key={c.k} k={`status|${c.k}`} class={`stchip${c.k === 'guard' ? '' : c.bad ? ' bad' : ' good'}`}>
+                      <Icon name={CHIP_ICON[c.k]} />
+                      {c.t && <span>{c.t}</span>}
+                    </Inf>
+                  ))}
+                </div>
+              ) : null,
+            )}
+          </div>
+        )}
         <Toggle label="Auto-battle" sub="Your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />
         <Toggle label="Fast mode" sub="Quicker animations" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />
         <div class="fm-grid">

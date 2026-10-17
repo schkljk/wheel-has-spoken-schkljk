@@ -202,7 +202,7 @@ export class FightScene {
 
   applySnap(s: Snap | null) {
     if (!s) return;
-    for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!);
+    for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!, s.sx?.[i] ?? []);
   }
 
   // ---------------------------------------------------------------- effect helpers

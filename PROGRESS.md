@@ -21,6 +21,16 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 5. More agency on the combat wheel
 - [x] 6. Named combo and synergy banners with distinct sounds
 - [x] 7. Opponent move history
+- [x] 8. Status icons with round counters
+
+### 8. Status icons with round counters
+
+- Every status and buff on a fighter now shows over their head as a pixel icon in a small frame (green helps them, red hurts them, blue for a guard), with its counter in the corner. Burning, soaked, buffs and debuffs count rounds left, poison shows the damage it does each round ("−6"), and a bent weapon shows how many times it bent ("×2"). More than four wrap onto a second row.
+- What shows: guard, a feint's opening, charged up, hitting harder, toughened, eagle-eyed (crit up), frozen or stunned, burning, poisoned, soaked, exposed, weakened and bent weapon. That's everything the engine tracks, not just the five the old game drew.
+- Three new 12×12 icons in the same palette: a cracked shield (exposed), a snapped blade (weakened) and a hooked blade (bent).
+- The fight menu (☰) lists what's on each fighter. Tap any icon for its card: what it does, what the number means, and a joke ("Bent weapon: It's not broken. It's abstract art.").
+- How it works: the engine's snapshot carries each fighter's statuses with their counters (`sx`). That's display data only: no draws or numbers change, and the parity suite leaves it out and still matches the old game. The old game's status help table is untouched; the new ones have their own table.
+- Tested: `packages/core/test/statuses.test.ts` checks over 1,500 random fights that the icons match the engine's own status flags on every event, that the counters make sense, and that every status has a card. The fight check at all 12 sizes now puts a full set of statuses on both fighters and opens the menu, failing if anything is cut off.
 
 ### 7. Opponent move history
 

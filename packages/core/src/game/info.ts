@@ -4,7 +4,7 @@ import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc'
 import { GEAR, RARITY } from '../data/gear';
 import { SYN } from '../data/synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, STATUS_INFO, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { findMove } from '../kits';
 import { STATLBL } from '../stats';
@@ -194,8 +194,18 @@ export function infoFor(key: string): Info | null {
     return s ? { e: s[0], title: s[1], p: s[2], lines: [] } : null;
   }
   if (kind === 'status') {
-    const s = STATUS_INFO[a];
-    return s ? { e: s[0], title: s[1], p: s[2], lines: [], hint: 'Tap "Element combos" in the fight menu\'s help for more.' } : null;
+    const s = STATUS_INFO[a] ?? STATUS_MORE[a];
+    if (!s) return null;
+    const elemental = ['frozen', 'soaked', 'burning'].includes(a);
+    const counter: Record<string, string> = { poison: 'The number on its icon is the damage a round.', bent: 'The number on its icon is how many times it bent.' };
+    return {
+      e: s[0],
+      title: s[1],
+      p: s[2],
+      lines: ['guard', 'opened', 'focused'].includes(a) ? [] : [counter[a] ?? 'The number on its icon is the rounds left.'],
+      hint: elemental ? 'Tap "Element combos" in the fight menu\'s help for more.' : undefined,
+      flavor: STATUS_FLAVOR[a],
+    };
   }
   if (kind === 'pill') {
     if (a === 'combo') return { e: '⚗️', title: b, sub: 'Element combo', p: COMBO_INFO[b] || '', lines: RULES.combos![2].slice(1) };

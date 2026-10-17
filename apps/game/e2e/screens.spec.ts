@@ -122,7 +122,21 @@ for (const [width, height] of VIEWS) {
         expect.soft(b.right, 'combo banner right edge').toBeLessThanOrEqual(stageW + 0.5);
         expect.soft(b.top, 'combo banner under the HP bars').toBeGreaterThanOrEqual(hudBottom - 2);
       }
+      // statuses on both fighters: icons with counters over their heads, and the legend in the fight menu
+      await page.evaluate(`(() => {
+        const bt = window.__whsBattle;
+        Object.assign(bt.P[0], { poison: 6, guard: 1, focused: 1, wdebuff: 2 });
+        bt.P[0].buffs.push({ k: 'dmgX', v: 0.2, r: 3 }, { k: 'dr', v: 0.2, r: 2 });
+        Object.assign(bt.P[1], { frozen: 1, burning: 2, soaked: 2, opened: 1 });
+        bt.P[1].buffs.push({ k: 'vuln', v: 0.2, r: 3 }, { k: 'weak', v: 0.2, r: 2 });
+        window.__whsFight.applySnap(bt.snap());
+      })()`);
       await page.getByRole('button', { name: 'Fight menu' }).click();
+      await expect(page.locator('.fm-st')).toHaveCount(2);
+      // (the arena or the opening round may have added more)
+      expect(await page.locator('.fm-st').first().locator('.stchip').count()).toBeGreaterThanOrEqual(6);
+      await expect(page.locator('.fm-st').first().locator('.stchip.bad').filter({ hasText: '×2' })).toHaveCount(1);
+      await expect(page.locator('.fm-st').first().locator('.stchip.bad').filter({ hasText: /^−\d+$/ })).toHaveCount(1);
       await check(page, 'fight menu');
       await page.getByRole('button', { name: /^Skip/ }).click();
       await page.locator('.fresult').waitFor({ timeout: 60_000 });

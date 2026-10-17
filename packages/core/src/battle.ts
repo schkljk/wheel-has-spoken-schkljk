@@ -92,7 +92,38 @@ export interface Snap {
   mx: number[];
   en: number[];
   st: { frozen: boolean; poison: boolean; guard: boolean; soaked: boolean; burning: boolean }[];
+  /** every status and buff with its counter, for the icons over each fighter (legacy has no such field) */
+  sx: StatusChip[][];
   r: number;
+}
+
+/** A status or buff shown over a fighter. */
+export interface StatusChip {
+  k: StatusChipKey;
+  /** its counter: rounds left ("2"), damage a round for poison ("−4"), stacks for a bent weapon ("×2"), or none */
+  t: string;
+  /** hurts its owner (red) or helps them (green) */
+  bad: boolean;
+}
+export type StatusChipKey = 'guard' | 'frozen' | 'burning' | 'poison' | 'soaked' | 'bent' | 'opened' | 'focused' | BuffKey;
+
+/** What is on a fighter right now, in the order the icons show. */
+export function statusChips(x: Side): StatusChip[] {
+  const out: StatusChip[] = [];
+  if (x.guard) out.push({ k: 'guard', t: '', bad: false });
+  if (x.opened) out.push({ k: 'opened', t: '', bad: false });
+  if (x.focused) out.push({ k: 'focused', t: '', bad: false });
+  // a timed buff of the same kind shows once, with the longest counter
+  const buffs = new Map<BuffKey, number>();
+  for (const b of x.buffs || []) buffs.set(b.k, Math.max(buffs.get(b.k) ?? 0, b.r));
+  for (const k of ['dmgX', 'dr', 'critB'] as const) if (buffs.has(k)) out.push({ k, t: String(buffs.get(k)), bad: false });
+  if (x.frozen) out.push({ k: 'frozen', t: '1', bad: true });
+  if (x.burning > 0) out.push({ k: 'burning', t: String(x.burning), bad: true });
+  if (x.poison > 0) out.push({ k: 'poison', t: `−${Math.max(1, Math.round(x.poison * (x.ls || 1)))}`, bad: true });
+  if (x.soaked > 0) out.push({ k: 'soaked', t: String(x.soaked), bad: true });
+  for (const k of ['vuln', 'weak'] as const) if (buffs.has(k)) out.push({ k, t: String(buffs.get(k)), bad: true });
+  if (x.wdebuff > 0) out.push({ k: 'bent', t: `×${x.wdebuff}`, bad: true });
+  return out;
 }
 
 /** Animation cue for the fight scene. */
@@ -307,6 +338,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     mx: P.map((x) => Math.round(x.maxHp * (x.ls || 1))),
     en: P.map((x) => Math.round(x.en)),
     st: P.map((x) => ({ frozen: !!x.frozen, poison: x.poison > 0, guard: !!x.guard, soaked: x.soaked > 0, burning: x.burning > 0 })),
+    sx: P.map(statusChips),
     r: bt.round,
   });
   function log(text: string, cls?: string, d?: number | null, pills?: string[], a?: Anim) {
