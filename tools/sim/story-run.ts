@@ -5,7 +5,7 @@
  */
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import { BOSS_HP, CHAPTERS, mulberry32, rankPool, type PoolRanking } from '../../packages/core/src';
+import { BOSS_HP, BOSS_STAT_SHIFT, CHAPTERS, mulberry32, rankPool, type PoolRanking } from '../../packages/core/src';
 import { fighterOfStrength, newRun, playStory, type RunLog } from './story';
 
 export type Strength = 'weak' | 'average' | 'strong';
@@ -20,8 +20,8 @@ function runJob(j: Job, seed: number, to: number, pool: PoolRanking, cups: numbe
   return playStory(newRun(rng, pool, fighterOfStrength(j.s)), to, cups ? { cupsPerReset: cups, maxResets: 8 } : {});
 }
 
-/** Plays these runs on worker threads (with this boss HP table, if given). */
-export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: PoolRanking; cups?: number; bossHp?: number[] }) {
+/** Plays these runs on worker threads (with these boss tables, if given). */
+export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: PoolRanking; cups?: number; bossHp?: number[]; bossShift?: number[] }) {
   const n = Math.max(1, Math.min(availableParallelism(), jobs.length));
   const parts = Array.from({ length: n }, (_, i) => jobs.filter((_, k) => k % n === i));
   const done = await Promise.all(
@@ -80,8 +80,9 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
 }
 
 if (!isMainThread) {
-  const { part, seed, to, pool, cups, bossHp } = workerData as { part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[] };
+  const { part, seed, to, pool, cups, bossHp, bossShift } = workerData as { part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[] };
   if (bossHp) bossHp.forEach((h, i) => (BOSS_HP[i] = h));
+  if (bossShift) bossShift.forEach((h, i) => (BOSS_STAT_SHIFT[i] = h));
   parentPort!.postMessage(part.map((j) => ({ j, log: runJob(j, seed, to, pool, cups) })));
 } else if (process.argv[1]?.endsWith('story-run.ts')) {
   const arg = (name: string, def: number) => {
