@@ -16,11 +16,12 @@ export function describeSave(s: SaveData): string {
 }
 
 /** Asks, then replaces everything on this device with `next` (the current save is backed up first). */
-export async function offerImport(next: SaveData, from: string): Promise<boolean> {
+export async function offerImport(next: SaveData, from: string, repaired: string[] = []): Promise<boolean> {
   const sum = summarize(next);
+  const heads = [...repaired.map((r) => `repaired: ${r}`), ...sum.warnings];
   const ok = await confirm({
     title: 'Replace everything on this device?',
-    body: `${describeSave(next)}.${sum.warnings.length ? ` Heads up: ${sum.warnings.join('; ')}.` : ''} Your current save goes into the backups first, so you can undo this.`,
+    body: `${describeSave(next)}.${heads.length ? ` Heads up: ${heads.join('; ')}.` : ''} Your current save goes into the backups first, so you can undo this.`,
     yes: `Load ${from}`,
   });
   if (!ok) return false;
@@ -48,7 +49,8 @@ export function SaveSheet() {
 
   const tryImport = async (txt: string, from: string) => {
     try {
-      await offerImport(migrate(txt), from);
+      const repaired: string[] = [];
+      await offerImport(migrate(txt, Date.now(), repaired), from, repaired);
     } catch (e) {
       toast(e instanceof SaveFormatError ? e.message : "That doesn't look like a save from this game");
     }

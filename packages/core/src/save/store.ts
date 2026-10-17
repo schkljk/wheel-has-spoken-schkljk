@@ -50,7 +50,9 @@ export class SaveStore {
     const problems: string[] = [];
     if (this.kv.getItem(KEYS.meta) == null) return { save: newSave(this.now()), source: 'new', problems };
     try {
-      const save = this.readSplit();
+      const fixed: string[] = [];
+      const save = this.readSplit(fixed);
+      if (fixed.length) problems.push(`Repaired your save: ${fixed.join(', ')}`);
       return { save, source: 'saved', problems };
     } catch (e) {
       problems.push(`Your save could not be read (${(e as Error).message})`);
@@ -69,19 +71,29 @@ export class SaveStore {
     return { save: newSave(this.now()), source: 'recovered', problems };
   }
 
-  private readSplit(): SaveData {
+  private readSplit(notes: string[]): SaveData {
     const get = (k: string) => {
       const v = this.kv.getItem(k);
       if (v == null) throw new Error(`missing ${k}`);
+      const o = JSON.parse(v) as unknown;
+      // a section that is not even an object is damage, not something to patch over: a backup is better
+      if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error(`damaged ${k}`);
       this.written.set(k, v);
-      return JSON.parse(v) as unknown;
+      return o;
     };
     const meta = get(KEYS.meta) as { game: string; version: number; savedAt: number };
     const roster = get(KEYS.roster) as Roster;
     const active = get(KEYS.active) as { i: number | null; slot: Slot | null };
-    const slots = roster.slots.slice();
-    if (active.i != null) slots[active.i] = active.slot;
-    return migrate({ ...meta, settings: get(KEYS.settings), roster: { ...roster, active: active.i, slots }, profile: get(KEYS.profile) }, this.now());
+    // sections that lost their core are damaged too (patching them would quietly lose fighters or records)
+    if (!Array.isArray(roster.slots)) throw new Error(`damaged ${KEYS.roster}`);
+    if (!('i' in active) || (active.i != null && (!active.slot || typeof active.slot !== 'object'))) throw new Error(`damaged ${KEYS.active}`);
+    const slots = Array.isArray(roster.slots) ? roster.slots.slice() : [];
+    if (typeof active.i === 'number' && active.i >= 0 && active.i < 3) slots[active.i] = active.slot;
+    const settings = get(KEYS.settings) as Record<string, unknown>;
+    const profile = get(KEYS.profile) as Record<string, unknown>;
+    if (!('sound' in settings)) throw new Error(`damaged ${KEYS.settings}`);
+    if (!('seen' in profile) && !('gems' in profile)) throw new Error(`damaged ${KEYS.profile}`);
+    return migrate({ ...meta, settings, roster: { ...roster, active: active.i, slots }, profile }, this.now(), notes);
   }
 
   /** Writes the save, section by section (unchanged sections are skipped). */
