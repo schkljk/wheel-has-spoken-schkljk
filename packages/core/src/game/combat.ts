@@ -1,6 +1,6 @@
 import { ULTS } from '../data/wheels';
 import { ULT_WHEEL } from '../data/kits';
-import { POW_COST, canPower, ultWeights, type Side } from '../battle';
+import { POW_COST, canPower, ultWeights, type Battle, type Side } from '../battle';
 import { kitMoves } from '../kits';
 import { clamp } from '../random';
 import type { RoundMod } from '../types';
@@ -79,4 +79,36 @@ export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult
     .map((m) => ({ k: 'kit_' + m.n, n: m.n, e: m.e, c: m.c, m: { ...m.rm } as RoundMod, q: m.src === 'class' ? 3 : 2, w: 1.15, d: m.d, src: m.src }));
   const list = [...own, ...(basics[focus] || []).filter((x): x is CwSlice => !!x)].slice(0, Math.max(5, own.length + 1));
   return list.map((it) => ({ it, w: Math.round(it.w * 100) / 100, mult: 1 }));
+}
+
+/** What holding a combat wheel slice shows: roughly what it does to this opponent and what it beats. */
+export interface SlicePeek {
+  /** damage range of the hit (low and high roll, no crit), or null for moves that don't hit */
+  dmg: [number, number] | null;
+  /** the counter a guard slice deals when they strike */
+  counter: [number, number] | null;
+  /** it hits their weak spot */
+  weak: boolean;
+  /** the matchup, in a few words */
+  beats: string;
+}
+
+const MATCHUP: Record<string, string> = {
+  strike: 'Beats Power · loses to Guard',
+  power: 'Breaks Guard · loses to Strike',
+  guard: 'Beats Strike · loses to Power',
+  feint: 'Baits a Guard · no damage this round',
+  focus: 'No damage this round · charges your next hit',
+  dodge: "Dodges most things · not a signature",
+  ult: "Can't be dodged · a Guard still softens it",
+};
+
+/** A slice's preview for the player (side 0) against their opponent, right now. */
+export function peekSlice(bt: Battle, it: CwSlice): SlicePeek {
+  const rm = it.m || {};
+  const kind = it.c === 'ult' ? 'ult' : it.c === 'power' ? 'power' : it.c === 'strike' ? 'strike' : null;
+  const ultM = it.ultIdx != null ? ULT_WHEEL[it.ultIdx]!.m : 1;
+  const p = kind ? bt.preview(0, kind, rm, ultM) : null;
+  const c = it.c === 'guard' ? bt.counterPreview(0, rm) : null;
+  return { dmg: p ? [p.lo, p.hi] : null, counter: c ? [c.lo, c.hi] : null, weak: !!p?.weak, beats: MATCHUP[it.c] ?? '' };
 }

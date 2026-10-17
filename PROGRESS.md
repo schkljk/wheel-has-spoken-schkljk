@@ -22,6 +22,14 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 6. Named combo and synergy banners with distinct sounds
 - [x] 7. Opponent move history
 - [x] 8. Status icons with round counters
+- [x] 9. Long-press a slice for a damage preview
+
+### 9. Long-press a slice for a damage preview
+
+- Hold a finger on any combat wheel slice for about half a second: it lights up and the panel next to the wheel shows roughly what it does to this opponent right now ("≈ 27–40 damage to Olga the Nugget", plus "weak spot" when it hits theirs) and what it beats ("Beats Power · loses to Guard"). Guard slices show the counter they deal if the opponent strikes. Feint, focus and sidestep say they deal no damage this round. Signature slices include their multiplier.
+- Slide the finger around to check the other slices; letting go never spins. The idle hint now mentions it ("Hold a slice to see what it does"). There's a short buzz when the preview opens.
+- The numbers come from the engine's own damage formula, run in preview mode: the low and high roll, no crit, no guard. It uses everything that's true right now (stats, the slice's own bonus, weak spots, buffs, statuses, momentum, the arena, the fighters' level scaling) and draws no random numbers. Fighters with the unhinged quirk show their full wild range. The round's matchup (a read, a caught power, a broken guard) is described in words, not added in.
+- Tested: `packages/core/test/peek.test.ts` runs 200 fights while previewing every slice before every round. They play out exactly like the same fights without previews, so previewing can't change a fight. Over 1,500 fights, 97.9% of plain strikes landed inside their preview, once the round's matchup bonuses are left out. The rest are mid-round changes like rage kicking in after a hit. A new e2e test holds a slice, checks the preview names the slice under the finger, slides to the opposite slice, and checks that letting go doesn't spin. Checked for clipping at 320×568, 390×844 and 844×390. Parity is unchanged.
 
 ### 8. Status icons with round counters
 

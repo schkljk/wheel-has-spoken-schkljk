@@ -179,6 +179,14 @@ export interface Battle {
   sdOn: boolean;
   sd?: number;
   snap(): Snap;
+  /**
+   * Rough damage of one hit by fighter `i` right now, low and high roll, no crit, against no guard: what a
+   * combat wheel slice would do (`kind` and its round mod, `ultM` for a signature slice). Draws nothing and
+   * changes nothing. Null when the move can't deal damage (no usable power).
+   */
+  preview(i: 0 | 1, kind: 'strike' | 'power' | 'ult', rm?: RoundMod, ultM?: number): { lo: number; hi: number; weak: boolean } | null;
+  /** Rough damage of fighter `i`'s counter when they guard a strike (with a counter slice's round mod). */
+  counterPreview(i: 0 | 1, rm?: RoundMod): { lo: number; hi: number };
   /** intro events (arena, taunts, power negation, gravity, time stop) */
   start(): BattleEvent[];
   /** the opponent commits to a move; the player gets a read whose accuracy depends on IQ */
@@ -381,16 +389,17 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
   }
 
   type Kind = 'strike' | 'power' | 'ult' | Move;
-  function calc(att: Side, def: Side, off: number, tags: readonly string[], kind: Kind) {
+  /** One hit's damage. `fix` (a base roll, 0.8 to 1.2) makes it a preview: no draws, no crit, nothing used up. */
+  function calc(att: Side, def: Side, off: number, tags: readonly string[], kind: Kind, fix?: number) {
     let defL = def.s.dur;
     const note: string[] = [];
     let mult = 1;
     let combo: string | null = null;
-    if (kind === 'power' && att.f.power.k === 'reality' && rng() < 0.3) {
+    if (kind === 'power' && att.f.power.k === 'reality' && fix == null && rng() < 0.3) {
       defL = 2;
       note.push('reality');
     }
-    const d = baseDmg(rng, off, defL);
+    const d = fix == null ? baseDmg(rng, off, defL) : 10 * Math.pow(1.17, softGap(off - defL)) * fix;
     if (hitsWeak(def, tags)) {
       mult *= 1.8;
       note.push('weak');
@@ -427,7 +436,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
         : 0.06 + ((att.rm && att.rm.critPlus) || 0) + bsum(att, 'critB') + att.s.iq * 0.008 + ((att.s.cha || 5) - 6) * 0.004 +
           (att.f.arch.k === 'assassin' ? 0.12 : 0) + (att.powOn && att.f.power.k === 'luck' ? 0.1 : 0) + (att.syn.has('backstab') ? 0.15 : 0) +
           (kind === 'ult' ? 0.15 : 0) + att.tr.critB + (att.f.ench.k === 'lucky' ? 0.1 : 0) + (AR.critB || 0);
-    if (rng() < cc) {
+    if (fix == null && rng() < cc) {
       mult *= def.f.weak.k === 'jaw' ? 2.2 : 1.6;
       note.push('crit');
     }
@@ -440,8 +449,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     const dc = def.f.chaos.k;
     if (ac === 'main') mult *= 1.12;
     if (ac === 'cooked') mult *= 0.88;
-    if (ac === 'unhinged') mult *= rnd(rng, 0.4, 2.2);
-    if (att.syn.has('comedy') && rng() < 0.1) {
+    if (ac === 'unhinged') mult *= fix == null ? rnd(rng, 0.4, 2.2) : 1.3;
+    if (att.syn.has('comedy') && fix == null && rng() < 0.1) {
       mult *= 3;
       note.push('comedy');
     }
@@ -465,11 +474,11 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     {
       if (att.opened) {
         mult *= 1.4;
-        att.opened = 0;
+        if (fix == null) att.opened = 0;
       }
       if (att.focused) {
         mult *= 1.25;
-        att.focused = 0;
+        if (fix == null) att.focused = 0;
       }
     }
     if (def.exposed) mult *= 1 + def.exposed;
@@ -938,6 +947,38 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     maxR: MAXR,
     sdOn: SD,
     snap,
+    preview(i, kind, rm = {}, ultM = 1) {
+      const att = P[i];
+      const def = P[1 - i]!;
+      const po = physOff(att);
+      const wo = powOff(att);
+      if (kind === 'power' && wo < 0) return null;
+      const off = kind === 'ult' ? Math.max(po, wo) + 2 : kind === 'power' ? wo : po;
+      const tags = kind === 'ult' ? (wo > po ? att.f.power.t : physTags(att)) : kind === 'power' ? att.f.power.t : physTags(att);
+      const keep = { rm: att.rm, ultMul: att.ultMul, guard: def.guard };
+      att.rm = rm;
+      att.ultMul = ultM;
+      def.guard = 0;
+      try {
+        // an unhinged fighter's hits swing from 0.4x to 2.2x (calc's preview uses the middle)
+        const wild = att.f.chaos.k === 'unhinged' ? [0.4 / 1.3, 2.2 / 1.3] : [1, 1];
+        const lo = calc(att, def, off, tags, kind, 0.8).d * wild[0]!;
+        const hi = calc(att, def, off, tags, kind, 1.2).d * wild[1]!;
+        const k = def.ls || 1;
+        return { lo: Math.max(1, Math.round(lo * k)), hi: Math.max(1, Math.round(hi * k)), weak: hitsWeak(def, tags) };
+      } finally {
+        att.rm = keep.rm;
+        att.ultMul = keep.ultMul;
+        def.guard = keep.guard;
+      }
+    },
+    counterPreview(i, rm = {}) {
+      const me = P[i];
+      const op = P[1 - i]!;
+      const base = 10 * Math.pow(1.17, softGap(physOff(me) - op.s.dur)) * (1 + me.tr.counterB) * (rm.counterX || 1);
+      const k = op.ls || 1;
+      return { lo: Math.max(1, Math.round(base * 0.8 * k)), hi: Math.max(1, Math.round(base * 1.2 * k)) };
+    },
     checkPhase,
     plan() {
       const m = autoChoice(rng, P[1], P[0], bt.hist[0]);

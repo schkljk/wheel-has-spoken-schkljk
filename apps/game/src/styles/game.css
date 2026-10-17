@@ -960,6 +960,24 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+/* a held slice's preview */
+.cw-out .peek {
+  display: grid;
+  gap: 0.15rem;
+  animation: pop 0.18s ease-out;
+}
+.cw-out .peek-dmg {
+  color: #fff;
+}
+.cw-out .peek-dmg b {
+  font-size: 0.95rem;
+  color: #ffe08a;
+}
+.cw-out .peek-dmg em {
+  font-style: normal;
+  font-weight: 800;
+  color: #ff9db0;
+}
 .cw-spin {
   width: min(100%, 22rem);
   min-height: 2.8rem;

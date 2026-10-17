@@ -12,6 +12,7 @@ import {
   fightLabel,
   fullName,
   numStats,
+  peekSlice,
   pickW,
   powerScale,
   procFeed,
@@ -97,6 +98,33 @@ function LogLine({ e, names }: { e: BattleEvent; names: [string, string] }) {
         </span>
       )}
     </li>
+  );
+}
+
+/** A held combat wheel slice: roughly what it does to them, and what it beats. */
+function SlicePeekView({ it, bt, foe }: { it: CwSlice; bt: Battle; foe: string }) {
+  const p = peekSlice(bt, it);
+  return (
+    <div class="peek" aria-live="polite">
+      <b class={`q${it.q}`}>
+        {it.e} {it.n}
+      </b>
+      <small class="peek-dmg">
+        {p.dmg ? (
+          <>
+            ≈ <b>{p.dmg[0] === p.dmg[1] ? p.dmg[0] : `${p.dmg[0]}–${p.dmg[1]}`}</b> damage to {foe}
+            {p.weak && <em> · weak spot</em>}
+          </>
+        ) : p.counter ? (
+          <>
+            No hit · counters for ≈ <b>{`${p.counter[0]}–${p.counter[1]}`}</b> if they strike
+          </>
+        ) : (
+          'No damage this round'
+        )}
+      </small>
+      <small>{p.beats}</small>
+    </div>
   );
 }
 
@@ -187,6 +215,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const [plan, setPlan] = useState<{ shown: Move; acc: number } | null>(null);
   const [focus, setFocus] = useState<Focus>('atk');
   const [last, setLast] = useState<{ m: Move[]; n: number }>({ m: [], n: 0 });
+  /** the slice being held for a preview */
+  const [peek, setPeek] = useState<number | null>(null);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
   const [result, setResult] = useState<FightResult | null>(null);
   const [auto, setAuto] = useState(settings.value.autoBattle);
@@ -454,8 +484,22 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   // flicks and taps on the wheel
   useEffect(() => {
     const el = root.current!;
-    let drag: { id: number; cx: number; cy: number; a: number; samples: { t: number; r: number }[]; moved: number } | null = null;
+    let drag: { id: number; cx: number; cy: number; a: number; x: number; y: number; samples: { t: number; r: number }[]; moved: number } | null = null;
     const TAU = Math.PI * 2;
+    // holding still on a slice previews it; sliding the finger then previews the others, and letting go doesn't spin
+    let hold = 0;
+    let peeking = false;
+    const peekAt = (x: number, y: number) => {
+      if (!drag) return;
+      peekRef.current(sceneRef.current!.wheel.segAtAngle(Math.atan2(y - drag.cy, x - drag.cx)));
+    };
+    const endPeek = () => {
+      clearTimeout(hold);
+      if (!peeking) return false;
+      peeking = false;
+      peekRef.current(null);
+      return true;
+    };
     const down = (e: PointerEvent) => {
       const sc = sceneRef.current;
       if (!sc || !sc.wheel.visible || phaseRef.current !== 'input') return;
@@ -464,15 +508,26 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       const cy = h.top + sc.wheel.y;
       if (Math.hypot(e.clientX - cx, e.clientY - cy) > sc.wheel.size / 2 + 8) return;
       e.preventDefault();
-      drag = { id: e.pointerId, cx, cy, a: Math.atan2(e.clientY - cy, e.clientX - cx), samples: [{ t: performance.now(), r: sc.wheel.rot }], moved: 0 };
+      drag = { id: e.pointerId, cx, cy, a: Math.atan2(e.clientY - cy, e.clientX - cx), x: e.clientX, y: e.clientY, samples: [{ t: performance.now(), r: sc.wheel.rot }], moved: 0 };
+      clearTimeout(hold);
+      hold = window.setTimeout(() => {
+        if (!drag || drag.moved >= 0.08 || phaseRef.current !== 'input') return;
+        peeking = true;
+        buzz(12);
+        peekAt(drag.x, drag.y);
+      }, 420);
     };
     const move = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
+      drag.x = e.clientX;
+      drag.y = e.clientY;
+      if (peeking) return peekAt(e.clientX, e.clientY);
       const a = Math.atan2(e.clientY - drag.cy, e.clientX - drag.cx);
       let d = a - drag.a;
       d = ((((d + Math.PI) % TAU) + TAU) % TAU) - Math.PI;
       drag.a = a;
       drag.moved += Math.abs(d);
+      if (drag.moved >= 0.08) clearTimeout(hold);
       sceneRef.current!.wheel.nudge(d);
       const now = performance.now();
       drag.samples.push({ t: now, r: sceneRef.current!.wheel.rot });
@@ -480,6 +535,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     };
     const up = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
+      if (endPeek()) return void (drag = null);
       const s = drag.samples;
       const moved = drag.moved;
       drag = null;
@@ -491,17 +547,28 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       const w = (b.r - a.r) / dt;
       if (Math.abs(w) > 3) cwSpinRef.current(w);
     };
+    const cancel = () => {
+      endPeek();
+      drag = null;
+    };
     el.addEventListener('pointerdown', down);
     addEventListener('pointermove', move);
     addEventListener('pointerup', up);
+    addEventListener('pointercancel', cancel);
     return () => {
+      clearTimeout(hold);
       el.removeEventListener('pointerdown', down);
       removeEventListener('pointermove', move);
       removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', cancel);
     };
   }, []);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
+  const peekRef = useRef((idx: number | null) => {
+    setPeek(idx);
+    sceneRef.current?.wheel.highlight(idx);
+  });
   const cwSpinRef = useRef(cwSpin);
   cwSpinRef.current = cwSpin;
   const cwLandRef = useRef(cwLand);
@@ -709,6 +776,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
                     <small>{out.it.d}</small>
                   )}
                 </>
+              ) : peek != null && list[peek] && bt ? (
+                <SlicePeekView it={list[peek].it} bt={bt} foe={O.name} />
               ) : phase === 'spinning' ? (
                 <b>Spinning…</b>
               ) : focus === 'ult' ? (
@@ -719,7 +788,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
               ) : (
                 <>
                   <b>{CW_FOCUS.find((x) => x[0] === focus)![2]} moves</b>
-                  <small>{auto ? 'Auto-battle is on.' : 'Tap or flick the wheel to spin.'}</small>
+                  <small>{auto ? 'Auto-battle is on.' : 'Tap or flick the wheel to spin. Hold a slice to see what it does.'}</small>
                 </>
               )}
             </div>
