@@ -35,11 +35,13 @@ export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.4
 
 /** How many levels each boss is above its chapter. */
 export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
-/** Stat tiers taken off (or added to) each boss's table, calibrated with the HP below. */
-export const BOSS_STAT_SHIFT: number[] = BOSSES.map(() => 0);
+/** Stat tiers taken off (or added to) each boss's table, calibrated with the HP below (chapters 1 to 20). */
+// prettier-ignore
+export const BOSS_STAT_SHIFT: number[] = [-5, -4, -3, -5, -3, -3, -6, -3, -6, -6, -3, -6, -5, -6, -4, -1, 0, -6, -6, -6];
 
 /** Boss HP by chapter, calibrated with the stat shift so an average build hits BOSS_AIM (tools/sim/calibrate-bosses.ts). */
-export const BOSS_HP: number[] = BOSSES.map((b) => b.maxHp);
+// prettier-ignore
+export const BOSS_HP: number[] = [142, 160, 200, 147, 133, 144, 114, 222, 181, 126, 272, 226, 334, 160, 367, 266, 507, 176, 209, 210];
 
 export const BALANCE: Balance = {
   bossTarget: (ch, ng) => BOSS_AIM(ch) + 0.04 - 0.02 * ng,
