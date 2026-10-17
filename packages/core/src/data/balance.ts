@@ -22,6 +22,8 @@ export interface Balance {
   easeMax: number;
   /** fighters play to their AI personality (upgrade 11) */
   personalities: boolean;
+  /** crit, dodge and damage reduction stack with diminishing returns past a knee (upgrade 15) */
+  softCaps: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -34,6 +36,7 @@ export const LEGACY_BALANCE: Balance = {
   easeBelow: 0.18,
   easeMax: 3,
   personalities: false,
+  softCaps: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -70,7 +73,16 @@ export const BALANCE: Balance = {
   easeBelow: 0.18,
   easeMax: 3,
   personalities: true,
+  softCaps: true,
 };
+
+/**
+ * Diminishing returns (upgrade 15): past the knee, each extra point counts half, up to a ceiling. With the old
+ * game's balance it is a plain pass-through.
+ */
+export const soft = (x: number, knee: number, max = 1) => (!BALANCE.softCaps || x <= knee ? x : Math.min(max, knee + (x - knee) * 0.5));
+/** Where crit, dodge and damage reduction start to taper, and how far they can go. */
+export const SOFT_CAP = { crit: [0.35, 0.65], dodge: [0.3, 0.6], dr: [0.25, 0.6] } as const;
 
 /** Switches the tuning (the parity tests play by the old game's numbers). */
 export function useBalance(b: Balance) {

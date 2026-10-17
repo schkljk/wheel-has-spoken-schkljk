@@ -34,7 +34,7 @@ export interface LabReport {
 const SETS = [...new Set(GEAR.filter((g) => g.set).map((g) => g.set!))];
 
 /** A lab fighter: random build, level, gear, and in 40% of cases 2, 4 or 6 pieces of one set. */
-function labFighter(rng: Rng, lvl: number): Fighter {
+export function labFighter(rng: Rng, lvl: number): Fighter {
   const f = randomFighter('Lab', rng);
   levelUp(f, lvl - 1, rng);
   f.lvl = lvl;
@@ -94,7 +94,8 @@ export function labRun(fights: number, seed = 1, onProgress?: (done: number, tot
     const lvl = 1 + Math.floor(rng() * 30);
     const a = labFighter(rng, lvl);
     const b = labFighter(rng, lvl);
-    const won = simulate(a, b, rng) === 0;
+    // each fight has its own stream, so the same fighters meet whatever an earlier fight drew (paired comparisons)
+    const won = simulate(a, b, mulberry32((seed * 1000003 + i * 7919) >>> 0)) === 0;
     for (const [f, w] of [
       [a, won],
       [b, !won],

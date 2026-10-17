@@ -2,6 +2,7 @@ import { GEAR } from './data/gear';
 import { INJURIES } from './data/misc';
 import { SYN } from './data/synergies';
 import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
+import { SOFT_CAP, soft } from './data/balance';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
 import { clamp } from './random';
@@ -284,8 +285,8 @@ export function numStats(f: Fighter, ctx: GameContext = {}): NumStats {
     pow: pw == null ? null : Math.round(10 * ls * Math.pow(1.17, pw - 6)),
     def: Math.round(10 * ls * Math.pow(1.17, s.dur - 6) * (1 + (tr.dr || 0))),
     spd: Math.round(4 * s.spd + 2 * ((f.lvl || 1) - 1)),
-    crit: Math.round(Math.min(60, (0.06 + s.iq * 0.008 + ((s.cha || 5) - 6) * 0.004 + (tr.critB || 0)) * 100)),
-    dodge: Math.round(Math.min(45, (0.03 + s.spd * 0.012 + (tr.dodgeB || 0)) * 100)),
+    crit: Math.round(Math.min(60, soft(0.06 + s.iq * 0.008 + ((s.cha || 5) - 6) * 0.004 + (tr.critB || 0), ...SOFT_CAP.crit) * 100)),
+    dodge: Math.round(Math.min(45, soft(0.03 + s.spd * 0.012 + (tr.dodgeB || 0), ...SOFT_CAP.dodge) * 100)),
     cha: Math.round((s.cha || 5) * 5),
   };
 }

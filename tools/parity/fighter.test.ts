@@ -1,9 +1,14 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
-  ARCHS, LS, RACES, WHEELS, applyBonus, bestStat, eff, kitMoves, levelUp, mulberry32, numStats, powerScale, randName,
+  ARCHS, BALANCE, LEGACY_BALANCE, useBalance, LS, RACES, WHEELS, applyBonus, bestStat, eff, kitMoves, levelUp, mulberry32, numStats, powerScale, randName,
   randomFighter, rate, synOf, traitsBase, traitsOf, type Fighter, type GameContext,
 } from '../../packages/core/src';
 import { decorate, legacyCore, randomExtras } from './fixtures';
+
+// the old game had no soft caps on the card's crit and dodge
+const tuned = { ...BALANCE };
+beforeAll(() => useBalance(LEGACY_BALANCE));
+afterAll(() => useBalance(tuned));
 
 const L = legacyCore();
 type LF = Record<string, unknown>;
