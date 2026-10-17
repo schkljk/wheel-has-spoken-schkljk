@@ -40,7 +40,7 @@ export const BALANCE: Balance = {
   bossTarget: (ch, ng) => BOSS_AIM(ch) + 0.04 - 0.02 * ng,
   bossTuneCap: 3,
   bossHp: (ch, ng) => BOSS_HP[ch - 1]! + ng * 40,
-  bossLvl: (ch, ng) => CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4,
+  bossLvl: (ch, ng) => Math.max(1, CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4),
   easeBelow: 0.18,
   easeMax: 3,
 };

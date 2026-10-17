@@ -46,9 +46,9 @@ for (let ch = arg('from', 1); ch <= arg('to', CHAPTERS.length); ch++) {
   // the level first: the highest that gets within reach with the old HP
   let up = 3;
   let o = odds(ch, base, up);
-  while (o < aim - 0.04 && up > -3) o = odds(ch, base, --up);
+  while (o < aim - 0.04 && up > -6 && CHAPTERS[ch - 1]!.lvl + up > 1) o = odds(ch, base, --up);
   // then HP for the last few points
-  let lo = Math.round(base * 0.6);
+  let lo = Math.round(base * 0.4);
   let hi = Math.round(base * 1.6);
   let best = { hp: base, o };
   for (let it = 0; it < 6 && hi - lo > 4; it++) {
@@ -60,7 +60,7 @@ for (let ch = arg('from', 1); ch <= arg('to', CHAPTERS.length); ch++) {
   }
   hpOut.push(`${ch}:${best.hp}`);
   upOut.push(`${ch}:${up}`);
-  console.log(`${ch}\t${BOSSES[ch - 1]!.name}\tlevel +${up} (was +3), HP ${base} -> ${best.hp}\todds ${(best.o * 100).toFixed(0)}% (aim ${(aim * 100).toFixed(0)}%)`);
+  console.log(`${ch}\t${BOSSES[ch - 1]!.name}\tlevel ${up >= 0 ? '+' : ''}${up} (was +3), HP ${base} -> ${best.hp}\todds ${(best.o * 100).toFixed(0)}% (aim ${(aim * 100).toFixed(0)}%)`);
 }
 console.log(`HP ${hpOut.join(' ')}`);
 console.log(`UP ${upOut.join(' ')}`);
