@@ -1,0 +1,24 @@
+import { SaveStore, clockAt, enterCareer, mulberry32, newChapter, newSave, persistFighter, randomFighter, type CareerFighter, type Game } from '../../packages/core/src';
+
+/**
+ * A save with a career fighter ready to play, as the localStorage entries the app reads.
+ * For e2e tests and dev screenshots (skips the minute of wheel spinning).
+ */
+export function careerSaveKV(o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; fast?: boolean } = {}): Record<string, string> {
+  const rng = mulberry32(o.seed ?? 1);
+  const save = newSave(Date.now());
+  save.settings.tutorialSeen = true;
+  if (o.fast) save.settings.fast = true;
+  const g: Game = { save, F: null, rng, clock: clockAt(), pool: null, notes: [] };
+  const f = randomFighter(o.name ?? 'Test Hero', rng) as CareerFighter;
+  enterCareer(g, f);
+  if (o.lvl) f.lvl = o.lvl;
+  if (o.ch) f.story = { ...newChapter(g, o.ch, 0), cleared: Array.from({ length: o.ch - 1 }, (_, i) => i + 1) } as never;
+  save.roster.slots[0]!.coins = o.coins ?? 50;
+  save.profile.gems = o.gems ?? 0;
+  persistFighter(g);
+  const kv = new Map<string, string>();
+  const store = new SaveStore({ getItem: (k) => kv.get(k) ?? null, setItem: (k, v) => void kv.set(k, v), removeItem: (k) => void kv.delete(k), key: (i) => [...kv.keys()][i] ?? null, get length() { return kv.size; } } as never);
+  store.write(save);
+  return Object.fromEntries(kv);
+}

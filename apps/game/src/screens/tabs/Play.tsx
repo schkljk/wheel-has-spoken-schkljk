@@ -1,5 +1,6 @@
 import { CHAPTERS } from '@whs/core';
 import { activeFighter } from '../../state/game';
+import { goMap } from '../../flows/nav';
 import { Icon, type IconName } from '../../ui/Icon';
 import { rise } from '../../ui/kit';
 
@@ -39,10 +40,9 @@ export function PlayTab() {
         ) : (
           <small>Not started. The alley is waiting</small>
         )}
-        <button class="btn block" disabled>
-          Continue the story
+        <button class="btn block" onClick={() => goMap()}>
+          {st && (st.row > 0 || st.seenIntro) ? 'Continue the story' : 'Start the chapter'}
         </button>
-        <small class="soon-note">The story returns in the next update of the new version</small>
       </div>
       <span class="sec-label">More ways to play</span>
       {MODES.map(([icon, name, sub]) => (
