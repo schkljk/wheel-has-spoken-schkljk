@@ -35,6 +35,7 @@ import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { beep } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
+import { GearIcon } from '../ui/GearIcon';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {
@@ -210,7 +211,7 @@ export function GearReveal({ g }: { g: Gear }) {
   return (
     <div class={`lootreveal r-${g.r}`}>
       <span class="lr-e" aria-hidden="true">
-        {g.e}
+        <GearIcon g={g} />
       </span>
       <span>
         <b>{g.n}</b>

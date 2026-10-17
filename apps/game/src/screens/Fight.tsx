@@ -45,6 +45,9 @@ const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 
 /** A narration line with the fighters' names in it. */
 export const evText = (e: BattleEvent, names: [string, string]) => e.text.replace(/\{0\}/g, names[0]).replace(/\{1\}/g, names[1]);
 
+/** Pixel icons for the combat wheel's focus chips. */
+const FOCUS_ICON: Record<string, string> = { atk: 'sword', def: 'shield', pow: 'spark', ult: 'star' };
+
 function LogLine({ e, names }: { e: BattleEvent; names: [string, string] }) {
   return (
     <li class={e.cls}>
@@ -547,7 +550,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             )}
           </div>
           <div class="cw-chips" role="group" aria-label="Focus">
-            {CW_FOCUS.map(([k, e, n]) => (
+            {CW_FOCUS.map(([k, , n]) => (
               <button
                 key={k}
                 class={`fchip${focus === k ? ' on' : ''}${rec === k ? ' rec' : ''}${k === 'ult' && ult ? ' gold' : ''}`}
@@ -558,7 +561,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
                   tick();
                 }}
               >
-                {e} {n}
+                <Icon name={FOCUS_ICON[k]!} /> {n}
               </button>
             ))}
           </div>

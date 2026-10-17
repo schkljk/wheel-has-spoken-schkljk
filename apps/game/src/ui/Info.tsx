@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { infoFor } from '@whs/core';
 import { infoKey, openInfo } from '../state/ui';
+import { iconForInfoKey } from './ContentIcon';
 import { Icon } from './Icon';
 
 /** Something you can tap to learn what it does. */
@@ -41,7 +42,7 @@ export function InfoHost() {
       <section class="confirm info-card" role="dialog" aria-modal="true" aria-labelledby="info-title">
         <div class="row">
           <span class="info-e" aria-hidden="true">
-            {it.e}
+            {iconForInfoKey(key, it.e)}
           </span>
           <div class="grow">
             <h2 id="info-title">{it.title}</h2>

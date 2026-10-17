@@ -1872,3 +1872,19 @@
 .title-foot .btn .ellipsis {
   min-width: 0;
 }
+
+/* ---------- pixel content icons ---------- */
+.pxi.faded {
+  opacity: 0.35;
+}
+.se .pxi,
+.as-e .pxi,
+.lr-e .pxi,
+.gl-i .pxi {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: middle;
+}
+img.pxi.race {
+  object-fit: contain;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { statPop, type StatChange } from '../state/game';
 import { NS_META } from './FighterCard';
+import { Icon } from './Icon';
 
 /** Counts a number from a to b. */
 function Roll({ a, b }: { a: number; b: number }) {
@@ -40,7 +41,7 @@ export function StatPopHost() {
         return (
           <span class={`sp-r ${d > 0 ? 'up' : 'down'}`} key={r.k}>
             <span>
-              {m[1]} {m[2]}
+              <Icon name={m[1]} /> {m[2]}
             </span>
             <span class="sp-v">
               <s>

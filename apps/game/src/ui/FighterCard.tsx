@@ -27,16 +27,19 @@ import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, ensure } from '../state/game';
 import { Inf } from './Info';
+import { GearIcon } from './GearIcon';
+import { Icon, type IconName } from './Icon';
 
-export const NS_META: [keyof NumStats, string, string, string?][] = [
-  ['hp', '❤️', 'HP'],
-  ['atk', '⚔️', 'Attack'],
-  ['pow', '✨', 'Power'],
-  ['def', '🛡️', 'Defense'],
-  ['spd', '💨', 'Speed'],
-  ['crit', '🎯', 'Crit', '%'],
-  ['dodge', '🌀', 'Dodge', '%'],
-  ['cha', '💬', 'Charisma'],
+/** The real numbers: key, pixel icon, label, unit. */
+export const NS_META: [keyof NumStats, IconName, string, string?][] = [
+  ['hp', 'heart', 'HP'],
+  ['atk', 'sword', 'Attack'],
+  ['pow', 'spark', 'Power'],
+  ['def', 'shield', 'Defense'],
+  ['spd', 'wing', 'Speed'],
+  ['crit', 'target', 'Crit', '%'],
+  ['dodge', 'swirl', 'Dodge', '%'],
+  ['cha', 'chat', 'Charisma'],
 ];
 
 /** The real numbers: level sets the base, rolled stats modify it. */
@@ -46,7 +49,7 @@ export function NumBlock({ f }: { f: CareerFighter }) {
     <div class="numblock">
       {NS_META.filter(([k]) => n[k] != null).map(([k, e, l, u]) => (
         <Inf k="rule|numstats" key={k} class="nb-i">
-          <span aria-hidden="true">{e}</span>
+          <Icon name={e} />
           <b>
             {n[k]}
             {u || ''}
@@ -216,7 +219,7 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
               {gear.map((g) => (
                 <span key={g.k} class="dd-item">
                   <Inf k={`it|gear|${g.n}`}>
-                    {g.e} {g.n}
+                    <GearIcon g={g} /> {g.n}
                   </Inf>
                   <small>{g.d}</small>
                 </span>

@@ -1,4 +1,5 @@
-import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Sprite, Texture } from 'pixi.js';
+import { iconTexture } from './icon-tex';
 import { PAURA, SIZE_H, SPRITE_H, SPRITE_W, buildSprite, type Look } from '../art/sprite';
 
 const cache = new Map<string, { body: Texture; arm: Texture; sx: number; sy: number }>();
@@ -46,7 +47,10 @@ export class FighterView extends Container {
   private arm: Sprite;
   readonly armPivot = new Container();
   private glow = new Graphics();
-  readonly badges = new Text({ text: '', style: { fontSize: 18 } });
+  /** status icons above the head */
+  readonly badges = new Container();
+  private badgeKey = '';
+  private badgeSize = 18;
   h = 100;
   w = 83;
   private flash = new ColorMatrixFilter();
@@ -66,7 +70,6 @@ export class FighterView extends Container {
     this.armPivot.addChild(this.arm);
     this.body.addChild(this.bodySprite, this.armPivot);
     this.flip.addChild(this.glow, this.body);
-    this.badges.anchor.set(0.5, 1);
     this.addChild(this.flip, this.badges);
     if (side === 1) this.flip.scale.x = -1;
     this.mythic = !!opts.mythic;
@@ -98,7 +101,8 @@ export class FighterView extends Container {
     if (this.look.arch === 'chosen') g.circle(0, ((60 - 116.5) / 120) * hh, ww * 0.44).fill({ color: 0xffe082, alpha: 0.18 });
     if (this.mythic) g.circle(0, -hh * 0.45, ww * 0.62).fill({ color: 0xf2b544, alpha: 0.16 });
     this.badges.position.set(0, -hh * 0.98);
-    this.badges.style.fontSize = Math.max(14, Math.round(hh * 0.13));
+    this.badgeSize = Math.max(14, Math.round(hh * 0.13));
+    this.setBadges(this.badgeKey ? this.badgeKey.split(',') : [], true);
   }
 
   /** Middle of the body, in stage coordinates. */
@@ -123,6 +127,19 @@ export class FighterView extends Container {
     this.body.filters = this.statusOn ? [this.statusFilter, this.flash] : [this.flash];
   }
   private statusOn = false;
+  private setBadges(names: string[], force = false) {
+    const key = names.join(',');
+    if (key === this.badgeKey && !force) return;
+    this.badgeKey = key;
+    for (const c of this.badges.removeChildren()) c.destroy();
+    const s = this.badgeSize;
+    names.forEach((n, i) => {
+      const sp = new Sprite(iconTexture(n));
+      sp.width = sp.height = s;
+      sp.position.set((i - names.length / 2) * (s + 2) + 1, -s);
+      this.badges.addChild(sp);
+    });
+  }
   /** Frozen fighters go pale and icy; poisoned ones turn a little green. */
   setStatus(st: { frozen?: boolean; poison?: boolean; guard?: boolean; soaked?: boolean; burning?: boolean }) {
     const m = this.statusFilter;
@@ -136,7 +153,7 @@ export class FighterView extends Container {
     this.statusOn = !!(st.frozen || st.poison);
     if (!this.statusOn) this.body.filters = null;
     else this.body.filters = [m];
-    this.badges.text = [st.guard && '🛡️', st.frozen && '❄️', st.soaked && '💧', st.burning && '🔥', st.poison && '🧪'].filter(Boolean).join('');
+    this.setBadges([st.guard && 'shield', st.frozen && 'st_frozen', st.soaked && 'st_soaked', st.burning && 'st_burn', st.poison && 'st_poison'].filter((x): x is string => !!x));
   }
 
   /** Knocked out: lies on the floor, faded (or gets back up). */

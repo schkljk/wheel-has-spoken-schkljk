@@ -15,6 +15,16 @@
 Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 
 - [x] 1. Balance pass for the numeric system
+- [x] 2. Pixel-art content icons
+
+### 2. Pixel-art content icons
+
+- **Gear:** one 12x12 icon per slot (armor, helmet, boots, gloves, cape, trinket) in the legacy style, tinted by rarity (junk grey to mythic pink, premium blue). Used in the armory, both shops, merchants, loot reveals, the fighter card and the Fighter tab; empty slots show a faded outline.
+- **Bag items:** all 9 have their own icon (bandages, med kit, energy drink, scouting report, smelling salts, lucky charm, rations, grit tonic, whetstone), in the bag, shops and merchants.
+- **Fights:** the focus chips (Attack, Defend, Skill, Special) and the status badges above the fighters (guard, frozen, soaked, burning, poisoned) are pixel icons; badges are drawn as Pixi sprites.
+- **Races:** all 47 get a portrait cut from their own pixel sprite (the head for most, the whole body for pigeons, slimes and rubber ducks), in the collection and info cards.
+- **Interface:** the stat tiles (HP, attack, power, defense, speed, crit, dodge, charisma), the stat-change popup and the shop tabs use the legacy pixel icons instead of emoji.
+- Classes, weapons and powers still use their emoji on the wheels and cards; they can get pixel icons later in the same way.
 
 ### 1. Balance pass (story difficulty)
 
