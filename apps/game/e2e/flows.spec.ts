@@ -172,6 +172,8 @@ test('the combat wheel can be nudged one slice, once a fight', async ({ page }) 
   // a full energy bar turns the spin button into the signature
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
+  // the test needs a second round: no knockout in the first, whatever balance does to the seeded fight
+  await page.evaluate('(() => { const b = window.__whsBattle.P[1]; b.maxHp *= 5; b.hp = b.maxHp; })()');
   // take the offer the moment it shows (it lasts a couple of seconds, and a software-rendered frame can take
   // longer than that, so the click comes from a DOM observer rather than a per-frame poll)
   await page.evaluate(`(() => {
