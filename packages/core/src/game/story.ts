@@ -205,7 +205,7 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
     wheelBoss: def.wheelBoss,
     isBoss: true,
     bossTitle: def.title,
-    lvl: CHAPTERS[ch - 1]!.lvl + 3 + ng * 4,
+    lvl: BALANCE.bossLvl(ch, ng),
   });
   if (ng) for (const k of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[k] = (f.bonus[k] || 0) + ng * 2;
   tuneUp(g, f, BALANCE.bossTarget(ch, ng), BALANCE.bossTuneCap);
