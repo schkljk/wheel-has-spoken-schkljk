@@ -15,6 +15,7 @@ import {
   peekSlice,
   phaseKitOf,
   phaseSlice,
+  personalityOf,
   pickW,
   powerScale,
   procFeed,
@@ -637,6 +638,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const ctx = ctxOf(G);
     // what is on each fighter right now (the icons over their heads, tappable here)
     const sx = bt?.snap().sx;
+    const theirs = personalityOf(O, ctx);
     openSheet(
       <Sheet icon="menu" title={fightLabel(spec)} sub={`Round ${bt?.round || 1}`}>
         <div class="fm-scout">
@@ -647,6 +649,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             📈 {powerScale(F, ctx).n} vs {powerScale(O, ctx).n}
           </Inf>
           {rankTxt(O) && <span class="chip">🏅 {rankTxt(O)} of 1000</span>}
+          <Inf k={`pers|${theirs.k}`} class="chip">
+            {theirs.e} {theirs.n}
+          </Inf>
           {spec.arena && (
             <Inf k={`it|arena|${spec.arena.n}`} class="chip">
               {spec.arena.e} {spec.arena.n}

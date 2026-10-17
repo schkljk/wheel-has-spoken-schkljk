@@ -14,6 +14,7 @@ import {
   kitMoves,
   markSeen,
   numStats,
+  personalityOf,
   powerScale,
   synOf,
   verdict,
@@ -160,6 +161,7 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
     .flatMap((m) => Object.entries(m!).filter(([, x]) => x))
     .map(([k, x]) => `${x > 0 ? '+' : '−'}${Math.abs(x)} ${STATLBL[k]}`);
   const ik = (cat: string, it: { n: string } | null | undefined) => (it ? itemKeyFor(cat, it, f) : undefined);
+  const pers = personalityOf(f, ctx);
   return (
     <div class="fcard">
       <div class="fc-top">
@@ -189,6 +191,7 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
         <Row dt="Archetype" it={f.arch} extra={'Signature move: ' + ULTS[f.arch.k]} k={ik('arch', f.arch)} />
         {f.asub && <Row dt={ASUB[f.arch.k]?.label || 'Specialty'} it={f.asub} k={ik('asub', f.asub)} />}
         <Row dt="Stance" it={f.stance} k={ik('stance', f.stance)} />
+        <Row dt="Plays like" it={pers as never} k={`pers|${pers.k}`} />
         <Row dt="Backstory" it={f.back} k={ik('back', f.back)} />
         {f.reinc && <Row dt="Reincarnation of" it={f.reinc} />}
         <Row dt="Weapon" it={f.weapon} extra={f.wm.n + ' with it'} k={ik('weapon', f.weapon)} />

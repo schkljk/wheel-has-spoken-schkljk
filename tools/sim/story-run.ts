@@ -5,7 +5,7 @@
  */
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import { BOSS_HP, BOSS_STAT_SHIFT, CHAPTERS, mulberry32, rankPool, type PoolRanking } from '../../packages/core/src';
+import { BALANCE, BOSS_HP, BOSS_STAT_SHIFT, CHAPTERS, mulberry32, rankPool, type PoolRanking } from '../../packages/core/src';
 import { fighterOfStrength, newRun, playStory, type RunLog } from './story';
 
 export type Strength = 'weak' | 'average' | 'strong';
@@ -21,7 +21,7 @@ function runJob(j: Job, seed: number, to: number, pool: PoolRanking, cups: numbe
 }
 
 /** Plays these runs on worker threads (with these boss tables, if given). */
-export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: PoolRanking; cups?: number; bossHp?: number[]; bossShift?: number[] }) {
+export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: PoolRanking; cups?: number; bossHp?: number[]; bossShift?: number[]; personalities?: boolean }) {
   const n = Math.max(1, Math.min(availableParallelism(), jobs.length));
   const parts = Array.from({ length: n }, (_, i) => jobs.filter((_, k) => k % n === i));
   const done = await Promise.all(
@@ -30,7 +30,7 @@ export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: 
         new Promise<{ j: Job; log: RunLog }[]>((resolve, reject) => {
           // workers don't inherit tsx's loader: register it, then load this file
           const boot = `import(${JSON.stringify(import.meta.resolve('tsx/esm/api'))}).then((m) => (m.register(), import(${JSON.stringify(import.meta.url)})))`;
-          const w = new Worker(boot, { eval: true, workerData: { part, ...o, cups: o.cups ?? 0 } });
+          const w = new Worker(boot, { eval: true, workerData: { part, ...o, cups: o.cups ?? 0, personalities: o.personalities ?? BALANCE.personalities } });
           w.once('message', resolve);
           w.once('error', reject);
         }),
@@ -45,7 +45,7 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
   const pool = rankPool(seed, { n: 1000, games: 5000 });
   const jobs: Job[] = STRENGTHS.flatMap((s) => Array.from({ length: runs }, (_, r) => ({ s, r })));
   const all: Record<Strength, RunLog[]> = { weak: [], average: [], strong: [] };
-  for (const { j, log } of await runMany(jobs, { seed, to, pool, cups })) all[j.s].push(log);
+  for (const { j, log } of await runMany(jobs, { seed, to, pool, cups, personalities: BALANCE.personalities })) all[j.s].push(log);
 
   const pad = (x: string | number, w: number) => String(x).padStart(w);
   console.log(
@@ -80,7 +80,10 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
 }
 
 if (!isMainThread) {
-  const { part, seed, to, pool, cups, bossHp, bossShift } = workerData as { part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[] };
+  const { part, seed, to, pool, cups, bossHp, bossShift, personalities } = workerData as {
+    part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[]; personalities: boolean;
+  };
+  BALANCE.personalities = personalities;
   if (bossHp) bossHp.forEach((h, i) => (BOSS_HP[i] = h));
   if (bossShift) bossShift.forEach((h, i) => (BOSS_STAT_SHIFT[i] = h));
   parentPort!.postMessage(part.map((j) => ({ j, log: runJob(j, seed, to, pool, cups) })));

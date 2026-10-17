@@ -132,6 +132,8 @@ for (const [width, height] of VIEWS) {
         window.__whsFight.applySnap(bt.snap());
       })()`);
       await page.getByRole('button', { name: 'Fight menu' }).click();
+      // their AI personality is part of the scouting report
+      await expect(page.locator('.fm-scout .chip').filter({ hasText: /Aggressive|Turtle|Gambler|Tactician/ })).toHaveCount(1);
       await expect(page.locator('.fm-st')).toHaveCount(2);
       // (the arena or the opening round may have added more)
       expect(await page.locator('.fm-st').first().locator('.stchip').count()).toBeGreaterThanOrEqual(6);

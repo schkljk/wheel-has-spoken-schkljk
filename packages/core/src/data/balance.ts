@@ -20,6 +20,8 @@ export interface Balance {
   /** a boss the player has less than this chance against eases off (at most `easeMax` times) */
   easeBelow: number;
   easeMax: number;
+  /** fighters play to their AI personality (upgrade 11) */
+  personalities: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -31,6 +33,7 @@ export const LEGACY_BALANCE: Balance = {
   chPct: (ch) => CH_PCT[ch - 1]!,
   easeBelow: 0.18,
   easeMax: 3,
+  personalities: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -66,6 +69,7 @@ export const BALANCE: Balance = {
   chPct: (ch) => CH_PCT_EASY[ch - 1] ?? CH_PCT[ch - 1]!,
   easeBelow: 0.18,
   easeMax: 3,
+  personalities: true,
 };
 
 /** Switches the tuning (the parity tests play by the old game's numbers). */

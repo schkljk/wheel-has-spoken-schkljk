@@ -6,8 +6,9 @@
  *   npm run sim -- --story-runs 40 --cups 1   # more story runs; a cup after each chapter restart
  *   npm run sim -- --story-runs 0             # skip the story runs
  *   npm run sim -- --phase 16                 # also: boss wins with and without the phase-two slice
+ *   npm run sim -- --no-personalities         # everything with the AI personalities switched off
  */
-import { mulberry32, randomFighter, simulate, type Fighter, type Rng } from '../../packages/core/src';
+import { BALANCE, mulberry32, personalityOf, randomFighter, simulate, useBalance, type Fighter, type Rng } from '../../packages/core/src';
 import { storyTables } from './story-run';
 import { phaseSliceTable } from './phase-slice';
 
@@ -82,13 +83,50 @@ function byPick(rng: Rng, title: string, keyOf: (f: Fighter) => string, top = 0)
   table(title, ['Pick', 'Win rate', 'Fights'], rows.map((x) => [x.k, Number.isNaN(x.r) ? '' : pct(x.r), x.n || '']));
 }
 
+/** Each AI personality: how many fighters have it and how they do, with personalities on and off (same fights). */
+function personalities() {
+  const stats = new Map<string, { on: number; off: number; n: number }>();
+  const was = BALANCE.personalities;
+  for (let i = 0; i < FIGHTS; i++) {
+    const rng = mulberry32(SEED * 7919 + i);
+    const lvl = 1 + Math.floor(rng() * 30);
+    const a = fighterAt(rng, lvl);
+    const b = fighterAt(rng, lvl);
+    const seed = rng() * 2 ** 32;
+    useBalance({ ...BALANCE, personalities: true });
+    const on = simulate(a, b, mulberry32(seed)) === 0;
+    useBalance({ ...BALANCE, personalities: false });
+    const off = simulate(a, b, mulberry32(seed)) === 0;
+    for (const [f, w1, w0] of [
+      [a, on, off],
+      [b, !on, !off],
+    ] as const) {
+      const k = `${personalityOf(f).e} ${personalityOf(f).n}`;
+      const s = stats.get(k) ?? { on: 0, off: 0, n: 0 };
+      s.n++;
+      if (w1) s.on++;
+      if (w0) s.off++;
+      stats.set(k, s);
+    }
+  }
+  useBalance({ ...BALANCE, personalities: was });
+  const total = FIGHTS * 2;
+  table(
+    'AI personalities vs random same-level opponents (the same fights with personalities on and off)',
+    ['Personality', 'Share', 'Win rate on', 'Win rate off'],
+    [...stats].sort((x, y) => y[1].on / y[1].n - x[1].on / x[1].n).map(([k, s]) => [k, pct(s.n / total), pct(s.on / s.n), pct(s.off / s.n)]),
+  );
+}
+
+if (process.argv.includes('--no-personalities')) useBalance({ ...BALANCE, personalities: false });
 const t0 = Date.now();
 const rng = mulberry32(SEED);
-console.log(`The Wheel Has Spoken: balance simulation (${FIGHTS} fights per table, seed ${SEED})`);
+console.log(`The Wheel Has Spoken: balance simulation (${FIGHTS} fights per table, seed ${SEED}${BALANCE.personalities ? '' : ', AI personalities off'})`);
 levelGaps(rng);
 byPick(rng, 'Archetypes vs random same-level opponents', (f) => `${f.arch.e} ${f.arch.n}`);
 byPick(rng, 'Races vs random same-level opponents (top and bottom 8)', (f) => `${f.race.e} ${f.race.n}`, 8);
 byPick(rng, 'Growth types vs random same-level opponents', (f) => `${f.growth?.e} ${f.growth?.n}`);
+personalities();
 const STORY_RUNS = arg('story-runs', 20);
 if (STORY_RUNS > 0) await storyTables(STORY_RUNS, SEED, undefined, arg('cups', 0));
 const PHASE = arg('phase', 0);
