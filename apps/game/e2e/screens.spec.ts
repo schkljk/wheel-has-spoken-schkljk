@@ -102,6 +102,26 @@ for (const [width, height] of VIEWS) {
       await page.getByRole('button', { name: 'Spin the arena' }).click();
       await page.locator('.readpill').waitFor({ timeout: 60_000 });
       await check(page, 'fight');
+      // combo and synergy banners (the longest of each) stay on the stage, under the HP bars
+      const ban = await page.evaluate(`(() => {
+        const sc = window.__whsFight;
+        const out = [];
+        for (const side of [0, 1]) {
+          sc.showProc({ kind: 'synergy', k: 'selfown', n: 'Allergic to own kit', e: '', sub: 'The attack backfires', side, anti: true });
+          out.push(sc.procBounds());
+          sc.showProc({ kind: 'combo', k: 'Fanned flames', n: 'Fanned flames', e: '', sub: 'Wind on burning: +60% damage', side, anti: false });
+          out.push(sc.procBounds());
+        }
+        const cv = document.querySelector('.fight canvas').getBoundingClientRect();
+        const hud = document.querySelector('.fhud').getBoundingClientRect();
+        return { out, stageW: sc.dims.stageW, hudBottom: hud.bottom - cv.top };
+      })()`);
+      const { out, stageW, hudBottom } = ban as { out: { left: number; top: number; right: number }[]; stageW: number; hudBottom: number };
+      for (const b of out) {
+        expect.soft(b.left, 'combo banner left edge').toBeGreaterThanOrEqual(0);
+        expect.soft(b.right, 'combo banner right edge').toBeLessThanOrEqual(stageW + 0.5);
+        expect.soft(b.top, 'combo banner under the HP bars').toBeGreaterThanOrEqual(hudBottom - 2);
+      }
       await page.getByRole('button', { name: 'Fight menu' }).click();
       await check(page, 'fight menu');
       await page.getByRole('button', { name: /^Skip/ }).click();

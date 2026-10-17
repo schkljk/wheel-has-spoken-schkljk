@@ -355,6 +355,13 @@ export class FightScene {
   }
 
   private procBox: Container | null = null;
+  /** Where the combo or synergy banner sits at full size, in stage pixels (for the layout tests). */
+  procBounds() {
+    const b = this.procBox;
+    if (!b || b.destroyed) return null;
+    const lb = b.getLocalBounds();
+    return { left: b.x + lb.x, top: b.y + lb.y, right: b.x + lb.x + lb.width, bottom: b.y + lb.y + lb.height };
+  }
   private pendingProc: Proc | null = null;
   /**
    * A combo or synergy going off: its name and what it did, over the fighter it belongs to, with its own
@@ -378,6 +385,11 @@ export class FightScene {
     });
     sub.anchor.set(0.5, 0);
     sub.y = 2;
+    // long names shrink to fit narrow phones
+    for (const t of [name, sub]) {
+      const max = d.stageW - 20;
+      if (t.width > max) t.style.fontSize = Math.floor((t.style.fontSize * max) / t.width);
+    }
     box.addChild(name, sub);
     // over its owner, kept on the stage; in the gap between the HP bars and the fighters' heads
     const half = Math.max(name.width, sub.width) / 2 + 8;

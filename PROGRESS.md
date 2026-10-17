@@ -19,6 +19,15 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 3. Save safety net
 - [x] 4. Fight replay and share card
 - [x] 5. More agency on the combat wheel
+- [x] 6. Named combo and synergy banners with distinct sounds
+
+### 6. Named combo and synergy banners
+
+- When an element combo lands (Electrocuted, Shatter, Fanned flames, Resonance, Overgrowth, Flash freeze), its name pops up big over the fighter who pulled it off, in the element's colour, with what it did under it ("Element combo · Blunt on frozen: double damage"). It shows at the moment of impact, every time.
+- When a synergy makes the difference mid-fight, it gets the same treatment, gold for yours and pink for theirs ("Their synergy · The +15% crit chance pays off"). That covers Peak comedy (triple damage), Backstabber (a crit), Speed demon and Hurricane (extra hits), Fortress (an 85% guard), Absolute zero (a freeze), Storm caller (chain lightning), Bloodlust (a big drain), Bone lord (rising with 60 HP) and Allergic to own kit (a backfire). Each synergy shows once a fight per fighter, so a backstabber who crits five times doesn't turn the fight into a slideshow.
+- Every combo and synergy has its own little synthesized sound (a crackle for Electrocuted, breaking glass for Shatter, a whoosh for Fanned flames, a honk-honk for Peak comedy, a heartbeat for Bloodlust, a sad trombone for a backfire...) plus a short buzz on phones. The fight log gets a synergy pill you can tap for the details.
+- How it works: the engine tags the events where a synergy changed the result (`a.syn`, `a.sb`). The tag is only a label: no random draws or numbers change. The parity suite leaves the tag out and still matches the old game event for event over 2,000 fights. `packages/core/test/procs.test.ts` checks over 1,500 random fights that every tag is real (its owner has that synergy), that all ten synergies show up, and that each one is shown once a fight. The every-size fight check now also puts the longest banners on screen and fails if one is cut off or runs under the HP bars. It caught a 5 px overflow on 360-wide phones, so long names now shrink to fit.
+- Reduced motion: the banner fades in and out instead of popping.
 
 ### 5. More agency on the combat wheel: the nudge
 

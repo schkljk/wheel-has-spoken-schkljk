@@ -187,6 +187,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     };
     sc.layout(d.W, d.H);
     sceneRef.current = sc;
+    // the end-to-end tests reach into the scene (combo banners on every screen size)
+    if (navigator.webdriver) (window as unknown as { __whsFight?: FightScene }).__whsFight = sc;
     setDims(d);
     let lastW = d.W;
     let lastH = d.H;
