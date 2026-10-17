@@ -1,10 +1,13 @@
 /**
  * Balance simulations on the ported engine. Prints tables.
  *
- *   npm run sim                 # default: 20,000 fights per table
+ *   npm run sim                 # default: 20,000 fights per table, then 20 story runs per build strength
  *   npm run sim -- --fights 5000 --seed 7
+ *   npm run sim -- --story-runs 40 --cups 1   # more story runs; a cup after each chapter restart
+ *   npm run sim -- --story-runs 0             # skip the story runs
  */
 import { mulberry32, randomFighter, simulate, type Fighter, type Rng } from '../../packages/core/src';
+import { storyTables } from './story-run';
 
 const arg = (name: string, def: number) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -84,4 +87,6 @@ levelGaps(rng);
 byPick(rng, 'Archetypes vs random same-level opponents', (f) => `${f.arch.e} ${f.arch.n}`);
 byPick(rng, 'Races vs random same-level opponents (top and bottom 8)', (f) => `${f.race.e} ${f.race.n}`, 8);
 byPick(rng, 'Growth types vs random same-level opponents', (f) => `${f.growth?.e} ${f.growth?.n}`);
+const STORY_RUNS = arg('story-runs', 20);
+if (STORY_RUNS > 0) await storyTables(STORY_RUNS, SEED, undefined, arg('cups', 0));
 console.log(`\nDone in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
