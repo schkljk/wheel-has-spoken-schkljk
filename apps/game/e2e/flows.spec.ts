@@ -172,6 +172,8 @@ test('the combat wheel can be nudged one slice, once a fight', async ({ page }) 
   // a full energy bar turns the spin button into the signature
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
+  // the test needs a second round: no knockout in the first, whatever balance does to the seeded fight
+  await page.evaluate('(() => { const b = window.__whsBattle.P[1]; b.maxHp *= 5; b.hp = b.maxHp; })()');
   // take the offer the moment it shows (it lasts a couple of seconds, and a software-rendered frame can take
   // longer than that, so the click comes from a DOM observer rather than a per-frame poll)
   await page.evaluate(`(() => {
@@ -402,5 +404,39 @@ test('a hidden synergy is a mystery on the card until the first fight gives it a
   await page.getByRole('button', { name: 'Every wheel result and trait' }).click();
   await expect(page.locator('.syn.secret').filter({ hasText: 'Unnamed extra' })).toHaveCount(1);
   await expect(page.locator('.syn.secret').filter({ hasText: '???' })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('the nemesis waits on the story map with a speech about your last fight', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, { ...careerSaveKV({ seed: 7, lvl: 7, ch: 3, row: 2, fast: true, nemesis: true }), 'whs:seed': 'grudge' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await expect(page.locator('.nem.card')).toContainText('and on your story map');
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  const step = page.locator('.mnode.now.t-nemesis');
+  await expect(step).toContainText('Gary');
+  await expect(page.locator('.mnode.now')).toHaveCount(3);
+  for (const [width, height] of [[320, 568], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(300);
+    expect((await layoutProblems(page)).clipped, `map ${width}x${height}`).toEqual([]);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await step.click();
+  // the speech remembers where, which round or how much HP Gary had left
+  await expect(page.getByText('Your nemesis · meeting 1')).toBeVisible();
+  await expect(page.getByText('They beat you once.')).toBeVisible();
+  await expect(page.locator('.cine')).toContainText(/City Circuit|6|17/);
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: 'Settle it' }).click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await expect(page.getByText('Nemesis fight')).toBeVisible();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await expect(page.locator('.fresult')).toContainText('😈');
   expect(errors).toEqual([]);
 });

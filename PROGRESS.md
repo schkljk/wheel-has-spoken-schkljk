@@ -33,6 +33,64 @@ That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system h
 - [x] 14. Developer balance dashboard (hidden)
 - [x] 15. Soft caps on crit, dodge and damage reduction
 - [x] 16. Hidden synergies for joke picks
+- [x] 17. Charisma in story events
+- [x] 18. Growth types checked and tuned
+
+That closes "Balance and system health". Next up is "Content and long-term progression" (19 onwards).
+
+- [x] 19. The nemesis follows you into the story
+
+### 19. The nemesis follows you into the story
+
+- **What changed (content):** your nemesis now has a story arc. Whoever beat you (in a cup, the gauntlet, or a story fight if you don't have a nemesis yet) waits on the map from the next chapter on: one fight step gets a third option, a dark 😈 card with their name. Tapping it plays an intro like a boss's: their sprite, "They beat you twice, you beat them once", and a typed-out speech about your last fight with the real place, round and HP left: *"Remember the City Circuit? I do. I had it framed."*
+- **It escalates.** Every meeting raises the stakes: they come in at least one to three levels over the chapter, with a new piece of gear each time and a sharper AI. The speeches get more unhinged by meeting (first, second, third and later), and depend on what happened last:
+  - they won: gloating (*"I named my cat after the round I beat you in. Her name is 7. She bites."*); three wins or more: *"That's 3. I'm getting you a loyalty card. Tenth beating is free."*
+  - you won: revenge (*"I sold my house to pay for a coach after Harbor Docks. The coach is a pigeon. It is working."*)
+  - you walked past their step: *"You took the other path. I waited there for six hours. With snacks. For two."*
+  - their last chance: *"This is it, Rex. Win and I am gone. Lose and I am never, ever going away."*
+- **How it ends.** Beat them and you get elite loot, +6 coins and +10 XP; they leave with a line (*"'I let you win. For morale.' Back in two chapters, angrier."*), train (+1 to everything) and come back two chapters later. Beat them three times and they retire for good: +15 coins, +20 XP, +10 fame more and a farewell (*"Gary retires. They open a bakery. Every loaf is shaped like your fist."*). Lose and they get a level stronger and are back next chapter. Skip their step and they are back next chapter too, and they noticed. Their fights go up to 20 rounds, like elites.
+- The Play tab's nemesis card now says they'll be on your story map too, with your record against them, and links to a new "Nemesis" rule card. The nemesis keeps the last six fights you had with them (where, round, the winner's HP left), so their speeches can quote them.
+- **Simulated** (story runs, the bot takes the nemesis step 70% of the time when its HP is 60% or more; two seeds, 60 runs per strength each):
+
+| Reached the end (weak / average / strong) | Seed 1 | Seed 2 | Both |
+|---|---|---|---|
+| Without the nemesis | 27 / 70 / 77% | 20 / 60 / 90% | 24 / 65 / 84% |
+| With the nemesis | 30 / 60 / 78% | 18 / 73 / 83% | 24 / 67 / 81% |
+
+  The same within noise: the nemesis is an optional elite-sized fight. An average build meets them about 6.6 times over the 20 chapters, wins 78% of those fights, and retires about 1.5 nemeses per story.
+- Behind a `storyNemesis` switch in `data/balance.ts`, so the old game's rules (story losses make no nemesis) still hold for the parity tests. `npx tsx tools/sim/story-run.ts --off storyNemesis` plays without it, and the story table now prints nemesis fights per run.
+- **Two layout fixes found on the way.** On a 320 px phone, three choices on one map step squeezed their names to one letter each ("F", "E", "G"); this already happened on rest steps with three options. Choices now go two to a line when three don't fit. In landscape, the map's boss row sat under the dock; the map now picks how many steps to show from its real height and scrolls inside itself as a last resort. The boss intro's typed line was a single line cut at the screen edge (7 of the 26 boss lines on a 320 px phone). It now wraps, with the rest of the line held invisibly in place so nothing moves while it types.
+- Tested: `nemesis.test.ts` (8 tests) covers a story loss making a nemesis who remembers the fight (but not a boss, and not under the old balance). It also checks that they show up once on a fight step of the next chapter, notice a skipped step, open with the right kind of speech, come back stronger after a loss and retire after three, get a level stronger when they win, and remember a gauntlet loss by its name. A new e2e test loads a save with a nemesis, checks the Play card, the map step at 320×568 and 844×390, and the speech, then plays the fight to a result with a 😈 line. The nudge e2e test now gives its opponent more HP, because the growth tuning made its seeded fight end in one punch.
+
+### 18. Growth types checked and tuned
+
+- **What changed (balance):** Prodigy and Unstoppable were the best growth types by a wide margin, and Plateau was a trap. New level-scale numbers (start × growth per level; 1.00 × 1.00 is Steady):
+
+| Growth | Old | New |
+|---|---|---|
+| 🌟 Prodigy | 1.05 × 1.15 | 1.04 × 1.06 |
+| 🚀 Unstoppable | 0.88 × 1.40 | 0.88 × 1.32 |
+| 🏔️ Plateau | 1.10 × 0.70 | 1.10 × 0.78 |
+
+  Early bloomer, Late bloomer and Steady are unchanged. Prodigy is still better at everything than Steady and the best growth until about level 30; Unstoppable still starts slowest and is still the best from level 40 up. Plateau still barely grows; it just no longer turns a level-50 fighter into a punching bag.
+- **Simulated** (`npx tsx tools/sim/growth.ts --n 4000`, add `--legacy` for the old numbers; 4,000 lab fighters per level with random gear and sets, same seeds before and after):
+
+| Win rate vs random same-level opponents | Lvl 1 | Lvl 10 | Lvl 20 | Lvl 30 | Lvl 40 | Lvl 50 |
+|---|---|---|---|---|---|---|
+| Prodigy, before → after | 53.6 → 52.9% | 55.1 → 53.3% | 58.3 → 55.6% | 59.9 → 55.6% | 60.9 → 55.2% | 60.7 → 55.5% |
+| Unstoppable, before → after | 42.6 → 42.8% | 52.1 → 49.0% | 55.5 → 52.7% | 57.7 → 54.9% | 58.9 → 55.7% | 60.7 → 57.5% |
+| Plateau, before → after | 53.0 → 53.1% | 45.3 → 48.0% | 41.8 → 45.3% | 37.4 → 42.2% | 38.3 → 44.0% | 35.2 → 40.7% |
+| Late bloomer (unchanged) | 40.2% | 48.5% | 51.4% | 54.1% | 52.0% | 53.7% |
+
+  Against their own Steady twin (same fighter, only the growth differs), at levels 20 / 40: Prodigy 67 / 70% → 60 / 61%, Unstoppable 64 / 69% → 59 / 62%, Plateau 33 / 27% → 41 / 36%.
+- No progression change: levels and XP are untouched; only how much a level is worth for these three types. The numbers sit in `GROWTH_TUNE` behind a `growth` switch in `data/balance.ts`, so the wheel table and parity are untouched (parity tests run with the old numbers and pass).
+
+### 17. Charisma in story events
+
+- **What changed (content):** every one of the 12 story encounters has a 🗣️ talk option on top of its usual choices. It needs charisma (30 to 60, the number on the card) and is always better than the normal options: free treatment at the doctor, talking a street fighter or an ambush out of a fight for fame, haggling the smith down to 6 coins, getting the spy's intel for free, a loot box that can't bite, and so on. Each has its own line when it works (*"They tell you everything. They also tell you about their divorce."*).
+- Without enough charisma the option is still shown, locked, with a "Charisma 45" tag and "Needs 45 charisma, you have 30", so charisma finally reads as worth something. About two thirds of fighters can take the 30 options and one in six the 60 one.
+- **Simulated** (60 story runs per build strength, the bot taking talk options when it can vs never): fighters reaching the end 25 / 63 / 75% (weak / average / strong) with talk vs 32 / 47 / 85% without, 54% vs 55% averaged. The per-strength swings are run-to-run noise (the runs diverge after the first event); the options are small perks, not a power spike.
+- Tested: `charisma.test.ts` checks every encounter has a talk option with a valid threshold, that it is locked below it and open at it, and that each effect does what it says (coins, healing, costs, skipped fights, the safe loot box).
 
 ### 16. Hidden synergies for joke picks
 

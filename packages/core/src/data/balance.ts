@@ -26,6 +26,10 @@ export interface Balance {
   softCaps: boolean;
   /** joke picks have hidden synergies (upgrade 16) */
   jokeSynergies: boolean;
+  /** growth types scale by `GROWTH_TUNE` instead of the wheel's own numbers (upgrade 18) */
+  growth: boolean;
+  /** the nemesis follows you into the story, and story losses make one (upgrade 19) */
+  storyNemesis: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -40,6 +44,8 @@ export const LEGACY_BALANCE: Balance = {
   personalities: false,
   softCaps: false,
   jokeSynergies: false,
+  growth: false,
+  storyNemesis: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -78,6 +84,18 @@ export const BALANCE: Balance = {
   personalities: true,
   softCaps: true,
   jokeSynergies: true,
+  growth: true,
+  storyNemesis: true,
+};
+
+/**
+ * Growth types (upgrade 18): [start, growth] multipliers of the level scale, by growth key. Missing keys keep
+ * the wheel's numbers.
+ */
+export const GROWTH_TUNE: Record<string, readonly [s: number, g: number]> = {
+  prodigy: [1.04, 1.06],
+  unstop: [0.88, 1.32],
+  plateau: [1.1, 0.78],
 };
 
 /**

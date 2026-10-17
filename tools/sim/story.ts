@@ -47,7 +47,11 @@ import {
   applyEvent,
   startBattle,
   storyEnsure,
+  placeNemesis,
+  myNemesis,
+  nemesisOpponent,
   storyEvent,
+  talkOf,
   storyOf,
   storyOpponent,
   trainLand,
@@ -81,6 +85,10 @@ export interface ChapterLog {
   resets: number;
   /** cups played as side modes during the chapter */
   cups: number;
+  /** fights on the nemesis step, those won, and nemeses retired by a third story win (upgrade 19) */
+  nem: number;
+  nemWins: number;
+  nemRetired: number;
 }
 export interface RunLog {
   chapters: ChapterLog[];
@@ -177,13 +185,13 @@ function battle(g: Game, spec: FightSpec, end: (o: FightOutcome) => FightResult)
   bt.start();
   for (let i = 0; i < 200 && !bt.over; i++) bt.step(autoChoice(g.rng, bt.P[0], bt.P[1], bt.hist[1]));
   if (!bt.over) bt.w = bt.P[0].hp >= bt.P[1].hp ? 0 : 1;
-  const r = end({ w: bt.w!, me: bt.P[0], round: bt.round, sd: !!bt.sd });
+  const r = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });
   runSteps(g, r.next);
   return r;
 }
 
 /** One story fight. Returns whether the player won. */
-function fight(g: Game, node: 'fight' | 'elite' | 'boss', opp?: CareerFighter): boolean {
+function fight(g: Game, node: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: CareerFighter): boolean {
   heal(g, node === 'boss' ? 75 : 45);
   const o = opp ?? storyOpponent(g, node as 'fight' | 'elite');
   const spec = { kind: 'story', node, tier: { k: 'story', n: 'Story fight', e: '📖', xpW: 0, coins: 0 }, opp: o } as FightSpec;
@@ -210,6 +218,8 @@ function pickNode(g: Game, opts: NodeKind[]): number {
   const idx = (k: NodeKind) => opts.indexOf(k);
   if (opts.length === 1) return 0;
   if (hp < 60 && idx('rest') >= 0) return idx('rest');
+  // the nemesis is taken like an elite, a bit more eagerly (WHS_NO_NEMESIS=1 always walks past)
+  if (idx('nemesis') >= 0 && !process.env.WHS_NO_NEMESIS && hp >= 60 && g.rng() < 0.7) return idx('nemesis');
   if (idx('elite') >= 0) return hp >= 75 && g.rng() < 0.5 ? idx('elite') : idx('fight');
   const pref = opts.map((k, i) => ({ k, i })).filter((x) => x.k !== 'rest' || hp < 85);
   return (pref.length ? pref : opts.map((k, i) => ({ k, i })))[Math.floor(g.rng() * (pref.length || opts.length))]!.i;
@@ -219,6 +229,7 @@ function visit(g: Game, kind: NodeKind) {
   const F = g.F!;
   if (kind === 'fight' || kind === 'elite') return void fight(g, kind);
   if (kind === 'boss') return void fight(g, 'boss', makeBoss(g, storyOf(g).ch));
+  if (kind === 'nemesis') return void (myNemesis(g) ? fight(g, 'nemesis', nemesisOpponent(g)) : fight(g, 'elite'));
   if (kind === 'treasure') {
     loot(g, 'treasure');
     storyOf(g).row++;
@@ -238,6 +249,9 @@ function visit(g: Game, kind: NodeKind) {
   if (kind === 'event') {
     const ev = storyEvent(g);
     const ok = ev.o.map((o, i) => ({ o, i })).filter((x) => eventOptionOk(g, x.o));
+    // a charming bot also gets the charisma option (WHS_NO_TALK=1 for runs without it, upgrade 17)
+    const t = process.env.WHS_NO_TALK ? null : talkOf(g, ev.k);
+    if (t?.ok) ok.push({ o: t.o, i: ev.o.length });
     const r = eventOption(g, ev.k, ok[Math.floor(g.rng() * ok.length)]!.i);
     if ('fight' in r) return void fight(g, r.fight);
     if ('wheel' in r) mysteryLand(g, spin(g.rng, mysteryList()));
@@ -258,8 +272,9 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
   let log: ChapterLog | null = null;
   for (let guard = 0; guard < 5000; guard++) {
     const S = storyEnsure(g);
+    placeNemesis(g);
     if ((S.ng || 0) > 0 || (S.cleared || []).includes(toCh)) break;
-    if (!log || log.ch !== S.ch) log = { ch: S.ch, lvl: 0, bossTries: 0, bossWins: 0, fights: 0, wins: 0, resets: 0, cups: 0 };
+    if (!log || log.ch !== S.ch) log = { ch: S.ch, lvl: 0, bossTries: 0, bossWins: 0, fights: 0, wins: 0, resets: 0, cups: 0, nem: 0, nemWins: 0, nemRetired: 0 };
     const row = S.rows[S.row]!;
     const i = pickNode(g, row);
     S.picks[S.row] = i;
@@ -270,6 +285,13 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     log.fights += rec.w + rec.l - before.rec.w - before.rec.l;
     log.wins += rec.w - before.rec.w;
     const S2 = storyOf(g);
+    if (kind === 'nemesis') {
+      log.nem++;
+      if (rec.w > before.rec.w) {
+        log.nemWins++;
+        if (!myNemesis(g)) log.nemRetired++;
+      }
+    }
     if (kind === 'boss') {
       log.bossTries++;
       if ((S2.cleared || []).length > before.cleared) log.bossWins++;

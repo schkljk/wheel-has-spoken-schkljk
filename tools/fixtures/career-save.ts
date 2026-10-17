@@ -1,10 +1,27 @@
-import { SaveStore, clockAt, enterCareer, mulberry32, newChapter, newSave, persistFighter, randomFighter, type CareerFighter, type Game } from '../../packages/core/src';
+import {
+  SaveStore,
+  clockAt,
+  enterCareer,
+  myNemesis,
+  mulberry32,
+  nemLog,
+  newChapter,
+  newSave,
+  persistFighter,
+  randomFighter,
+  setNemesis,
+  type CareerFighter,
+  type Game,
+  type Story,
+} from '../../packages/core/src';
 
 /**
  * A save with a career fighter ready to play, as the localStorage entries the app reads.
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
-export function careerSaveKV(o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean } = {}): Record<string, string> {
+export function careerSaveKV(
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean } = {},
+): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
   save.settings.tutorialSeen = true;
@@ -19,6 +36,14 @@ export function careerSaveKV(o: { seed?: number; name?: string; lvl?: number; co
     const S = f.story as unknown as { row: number; rows: unknown[]; seenIntro: boolean };
     S.row = o.row < 0 ? S.rows.length + o.row : o.row;
     S.seenIntro = true;
+  }
+  if (o.nemesis && f.story) {
+    // Gary beat you in the City Circuit and now waits on the step you stand on, next to a fight and an elite
+    setNemesis(g, randomFighter('Gary', rng) as CareerFighter);
+    nemLog(myNemesis(g)!, { w: false, where: 'the City Circuit', r: 6, hp: 17 });
+    const S = f.story as unknown as Story;
+    S.rows[S.row] = ['fight', 'elite', 'nemesis'];
+    S.nemRow = S.row;
   }
   save.roster.slots[0]!.coins = o.coins ?? 50;
   save.profile.gems = o.gems ?? 0;

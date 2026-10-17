@@ -314,6 +314,17 @@ export const STAT_INFO: Record<string, [e: string, n: string, d: string]> = {
 /** Tap-for-info rules pages. */
 /** Help pages the new game adds (the old game's RULES stay as they were). */
 export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {
+  nemstory: [
+    '😈',
+    'Nemesis',
+    [
+      "Whoever knocks you out becomes your nemesis: in a tournament, in the gauntlet, or in a story fight if you don't have one yet.",
+      'They show up in your next tournament, on the other side of the bracket, and get a level stronger every time they beat you again.',
+      'They find you in the story too. From the next chapter on, one fight step on the map gets a third option with their name on it, and they remember exactly how your last fight went.',
+      'Beat them for elite loot, +6 coins and +10 XP. In the story they come back two chapters later, a little stronger and a lot angrier. Beat them there three times and they retire for good: +15 coins, +20 XP and +10 fame on top.',
+      'Walk past their step and they are back next chapter. They noticed.',
+    ],
+  ],
   momentum: [
     '⏫',
     'Momentum',

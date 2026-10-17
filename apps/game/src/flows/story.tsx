@@ -22,12 +22,16 @@ import {
   maxGrit,
   merchantOf,
   merchantStock,
+  myNemesis,
+  nemesisOpponent,
+  nemesisTaunt,
   mysteryLand,
   mysteryList,
   pick,
   pl,
   powerScale,
   storyEvent,
+  talkOf,
   storyOf,
   storyOpponent,
   trainLand,
@@ -38,7 +42,8 @@ import {
 } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
-import { G, act, buzz, toast } from '../state/game';
+import { useEffect, useState } from 'preact/hooks';
+import { G, act, buzz, reducedMotion, toast } from '../state/game';
 import { closeSheet, confirm, openSheet } from '../state/ui';
 import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
@@ -79,11 +84,24 @@ export function chapterIntro() {
   );
 }
 
-/** The typed-out boss line. */
+/**
+ * A boss or nemesis line that types itself out. It wraps like normal text: the part still to come takes its
+ * place invisibly, so nothing moves while it types. Instant with reduced motion; screen readers get it whole.
+ */
 function TypeLine({ text }: { text: string }) {
+  const [n, setN] = useState(() => (reducedMotion() ? text.length : 0));
+  useEffect(() => {
+    if (n >= text.length) return;
+    const t = setTimeout(() => setN((x) => Math.min(text.length, x + 1)), 26);
+    return () => clearTimeout(t);
+  }, [n, text]);
   return (
     <p class="boss-line">
-      “<span class="typed" style={{ '--n': text.length } as Record<string, number>}>{text}</span>”
+      <span class="sr">“{text}”</span>
+      <span aria-hidden="true">
+        “{text.slice(0, n)}
+        <span class="typed-rest">{text.slice(n)}</span>”
+      </span>
     </p>
   );
 }
@@ -110,13 +128,37 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
   );
 }
 
+/** The nemesis steps out, with a speech about your last fight. */
+async function nemesisIntro(o: ReturnType<typeof makeBoss>, t: ReturnType<typeof nemesisTaunt>) {
+  [131, 123, 98].forEach((f, i) => beep(f, 0.3, 'square', 0.05, i * 0.26));
+  buzz([40, 60, 40]);
+  await showCine(
+    <>
+      <div class="cine-kicker">Your nemesis · meeting {t.meeting}</div>
+      <div class="boss-art nem-art">
+        <FighterSprite look={lookOf(o)} h={170} />
+      </div>
+      <div class="boss-plate">
+        <b>{o.name}</b>
+        <span>{t.record}</span>
+      </div>
+      <TypeLine text={t.line} />
+      <div class="cine-meta">
+        Level {o.lvl}. You have {hpTxt(G, storyOf(G).hp)} HP. Beat them for elite loot and a bonus.
+      </div>
+    </>,
+    'Settle it',
+  );
+}
+
 /** A story fight from the map (or an encounter): fight, results, then rewards and back to the map. */
-async function storyFight(kind: 'fight' | 'elite' | 'boss', opp?: ReturnType<typeof makeBoss>) {
+async function storyFight(kind: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: ReturnType<typeof makeBoss>) {
   const o = opp ?? act((g) => storyOpponent(g, kind as 'fight' | 'elite'));
+  const label = { boss: 'Boss fight', elite: 'Elite fight', nemesis: 'Nemesis fight', fight: 'Story fight' }[kind];
   const r = await fight({
     kind: 'story',
     node: kind,
-    tier: { k: 'story', n: kind === 'boss' ? 'Boss fight' : kind === 'elite' ? 'Elite fight' : 'Story fight', e: '📖', xpW: 0, coins: 0 },
+    tier: { k: 'story', n: label, e: '📖', xpW: 0, coins: 0 },
     opp: o,
   });
   await runSteps(r.next);
@@ -141,6 +183,13 @@ export async function enterNode(i: number) {
     st.picks[st.row] = i;
   });
   if (t === 'fight' || t === 'elite') return storyFight(t);
+  if (t === 'nemesis') {
+    // they may have been beaten (or replaced) somewhere else since: then it is an elite fight
+    if (!myNemesis(G)) return storyFight('elite');
+    const o = act((g) => nemesisOpponent(g));
+    await nemesisIntro(o, act((g) => nemesisTaunt(g)));
+    return storyFight('nemesis', o);
+  }
   if (t === 'boss') {
     const b = act((g) => makeBoss(g, storyOf(g).ch));
     await bossIntro(b, pick(G.rng, BOSSES[storyOf(G).ch - 1]!.lines), `Chapter ${storyOf(G).ch} boss`);
@@ -158,11 +207,26 @@ export async function enterNode(i: number) {
 // ---------------------------------------------------------------- encounters
 async function encounter() {
   const ev = act((g) => storyEvent(g));
+  // the charisma option comes last; below what it needs it shows locked, as a tease
+  const t = talkOf(G, ev.k);
   const i = await choose({
     emoji: ev.e,
     title: ev.t,
     body: ev.d,
-    options: ev.o.map((o) => ({ label: o.l, sub: o.s, disabled: !eventOptionOk(G, o) })),
+    options: [
+      ...ev.o.map((o) => ({ label: o.l, sub: o.s, disabled: !eventOptionOk(G, o) })),
+      ...(t
+        ? [
+            {
+              label: `🗣️ ${t.o.l}`,
+              sub: t.have >= t.o.need ? t.o.s : `Needs ${t.o.need} charisma, you have ${t.have}. ${t.o.s}`,
+              disabled: !t.ok,
+              tag: `Charisma ${t.o.need}`,
+              talk: true,
+            },
+          ]
+        : []),
+    ],
   });
   const r = act((g) => eventOption(g, ev.k, i));
   if ('fight' in r) return storyFight(r.fight);

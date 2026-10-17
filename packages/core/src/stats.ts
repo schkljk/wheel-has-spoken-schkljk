@@ -2,7 +2,7 @@ import { GEAR } from './data/gear';
 import { INJURIES } from './data/misc';
 import { SYN } from './data/synergies';
 import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
-import { BALANCE, SOFT_CAP, soft } from './data/balance';
+import { BALANCE, GROWTH_TUNE, SOFT_CAP, soft } from './data/balance';
 import { SYN_HIDDEN } from './data/content/hidden-synergies';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
@@ -257,9 +257,10 @@ export const activePower = (f: Fighter) => f.power.k !== 'none' && !f.power.pass
 
 /** Level scale: 1 at level 1, about +12% per level, shaped by the growth type. */
 export function LS(f: Fighter | null | undefined): number {
-  const g = (f && f.growth) || ({} as { s?: number; g?: number });
+  const g = (f && f.growth) || ({} as { k?: string; s?: number; g?: number });
   const l = (f && f.lvl) || 1;
-  return (g.s || 1) * (1 + 0.12 * (g.g || 1) * (l - 1));
+  const [s, gr] = (BALANCE.growth && g.k && GROWTH_TUNE[g.k]) || [g.s || 1, g.g || 1];
+  return s * (1 + 0.12 * gr * (l - 1));
 }
 
 export interface NumStats {
