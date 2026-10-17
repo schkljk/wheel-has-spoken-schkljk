@@ -752,7 +752,8 @@
   width: var(--panelW);
   bottom: 0;
   display: grid;
-  grid-template-rows: auto auto auto auto;
+  /* the wheel's row gives way when fonts or text size make the rest taller: the spin button never leaves the screen */
+  grid-template-rows: auto auto minmax(0, max-content) auto;
   align-content: start;
   justify-items: center;
   gap: 0.4rem;
@@ -845,9 +846,11 @@
   align-items: center;
   justify-content: center;
   width: 100%;
+  min-height: 0;
 }
 .cw-slot {
   flex: none;
+  max-height: 100%;
 }
 .cw-out {
   flex: 1 1 0;
