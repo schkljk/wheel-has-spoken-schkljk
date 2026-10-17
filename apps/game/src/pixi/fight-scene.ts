@@ -48,8 +48,8 @@ export function fightDims(W: number, H: number): FightDims {
     panelW = col;
     panelH = H - groundY;
   }
-  // the HP bars, energy and the opponent's last moves (measured: 91 to 93 px on every size)
-  const hud = 94;
+  // the HP bars, momentum, energy and the opponent's last moves (measured: 98 to 101 px on every size)
+  const hud = 102;
   const span = side ? stageW * 0.26 : col * 0.28;
   const byH = (groundY - hud - 10) / 1.32;
   const byW = ((side ? stageW : col) * 0.42 * 1.2) / 1.32;

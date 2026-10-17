@@ -312,6 +312,18 @@ export const STAT_INFO: Record<string, [e: string, n: string, d: string]> = {
 };
 
 /** Tap-for-info rules pages. */
+/** Help pages the new game adds (the old game's RULES stay as they were). */
+export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {
+  momentum: [
+    '⏫',
+    'Momentum',
+    [
+      'Win the move matchup (your move beats theirs: Strike beats Power, Power beats Guard, Guard beats Strike) and you build momentum: +10% damage per pip, up to three pips for +30%.',
+      'Lose a matchup and your momentum is gone. A draw keeps it. The opponent builds and loses theirs the same way, so their pips are worth watching too.',
+    ],
+  ],
+};
+
 export const RULES: Record<string, [e: string, title: string, paragraphs: string[]]> = {
   moves: [
     '⚔️',

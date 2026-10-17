@@ -225,6 +225,15 @@ test("the opponent's last three moves show by their HP bar, after each round", a
   }
   expect(rounds, 'the fight lasts long enough to fill the row').toBeGreaterThanOrEqual(3);
   await expect(page.locator('.mhist')).toHaveAttribute('aria-label', /^Their last moves: (Strike|Power|Guard|Signature|Feint|Charge up|Sidestep)(, .+){2}$/);
+  // the momentum meters show as many lit pips as their label says, and explain themselves when tapped
+  for (const m of await page.locator('.mom').all()) {
+    const n = Number((await m.getAttribute('aria-label'))!.match(/^Momentum (\d) of 3/)![1]);
+    await expect(m.locator('i.on')).toHaveCount(n);
+    if (n) await expect(m.locator('small')).toHaveText(`+${n * 10}%`);
+  }
+  await page.locator('.mom').first().click();
+  await expect(page.getByText(/\+10% damage per pip/)).toBeVisible();
+  await page.keyboard.press('Escape');
   for (const [width, height] of [[320, 568], [844, 390]] as const) {
     await page.setViewportSize({ width, height });
     await page.waitForTimeout(400);

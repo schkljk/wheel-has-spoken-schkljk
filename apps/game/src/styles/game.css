@@ -661,19 +661,69 @@
 }
 .mom {
   display: flex;
+  align-items: center;
   gap: 0.2rem;
-  height: 0.3rem;
+  height: 0.75rem;
+  pointer-events: auto;
 }
 .hs.r .mom {
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+}
+.mom .pxi {
+  width: 0.75rem;
+  height: 0.75rem;
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+.mom.up .pxi {
+  opacity: 1;
+  filter: none;
 }
 .mom i {
-  width: 1rem;
+  width: 0.85rem;
+  height: 0.4rem;
   border-radius: 9px;
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.22);
 }
 .mom i.on {
-  background: #f2b544;
+  background: linear-gradient(90deg, #f2b544, #ffe08a);
+  box-shadow: 0 0 6px rgba(242, 181, 68, 0.7);
+}
+.mom small {
+  font: 800 0.66rem/1 var(--display);
+  color: #ffd166;
+  margin: 0 0.1rem;
+}
+/* a new pip pops in; full momentum burns; a lost read flashes the pips red */
+.mom.gain i.new {
+  animation: mom-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.mom.max i.on {
+  background: linear-gradient(90deg, #ff8a5c, #ffd166);
+  animation: mom-fire 0.9s ease-in-out infinite alternate;
+}
+.mom.max small {
+  color: #ff8a5c;
+}
+.mom.lost i {
+  animation: mom-lost 0.7s ease-out;
+}
+@keyframes mom-pop {
+  from {
+    transform: scale(0.2, 1.8);
+    opacity: 0;
+  }
+}
+@keyframes mom-fire {
+  to {
+    box-shadow: 0 0 12px rgba(255, 138, 92, 0.95);
+  }
+}
+@keyframes mom-lost {
+  from {
+    background: #e5484d;
+    box-shadow: 0 0 10px #e5484d;
+  }
 }
 .mbar {
   position: relative;

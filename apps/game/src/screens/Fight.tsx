@@ -151,18 +151,33 @@ function Hud({
   last: { m: Move[]; n: number };
   onMenu: () => void;
 }) {
+  // momentum changes replay their animation: a pop when it grows, a red flash when it's lost
+  const momRef = useRef({ v: [0, 0], fx: ['', ''], n: [0, 0] });
   const side = (i: 0 | 1) => {
     const hp = snap ? snap.h[i]! : 100;
     const en = snap ? snap.en[i]! : 50;
     const mo = snap ? snap.mo[i]! : 0;
+    const M = momRef.current;
+    if (mo !== M.v[i]) {
+      M.fx[i] = mo > M.v[i]! ? 'gain' : 'lost';
+      M.v[i] = mo;
+      M.n[i]!++;
+    }
     return (
       <div class={`hs${i ? ' r' : ' me'}`}>
         <div class="hn ellipsis">{names[i]}</div>
-        <div class="mom" aria-label={`Momentum ${mo}`}>
+        <Inf
+          key={`mom${M.n[i]}`}
+          k="rule|momentum"
+          class={`mom${mo > 0 ? ' up' : ''}${mo >= 3 ? ' max' : ''} ${M.fx[i]}`}
+          label={`Momentum ${mo} of 3${mo ? `: +${mo * 10}% damage` : ''}`}
+        >
+          <Icon name="momentum" />
           {[0, 1, 2].map((k) => (
-            <i key={k} class={k < mo ? 'on' : ''} />
+            <i key={k} class={k < mo ? `on${k === mo - 1 ? ' new' : ''}` : ''} />
           ))}
-        </div>
+          {mo > 0 && <small>+{mo * 10}%</small>}
+        </Inf>
         <div class="mbar hp" role="progressbar" aria-label={`${names[i]} HP`} aria-valuenow={hp} aria-valuemin={0} aria-valuemax={100}>
           <b class="ghost" style={{ width: `${hp}%` }} />
           <i class={hp < 30 ? 'low' : ''} style={{ width: `${hp}%` }} />

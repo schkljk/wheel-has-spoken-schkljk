@@ -24,6 +24,53 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 - [x] 8. Status icons with round counters
 - [x] 9. Long-press a slice for a damage preview
 - [x] 10. Boss phase two: lighting, music and a unique slice
+- [x] 11. AI personalities
+- [x] 12. Finisher: slow-motion zoom on the knockout blow
+- [x] 13. A visible momentum meter
+
+That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system health" (14 to 18).
+
+### 13. A visible momentum meter
+
+- Momentum used to be three faint dashes. Now each fighter has a meter under their name: a climbing double-chevron pixel icon, three thicker gold pips and a label ("+20%"). A new pip pops in when you win a matchup. At three pips the meter burns orange and pulses. When momentum is lost the pips flash red as they empty. The opponent's meter mirrors yours.
+- Tap it for a new help page: win the move matchup for +10% damage per pip, up to +30%, lose one and it's gone, a draw keeps it. The old game's rules pages are untouched; new pages live in their own table.
+- The HUD grew a few pixels (98 to 101 px, measured at all 12 sizes) and the fight layout allows for that.
+- Tested: the four-round fight test checks each meter's lit pips match its label ("Momentum 2 of 3", "+20%") and that tapping opens the help page. The fight check at all 12 sizes still passes.
+
+### 12. Finisher: slow-motion zoom on the knockout blow
+
+- The blow that knocks someone out (a hit, a signature, a pet, a burn or even a backfire or Uno reverse) now plays 2.4× slower. Cinema bars slide in, the camera pushes in on the fighter about to fall, and a white flash, a heavier shake and a deep boom land with it. After the K.O. banner the view eases back. Reduced motion skips all of it.
+- `finisherOf(events)` in core finds that blow: the last thing that hurt the fallen before the K.O.
+- Screen shake now moves the world's pivot rather than its position, so it can't fight the zoom.
+- Tested: over 600 random fights the finisher is found for over 95% of knockouts, always lands on the fighter who falls, and leaves them at 0 HP. A new e2e test plays a fight with full motion until the knockout, then checks exactly one finisher played and the view is back at normal scale.
+
+### 11. AI personalities
+
+- Every fighter now has one of four personalities, shown on their card ("Plays like") and in the fight menu's scouting row, each with a help card (mechanics plus a joke):
+  - 😤 **Aggressive**: strikes a lot, guards little, swings heavy. *Thinks defense is a rumor.*
+  - 🐢 **Turtle**: guards and charges up a lot, and counters. *Will outlast the heat death of the universe.*
+  - 🎲 **Gambler**: feints, overcharges powers and fires the signature the moment the bar is full. *Has a system. The system is vibes.*
+  - 🧠 **Tactician**: watches your habits and punishes repeats harder. *Took notes on you. Color-coded.*
+- The personality is read off the build, so nothing new is rolled and old saves just work. The stance comes first (Aggressive and Reckless play aggressive, Defensive and Counter-puncher play turtle, Tactical plays tactician, Showboat gambles). After that it's the stats that stand out against the fighter's own average, plus a few chaos quirks for gamblers. Random fighters spread 26/24/25/25% over the four.
+- It biases the AI's move choice (`autoChoice`) and its flourishes (heavy blows, counters, overcharges). That covers the opponent and your own fighter on auto-battle, and the read you get on their next move reflects it. It's a switch in the balance table: the old game's balance has it off, so parity still matches event for event.
+- **Balance (simulated, `npm run sim`):** in 40,000 same-level fights with personalities on and off (same fights), each personality's win rate moves by about a point:
+
+| Personality | Share | Win rate on | Win rate off |
+|---|---|---|---|
+| 🐢 Turtle | 23.6% | 59.5% | 58.7% |
+| 😤 Aggressive | 26.1% | 51.0% | 50.1% |
+| 🎲 Gambler | 25.4% | 46.2% | 47.2% |
+| 🧠 Tactician | 24.9% | 43.9% | 44.5% |
+
+  The gaps between them were there before (durable builds beat brainy ones); personalities don't add to them. Story runs (60 per build strength, same seeds, story only), personalities off → on:
+
+| | Weak: reach ch 10 / ch 20 | Average: reach ch 10 / ch 20 | Strong: reach ch 10 / ch 20 | Average level at ch 10 / ch 20 |
+|---|---|---|---|---|
+| Off | 27% / 22% | 73% / 60% | 97% / 82% | 17 / 33 |
+| On | 20% / 18% | 77% / 57% | 95% / 90% | 17 / 33 |
+
+  With 60 runs one run is about 1.7 points, so these shifts are within noise (weak builds may be marginally worse), and nobody levels more. No retune was needed: personalities change how fights feel, not how hard the story is.
+- Tested: `personality.test.ts` checks the spread, that a Tactical stance means a Tactician over 70% of the time, that each personality really tilts the AI as its card says (aggressive strikes more, turtles guard more, gamblers fire the signature at full energy every time, tacticians punish a repeated move harder), and that it's off under the old balance. The fight check at every size looks for the personality chip in the menu.
 
 ### 10. Boss phase two: lighting, music and a unique slice
 

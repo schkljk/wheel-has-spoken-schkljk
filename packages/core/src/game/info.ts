@@ -5,7 +5,7 @@ import { GEAR, RARITY } from '../data/gear';
 import { SYN } from '../data/synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { findMove } from '../kits';
 import { STATLBL } from '../stats';
@@ -187,7 +187,7 @@ export function infoFor(key: string): Info | null {
     };
   }
   if (kind === 'rule') {
-    const r = RULES[a];
+    const r = RULES[a] ?? RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }
   if (kind === 'stat') {
