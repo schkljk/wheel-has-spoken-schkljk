@@ -256,6 +256,11 @@ export class WheelView extends Container {
     return this.segs.length - 1;
   }
 
+  /** The slice at screen angle `phi` around the hub (atan2 of a point minus the centre). */
+  segAtAngle(phi: number) {
+    return this.segAt(this.rot - phi - Math.PI / 2);
+  }
+
   private setRot(r: number) {
     this.rot = r;
     this.disc.rotation = r;

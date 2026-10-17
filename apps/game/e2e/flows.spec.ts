@@ -233,3 +233,46 @@ test("the opponent's last three moves show by their HP bar, after each round", a
   }
   expect(errors).toEqual([]);
 });
+
+test('holding a combat wheel slice previews it, and letting go does not spin', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'peek' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  /** a point on the wheel at `deg` (0 is the top, clockwise) and the slice name there */
+  const at = (deg: number) =>
+    page.evaluate(`(() => {
+      const w = window.__whsFight.wheel;
+      const cv = document.querySelector('.fight canvas').getBoundingClientRect();
+      const phi = (${deg} - 90) * Math.PI / 180;
+      const r = w.size * 0.3;
+      return { x: cv.left + w.x + Math.cos(phi) * r, y: cv.top + w.y + Math.sin(phi) * r, n: w.items[w.segAtAngle(phi)].n, top: w.items[w.segAt()].n };
+    })()`) as Promise<{ x: number; y: number; n: string; top: string }>;
+  const a = await at(0);
+  // the slice right under the pointer is the one a spin with no turn would land on
+  expect(a.n).toBe(a.top);
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  const peek = page.locator('.cw-out .peek');
+  await expect(peek).toBeVisible();
+  await expect(peek.locator('b').first()).toContainText(a.n);
+  await expect(peek).toContainText(/damage|counters|No damage/);
+  await expect(peek).toContainText(/Beats|Breaks|Baits|Dodges|No damage|Can't be dodged/);
+  // slide to the other side of the wheel: the preview follows the finger
+  const b = await at(180);
+  await page.mouse.move(b.x, b.y, { steps: 4 });
+  await expect(peek.locator('b').first()).toContainText(b.n);
+  await page.mouse.up();
+  await expect(peek).toHaveCount(0);
+  await page.waitForTimeout(500);
+  await expect(spin).toBeEnabled();
+  await expect(page.locator('.cw-out b').first()).toHaveText(/moves$/);
+  expect(errors).toEqual([]);
+});
