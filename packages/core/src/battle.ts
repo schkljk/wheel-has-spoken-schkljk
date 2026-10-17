@@ -5,7 +5,7 @@ import { kitMoves } from './kits';
 import { clamp, pick, pickW, rnd } from './random';
 import type { Rng } from './rng';
 import { LS, eff, personalityOf, rate, synOf, traitsOf, type GameContext, type Traits } from './stats';
-import { BALANCE } from './data/balance';
+import { BALANCE, SOFT_CAP, soft } from './data/balance';
 import type { Personality } from './data/content/personality';
 import type { Arena, BuffKey, Fighter, Move, Pet, RoundMod, Stats, StatusKey } from './types';
 
@@ -443,7 +443,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
         : 0.06 + ((att.rm && att.rm.critPlus) || 0) + bsum(att, 'critB') + att.s.iq * 0.008 + ((att.s.cha || 5) - 6) * 0.004 +
           (att.f.arch.k === 'assassin' ? 0.12 : 0) + (att.powOn && att.f.power.k === 'luck' ? 0.1 : 0) + (att.syn.has('backstab') ? 0.15 : 0) +
           (kind === 'ult' ? 0.15 : 0) + att.tr.critB + (att.f.ench.k === 'lucky' ? 0.1 : 0) + (AR.critB || 0);
-    if (fix == null && rng() < cc) {
+    if (fix == null && rng() < soft(cc, ...SOFT_CAP.crit)) {
       mult *= def.f.weak.k === 'jaw' ? 2.2 : 1.6;
       note.push('crit');
     }
@@ -463,7 +463,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     }
     mult *= att.tr.dmgX * (att.mod.dmgX || 1) * ((att.rm && att.rm.dmgX) || 1) * sdMult;
     mult *= (att.ls || 1) / (def.ls || 1);
-    mult *= (1 + bsum(att, 'dmgX')) * Math.max(0.3, 1 - bsum(att, 'weak')) * (1 + bsum(def, 'vuln')) * Math.max(0.3, 1 - bsum(def, 'dr'));
+    mult *= (1 + bsum(att, 'dmgX')) * Math.max(0.3, 1 - bsum(att, 'weak')) * (1 + bsum(def, 'vuln')) * Math.max(0.3, 1 - soft(bsum(def, 'dr'), ...SOFT_CAP.dr));
     {
       const r = att.rm || {};
       if (r.unholyX && isUnholy(def)) mult *= r.unholyX;
@@ -499,7 +499,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     mult *= am;
     if (dc === 'main') mult *= 0.9;
     if (dc === 'cooked') mult *= 1.1;
-    mult *= clamp(1 - def.tr.dr, 0.3, 1.5);
+    mult *= clamp(1 - soft(def.tr.dr, ...SOFT_CAP.dr), 0.3, 1.5);
     if (def.powOn && def.f.power.k === 'ward') mult *= 0.8;
     if (def.guard && !(att.rm && att.rm.pierce)) {
       mult *= kind === 'strike' ? gxOf(def) * 0.5 : gxOf(def);
@@ -557,9 +557,11 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     }
     if (!ult) {
       const ill = def.powOn && def.f.power.k === 'illusion';
-      const dg =
+      const dgBase =
         clamp(0.04 + (def.s.spd - att.s.spd) * 0.05, 0, 0.35) + (def.f.arch.k === 'trickster' ? 0.15 : 0) + (def.powOn && def.f.power.k === 'tele' ? 0.12 : 0) +
-        (def.powOn && def.f.power.k === 'luck' ? 0.08 : 0) + (ill ? 0.15 : 0) + def.tr.dodgeB + (AR.dodgeB || 0) - (ak === 'ranged' ? 0.1 : 0) + (def.sidestep || 0);
+        (def.powOn && def.f.power.k === 'luck' ? 0.08 : 0) + (ill ? 0.15 : 0) + def.tr.dodgeB + (AR.dodgeB || 0) - (ak === 'ranged' ? 0.1 : 0);
+      // a chosen sidestep is a decision, not stacking: it adds on top of the taper
+      const dg = soft(dgBase, ...SOFT_CAP.dodge) + (def.sidestep || 0);
       if (!(att.rm && att.rm.nododge) && rng() < clamp(dg, 0, def.sidestep ? 0.85 : 0.6)) {
         def.st.dodges++;
         // the narration line is picked even when nobody reads it: it draws from the RNG

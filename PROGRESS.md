@@ -30,6 +30,45 @@ Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:
 
 That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system health" (14 to 18).
 
+- [x] 14. Developer balance dashboard (hidden)
+- [x] 15. Soft caps on crit, dodge and damage reduction
+
+### 15. Soft caps on crit, dodge and damage reduction
+
+- **What changed (balance):** past a knee, every extra point of crit, dodge or damage reduction counts half, up to a ceiling:
+  - **Crit** tapers from 35% and stops at 65%. Before, it had no cap at all.
+  - **Dodge** tapers from 30%. The old hard caps (60%, or 85% while sidestepping) stay. A chosen Sidestep move adds on top of the taper, because picking it is a decision, not stacking.
+  - **Damage reduction** from traits and from move buffs each taper from 25% and stop at 60%. The old 70% floor stays.
+  - The fighter card's crit and dodge estimates use the same caps.
+- **Why:** in 20,000 random fighters with gear and sets, crit had no ceiling. A tenth sat above 40%, a few above 50%, and one stacked to 97%. Dodge stacked to 76% before its hard cap. Upgrades 21 and 22 (gear upgrades, more sets) will make stacking easier, so the taper goes in now.
+- **Simulated effect** (same fighters, same fights, caps off → on):
+
+| Who | Off | On |
+|---|---|---|
+| Crit 45% or more (1,630 fights) | 51.2% | 50.0% |
+| Dodge 35% or more (1,296 fights) | 47.7% | 46.8% |
+| Damage reduction 15% or more (271 fights) | 57.9% | 59.8% (noise; few fights) |
+| Everyone else (26,803 fights) | 49.9% | 50.0% |
+
+  In the balance lab (40,000 paired fights) no class, race, weapon, sidekick, set, growth or personality moves by more than 1 point. Stacking wasn't winning fights yet, so this is a safety net for the gear upgrades, not a nerf to anything people play now.
+- `npx tsx tools/sim/stackers.ts` prints the table above. `npx tsx tools/sim/lab-compare.ts softCaps` prints the biggest lab movers for any balance switch. `npm run sim -- --no-soft-caps` runs everything without them. The lab now gives each fight its own seeded stream, so on/off comparisons are true pairs (it was skewed before: one changed crit shifted every later fighter).
+- It's a `softCaps` switch in the balance table: off under the old game's balance, so battle and fighter parity still match. Story-sim worker threads now copy every balance switch from the main thread.
+- Tested: `softcaps.test.ts` checks the taper maths, and that a fighter with absurd crit and dodge bonuses crits 55% to 75% of the time (every time without caps) and dodges under 66%.
+
+### 14. Developer balance dashboard (hidden)
+
+- **How to open it:** Settings, then tap the build line at the bottom ("The Wheel Has Spoken · build …") five times. It's not mentioned anywhere else.
+- **The Balance lab** runs 2,000, 10,000 or 40,000 same-level fights between random fighters in a Web Worker, with a progress bar, so the game stays responsive. Fighters have random levels 1 to 30 and random gear in 0 to 6 slots; 40% wear 2, 4 or 6 pieces of one set. It shows win rates in tabs for classes, races, weapons, sidekicks, gear sets, growth and personalities: a bar with a 50% line, the exact rate and the sample size. Anything above 58% is flagged red and anything below 42% blue. The last run stays while the app is open.
+- `labRun(fights, seed)` in `packages/core/src/game/lab.ts` is plain core code: the same seed always gives the same report. The build line shows the commit on CI builds and the date otherwise.
+- What a 20,000-fight run says today, for the next upgrades:
+  - Classes: Necromancer 66%, Chosen one 64%, Paladin 62% and Resilient 59% are flagged high; Mage 42% and NPC 27% low.
+  - Races: Treant 64%, Golem 60% and Titan 60% high; Pigeon 42% low.
+  - Weapons: the Rubber chicken (42%) and Wet noodle (41%) are the weakest.
+  - Gear sets: the Knight set wins 60%, 66% and 70% at 2, 4 and 6 pieces; the other sets are near even.
+  - Growth: Prodigy 57% is the best and Plateau 44% the worst.
+  - Sidekicks all land between 47% and 57%.
+- Tested: `lab.test.ts` checks the same seed gives the same report, that every fighter is counted once per table, that the overall rate averages exactly 50%, and that set wearers show up. A new e2e test does the five taps, runs 2,000 fights, opens every tab, and checks for clipping and page scroll at 320×568, 1280×720 and 844×390.
+
 ### 13. A visible momentum meter
 
 - Momentum used to be three faint dashes. Now each fighter has a meter under their name: a climbing double-chevron pixel icon, three thicker gold pips and a label ("+20%"). A new pip pops in when you win a matchup. At three pips the meter burns orange and pulses. When momentum is lost the pips flash red as they empty. The opponent's meter mirrors yours.

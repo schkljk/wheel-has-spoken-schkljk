@@ -7,6 +7,7 @@
  *   npm run sim -- --story-runs 0             # skip the story runs
  *   npm run sim -- --phase 16                 # also: boss wins with and without the phase-two slice
  *   npm run sim -- --no-personalities         # everything with the AI personalities switched off
+ *   npm run sim -- --no-soft-caps             # everything without the crit/dodge/damage-reduction soft caps
  */
 import { BALANCE, mulberry32, personalityOf, randomFighter, simulate, useBalance, type Fighter, type Rng } from '../../packages/core/src';
 import { storyTables } from './story-run';
@@ -119,9 +120,11 @@ function personalities() {
 }
 
 if (process.argv.includes('--no-personalities')) useBalance({ ...BALANCE, personalities: false });
+if (process.argv.includes('--no-soft-caps')) useBalance({ ...BALANCE, softCaps: false });
 const t0 = Date.now();
 const rng = mulberry32(SEED);
-console.log(`The Wheel Has Spoken: balance simulation (${FIGHTS} fights per table, seed ${SEED}${BALANCE.personalities ? '' : ', AI personalities off'})`);
+const off = [!BALANCE.personalities && 'AI personalities off', !BALANCE.softCaps && 'soft caps off'].filter(Boolean);
+console.log(`The Wheel Has Spoken: balance simulation (${FIGHTS} fights per table, seed ${SEED}${off.length ? `, ${off.join(', ')}` : ''})`);
 levelGaps(rng);
 byPick(rng, 'Archetypes vs random same-level opponents', (f) => `${f.arch.e} ${f.arch.n}`);
 byPick(rng, 'Races vs random same-level opponents (top and bottom 8)', (f) => `${f.race.e} ${f.race.n}`, 8);

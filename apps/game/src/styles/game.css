@@ -2110,3 +2110,99 @@ img.pxi.race {
   font-size: 0.68rem;
   font-weight: 700;
 }
+
+/* ---------- the balance lab (hidden) ---------- */
+.fine {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  margin: 0.6rem 0 0;
+}
+.fine.build {
+  margin-top: 1rem;
+  user-select: none;
+}
+.lab-prog {
+  height: 0.4rem;
+  border-radius: 9px;
+  background: var(--surface-2);
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+.lab-prog i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--q2), var(--q3));
+  transition: width 0.25s ease;
+}
+.lab-tabs {
+  margin: 0.6rem 0 0.4rem;
+}
+.lab-tabs .chip {
+  font-size: 0.8rem;
+}
+.lab-tabs .chip.on {
+  background: var(--q2);
+  border-color: var(--q2);
+  color: #fff;
+}
+.lab-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.lab-list li {
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr) minmax(3rem, 30%) 3.2rem 2.4rem;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.82rem;
+}
+.lab-list li.hi {
+  box-shadow: inset 3px 0 0 #e5484d;
+}
+.lab-list li.lo {
+  box-shadow: inset 3px 0 0 #3d8bff;
+}
+.lab-bar {
+  position: relative;
+  height: 0.45rem;
+  border-radius: 9px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+/* the 50% line */
+.lab-bar::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.6);
+}
+.lab-bar i {
+  display: block;
+  height: 100%;
+  background: var(--q2);
+}
+.lab-list li.hi .lab-bar i {
+  background: #e5484d;
+}
+.lab-list li.lo .lab-bar i {
+  background: #3d8bff;
+}
+.lab-w {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lab-c {
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
