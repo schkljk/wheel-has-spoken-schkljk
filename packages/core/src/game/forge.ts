@@ -15,7 +15,7 @@ export const UPGRADE_MAX = 5;
 export const upgradeLevel = (f: Fighter, k: string) => (f.gup && f.gup[k]) || 0;
 export const copiesOf = (f: Fighter, k: string) => (f.gcopy && f.gcopy[k]) || 0;
 /** Coins for upgrading to level `L`: a step per level, scaled by what the piece is worth. */
-export const upgradeCost = (x: Gear, L: number) => clamp(Math.round(x.cost * 0.6), 3, 60) * L;
+export const upgradeCost = (x: Gear, L: number) => clamp(x.cost, 6, 100) * L;
 /** Copies the step to level `L` takes. */
 export const copiesFor = (L: number) => (L >= 4 ? 1 : 0);
 /** What a copy salvages for. */

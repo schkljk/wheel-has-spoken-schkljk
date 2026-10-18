@@ -97,8 +97,9 @@ export interface RunLog {
   chapters: ChapterLog[];
   /** the chapter the run got stuck on, if it did */
   stuck: number | null;
-  /** gear upgrade levels on the fighter at the end (upgrade 21) */
+  /** gear upgrade levels on the fighter at the end (upgrade 21), and unspent coins */
   upLevels?: number;
+  coins?: number;
 }
 
 const spin = <T>(rng: Rng, list: { it: T; w: number; mult?: number }[]) => list[pickW(rng, list.map((x) => ({ w: x.w * (x.mult ?? 1) })))]!.it;
@@ -323,7 +324,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     }
     if (S2.ch === log.ch && S2.row === 0 && S2 !== S) {
       log.resets++;
-      if (log.resets > maxResets) return { chapters: out, stuck: log.ch, upLevels: upSum(F) };
+      if (log.resets > maxResets) return { chapters: out, stuck: log.ch, upLevels: upSum(F), coins: coinsOf(g) };
       // stuck players go and win some levels elsewhere
       for (let c = 0; c < cupsPerReset; c++) {
         playCup(g);
@@ -331,7 +332,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
       }
     }
   }
-  return { chapters: out, stuck: null, upLevels: upSum(F) };
+  return { chapters: out, stuck: null, upLevels: upSum(F), coins: coinsOf(g) };
 }
 
 export const CH_NAMES = CHAPTERS.map((c) => c.n);

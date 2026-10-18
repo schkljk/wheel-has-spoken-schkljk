@@ -40,6 +40,28 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 
 - [x] 19. The nemesis follows you into the story
 - [x] 20. Every chapter has encounters of its own
+- [x] 21. Gear upgrades, +1 to +5
+
+### 21. Gear upgrades, +1 to +5
+
+- **What changed (progression):** any piece you own can be upgraded from +1 to +5 at the **Forge** (Armory → a slot → Forge). Each level costs coins (the piece's value, at least 6 and at most 100, times the level: a common vest goes 6, 12, 18, 24, 30). The last two levels also take a **copy** of the piece.
+- **Copies:** loot that lands a piece you already have now gives you a copy instead of salvaging it on the spot. A quarter of all gear drops also come with a bonus copy of something you're wearing. A spare copy salvages for the same coins the piece would, so nothing is lost compared with before. The mystery box works the same way.
+- **What a level does**, by slot, so it reads as a number on your card: armor +2% damage reduction per level; helmets +1% damage reduction; boots and capes +1% dodge; gloves and trinkets +1% crit. The stat popup shows the change when you upgrade something you wear. The first try was +1 to the piece's main stat at +1, +3 and +5, and that was far too strong: one +5 piece was worth more than a level, a full +5 kit five levels. Percentages scale evenly.
+- **Simulated** (`npx tsx tools/sim/gear-upgrades.ts`, the same fighter with and without, paired seeds, 3,000 fights per cell):
+
+| Against the same fighter | Lvl 10 | Lvl 20 | Lvl 30 |
+|---|---|---|---|
+| One piece at +5 | 53.5% | 53.6% | 51.8% |
+| All six at +3 | 58.8% | 59.5% | 58.0% |
+| All six at +5 | 64.3% | 64.2% | 62.8% |
+| (scale) one level up | 57.7% | 55.3% | 53.7% |
+| (scale) three levels up | 69.0% | 63.6% | 59.6% |
+
+  So a +5 piece is about half a level, and a full +5 kit two levels early on and three to four later.
+- **Story:** the bot now upgrades its worn gear, cheapest step first, whenever it has 20 coins to spare. It has no other use for coins, so this is the most it can matter. Reaching the end: 27 / 62 / 90% (weak / average / strong) with upgrades vs 27 / 58 / 82% without. The bot ends the story with 92 coins instead of 1,399 unspent. The first price list (60% of the value per level) gave 32 / 77 / 88%, too big a shift, so prices were raised before shipping.
+- Pieces show their level everywhere: "+3" next to the name in the armory and on the card, a gold badge on the Fighter tab's gear row. The forge shows five steps (the copy ones dotted), the next step and its total, the price, your copies, and a running commentary from the smith (*"It hums now. That is either good or a warranty issue."*). Upgrading, salvaging a copy and salvaging a piece all ask first. Salvaging an upgraded piece warns that its level goes and that its copies are salvaged with it.
+- Behind a `gearUpgrades` switch. Upgrade levels and copies save only when a fighter has some, so older saves and the parity snapshots are unchanged.
+- Tested: `gear-upgrades.test.ts` (6 tests) covers costs and copies per level, the slot bonus reaching the fighter's traits and card, no effect under the old balance, saving and loading, a duplicate drop becoming a copy, how often bonus copies come, and salvaging copies and upgraded pieces. A new e2e test upgrades a +3 vest with a copy at 320 px and checks the steps, the confirmation, the Defense popup and that nothing is cut off.
 
 ### 20. Every chapter has encounters of its own
 
