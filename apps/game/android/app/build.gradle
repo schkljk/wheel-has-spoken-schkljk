@@ -8,8 +8,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // CI passes the run number, so every new APK installs over the last one
-        versionCode (System.getenv("VERSION_CODE") ?: "1") as int
-        versionName System.getenv("VERSION_NAME") ?: "1.0"
+        versionCode Integer.parseInt(System.getenv("VERSION_CODE") ?: "1")
+        versionName(System.getenv("VERSION_NAME") ?: "1.0")
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -22,10 +22,10 @@ android {
     // which the ANDROID_KEYSTORE_* environment variables take over when set.
     signingConfigs {
         release {
-            storeFile file(System.getenv("ANDROID_KEYSTORE_FILE") ?: "sideload.jks")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "wheel-sideload"
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "whs"
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: "wheel-sideload"
+            storeFile(file(System.getenv("ANDROID_KEYSTORE_FILE") ?: "sideload.jks"))
+            storePassword(System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: "wheel-sideload")
+            keyAlias(System.getenv("ANDROID_KEY_ALIAS") ?: "whs")
+            keyPassword(System.getenv("ANDROID_KEY_PASSWORD") ?: "wheel-sideload")
         }
     }
     buildTypes {
