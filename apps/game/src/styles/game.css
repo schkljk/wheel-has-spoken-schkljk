@@ -1257,6 +1257,10 @@
 .maphead .grow {
   min-width: 0;
 }
+/* the rows never push the header wider than the screen; the chapter title truncates instead */
+.maphead > * {
+  min-width: 0;
+}
 .mh-e {
   font-size: 2.2rem;
 }
@@ -1275,6 +1279,13 @@
   flex: none;
   text-decoration: none;
   letter-spacing: 0.05em;
+}
+.mh-grit .hearts {
+  gap: 0;
+}
+.mh-grit .hearts .pxi {
+  width: 0.95em;
+  height: 0.95em;
 }
 .maprows {
   min-height: 0;
@@ -2158,7 +2169,8 @@
   height: 1.15em;
   vertical-align: middle;
 }
-img.pxi.race {
+img.pxi.race,
+img.pxi.wpn {
   object-fit: contain;
 }
 

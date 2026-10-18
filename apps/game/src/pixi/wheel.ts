@@ -1,4 +1,16 @@
-import { Container, FillGradient, Graphics, Text, TextStyle, CanvasTextMetrics } from 'pixi.js';
+import { Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture, CanvasTextMetrics } from 'pixi.js';
+
+const TEX = new WeakMap<HTMLCanvasElement, Texture>();
+/** A crisp texture for an icon canvas, made once. */
+function texOf(c: HTMLCanvasElement) {
+  let t = TEX.get(c);
+  if (!t) {
+    t = Texture.from(c);
+    t.source.scaleMode = 'nearest';
+    TEX.set(c, t);
+  }
+  return t;
+}
 
 /** A slice as the wheel draws it. Sizes come from `w`; colors from quality (0 cooked .. 3 goated). */
 export interface WheelSlice {
@@ -8,6 +20,8 @@ export interface WheelSlice {
   w: number;
   /** odds shifted up or down: a small arrow before the label */
   mark?: 'up' | 'down' | '';
+  /** a pixel icon drawn instead of the emoji */
+  img?: HTMLCanvasElement | null;
 }
 
 const TAU = Math.PI * 2;
@@ -170,8 +184,9 @@ export class WheelView extends Container {
       let fs = Math.min(15, Math.max(9, size / 25), arc * 0.8);
       const maxW = rIn * 0.68;
       const mk = it.mark === 'up' ? '▲ ' : it.mark === 'down' ? '▼ ' : '';
-      let label = mk + (it.e ? it.e + ' ' : '') + it.n;
-      if (arc < fs * 1.7 && it.e) label = mk + it.e;
+      const pic = it.img ? texOf(it.img) : null;
+      let label = mk + (it.e && !pic ? it.e + ' ' : '') + it.n;
+      if (arc < fs * 1.7 && (it.e || pic)) label = pic ? mk : mk + it.e;
       const style = new TextStyle({ fontFamily: FONT, fontWeight: '700', fontSize: fs, fill: it.q === 3 ? 0x2a1a05 : 0xffffff });
       const width = () => CanvasTextMetrics.measureText(label, style).width;
       while (width() > maxW && fs > 10) {
@@ -185,6 +200,15 @@ export class WheelView extends Container {
       holder.rotation = mid - Math.PI / 2;
       t.position.set(rIn - 9, 0.5);
       holder.addChild(t);
+      if (pic) {
+        // the icon sits just inside the label, upright along the slice
+        const sp = new Sprite(pic);
+        const ps = Math.round(Math.min(fs * 1.55, arc * 1.1));
+        sp.width = sp.height = ps;
+        sp.anchor.set(1, 0.5);
+        sp.position.set(rIn - 9 - (label ? CanvasTextMetrics.measureText(label, style).width + 3 : 0), 0.5);
+        holder.addChild(sp);
+      }
       this.labels.addChild(holder);
     });
     this.highlight(hi);

@@ -10,6 +10,43 @@
 - [x] Phase 3: every screen ported
 - [x] Phase 4: upgrades 1–45 (see docs/UPGRADES.md). Item 46, sharing, is optional and waits until the game is shared
 
+## After the upgrade list: owner requests
+
+### HP bars move when the blow lands
+
+- **Reported:** "HP goes down before the strike, ruining the immersion."
+- **Cause:** the fight screen handed each event's numbers to the HUD before the scene played it, so the HP, energy and momentum bars changed during the wind-up.
+- **Fix:** the scene now tells the HUD when it shows a new state, which for hits is the moment of impact (mid-lunge for melee, on arrival for projectiles). The HUD also settles once each event has finished, as a safety net. Skip and reduced motion behave as before.
+
+### New pixel art: fighters and icons
+
+- **New fighter sprites, drawn in code from scratch** (`apps/game/src/art/`), same 70×84 canvas so nothing else moved.
+  - **Proportions:** chunky and big-headed. The head is about a third of the height, so a fighter reads at a glance on a phone.
+  - **Engine (`px.ts`):** every part is a shape whose shading comes from its own volume. Each shape is inflated into a bevel, lit from the top left and quantized into six hue-shifted tones per material: shadows drift violet, lights drift warm. Parts in front get a crease line in the darker tone of what is behind them, and the silhouette gets a coloured outline, never plain black.
+  - **Faces:** two-by-three eyes with a glint. Brows and mouth follow a mood per class: angry brawlers, smug tricksters, calm mages, a worried "Resilient", a blank NPC.
+  - **Hair:** six styles and eight colours from the name. A slicked widow's peak for vampires. Spiky hair, bobs, ponytails.
+  - **Bodies:** every race feature redrawn: snouts, horns, ears, beaks, tusks, fins, bug eyes, skulls, visors. Every class outfit has real detail: belts with buckles, pauldrons, tabards, lapels, aprons, robe trims. Every hat was redrawn too.
+  - **Creatures:** all nine creature body plans redrawn (slime, ghost, pigeon, toaster, eldritch horror, djinn, snowman, rubber duck, elementals by sub-race).
+  - **Weapons:** all 35 have their own art. Six used to fall back to a plain sword: chainsaw, chakram, rapier, crossbow, bo staff and harpoon. Enchantments glow around the weapon's outline.
+  - **Bosses:** the story bosses' silhouettes were ported onto the new engine.
+- **New icon set:** all 75 interface and content icons were redrawn at 16×16 with the same engine and light (`art/icons.ts`), so icons and fighters share one style.
+  - Coins, gems, tabs, stats, gear slots tinted by rarity, bag items, statuses, moves.
+  - New icons: tower, flame, gift and an empty heart. The Play tab's tower and hard mode cards, the daily wheel button, and the grit hearts on the story card and map now use pixel icons instead of emojis.
+- **Content icons from the sprite art** (`art/portraits.ts`):
+  - **Faces:** races, sub-races (in their own colours) and classes (wearing their headgear).
+  - **Weapons:** each weapon on its own, and enchantments as a glowing blade.
+- **Power icons:** every power has a pixel icon. 19 are new (shadow, holy light, telekinesis, mind control, teleportation, gravity, shapeshifting, reality warping, negation, smite, miracle, life drain, arcane, earthquake, wind, vines, explosions, magnetism, summoning). The other 14 reuse the matching icon: fire is the flame, ice the snowflake, and so on.
+- **Where the content icons show:** in the collection, on info cards, and **on the wheels' slices** instead of emojis. They are pre-built a few at a time while the browser is idle, because a sprite takes about 2.6 ms to draw and the race wheel has 47.
+- **The old 12×12 letter-grid icons are gone**, along with their one-off extraction tool. Nothing uses them any more.
+- **Size:** the main script went from 640 to 680 kB (225 → 241 kB gzipped) for the new sprite engine, about 100 drawn icons and the portraits.
+- **Bug found along the way:** a fighter's skin tone and hair style both came from the same bits of the name hash, so they always paired up. The style now uses different bits. The old art also lined an eldritch horror's eyes up on a diagonal; they are now placed by hand.
+- **Tests:**
+  - The pixel-for-pixel comparison with the legacy sprites is retired, on purpose: the art is new. What still matches legacy (name hashing, the fields the art reads, cache keys) stays in `tools/parity/art.test.ts`.
+  - New `tools/art/sprites.test.ts` checks that every race, sub-race, class and weapon draws something sensible: enough pixels, feet on the ground, the arm pivot on the canvas, every enchant glowing, each weapon different from every other, the same image every time, variety across names, and draw time.
+  - New `tools/art/icons.test.ts` checks that every icon draws and that gear slots take the rarity colour. It also checks that every power and every status chip points at an icon that exists.
+  - The boss silhouette tests pass unchanged.
+- **Tools for looking at the art:** `npx tsx tools/art/sheet.ts <dir>` (contact sheets of races, classes, weapons and bosses; add `zoom Race:class:weapon` for close-ups), `tools/art/heads.ts` (faces at 10×) and `tools/art/icon-sheet.ts` (every icon).
+
 ## Phase 4 log: upgrades
 
 Upgrades from `docs/UPGRADES.md`, top to bottom. Done so far:

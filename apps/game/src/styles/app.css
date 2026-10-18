@@ -95,6 +95,15 @@ small {
   width: 1.75rem;
   height: 1.75rem;
 }
+.hearts {
+  display: inline-flex;
+  gap: 1px;
+  vertical-align: -0.2em;
+}
+.hearts .pxi {
+  width: 1.1em;
+  height: 1.1em;
+}
 
 /* ---------- buttons ---------- */
 .btn {

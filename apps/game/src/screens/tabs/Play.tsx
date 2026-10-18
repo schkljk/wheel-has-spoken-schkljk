@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { Icon } from '../../ui/Icon';
+import { Hearts } from '../../ui/Hearts';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goMap } from '../../flows/nav';
@@ -57,8 +58,7 @@ export function PlayTab() {
         )}
         <small>
           HP {hpTxt(G, S ? S.hp : 100)}. {(F.lvl || 1) < C.lvl && <span class="reclvl">Recommended level {C.lvl}, you are {F.lvl || 1}. </span>}
-          {'❤️'.repeat(Math.max(0, S ? S.grit : maxGrit(G)))}
-          {'🖤'.repeat(Math.max(0, maxGrit(G) - (S ? S.grit : maxGrit(G))))}
+          <Hearts n={S ? S.grit : maxGrit(G)} max={maxGrit(G)} />
         </small>
         {HM && (
           <Inf k={`it|mut|${HM.n}`} class="hard-mut">
@@ -102,7 +102,7 @@ export function PlayTab() {
       )}
       {dailyReady(G) && (
         <button class="btn daily block" onClick={() => void dailyWheel()} {...rise(n++)}>
-          🎁 Your daily wheel is ready
+          <Icon name="gift" /> Your daily wheel is ready
         </button>
       )}
       {NM && (
@@ -132,9 +132,7 @@ export function PlayTab() {
         </span>
       </button>
       <button class={`card tap mode${towerOpen(G) ? '' : ' locked'}`} onClick={() => void towerFlow()} {...rise(n++)}>
-        <span class="te" aria-hidden="true">
-          🗼
-        </span>
+        <Icon name="tower" class="lg" />
         <span class="grow">
           <b>Endless tower</b>
           <small>
@@ -145,9 +143,7 @@ export function PlayTab() {
         </span>
       </button>
       <button class={`card tap mode${HC.length ? '' : ' locked'}`} onClick={() => hardFlow()} {...rise(n++)}>
-        <span class="te" aria-hidden="true">
-          🔥
-        </span>
+        <Icon name="flame" class="lg" />
         <span class="grow">
           <b>Hard mode</b>
           <small>

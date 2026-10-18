@@ -1,8 +1,7 @@
 import type { StatusChip } from '@whs/core';
-import type { IconName } from './Icon';
 
 /** The pixel icon for each status or buff on a fighter (over their head, and in the fight menu). */
-export const CHIP_ICON: Record<StatusChip['k'], IconName> = {
+export const CHIP_ICON: Record<StatusChip['k'], string> = {
   guard: 'shield',
   opened: 'mv_feint',
   focused: 'mv_focus',
