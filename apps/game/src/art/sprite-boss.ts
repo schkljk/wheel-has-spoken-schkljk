@@ -2,17 +2,21 @@
 // class: a crown, horns, a halo, a collar, a fin, a wheel... Placed from the sprite's own outline (the top rows
 // and the shoulders) so it fits any build. Things behind the body only fill pixels the body left empty.
 
-import { BASE, LIT, Bx, C, E, P, RP, S, buf, dot, ln, raw, stamp, type Buf, type Ramp } from './px';
+import { BASE, LIT, Bx, C, E, P, RP, S, blank, dot, has, ln, raw, stamp, type Buf, type Ramp } from './px';
 import { SH, SW } from './sprite-data';
 
 export function bossDress(B: Buf, name: string) {
   let top = 0;
-  while (top < SH && !B.c.slice(top * SW, top * SW + SW).some(Boolean)) top++;
+  const rowAny = (y: number) => {
+    for (let x = 0; x < SW; x++) if (has(B, x, y)) return true;
+    return false;
+  };
+  while (top < SH && !rowAny(top)) top++;
   const cols = (y: number) => {
     let a = SW,
       b = -1;
     for (let x = 0; x < SW; x++)
-      if (B.c[y * SW + x]) {
+      if (has(B, x, y)) {
         a = Math.min(a, x);
         b = Math.max(b, x);
       }
@@ -25,7 +29,7 @@ export function bossDress(B: Buf, name: string) {
   let sh = top + 14;
   while (sh < Math.min(SH - 20, top + 34) && cols(sh)[1] - cols(sh)[0] < hw * 1.3) sh++;
   const [s0, s1] = cols(sh + 1);
-  const back = buf(SW, SH);
+  const back = blank(B);
   const gold = RP('#F2B544'),
     white = RP('#F4F1EA');
   const MET = { ol: true, bv: 2, shine: true } as const;

@@ -90,82 +90,136 @@ export const RP = (hex: string): Ramp => {
 };
 
 // ---------------------------------------------------------------- canvas
-/** A layer being drawn: per pixel the color, the ramp it came from and its tone (-1 = a raw color), and alpha. */
+/**
+ * A layer being drawn: per pixel the color, the ramp it came from and its tone (-1 = a raw color), and alpha.
+ * Drawing happens in art pixels, but a layer can hold `s` x `s` real pixels per art pixel: shapes are then
+ * sampled at the finer grid (smoother curves, finer outlines and shading) while every drawing call keeps the
+ * same coordinates. `w` and `h` count real pixels.
+ */
 export interface Buf {
   w: number;
   h: number;
+  s: number;
   c: (RGB | null)[];
   r: (Ramp | null)[];
   t: Int8Array;
   a: Uint8Array;
 }
-export function buf(w: number, h: number): Buf {
-  return { w, h, c: new Array<RGB | null>(w * h).fill(null), r: new Array<Ramp | null>(w * h).fill(null), t: new Int8Array(w * h).fill(-1), a: new Uint8Array(w * h) };
+/** A layer `w` x `h` art pixels, `s` real pixels per art pixel each way. */
+export function buf(w: number, h: number, s = 1): Buf {
+  const W = Math.round(w * s),
+    H = Math.round(h * s),
+    n = W * H;
+  return { w: W, h: H, s, c: new Array<RGB | null>(n).fill(null), r: new Array<Ramp | null>(n).fill(null), t: new Int8Array(n).fill(-1), a: new Uint8Array(n) };
 }
-export const has = (B: Buf, x: number, y: number) => x >= 0 && y >= 0 && x < B.w && y < B.h && !!B.c[y * B.w + x];
-/** One pixel in a ramp tone. */
-export function dot(B: Buf, x: number, y: number, R: Ramp, tone = BASE, al = 255) {
+/** An empty layer the same size as B. */
+export const blank = (B: Buf) => buf(B.w / B.s, B.h / B.s, B.s);
+/** Is anything drawn in the art pixel (x, y)? */
+export const has = (B: Buf, x: number, y: number) => {
+  const s = B.s;
   x = Math.round(x);
   y = Math.round(y);
-  if (x < 0 || y < 0 || x >= B.w || y >= B.h) return;
-  const i = y * B.w + x;
-  B.c[i] = R[tone]!;
-  B.r[i] = R;
-  B.t[i] = tone;
-  B.a[i] = al;
+  for (let Y = y * s; Y < (y + 1) * s; Y++)
+    for (let X = x * s; X < (x + 1) * s; X++) if (X >= 0 && Y >= 0 && X < B.w && Y < B.h && B.c[Y * B.w + X]) return true;
+  return false;
+};
+/** The ramp of the art pixel (x, y), at its center. */
+export const rampAt = (B: Buf, x: number, y: number) => {
+  const X = Math.floor((x + 0.5) * B.s),
+    Y = Math.floor((y + 0.5) * B.s);
+  return X >= 0 && Y >= 0 && X < B.w && Y < B.h ? B.r[Y * B.w + X] : null;
+};
+/** Calls f for every real pixel inside the art-pixel box, with its index and the art coordinates of its center. */
+export function forPx(B: Buf, x0: number, y0: number, x1: number, y1: number, f: (i: number, x: number, y: number) => void) {
+  const s = B.s;
+  const X0 = Math.max(0, Math.floor(x0 * s)),
+    Y0 = Math.max(0, Math.floor(y0 * s)),
+    X1 = Math.min(B.w - 1, Math.ceil(x1 * s) - 1),
+    Y1 = Math.min(B.h - 1, Math.ceil(y1 * s) - 1);
+  for (let Y = Y0; Y <= Y1; Y++) for (let X = X0; X <= X1; X++) f(Y * B.w + X, (X + 0.5) / s, (Y + 0.5) / s);
 }
-/** One pixel in a raw color (eyes, glints). */
-export function raw(B: Buf, x: number, y: number, c: RGB, al = 255) {
-  x = Math.round(x);
-  y = Math.round(y);
-  if (x < 0 || y < 0 || x >= B.w || y >= B.h) return;
-  const i = y * B.w + x;
+function setPx(B: Buf, i: number, c: RGB, R: Ramp | null, t: number, al: number) {
   B.c[i] = c;
-  B.r[i] = null;
-  B.t[i] = -1;
+  B.r[i] = R;
+  B.t[i] = t;
   B.a[i] = al;
+}
+/** Calls f for each real pixel of the art pixel at (x, y), rounded. */
+function block(B: Buf, x: number, y: number, f: (i: number) => void) {
+  x = Math.round(x);
+  y = Math.round(y);
+  const s = B.s;
+  if (x < 0 || y < 0 || x * s >= B.w || y * s >= B.h) return;
+  for (let Y = y * s; Y < Math.min(B.h, (y + 1) * s); Y++) for (let X = x * s; X < Math.min(B.w, (x + 1) * s); X++) f(Y * B.w + X);
+}
+/** One art pixel in a ramp tone. */
+export function dot(B: Buf, x: number, y: number, R: Ramp, tone = BASE, al = 255) {
+  block(B, x, y, (i) => setPx(B, i, R[tone]!, R, tone, al));
+}
+/** One art pixel in a raw color (eyes, glints). */
+export function raw(B: Buf, x: number, y: number, c: RGB, al = 255) {
+  block(B, x, y, (i) => setPx(B, i, c, null, -1, al));
 }
 /** Only on pixels already drawn (details that must stay inside their part). */
 export function dotOn(B: Buf, x: number, y: number, R: Ramp, tone = BASE) {
-  if (has(B, Math.round(x), Math.round(y))) dot(B, x, y, R, tone);
+  block(B, x, y, (i) => {
+    if (B.c[i]) setPx(B, i, R[tone]!, R, tone, 255);
+  });
 }
-/** A 1px line in a ramp tone (Bresenham). */
+/**
+ * One real pixel at art coordinates (x, y), for details finer than an art pixel (glints, lids) on a fine layer;
+ * on a 1x layer it is the art pixel itself.
+ */
+export function fine(B: Buf, x: number, y: number, R: Ramp | RGB, tone = BASE) {
+  const X = Math.floor(x * B.s + 1e-6),
+    Y = Math.floor(y * B.s + 1e-6);
+  if (X < 0 || Y < 0 || X >= B.w || Y >= B.h) return;
+  const i = Y * B.w + X;
+  if (R.length === 6) setPx(B, i, (R as Ramp)[tone]!, R as Ramp, tone, 255);
+  else setPx(B, i, R as RGB, null, -1, 255);
+}
+/** A thin line in a ramp tone (Bresenham, one real pixel wide) from art pixel to art pixel. */
 export function ln(B: Buf, x0: number, y0: number, x1: number, y1: number, R: Ramp, tone = BASE, onlyOn = false) {
-  x0 = Math.round(x0);
-  y0 = Math.round(y0);
-  x1 = Math.round(x1);
-  y1 = Math.round(y1);
-  const dx = Math.abs(x1 - x0),
-    dy = -Math.abs(y1 - y0),
-    sx = x0 < x1 ? 1 : -1,
-    sy = y0 < y1 ? 1 : -1;
+  const s = B.s;
+  // from pixel center to pixel center
+  const at = (v: number) => (s === 1 ? Math.round(v) : Math.floor((v + 0.5) * s));
+  let X0 = at(x0),
+    Y0 = at(y0);
+  const X1 = at(x1),
+    Y1 = at(y1);
+  const dx = Math.abs(X1 - X0),
+    dy = -Math.abs(Y1 - Y0),
+    sx = X0 < X1 ? 1 : -1,
+    sy = Y0 < Y1 ? 1 : -1;
   let e = dx + dy;
   for (;;) {
-    if (onlyOn) dotOn(B, x0, y0, R, tone);
-    else dot(B, x0, y0, R, tone);
-    if (x0 === x1 && y0 === y1) break;
+    if (X0 >= 0 && Y0 >= 0 && X0 < B.w && Y0 < B.h) {
+      const i = Y0 * B.w + X0;
+      if (!onlyOn || B.c[i]) setPx(B, i, R[tone]!, R, tone, 255);
+    }
+    if (X0 === X1 && Y0 === Y1) break;
     const e2 = 2 * e;
     if (e2 >= dy) {
       e += dy;
-      x0 += sx;
+      X0 += sx;
     }
     if (e2 <= dx) {
       e += dx;
-      y0 += sy;
+      Y0 += sy;
     }
   }
 }
-/** Darkens a drawn pixel by `n` tones (cast shadows, creases). */
-export function shade(B: Buf, x: number, y: number, n = 1) {
-  x = Math.round(x);
-  y = Math.round(y);
-  if (x < 0 || y < 0 || x >= B.w || y >= B.h) return;
-  const i = y * B.w + x;
+/** Darkens one real pixel by `n` tones. */
+export function shadeAt(B: Buf, i: number, n = 1) {
   const R = B.r[i];
   if (!R || B.t[i]! <= DEEP) return;
   const t = Math.max(DEEP, B.t[i]! - n);
   B.t[i] = t;
   B.c[i] = R[t]!;
+}
+/** Darkens a drawn art pixel by `n` tones (cast shadows, creases). */
+export function shade(B: Buf, x: number, y: number, n = 1) {
+  block(B, x, y, (i) => shadeAt(B, i, n));
 }
 
 // ---------------------------------------------------------------- shapes
@@ -249,10 +303,11 @@ const LX = -0.45,
  * (a bevel of radius `bv`), the height's slope a normal, the normal against the light a tone.
  */
 export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1: number, R: Ramp, o: PaintOpts = {}) {
-  const bx0 = Math.max(0, Math.floor(x0) - 1),
-    by0 = Math.max(0, Math.floor(y0) - 1),
-    bx1 = Math.min(B.w - 1, Math.ceil(x1) + 1),
-    by1 = Math.min(B.h - 1, Math.ceil(y1) + 1);
+  const s = B.s;
+  const bx0 = Math.max(0, Math.floor(x0 * s) - s),
+    by0 = Math.max(0, Math.floor(y0 * s) - s),
+    bx1 = Math.min(B.w - 1, Math.ceil(x1 * s) + s),
+    by1 = Math.min(B.h - 1, Math.ceil(y1 * s) + s);
   if (bx1 < bx0 || by1 < by0) return;
   const W = bx1 - bx0 + 3,
     H = by1 - by0 + 3;
@@ -261,7 +316,7 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
   let n = 0;
   for (let y = by0; y <= by1; y++)
     for (let x = bx0; x <= bx1; x++) {
-      if (!test(x + 0.5, y + 0.5)) continue;
+      if (!test((x + 0.5) / s, (y + 0.5) / s)) continue;
       const i = y * B.w + x;
       if (o.onto && !B.c[i]) continue;
       if (o.under && B.c[i]) continue;
@@ -277,14 +332,18 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
   // cast shadow: one tone darker on what lies just below and right of the shape
   if (o.cast) {
     const done = new Set<number>();
-    for (let y = by0; y <= by1 + 2; y++)
-      for (let x = bx0; x <= bx1 + 1; x++) {
-        if (inM(x, y) || x >= B.w || y >= B.h) continue;
-        if (inM(x, y - 1) || inM(x - 1, y - 1) || inM(x, y - 2)) {
+    const under = (x: number, y: number) => {
+      for (let k = 1; k <= s; k++) if (inM(x, y - k) || inM(x - k, y - k) || inM(x, y - s - k)) return true;
+      return false;
+    };
+    for (let y = by0; y <= Math.min(B.h - 1, by1 + 2 * s); y++)
+      for (let x = bx0; x <= Math.min(B.w - 1, bx1 + s); x++) {
+        if (inM(x, y)) continue;
+        if (under(x, y)) {
           const i = y * B.w + x;
           if (!done.has(i)) {
             done.add(i);
-            shade(B, x, y);
+            shadeAt(B, i);
           }
         }
       }
@@ -298,13 +357,15 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
         const i = y * B.w + x;
         if (o.onto && !B.c[i]) continue;
         const bR = B.r[i];
-        if (!B.c[i]) dot(B, x, y, R, OLN, o.al ?? 255);
-        else if (bR && B.t[i]! > DEEP) dot(B, x, y, bR, B.t[i]! >= BASE ? DEEP : OLN);
-        else if (!bR) dot(B, x, y, R, OLN);
+        if (!B.c[i]) setPx(B, i, R[OLN]!, R, OLN, o.al ?? 255);
+        else if (bR && B.t[i]! > DEEP) {
+          const t = B.t[i]! >= BASE ? DEEP : OLN;
+          setPx(B, i, bR[t]!, bR, t, 255);
+        } else if (!bR) setPx(B, i, R[OLN]!, R, OLN, 255);
       }
   }
   // distance to the edge (chamfer 3-4), then a round bevel profile
-  const bv = o.bv ?? 3;
+  const bv = (o.bv ?? 3) * s;
   const tone0 = o.tone;
   const d = new Float32Array(W * H);
   if (tone0 === undefined && bv > 0) {
@@ -329,6 +390,7 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
   }
   const hAt = (lx: number, ly: number) => (m[ly * W + lx] ? d[ly * W + lx]! : 0);
   const top = o.shine ? SHINE : LIT;
+  const al = o.al ?? 255;
   for (let y = by0; y <= by1; y++)
     for (let x = bx0; x <= bx1; x++) {
       const lx = x - bx0 + 1,
@@ -345,7 +407,7 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
         t = I < 0.05 ? DEEP : I < 0.42 ? SHD : I < 0.8 ? BASE : I < 0.94 ? LIT : SHINE;
       }
       t = clamp(t + (o.sh ?? 0), DEEP, top);
-      dot(B, x, y, R, t, o.al ?? 255);
+      setPx(B, y * B.w + x, R[t]!, R, t, al);
     }
 }
 

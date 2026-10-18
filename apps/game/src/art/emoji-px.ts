@@ -15,8 +15,6 @@ export const EMOJI_ICON: Record<string, string> = {
   '🏆': 'cup', '🧲': 'pw_magnet', '💥': 'pw_boom', '🌿': 'pw_vines', '🔋': 'bolt', '🏕️': 'camp', '🪵': 'camp', '🧰': 'chest',
 };
 
-const SZ = 16;
-const OUT = SZ + 2;
 type RGB = [number, number, number];
 
 function toHsl([r, g, b]: RGB): [number, number, number] {
@@ -91,21 +89,22 @@ function palette(cs: RGB[], k: number): RGB[] {
 }
 
 let glyph: CanvasRenderingContext2D | null = null;
-/** The emoji as pixel art on an 18x18 canvas, or null when the phone can't draw it. */
-export function pixelEmoji(e: string): HTMLCanvasElement | null {
-  const S = 72;
+/** The emoji as pixel art, SZ x SZ plus its outline (16 for the page, 32 for big pictures), or null when the phone can't draw it. */
+export function pixelEmoji(e: string, SZ = 16): HTMLCanvasElement | null {
+  const OUT = SZ + 2;
+  const S = SZ * 4.5;
   if (!glyph) {
     const c = document.createElement('canvas');
-    c.width = c.height = S;
     glyph = c.getContext('2d', { willReadFrequently: true });
     if (!glyph) return null;
   }
   const g = glyph;
+  if (g.canvas.width !== S) g.canvas.width = g.canvas.height = S;
   g.clearRect(0, 0, S, S);
-  g.font = `58px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Twemoji Mozilla", sans-serif`;
+  g.font = `${Math.round(S * 0.8)}px "Noto Color Emoji", "Apple Color Emoji", "Segoe UI Emoji", "Twemoji Mozilla", sans-serif`;
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.fillText(e, S / 2, S / 2 + 3);
+  g.fillText(e, S / 2, S / 2 + S / 24);
   const d = g.getImageData(0, 0, S, S).data;
   let x0 = S,
     y0 = S,
@@ -150,7 +149,7 @@ export function pixelEmoji(e: string): HTMLCanvasElement | null {
   const on = px.filter(Boolean) as RGB[];
   if (!on.length) return null;
   // a few flat colors, a touch more saturated, like hand-picked pixel art
-  const pal = palette(on, Math.min(7, on.length)).map((c) => {
+  const pal = palette(on, Math.min(SZ > 16 ? 10 : 7, on.length)).map((c) => {
     const [h, s, l] = toHsl(c);
     return fromHsl(h, Math.min(1, s * 1.15), l);
   });
@@ -181,18 +180,22 @@ export function pixelEmoji(e: string): HTMLCanvasElement | null {
 }
 
 const canvases = new Map<string, HTMLCanvasElement | null>();
-/** The pixel icon for an emoji as a canvas (a hand-drawn icon when there is one), for Pixi and the wheels. */
-export function emojiCanvas(e: string): HTMLCanvasElement | null {
-  const hit = canvases.get(e);
+/**
+ * The pixel icon for an emoji as a canvas (a hand-drawn icon when there is one), for Pixi and the wheels; `fine`
+ * draws it at twice the detail, for pictures shown big.
+ */
+export function emojiCanvas(e: string, fine = false): HTMLCanvasElement | null {
+  const key = fine ? e + '|fine' : e;
+  const hit = canvases.get(key);
   if (hit !== undefined) return hit;
   let cv: HTMLCanvasElement | null = null;
   try {
     const name = EMOJI_ICON[e] ?? EMOJI_ICON[e.replace(/\uFE0F/g, '')] ?? EMOJI_ICON[e + '\uFE0F'];
-    cv = name ? iconCanvas(name) : pixelEmoji(e);
+    cv = name ? iconCanvas(name, fine ? 2 : 1) : pixelEmoji(e, fine ? 32 : 16);
   } catch {
     cv = null;
   }
-  canvases.set(e, cv);
+  canvases.set(key, cv);
   return cv;
 }
 

@@ -1,7 +1,7 @@
 // Weapons, held in the near hand. Most are drawn in the weapon's own frame: t runs along the handle (up and
 // forward), s across it (positive = toward the edge, forward). Enchanted weapons glow around their outline.
 
-import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, buf, ln, raw, stamp, type Buf, type Pt, type Ramp } from './px';
+import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, blank, forPx, ln, raw, stamp, type Buf, type Pt, type Ramp } from './px';
 import { own } from './sprite-data';
 
 /** Weapon glow color per enchant key. */
@@ -21,26 +21,30 @@ const MAT = { ol: true, bv: 2 } as const;
 export function weapon(A: Buf, name: string | undefined, ench: string | undefined, hx: number, hy: number) {
   const n = (name || '').toLowerCase();
   if (n.includes('fists')) return;
-  const W = buf(A.w, A.h);
+  const W = blank(A);
   draw(W, n, hx, hy);
   const g = own(EGLOW, ench);
   if (g) glow(A, W, RP(g));
   stamp(A, W);
 }
 
-/** A soft two-pixel glow around everything in W, under it, in A. */
+/** A soft glow two art pixels wide around everything in W, under it, in A. */
 function glow(A: Buf, W: Buf, G: Ramp) {
+  const s = W.s,
+    r = 2 * s;
+  // distance to the nearest drawn pixel, one pass per direction (city block and chessboard)
   const d = new Uint8Array(W.w * W.h);
   for (let y = 0; y < W.h; y++)
     for (let x = 0; x < W.w; x++) {
       if (W.c[y * W.w + x]) continue;
       let best = 0;
-      for (let dy = -2; dy <= 2 && best !== 1; dy++)
-        for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -r; dy <= r && best !== 1; dy++)
+        for (let dx = -r; dx <= r; dx++) {
           const nx = x + dx,
             ny = y + dy;
           if (nx < 0 || ny < 0 || nx >= W.w || ny >= W.h || !W.c[ny * W.w + nx]) continue;
-          const k = Math.abs(dx) + Math.abs(dy) <= 1 ? 1 : Math.max(Math.abs(dx), Math.abs(dy)) <= 2 && Math.abs(dx) + Math.abs(dy) <= 3 ? 2 : 0;
+          const m = Math.abs(dx) + Math.abs(dy);
+          const k = m <= s ? 1 : Math.max(Math.abs(dx), Math.abs(dy)) <= r && m <= 3 * s ? 2 : 0;
           if (k && (!best || k < best)) best = k;
         }
       d[y * W.w + x] = best;
@@ -333,18 +337,16 @@ function draw(W: Buf, n: string, hx: number, hy: number) {
     const cx = hx + 3,
       cy = hy - 8;
     const R = GOLD();
-    for (let y = Math.floor(cy - 9); y <= cy + 9; y++)
-      for (let x = Math.floor(cx - 9); x <= cx + 9; x++) {
-        const d = Math.hypot(x + 0.5 - cx, y + 0.5 - cy);
-        if (d <= 7.5 && d >= 4.5) {
-          const lit = x + 0.5 - cx + (y + 0.5 - cy) < -2;
-          const sh = x + 0.5 - cx + (y + 0.5 - cy) > 3;
-          W.c[y * W.w + x] = R[lit ? LIT : sh ? SHD : BASE]!;
-          W.r[y * W.w + x] = R;
-          W.t[y * W.w + x] = BASE;
-          W.a[y * W.w + x] = 255;
-        }
-      }
+    forPx(W, cx - 9, cy - 9, cx + 9, cy + 9, (i, x, y) => {
+      const d = Math.hypot(x - cx, y - cy);
+      if (d > 7.5 || d < 4.5) return;
+      const lit = x - cx + (y - cy) < -2;
+      const sh = x - cx + (y - cy) > 3;
+      W.c[i] = R[lit ? LIT : sh ? SHD : BASE]!;
+      W.r[i] = R;
+      W.t[i] = BASE;
+      W.a[i] = 255;
+    });
     for (let k = 0; k < 6; k++) {
       const a = (k / 6) * Math.PI * 2;
       P(W, [[cx + Math.cos(a - 0.2) * 7, cy + Math.sin(a - 0.2) * 7], [cx + Math.cos(a) * 10, cy + Math.sin(a) * 10], [cx + Math.cos(a + 0.25) * 7, cy + Math.sin(a + 0.25) * 7]], STEEL(), MET);

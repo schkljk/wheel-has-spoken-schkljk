@@ -2496,6 +2496,14 @@ img.pxi.race,
 img.pxi.wpn {
   object-fit: contain;
 }
+/* faces, weapons and chapter badges are drawn at two pixels per art pixel: at icon sizes they scale smoothly
+   (nearest-neighbour would drop some of their thin outlines) */
+img.pxi.race,
+img.pxi.wpn,
+img.pxi.face,
+img.pxi.chap {
+  image-rendering: auto;
+}
 
 /* ---------- share card ---------- */
 .share-prev {

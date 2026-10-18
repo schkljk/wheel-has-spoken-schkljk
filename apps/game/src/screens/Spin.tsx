@@ -46,7 +46,7 @@ export interface Entry<T = Slice> {
 }
 /** Wheel slices; races, classes, weapons and enchantments get their pixel icon (`race` is the parent of sub-races). */
 export const toSlices = (list: Entry<{ n: string; e?: string; q?: number; k?: string }>[], cat?: string, race?: string): WheelSlice[] =>
-  list.map((e) => ({ n: e.it.n, e: e.it.e, q: e.it.q, w: e.w, mark: e.mult >= 1.5 ? 'up' : e.mult <= 0.67 ? 'down' : '', img: contentCanvas(cat, e.it, race) ?? (e.it.e ? emojiCanvas(e.it.e) : null) }));
+  list.map((e) => ({ n: e.it.n, e: e.it.e, q: e.it.q, w: e.w, mark: e.mult >= 1.5 ? 'up' : e.mult <= 0.67 ? 'down' : '', img: contentCanvas(cat, e.it, race) ?? (e.it.e ? emojiCanvas(e.it.e, true) : null) }));
 
 export function OddsChips({ reasons, unlock }: { reasons: OddsReason[] | { cls: string; txt: string }[]; unlock?: string }) {
   const shown = reasons.slice(0, 5);

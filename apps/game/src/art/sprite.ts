@@ -1,5 +1,5 @@
 // Fighter sprites: 70x84 pixel art drawn in code (the Phase 4 art pass, which replaced the port of the legacy
-// sprites).
+// sprites), rendered at two real pixels per art pixel so curves, outlines and shading come out fine.
 //
 // Chunky, big-headed proportions that read at a glance on a phone. Every part is a shape whose shading comes
 // from its own volume, lit from the top left and quantized into six hue-shifted tones per material (px.ts).
@@ -21,8 +21,14 @@ export type { Look };
 export { EGLOW } from './sprite-weapons';
 export { ramp, type RGB, type Ramp } from './px';
 
+/** The sprite's size in art pixels (the coordinates everything is drawn in). */
 export const SPRITE_W = SW;
 export const SPRITE_H = SH;
+/** Real pixels per art pixel, each way. */
+export const SPRITE_S = 2;
+/** The size of the RGBA layers, in real pixels. */
+export const SPRITE_PW = SW * SPRITE_S;
+export const SPRITE_PH = SH * SPRITE_S;
 
 type Named = { n?: string } | null | undefined;
 type Keyed = { k?: string } | null | undefined;
@@ -70,13 +76,16 @@ export const PAURA: Record<string, string> = {
 };
 
 export interface SpriteLayers {
-  /** body layer, RGBA bytes, SPRITE_W x SPRITE_H */
+  /** body layer, RGBA bytes, SPRITE_PW x SPRITE_PH */
   body: Uint8ClampedArray;
   /** near arm + weapon layer, same size; it swings around (sx, sy) */
   arm: Uint8ClampedArray;
-  /** arm pivot (the shoulder) in sprite pixels */
+  /** arm pivot (the shoulder) in art pixels */
   sx: number;
   sy: number;
+  /** the weapon hand, in art pixels (with the arm at rest) */
+  hx: number;
+  hy: number;
 }
 
 /**
@@ -99,8 +108,8 @@ export function buildSprite(L: Look): SpriteLayers {
     O2: RP(out.c2),
     HAIR: RP(race.hairCol || HAIRS[(hs >> 3) % HAIRS.length]!),
   };
-  const B = buf(SW, SH),
-    A = buf(SW, SH);
+  const B = buf(SW, SH, SPRITE_S),
+    A = buf(SW, SH, SPRITE_S);
   const arm = race.plan ? CREATURE[race.plan](B, A, c) : humanoid(B, A, c);
   // the weapon goes in first so the hand closes over its grip
   weapon(A, L.weapon, L.ench, arm.hx, arm.hy);
@@ -108,5 +117,5 @@ export function buildSprite(L: Look): SpriteLayers {
   if (L.boss) bossDress(B, L.boss);
   outline(B);
   outline(A);
-  return { body: toRGBA(B), arm: toRGBA(A), sx: arm.sx, sy: arm.sy };
+  return { body: toRGBA(B), arm: toRGBA(A), sx: arm.sx, sy: arm.sy, hx: arm.hx, hy: arm.hy };
 }
