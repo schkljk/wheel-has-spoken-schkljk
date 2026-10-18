@@ -104,7 +104,7 @@ for (const [width, height] of VIEWS) {
       await page.getByRole('button', { name: 'Begin' }).click();
       await check(page, 'hard map');
       await page.getByRole('button', { name: 'Fighter page' }).click();
-      await page.getByText('🔥 Hard mode, chapter 2').waitFor();
+      await page.getByText('Hard mode, chapter 2').waitFor();
       await check(page, 'hard story card');
       expect(errors).toEqual([]);
     });

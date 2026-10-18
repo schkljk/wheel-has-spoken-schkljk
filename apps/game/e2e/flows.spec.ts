@@ -601,7 +601,7 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   if (await prize.count()) await prize.click();
   await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Fighter page' }).click();
-  await expect(page.getByText('🔥 Hard mode, chapter 1')).toBeVisible();
+  await expect(page.getByText('Hard mode, chapter 1')).toBeVisible();
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.getByRole('button', { name: /Walk away/ }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Leave it' }).click();

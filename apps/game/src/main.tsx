@@ -8,6 +8,13 @@ import { installErrorLog } from './state/errlog';
 import { installNative } from './native';
 import { loadPx } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
+// the fonts ship with the game (offline, and inside the Android app): a pixel display face, a very readable body
+// face, and the condensed one the fight scene draws its numbers with
+import './styles/fonts.css';
+import '@fontsource/atkinson-hyperlegible/latin-400.css';
+import '@fontsource/atkinson-hyperlegible/latin-700.css';
+import '@fontsource/saira-condensed/latin-600.css';
+import '@fontsource/saira-condensed/latin-800.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/screens.css';

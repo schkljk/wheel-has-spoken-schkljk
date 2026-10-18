@@ -7,6 +7,7 @@ import { offerImport, describeSave } from '../sheets/Save';
 import { SettingsSheet } from '../sheets/Settings';
 import { RecordsSheet } from '../sheets/Records';
 import { startTutorial } from '../sheets/Tutorial';
+import { FighterFace } from '../art/FighterFace';
 import { Icon } from '../ui/Icon';
 import { Sheet, rise } from '../ui/kit';
 import { careerLine, raceEmoji } from '../ui/fighter';
@@ -107,8 +108,8 @@ export function Title() {
           const f = deserFighter(slot.career);
           return (
             <div class={`card slot${s.roster.active === i ? ' current' : ''}`} key={i} {...rise(n++)}>
-              <span class="avatar" aria-hidden="true">
-                {raceEmoji(slot.career)}
+              <span class="avatar face" aria-hidden="true">
+                {f ? <FighterFace f={f} e={raceEmoji(slot.career)} /> : raceEmoji(slot.career)}
               </span>
               <span class="grow">
                 <b class="ellipsis">{f ? fullName(f) : slot.career.name}</b>

@@ -1,58 +1,49 @@
-/* Design tokens. Colors follow the legacy game's final look (style_v7.css), light and dark. */
+/*
+ * Design tokens: one look, the arena at night. Deep indigo, framed panels with weight, chunky buttons with a
+ * gold call to action, a pixel display face that matches the art and a very readable body face.
+ */
 :root {
-  --display: 'Saira Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --display: 'WHS Display', 'Saira Condensed', system-ui, sans-serif;
   --body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  --bg: #f4f1ea;
-  --bg-2: #ebe4d6;
-  --surface: #ffffff;
-  --surface-2: #ece6da;
-  --ink: #1a1530;
-  --muted: #655c7a;
-  --line: #ddd4c4;
-  --primary: #c62f35;
-  --primary-deep: #8e1d22;
-  --primary-ink: #ffffff;
-  --gold: #9a6a00;
-  --teal: #0f766e;
-  --danger: #b42318;
-  --good: #15803d;
+  --bg: #1a1336;
+  --bg-2: #120d28;
+  /* panels: raised surface, a lighter raise for secondary things, and an inset well */
+  --surface: #2c2257;
+  --surface-hi: #36296b;
+  --surface-2: #3b2e72;
+  --well: #150f2e;
+  --ink: #fbf7ff;
+  --muted: #b9adde;
+  --line: #4b3c8e;
+  /* the dark outline every chunky thing has */
+  --edge: #0b0718;
+  --primary: #ffc12e;
+  --primary-hi: #ffe27a;
+  --primary-deep: #c27400;
+  --primary-ink: #3a2200;
+  --blue: #3d8bff;
+  --blue-hi: #8cc0ff;
+  --blue-deep: #1b4fae;
+  --gold: #ffd25e;
+  --teal: #2dd4bf;
+  --danger: #ff5a5f;
+  --danger-deep: #a3202a;
+  --good: #5ee07a;
   --q0: #525b6e;
   --q1: #5b4bb7;
   --q2: #0e9f8e;
   --q3: #d99a2b;
-  --glow: rgba(198, 47, 53, 0.1);
-  --card-shadow: 0 10px 28px -18px rgba(26, 21, 48, 0.45);
-  --scrim: rgba(18, 14, 31, 0.5);
+  --glow: rgba(255, 193, 46, 0.14);
+  --card-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+  --scrim: rgba(6, 3, 16, 0.7);
 
   --r-card: 14px;
   --r-btn: 12px;
   --gutter: 16px;
-  --tabbar-h: 4.25rem;
+  --tabbar-h: 4.5rem;
 
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #120e1f;
-    --bg-2: #1a1430;
-    --surface: #1c1730;
-    --surface-2: #272042;
-    --ink: #f3eeff;
-    --muted: #a79dc2;
-    --line: #352c55;
-    --primary: #e5484d;
-    --primary-deep: #9e2328;
-    --gold: #f2b544;
-    --teal: #2dd4bf;
-    --danger: #ff6b6b;
-    --good: #4ade80;
-    --glow: rgba(229, 72, 77, 0.16);
-    --card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.8);
-    --scrim: rgba(0, 0, 0, 0.6);
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 /* text size setting: everything is sized in rem */
