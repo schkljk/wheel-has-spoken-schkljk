@@ -209,6 +209,8 @@ export async function lootFlow(table: LootTable) {
           <GearReveal g={g} />
           {r.then === 'equipped' && note('Equipped')}
           {r.then === 'salvaged' && note('You already have one: salvaged for coins')}
+          {r.then === 'copy' && note('You already have one: +1 copy for upgrading it (Armory → Forge)')}
+          {r.bonus && note(`Bonus: a copy of your ${r.bonus.e} ${r.bonus.n}, for upgrading it`)}
         </>
       );
     },

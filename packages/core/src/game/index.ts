@@ -14,3 +14,4 @@ export * from './combat';
 export * from './procs';
 export * from './lab';
 export * from './nemesis';
+export * from './forge';

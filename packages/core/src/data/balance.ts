@@ -32,6 +32,8 @@ export interface Balance {
   storyNemesis: boolean;
   /** each chapter has encounters of its own (upgrade 20) */
   themedEvents: boolean;
+  /** gear can be upgraded from +1 to +5, and duplicates become copies for it (upgrade 21) */
+  gearUpgrades: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -49,6 +51,7 @@ export const LEGACY_BALANCE: Balance = {
   growth: false,
   storyNemesis: false,
   themedEvents: false,
+  gearUpgrades: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -90,6 +93,7 @@ export const BALANCE: Balance = {
   growth: true,
   storyNemesis: true,
   themedEvents: true,
+  gearUpgrades: true,
 };
 
 /**

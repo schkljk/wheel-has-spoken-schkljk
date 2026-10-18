@@ -206,7 +206,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
                   if (s.k === 'physio') toast('All patched up');
                   if (s.k === 'respec') toast(`${r.refunded} talent points refunded`);
                   if (r.gear) {
-                    toast(`${RARITY[r.gear.r]?.n}: ${r.gear.e} ${r.gear.n}`);
+                    toast(`${RARITY[r.gear.r]?.n}: ${r.gear.e} ${r.gear.n}${r.copy ? '. You had it: a copy for upgrades' : ''}`);
                     if (r.choose) {
                       closeSheet();
                       await gearChoice(r.gear);

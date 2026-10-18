@@ -20,7 +20,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -36,6 +36,13 @@ export function careerSaveKV(
     const S = f.story as unknown as { row: number; rows: unknown[]; seenIntro: boolean };
     S.row = o.row < 0 ? S.rows.length + o.row : o.row;
     S.seenIntro = true;
+  }
+  // a leather vest at +3 with a copy for +4, worn (gear upgrades)
+  if (o.forge) {
+    f.gear = { ...(f.gear || {}), armor: 'vest' };
+    f.armory = [...new Set([...(f.armory || []), 'vest'])];
+    f.gup = { vest: 3 };
+    f.gcopy = { vest: 1 };
   }
   // an encounter on the step you stand on
   if (o.event && f.story) (f.story as unknown as Story).rows[(f.story as unknown as Story).row] = ['event'];

@@ -47,6 +47,9 @@ import {
   applyEvent,
   startBattle,
   storyEnsure,
+  upgradeNext,
+  upgradeGear,
+  coinsOf,
   placeNemesis,
   myNemesis,
   nemesisOpponent,
@@ -94,6 +97,8 @@ export interface RunLog {
   chapters: ChapterLog[];
   /** the chapter the run got stuck on, if it did */
   stuck: number | null;
+  /** gear upgrade levels on the fighter at the end (upgrade 21) */
+  upLevels?: number;
 }
 
 const spin = <T>(rng: Rng, list: { it: T; w: number; mult?: number }[]) => list[pickW(rng, list.map((x) => ({ w: x.w * (x.mult ?? 1) })))]!.it;
@@ -129,6 +134,18 @@ export function spendTalents(g: Game) {
     const open = Object.values(TNODE).filter((n) => canRank(F, n));
     if (!open.length) return;
     rankTalent(g, open[Math.floor(g.rng() * open.length)]!.key);
+  }
+}
+/** Upgrades worn gear, cheapest step first, while 20 coins stay in the pocket (upgrade 21). */
+function forgeUp(g: Game) {
+  const F = g.F!;
+  for (let guard = 0; guard < 30; guard++) {
+    const steps = Object.values(F.gear || {})
+      .filter((k): k is string => !!k)
+      .map((k) => ({ k, u: upgradeNext(g, k) }))
+      .filter((x) => x.u.ok && coinsOf(g) - x.u.cost >= 20)
+      .sort((a, b) => a.u.cost - b.u.cost);
+    if (!steps.length || !upgradeGear(g, steps[0]!.k)) return;
   }
 }
 function heal(g: Game, below: number) {
@@ -263,6 +280,7 @@ function visit(g: Game, kind: NodeKind) {
   storyOf(g).row++;
 }
 
+const upSum = (F: CareerFighter) => Object.values(F.gup || {}).reduce((a, b) => a + b, 0);
 /** Plays the story from where the fighter is until `toCh` is cleared or the run gets stuck. */
 export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsPerReset?: number } = {}): RunLog {
   const maxResets = o.maxResets ?? 4;
@@ -273,6 +291,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
   for (let guard = 0; guard < 5000; guard++) {
     const S = storyEnsure(g);
     placeNemesis(g);
+    forgeUp(g);
     if ((S.ng || 0) > 0 || (S.cleared || []).includes(toCh)) break;
     if (!log || log.ch !== S.ch) log = { ch: S.ch, lvl: 0, bossTries: 0, bossWins: 0, fights: 0, wins: 0, resets: 0, cups: 0, nem: 0, nemWins: 0, nemRetired: 0 };
     const row = S.rows[S.row]!;
@@ -304,7 +323,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     }
     if (S2.ch === log.ch && S2.row === 0 && S2 !== S) {
       log.resets++;
-      if (log.resets > maxResets) return { chapters: out, stuck: log.ch };
+      if (log.resets > maxResets) return { chapters: out, stuck: log.ch, upLevels: upSum(F) };
       // stuck players go and win some levels elsewhere
       for (let c = 0; c < cupsPerReset; c++) {
         playCup(g);
@@ -312,7 +331,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
       }
     }
   }
-  return { chapters: out, stuck: null };
+  return { chapters: out, stuck: null, upLevels: upSum(F) };
 }
 
 export const CH_NAMES = CHAPTERS.map((c) => c.n);

@@ -224,6 +224,7 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
                 <span key={g.k} class="dd-item">
                   <Inf k={`it|gear|${g.n}`}>
                     <GearIcon g={g} /> {g.n}
+                    {f.gup?.[g.k] ? <span class="up-lv"> +{f.gup[g.k]}</span> : null}
                   </Inf>
                   <small>{g.d}</small>
                 </span>

@@ -295,6 +295,9 @@ export interface Fighter {
   // career
   lvl?: number;
   gear?: Partial<Record<GearSlot, string>>;
+  /** gear upgrade levels (+1 to +5) and spare copies, by gear key (upgrade 21) */
+  gup?: Record<string, number>;
+  gcopy?: Record<string, number>;
   /** talent ranks by node key; very old saves stored an array of old talent keys */
   talents?: TalentMap | string[];
   inj?: { k: string }[];
