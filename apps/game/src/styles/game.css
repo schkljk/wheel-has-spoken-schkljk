@@ -2901,3 +2901,19 @@ button.mnode.t-nemesis {
   display: grid;
   gap: 0.4rem;
 }
+
+/* short landscape screens: intros get compact (after the .cine-card rules above) */
+@media (max-height: 460px) {
+  .cine-card {
+    gap: 0.4rem;
+  }
+  .cine-emoji {
+    font-size: 2.2rem;
+  }
+  .cine-card h2 {
+    font-size: 1.5rem;
+  }
+  .cine-card p {
+    font-size: 0.9rem;
+  }
+}

@@ -497,3 +497,8 @@ html[data-motion='reduced'] *::after {
   font-weight: 800;
   cursor: pointer;
 }
+/* a long intro (a hard run's twist, a boss speech) never pushes its button off a short screen */
+.cine-card {
+  max-height: calc(100dvh - 2 * var(--gutter));
+  overflow-y: auto;
+}
