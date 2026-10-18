@@ -2312,3 +2312,84 @@ img.pxi.race {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- trophy room (upgrade 23): shelves with a wooden plank under each row ---------- */
+.shelf {
+  display: grid;
+  gap: 0.5rem 0.4rem;
+  /* each row is exactly one plank high: the gap under it is the plank */
+  grid-auto-rows: calc(var(--row, 4.6rem) - 0.5rem);
+  padding: 0.2rem 0.4rem 0.5rem;
+  background-origin: content-box;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--row, 4.6rem) - 0.5rem), #8a5a36 calc(var(--row, 4.6rem) - 0.5rem), #c08457 var(--row, 4.6rem)),
+    color-mix(in srgb, #c08457 10%, var(--surface));
+}
+.shelf.belts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  --row: 5.6rem;
+}
+.shelf.heads,
+.shelf.titles,
+.shelf.classes {
+  grid-template-columns: repeat(auto-fill, minmax(4.2rem, 1fr));
+}
+.shelf.classes {
+  --row: 5.2rem;
+}
+.trophy {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.1rem;
+  min-width: 0;
+  text-align: center;
+  text-decoration: none;
+  border: 0;
+  position: relative;
+}
+.trophy b,
+.trophy small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trophy small {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.trophy .tr-e {
+  font-size: 1.9rem;
+  line-height: 1.15;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.18));
+}
+.trophy.locked .tr-e {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+.trophy.gold .tr-e {
+  filter: drop-shadow(0 0 6px var(--gold));
+}
+.tr-n {
+  position: absolute;
+  top: 0;
+  right: 0.1rem;
+  font: 800 0.65rem/1.3 var(--display);
+  color: var(--gold);
+  font-style: normal;
+}
+.tr-pips {
+  display: flex;
+  gap: 2px;
+}
+.tr-pips i {
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--line);
+}
+.tr-pips i.on {
+  background: var(--gold);
+}

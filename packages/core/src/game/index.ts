@@ -15,3 +15,4 @@ export * from './procs';
 export * from './lab';
 export * from './nemesis';
 export * from './forge';
+export * from './trophies';

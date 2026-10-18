@@ -1,10 +1,10 @@
 import { DAILY, EVENTS, MUTATORS } from '../data/misc';
-import { GEAR, GEM_PRICE, RARITY } from '../data/gear';
+import { GEM_PRICE, RARITY } from '../data/gear';
 import { ITEMS } from '../data/content/story';
 import { BASIC, LOOT_SLICES } from '../data/content/economy';
 import { applyBonus } from '../fighter';
 import { clamp, pick, pickW } from '../random';
-import { eff, gearOf, talEcon } from '../stats';
+import { eff, gearOf, gearPool, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json } from '../save/fighter';
 import type { Gear, RarityKey } from '../types';
@@ -101,8 +101,8 @@ export function lootLand(g: Game, it: LootSlice): LootResult | null {
   }
   if (it.rar) {
     const own = new Set([...Object.values(F.gear || {}), ...(F.armory || [])]);
-    let pool = GEAR.filter((x) => x.r === it.rar && !own.has(x.k));
-    if (!pool.length) pool = GEAR.filter((x) => x.r === it.rar);
+    let pool = gearPool().filter((x) => x.r === it.rar && !own.has(x.k));
+    if (!pool.length) pool = gearPool().filter((x) => x.r === it.rar);
     const gear = pick(g.rng, pool);
     markSeen(g, 'gear', gear.n);
     if (BALANCE.gearUpgrades && own.has(gear.k)) {
@@ -223,7 +223,7 @@ export function dailyDeal(g: Game): Deal {
   if (!d || d.date !== g.clock.today || d.cid !== (F && F.cid)) {
     const own = new Set(Object.values((F && F.gear) || {}));
     const pickR = (rs: string[]) => {
-      const pool = GEAR.filter((x) => rs.includes(x.r) && !x.req && !own.has(x.k));
+      const pool = gearPool().filter((x) => rs.includes(x.r) && !x.req && !own.has(x.k));
       return pool.length ? pick(g.rng, pool).k : null;
     };
     d = { date: g.clock.today, cid: (F && F.cid) || null, star: pickR(['epic', 'rare']), more: [pickR(['common']), pickR(['rare'])].filter(Boolean) as string[], sold: [] };
@@ -247,7 +247,7 @@ export function buyDeal(g: Game, k: string): boolean {
   d.sold.push(k);
   return true;
 }
-export const PREMIUM = () => GEAR.filter((x) => x.r === 'premium');
+export const PREMIUM = () => gearPool().filter((x) => x.r === 'premium');
 export const gemPrice = (k: string) => GEM_PRICE[k]!;
 export function buyPremium(g: Game, k: string, cur: 'gem' | 'coin'): boolean {
   if (!baseOpen(g)) return false;
@@ -289,7 +289,7 @@ export function buyService(g: Game, k: Service): { gear?: Gear; choose?: boolean
   const W: Record<string, number> = { junk: 2.4, common: 4, rare: 1.8, epic: 0.6, legendary: 0.1, mythic: 0.015 };
   const rs = Object.keys(W);
   const r = rs[pickW(g.rng, rs.map((x) => ({ w: W[x]! })))]!;
-  const x = pick(g.rng, GEAR.filter((y) => y.r === r));
+  const x = pick(g.rng, gearPool().filter((y) => y.r === r));
   markSeen(g, 'gear', x.n);
   if (BALANCE.gearUpgrades && (Object.values(F.gear || {}).includes(x.k) || (F.armory || []).includes(x.k))) {
     addCopy(g, x.k);
@@ -350,7 +350,7 @@ export function dailyLand(g: Game, it: (typeof DAILY)[number]): string {
       break;
     case 'gear': {
       if (!F.gear!.trinket) {
-        const x = pick(g.rng, GEAR.filter((y) => y.slot === 'trinket'));
+        const x = pick(g.rng, gearPool().filter((y) => y.slot === 'trinket'));
         F.gear!.trinket = x.k;
         markSeen(g, 'gear', x.n);
         out = `Free trinket: ${x.e} ${x.n}`;

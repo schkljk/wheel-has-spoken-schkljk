@@ -1,8 +1,9 @@
 import { CHAPTERS } from '../data/content/story';
 import { BALANCE } from '../data/balance';
-import { GEAR, GEAR_SLOTS } from '../data/gear';
+import { GEAR_SLOTS } from '../data/gear';
 import { NEM_AFTER, NEM_TAUNTS, type TauntKind } from '../data/content/nemesis';
 import { applyBonus, levelUp } from '../fighter';
+import { gearPool } from '../stats';
 import { pick } from '../random';
 import { deserFighter, serFighter, type CareerFighter } from '../save/fighter';
 import { archiveRival, invalidate, myNemesis, setNemesis, type NemLog, type Nemesis } from './career';
@@ -74,7 +75,7 @@ export function nemesisOpponent(g: Game): CareerFighter {
   const empty = GEAR_SLOTS.filter((s) => !(o.gear || {})[s]);
   if (empty.length) {
     const s = pick(g.rng, empty);
-    o.gear = { ...(o.gear || {}), [s]: pick(g.rng, GEAR.filter((x) => x.slot === s && !x.req && ['common', 'rare', 'epic'].includes(x.r))).k };
+    o.gear = { ...(o.gear || {}), [s]: pick(g.rng, gearPool().filter((x) => x.slot === s && !x.req && ['common', 'rare', 'epic'].includes(x.r))).k };
   }
   o.aiSkill = 0.06 * (S.ch - 1) + 0.1 + 0.05 * Math.min(met, 3) + (S.ng || 0) * 0.05;
   o.isNem = true;

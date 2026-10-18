@@ -1,5 +1,4 @@
 import { BOSSES, CHAPTERS, ITEMS, MERCHANTS, MYSTERY, NODE, SEVENTS, STORY_STOCK, TRAIN } from '../data/content/story';
-import { GEAR } from '../data/gear';
 import { BALANCE } from '../data/balance';
 import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
 import { NODE_MORE } from '../data/content/nemesis';
@@ -10,7 +9,7 @@ import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../figh
 import { headToHead } from '../battle';
 import { poolPick } from '../pool';
 import { clamp, pick, pickW, shuffle } from '../random';
-import { numStats, talEcon } from '../stats';
+import { GEARK, gearPool, numStats, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json, StoryState } from '../save/fighter';
 import type { Fighter, WheelItem } from '../types';
@@ -684,7 +683,7 @@ export function merchantStock(g: Game) {
     const rs = S.ch >= 7 ? ['rare', 'epic', 'legendary'] : S.ch >= 3 ? ['common', 'rare', 'epic'] : ['common', 'rare'];
     S.gearOffers = shuffle(
       g.rng,
-      GEAR.filter((x) => !x.req && rs.includes(x.r) && !own.includes(x.k)),
+      gearPool().filter((x) => !x.req && rs.includes(x.r) && !own.includes(x.k)),
     )
       .slice(0, 2)
       .map((x) => x.k);
@@ -706,7 +705,7 @@ export function buyMerchantItem(g: Game, k: string): boolean {
 }
 export function buyMerchantGear(g: Game, k: string): boolean {
   const F = g.F!;
-  const G = GEAR.find((x) => x.k === k)!;
+  const G = GEARK[k]!;
   if (!spend(g, gearPriceM(g, G))) return false;
   F.gear![G.slot] = G.k;
   invalidate(F);

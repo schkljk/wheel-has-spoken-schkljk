@@ -495,3 +495,27 @@ test('the forge: upgrade a worn piece with a copy, confirm, and see the numbers 
   expect((await layoutProblems(page)).clipped).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('the trophy room: belts, boss kills, rare titles and class mastery on shelves that fit', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, careerSaveKV({ seed: 2, lvl: 12, trophies: true }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Trophy room/ }).click();
+  await expect(page.locator('.shelf.belts .trophy:not(.locked)')).toHaveCount(1);
+  await expect(page.getByText('Boss kills (3 of 20)')).toBeVisible();
+  await expect(page.getByText('Rare titles (2 of')).toBeVisible();
+  await expect(page.getByText('Class mastery (1 mastered, 3 started)')).toBeVisible();
+  await expect(page.locator('.shelf.classes .trophy.gold')).toHaveCount(1);
+  for (const [width, height] of [[320, 568], [390, 844], [844, 390], [1280, 720]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(300);
+    expect((await layoutProblems(page)).clipped, `${width}x${height}`).toEqual([]);
+  }
+  // a title opens its info card
+  await page.locator('.shelf.titles .trophy:not(.locked)').first().click();
+  await expect(page.getByText('Giant Slayer').last()).toBeVisible();
+  expect(errors).toEqual([]);
+});

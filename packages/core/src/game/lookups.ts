@@ -1,7 +1,9 @@
 import { ARCHS, CHAOS, ENCHANTS, POWER_ALL, QUIRKS, RACES, RSUB, ASUB, SIDEKICKS, SIZES, STANCES, BACKS, TITLES, WEAKS, WEAPONS } from '../data/wheels';
 import { ARCH_KIT, RACE_KIT } from '../data/kits';
 import { ARENAS } from '../data/arenas';
-import { GEAR } from '../data/gear';
+import { BALANCE } from '../data/balance';
+import { SYN_SETS } from '../data/content/gear-sets';
+import { gearPool } from '../stats';
 import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
@@ -52,9 +54,9 @@ export const CODEX: [k: string, label: string, list: () => CodexEntry[]][] = [
   ['quirk', 'Quirks', plain(QUIRKS)],
   ['side', 'Sidekicks', plain(SIDEKICKS)],
   ['title', 'Titles', plain(TITLES)],
-  ['syn', 'Synergies', plain([...SYN, ...SYN_HIDDEN])],
+  ['syn', 'Synergies', () => plain([...SYN, ...SYN_HIDDEN, ...(BALANCE.moreSets ? SYN_SETS : [])])()],
   ['arena', 'Arenas', plain(ARENAS)],
-  ['gear', 'Gear', plain(GEAR)],
+  ['gear', 'Gear', () => plain(gearPool())()],
   ['ach', 'Achievements', plain(ACHIEVEMENTS)],
   [
     'moves',

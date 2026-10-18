@@ -20,7 +20,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; trophies?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -43,6 +43,13 @@ export function careerSaveKV(
     f.armory = [...new Set([...(f.armory || []), 'vest'])];
     f.gup = { vest: 3 };
     f.gcopy = { vest: 1 };
+  }
+  // a career with some silverware: a belt, three bosses, two rare titles, a mastered class and two started ones
+  if (o.trophies) {
+    f.belts = { local: true };
+    f.story = { ...newChapter(g, 4, 0), cleared: [1, 2, 3] } as never;
+    save.profile.ach = { ...save.profile.ach, giant: true, flawless: true };
+    save.profile.mastery = { tank: 120, brawler: 20, mage: 6 };
   }
   // an encounter on the step you stand on
   if (o.event && f.story) (f.story as unknown as Story).rows[(f.story as unknown as Story).row] = ['event'];

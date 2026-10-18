@@ -1,13 +1,13 @@
 import { GOALS, LEGACY, MASTERY, MASTERY_RW, COL_STEP, RANKS } from '../data/content/progression';
 import { TIERS_T } from '../data/content/economy';
 import { ARENAS } from '../data/arenas';
-import { GEAR, GEAR_SLOTS } from '../data/gear';
+import { GEAR_SLOTS } from '../data/gear';
 import { INJURIES } from '../data/misc';
 import { RACES } from '../data/wheels';
 import { WHEELS, applyBonus, levelUp, randomFighter } from '../fighter';
 import { simulate } from '../battle';
 import { pick, pickW, shuffle } from '../random';
-import { STATLBL, setCount, synOf, talEcon, talMap, fullName, bestStat } from '../stats';
+import { STATLBL, gearPool, setCount, synOf, talEcon, talMap, fullName, bestStat } from '../stats';
 import { deserFighter, serFighter, type CareerFighter, type Json, type SerFighter } from '../save/fighter';
 import { lgLvl, legacyFx, xpNeed, LEVEL_CAP } from '../save/career';
 import type { Profile, Slot } from '../save/schema';
@@ -485,7 +485,7 @@ export function randomGear(f: Fighter, n: number, rng: Game['rng']) {
   f.gear = f.gear || {};
   const slots = shuffle(rng, GEAR_SLOTS).slice(0, n);
   for (const s of slots) {
-    const opts = GEAR.filter((x) => x.slot === s && !x.req && ['common', 'rare', 'epic'].includes(x.r));
+    const opts = gearPool().filter((x) => x.slot === s && !x.req && ['common', 'rare', 'epic'].includes(x.r));
     f.gear[s] = pick(rng, opts).k;
   }
   invalidate(f);
@@ -503,11 +503,11 @@ export function applyLegacyStart(g: Game, f: CareerFighter) {
   f.gear = f.gear || {};
   f.bag = f.bag || {};
   if (L(g, 'gear')) {
-    const it = pick(g.rng, GEAR.filter((x) => x.slot === 'trinket' && ['common', 'rare'].includes(x.r)));
+    const it = pick(g.rng, gearPool().filter((x) => x.slot === 'trinket' && ['common', 'rare'].includes(x.r)));
     f.gear.trinket = it.k;
   }
   if (L(g, 'crest')) {
-    const it = pick(g.rng, GEAR.filter((x) => x.r === 'rare' && !f.gear![x.slot]));
+    const it = pick(g.rng, gearPool().filter((x) => x.r === 'rare' && !f.gear![x.slot]));
     if (it) f.gear[it.slot] = it.k;
   }
   if (L(g, 'recipe')) f.bag.bandage = (f.bag.bandage || 0) + 2 * L(g, 'recipe');

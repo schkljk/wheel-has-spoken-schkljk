@@ -4,6 +4,7 @@ import { SYN } from './data/synergies';
 import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
 import { BALANCE, GROWTH_TUNE, SOFT_CAP, soft } from './data/balance';
 import { SYN_HIDDEN } from './data/content/hidden-synergies';
+import { GEAR_MORE, SYN_SETS } from './data/content/gear-sets';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
 import { clamp } from './random';
@@ -24,7 +25,11 @@ export interface HistoryEntry {
   place?: number;
 }
 
-export const GEARK: Record<string, Gear> = Object.fromEntries(GEAR.map((g) => [g.k, g]));
+/** Every piece, the ported ones and the newer sets (upgrade 22). */
+export const GEAR_ALL: Gear[] = [...GEAR, ...GEAR_MORE];
+export const GEARK: Record<string, Gear> = Object.fromEntries(GEAR_ALL.map((g) => [g.k, g]));
+/** The gear that can turn up: loot, shops, boxes, opponents. The newer sets only with their switch on. */
+export const gearPool = (): Gear[] => (BALANCE.moreSets ? GEAR_ALL : GEAR);
 export const INJK = Object.fromEntries(INJURIES.map((j) => [j.k, j]));
 
 export const STATLBL: Record<string, string> = {
@@ -171,6 +176,7 @@ export function synOf(f: Fighter): Synergy[] {
     }
   });
   if (BALANCE.jokeSynergies) for (const s of SYN_HIDDEN) if (s.test(f)) out.push(s);
+  if (BALANCE.moreSets && f.gear) for (const s of SYN_SETS) if (setCount(f, s.set) >= s.need) out.push(s);
   return out;
 }
 

@@ -41,6 +41,46 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 19. The nemesis follows you into the story
 - [x] 20. Every chapter has encounters of its own
 - [x] 21. Gear upgrades, +1 to +5
+- [x] 22. Four new gear sets: pirate, chef, cosmic, royal
+- [x] 23. Trophy room
+
+### 23. Trophy room
+
+- **What changed (progression):** More → **Trophy room**, a set of wooden shelves with everything your fighters have won, across the whole roster and the hall of fame:
+  - **Belts:** Local brawl, Regional cup and World championship, with how many times and who won each first.
+  - **Boss kills:** all 20 bosses as trophies ("3 of 20"). Beaten ones show their emblem and a ×N for repeat kills; the rest are question marks with their chapter.
+  - **Rare titles:** the rarest titles (boss titles live on the boss shelf). Earned ones open their info card; the rest are "???" silhouettes.
+  - **Class mastery:** every class with at least one mastery level, with five pips; fully mastered classes glow gold.
+- Belts and boss kills are counted in the save as they happen (`profile.trophies`). The first time the room is opened, it also counts what the fighters on the roster and in the hall of fame already hold, so existing saves start with their silverware. Nothing else in the save changes.
+- Items pop in one after another (skipped with reduced motion). The sub line reads *"Everything your fighters have won. Dust not included"*, and an empty room says *"An empty room echoes. Go win something."*
+- Tested: `trophies.test.ts` (3 tests) checks the one-time count of existing belts and bosses, that later wins add up and remember who was first, and the shelves' contents. A new e2e test opens the room for a career with a belt, three bosses, two rare titles and a mastered class, checks the counts and the gold class, opens a title's info card, and checks nothing is cut off at 320×568, 390×844, 844×390 and 1280×720.
+
+### 22. Four new gear sets: pirate, chef, cosmic, royal
+
+- **What changed (content):** 22 new pieces in four sets, each with its own idea, plus set bonuses at 2, 4 and 6 pieces:
+  - 🏴‍☠️ **Pirate** (6 rare): extra swings and reads. Tricorn hat, hook hand, captain's coat, salt-stained vest, sea boots and a loud parrot (*"It squawks the move before they make it."*). 2: +5% extra hit chance; 4: +1 strength, +15% damage while behind; 6: acts first, +10% extra hit chance.
+  - 👨‍🍳 **Chef** (4 common): the snack set. Toque, kitchen mitts, stained apron, kitchen clogs. 2: a 25 HP snack below 30% HP, once; 4: +2 HP every round, +1 charisma. *"Yes, chef. The secret ingredient is violence."*
+  - 🌌 **Cosmic** (6 epic): energy and the signature. 2: start with +10 energy; 4: +1 power mastery, +3 energy every round; 6: signature 25% harder, +8% dodge.
+  - 👑 **Royal** (6 legendary): presence, counters, guards. 2: +2 charisma; 4: counters 20% harder, guards block 8% more; 6: takes 8% less damage, +10% damage. *"Uneasy lies the head. Easy lies everyone else, on the floor."*
+- They drop from loot, the mystery box, shops and merchants like the rest, opponents can wear them, and they count in the collection (22 gear entries and 11 synergy entries more). Their set bonuses show in the armory's set list, and each has an info card with its joke.
+- **Balanced against the old sets** (balance lab, 60,000 fights, win rate vs random same-level opponents):
+
+| Set | 2 pieces | 4 pieces | 6 pieces |
+|---|---|---|---|
+| Knight (rare) | 57.3% | 66.0% | 69.4% |
+| Royal (legendary) | 49.0% | 60.0% | 66.7% |
+| Cosmic (epic) | 48.3% | 52.9% | 59.0% |
+| Pirate (rare) | 48.0% | 55.3% | 56.8% |
+| Arcane (rare) | 46.6% | 49.0% | 55.8% |
+| Shadow (rare) | 47.2% | 48.8% | 49.0% |
+| Chef (common) | 49.2% | 55.6% | - |
+| Clown (common) | 46.6% | 45.9% | - |
+| No set | 45.0% | | |
+
+  The first pass had the chef set at 57.3% with 4 cheap commons (+3 HP a round); it's now +2 HP a round. Knight stays the strongest set, so no new set takes its place.
+- **Story** (seed 1, 60 runs per strength): reaching the end 30 / 67 / 90% (weak / average / strong) with the new sets vs 27 / 62 / 90% without, within noise.
+- The new pieces live in their own table (`data/content/gear-sets.ts`), dealt in through one `gearPool()` behind a `moreSets` switch, so the ported gear table, loot draws and parity are untouched. Two new pieces first reused existing keys and names (Comet boots, Gilded gauntlets); the parity tests caught it, and they were renamed.
+- Tested: `gear-sets.test.ts` checks that no key or name clashes with the old gear, that each set has one piece per slot, that the bonuses come in at 2, 4 and 6 pieces and change the fighter, that the old balance keeps them out of loot and bonuses, and that every piece and bonus is in the collection with an info card.
 
 ### 21. Gear upgrades, +1 to +5
 
