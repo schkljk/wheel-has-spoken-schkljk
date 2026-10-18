@@ -1,4 +1,5 @@
-import { activeFighter, activeSlot, go, route, save, type Tab } from '../state/game';
+import { seeGoals, tabDots } from '@whs/core';
+import { G, activeFighter, activeSlot, ensure, go, route, save, type Tab } from '../state/game';
 import { openSheet } from '../state/ui';
 import { SettingsSheet } from '../sheets/Settings';
 import { Icon, type IconName } from '../ui/Icon';
@@ -22,6 +23,10 @@ export function Hub({ tab }: { tab: Tab }) {
     queueMicrotask(() => go({ screen: 'title' }));
     return null;
   }
+  // something new waiting on a tab (upgrade 32); saves from before the dots start with goals seen
+  void save.value;
+  if (G.save.profile.extra.goalsSeen == null) ensure((g) => seeGoals(g));
+  const dots = tabDots(G);
   return (
     <main class="screen hub">
       <header class="bar pad row">
@@ -53,6 +58,12 @@ export function Hub({ tab }: { tab: Tab }) {
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => (route.value = { screen: 'hub', tab: k })}>
             <Icon name={icon} />
             <span>{label}</span>
+            {dots[k as keyof typeof dots] && tab !== k && (
+              <>
+                <i class="tdot" aria-hidden="true" />
+                <span class="sr">, something new</span>
+              </>
+            )}
           </button>
         ))}
       </nav>

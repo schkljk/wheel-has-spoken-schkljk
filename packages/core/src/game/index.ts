@@ -21,3 +21,6 @@ export * from './hard';
 export * from './seasonal';
 export * from './compare';
 export * from './summary';
+export * from './filters';
+export * from './dots';
+export * from './preview';

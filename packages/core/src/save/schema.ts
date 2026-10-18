@@ -7,17 +7,26 @@ export const SAVE_GAME_ID = 'wheel-has-spoken';
 
 export type TextSize = 'small' | 'normal' | 'large' | 'huge';
 export type MotionPref = 'system' | 'reduced' | 'full';
+/** how big hits look: screen shake and particle bursts (upgrade 33) */
+export type FxLevel = 'soft' | 'normal' | 'big';
 
 export interface Settings {
+  /** sound effects */
   sound: boolean;
+  /** the arena and boss music loops (upgrade 36) */
+  music: boolean;
   haptics: boolean;
   /** quicker spins and fight animations */
   fast: boolean;
   /** fights play themselves unless switched off */
   autoBattle: boolean;
   motion: MotionPref;
+  fx: FxLevel;
   textSize: TextSize;
   tutorialSeen: boolean;
+  /** first-time tips as each system shows up (upgrade 31), and the ones already shown */
+  tips: boolean;
+  tipsSeen: string[];
 }
 
 /** One roster slot: a career fighter and what belongs to them. */
@@ -104,12 +113,16 @@ export interface SaveData {
 
 export const defaultSettings = (): Settings => ({
   sound: true,
+  music: true,
   haptics: true,
   fast: false,
   autoBattle: false,
   motion: 'system',
+  fx: 'normal',
   textSize: 'normal',
   tutorialSeen: false,
+  tips: true,
+  tipsSeen: [],
 });
 
 export const defaultProfile = (): Profile => ({

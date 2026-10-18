@@ -1,11 +1,14 @@
 import { Fragment } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { BOSSES, CHAPTERS, hardMutator, hpTxt, maxGrit, myNemesis, nodeOf, storyOf, type NodeKind } from '@whs/core';
+import { BOSSES, CHAPTERS, hardMutator, hpTxt, maxGrit, myNemesis, nodePreview, nodeOf, recLevel, storyOf, type NodeKind } from '@whs/core';
 import { G, activeFighter, act } from '../state/game';
+import { openSheet } from '../state/ui';
+import { Sheet } from '../ui/kit';
 import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { goHub } from '../flows/nav';
 import { chapterIntro, enterNode, openBag } from '../flows/story';
+import { tip } from '../state/tips';
 
 /** The chapter map: your step, what you picked, what is ahead, and the boss at the end. */
 export function MapScreen() {
@@ -29,8 +32,8 @@ export function MapScreen() {
   useEffect(() => {
     if (!S.seenIntro) {
       act((g) => (storyOf(g).seenIntro = true));
-      void chapterIntro();
-    }
+      void chapterIntro().then(() => tip('map'));
+    } else tip('map');
   }, []);
   const last = S.rows.length - 1;
   // as many steps as the screen holds: one done step, the current one, what is next, and the boss. A step is
@@ -112,11 +115,18 @@ export function MapScreen() {
                         </button>
                       );
                     const cls = state === 'done' ? (S.picks[r] === i ? 'chosen' : 'skipped') : 'later';
+                    // any step can be tapped for a preview (upgrade 34); the boss shows its recommended level
                     return (
-                      <div key={i} class={`mnode ${cls} t-${t}`} aria-label={t === 'boss' ? boss.name : nem ? `Nemesis: ${NM.f.name}` : N.n}>
+                      <button
+                        key={i}
+                        class={`mnode ${cls} t-${t}`}
+                        aria-label={`${t === 'boss' ? boss.name : nem ? `Nemesis: ${NM.f.name}` : N.n}: what's here`}
+                        onClick={() => previewNode(t as NodeKind)}
+                      >
                         <span class="mn-e">{e}</span>
                         {state === 'done' && S.picks[r] === i && <span class="mn-ok">✓</span>}
-                      </div>
+                        {t === 'boss' && state === 'later' && <span class={`mn-lv${(G.F!.lvl || 1) < recLevel(G) ? ' low' : ''}`}>Lv {recLevel(G)}</span>}
+                      </button>
                     );
                   })}
                 </div>
@@ -134,5 +144,19 @@ export function MapScreen() {
         </button>
       </footer>
     </main>
+  );
+}
+
+/** What a step holds, before you get there. */
+function previewNode(k: NodeKind) {
+  const p = nodePreview(G, k);
+  openSheet(
+    <Sheet emoji={p.e} title={p.n} sub={p.sub}>
+      <ul class="np-lines">
+        {p.lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
+    </Sheet>,
   );
 }

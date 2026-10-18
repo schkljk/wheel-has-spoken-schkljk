@@ -2736,3 +2736,168 @@ img.pxi.race {
   font-weight: 700;
   font-size: 0.9rem;
 }
+
+/* ---------- filters and search (upgrade 30) ---------- */
+.codex-screen.with-filters {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.cx-filters,
+.arm-filters {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  min-width: 0;
+}
+.cx-filters > .row,
+.arm-filters > .row {
+  gap: 0.4rem;
+  min-width: 0;
+}
+.fsearch {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.fsearch > .pxi {
+  position: absolute;
+  left: 0.6rem;
+  pointer-events: none;
+}
+.fsearch input {
+  width: 100%;
+  min-height: 2.6rem;
+  padding-left: 2.1rem;
+  padding-right: 2.6rem;
+}
+.fsearch input::-webkit-search-cancel-button {
+  display: none;
+}
+.fs-clear {
+  position: absolute;
+  right: 0.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  background: none;
+}
+.fbtn {
+  flex: none;
+  min-height: 2.6rem;
+}
+.fbtn.on {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.fchips {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.1rem;
+  min-width: 0;
+}
+.fchips::-webkit-scrollbar {
+  display: none;
+}
+.fchip {
+  flex: none;
+  white-space: nowrap;
+  cursor: pointer;
+  min-height: 2.1rem;
+  font-size: 0.82rem;
+}
+.fchip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.cx-none {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* ---------- first-time tips (upgrade 31) ---------- */
+.tipcard {
+  position: fixed;
+  z-index: 50;
+  top: calc(env(safe-area-inset-top) + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2 * var(--gutter)), 24rem);
+  max-height: calc(100dvh - 1.2rem);
+  overflow-y: auto;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: var(--bg);
+  border: 2px solid var(--gold);
+  box-shadow: var(--card-shadow), 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+  animation: tip-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.96);
+  }
+}
+.tipcard p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.tc-head {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+.tc-head small {
+  display: block;
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tc-e {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+/* ---------- map step previews (upgrade 34) ---------- */
+button.mnode {
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+button.mnode.t-nemesis {
+  color: var(--bg);
+}
+.mnode.later.t-boss {
+  opacity: 0.85;
+}
+.mn-lv {
+  position: absolute;
+  bottom: -0.4rem;
+  right: -0.55rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 6px;
+  background: var(--gold);
+  color: #1a1426;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.mn-lv.low {
+  background: var(--danger);
+  color: #fff;
+}
+.np-lines {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+}

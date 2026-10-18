@@ -21,3 +21,4 @@ export * from './data/content/gear-sets';
 export * from './data/content/commentary';
 export * from './data/content/seasonal';
 export * from './data/content/build-summary';
+export * from './data/content/tips';

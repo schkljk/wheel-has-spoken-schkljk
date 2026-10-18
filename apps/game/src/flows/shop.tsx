@@ -39,6 +39,7 @@ import { GearCompareView } from '../ui/GearCompare';
 import { haggleFlow } from './story';
 import { GearIcon, ItemIcon } from '../ui/GearIcon';
 import { Icon, type IconName } from '../ui/Icon';
+import { tip } from '../state/tips';
 
 type Tab = 'basics' | 'deal' | 'vault' | 'services';
 const flav = (n: string) => (FLAVOR[n] ? <i class="flav"> {FLAVOR[n]}</i> : null);
@@ -292,4 +293,5 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
 }
 export function openBaseShop(tab: Tab = 'basics') {
   openSheet(<BaseShop key={Math.random()} tab={tab} />);
+  tip('shop');
 }

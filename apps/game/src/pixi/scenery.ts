@@ -209,6 +209,134 @@ export function sceneSVG(k: string | undefined): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240">${g}</svg>`;
 }
 
+// ---------------------------------------------------------------- Act II horizons (upgrade 37)
+/**
+ * Each Act II chapter has its own place on the horizon, drawn behind whatever arena the wheel picked (same
+ * 400 x 240 box, mostly dark silhouettes so the arena stays readable in front). Chapters 11 to 20.
+ */
+export function chapterSVG(ch: number | undefined): string | null {
+  if (!ch || ch < 11) return null;
+  const r = seeded(ch * 31 + 7);
+  const K = '#0E0A1A';
+  let g = '';
+  const poly = (pts: [number, number][], fill: string, op: number) => `<path d="M${pts.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(' L')} Z" fill="${fill}" opacity="${op}"/>`;
+  const gear = (cx: number, cy: number, rad: number, teeth: number, op: number) => {
+    const pts: [number, number][] = [];
+    for (let i = 0; i < teeth * 2; i++) {
+      const a0 = (i / (teeth * 2)) * Math.PI * 2;
+      const a1 = ((i + 1) / (teeth * 2)) * Math.PI * 2;
+      const rr = i % 2 ? rad : rad * 1.18;
+      pts.push([cx + Math.cos(a0) * rr, cy + Math.sin(a0) * rr], [cx + Math.cos(a1) * rr, cy + Math.sin(a1) * rr]);
+    }
+    return poly(pts, K, op) + `<circle cx="${cx}" cy="${cy}" r="${(rad * 0.35).toFixed(1)}" fill="#C9A25B" opacity="${op * 0.6}"/>`;
+  };
+  switch (ch) {
+    case 11: // Sky Islands: floating islands with dangling roots and a rope bridge
+      for (const [x, y, w] of [
+        [60, 70, 70],
+        [200, 46, 90],
+        [330, 84, 64],
+      ] as const) {
+        g += `<path d="M${x - w / 2} ${y} Q${x} ${y - 14} ${x + w / 2} ${y} L${x + w / 4} ${y + 22} L${x} ${y + 34} L${x - w / 4} ${y + 20} Z" fill="${K}" opacity=".35"/>`;
+        for (let i = 0; i < 3; i++) g += `<path d="M${x - w / 4 + i * (w / 4)} ${y + 18} q${3 - r() * 6} 14 ${2 - r() * 4} 26" stroke="${K}" stroke-width="1.5" fill="none" opacity=".3"/>`;
+      }
+      g += `<path d="M95 72 Q145 92 160 50" stroke="${K}" stroke-width="2" fill="none" opacity=".3"/><path d="M245 50 Q290 90 300 86" stroke="${K}" stroke-width="2" fill="none" opacity=".3"/>`;
+      break;
+    case 12: // The Underworld: stalactites, chains and a glow from below
+      for (let i = 0; i < 12; i++) {
+        const x = i * 36 + r() * 12;
+        g += `<path d="M${x} 0 L${x + 14} 0 L${x + 7} ${30 + r() * 46} Z" fill="${K}" opacity=".45"/>`;
+      }
+      for (const x of [110, 290]) for (let k = 0; k < 6; k++) g += `<ellipse cx="${x}" cy="${20 + k * 13}" rx="4" ry="6.5" fill="none" stroke="${K}" stroke-width="2" opacity=".35"/>`;
+      g += `<rect x="0" y="170" width="400" height="30" fill="#FF7A2F" opacity=".2"/>`;
+      break;
+    case 13: // Clockwork Citadel: house-sized gears and a clock tower
+      g += gear(80, 90, 38, 10, 0.32) + gear(150, 130, 24, 8, 0.3) + gear(330, 70, 46, 12, 0.3);
+      g += `<rect x="220" y="40" width="44" height="160" fill="${K}" opacity=".32"/><circle cx="242" cy="70" r="16" fill="#F3E6C2" opacity=".35"/><path d="M242 70 V60 M242 70 H252" stroke="${K}" stroke-width="2.5" opacity=".6"/>`;
+      break;
+    case 14: // The Sunken Kingdom: a drowned domed city, seaweed and bubbles
+      g += `<path d="M120 200 V120 Q170 70 220 120 V200 Z" fill="${K}" opacity=".3"/><rect x="40" y="130" width="40" height="70" fill="${K}" opacity=".28"/><rect x="290" y="110" width="30" height="90" fill="${K}" opacity=".28"/><path d="M286 110 L305 80 L324 110 Z" fill="${K}" opacity=".28"/>`;
+      for (let i = 0; i < 6; i++) {
+        const x = 20 + i * 70 + r() * 20;
+        g += `<path d="M${x} 200 q-8 -20 0 -40 q8 -20 0 -40" stroke="#1B5E4A" stroke-width="4" fill="none" opacity=".4"/>`;
+      }
+      for (let i = 0; i < 16; i++) g += `<circle cx="${(r() * 400).toFixed(1)}" cy="${(r() * 190).toFixed(1)}" r="${(1.5 + r() * 3).toFixed(1)}" fill="none" stroke="#BFE9FF" stroke-width="1" opacity=".45"/>`;
+      break;
+    case 15: { // Carnival of Nightmares: a big top, a ferris wheel and bunting
+      g += `<path d="M40 200 L40 130 L110 80 L180 130 L180 200 Z" fill="${K}" opacity=".32"/><path d="M110 80 L110 66" stroke="${K}" stroke-width="2" opacity=".4"/><path d="M110 66 L124 70 L110 74 Z" fill="#E5484D" opacity=".6"/>`;
+      g += `<circle cx="300" cy="100" r="62" fill="none" stroke="${K}" stroke-width="5" opacity=".32"/>`;
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        g += `<path d="M300 100 L${(300 + Math.cos(a) * 62).toFixed(1)} ${(100 + Math.sin(a) * 62).toFixed(1)}" stroke="${K}" stroke-width="2" opacity=".3"/><rect x="${(294 + Math.cos(a) * 62).toFixed(1)}" y="${(100 + Math.sin(a) * 62).toFixed(1)}" width="12" height="9" fill="${K}" opacity=".35"/>`;
+      }
+      g += `<path d="M260 200 L300 100 L340 200" stroke="${K}" stroke-width="5" fill="none" opacity=".32"/>`;
+      let b = '';
+      for (let i = 0; i < 12; i++) b += `<path d="M${i * 34} 18 L${i * 34 + 17} 18 L${i * 34 + 8.5} 30 Z" fill="${['#E5484D', '#F2B544', '#B388FF'][i % 3]}" opacity=".5"/>`;
+      g += `<path d="M0 18 Q200 30 400 18" stroke="${K}" stroke-width="1.5" fill="none" opacity=".4"/>` + b;
+      break;
+    }
+    case 16: // The Glacier Court: an ice palace and icicles
+      for (const [x, h, w] of [
+        [140, 120, 30],
+        [175, 160, 38],
+        [215, 130, 30],
+        [250, 100, 24],
+      ] as const)
+        g += `<rect x="${x}" y="${200 - h}" width="${w}" height="${h}" fill="#4F7FA3" opacity=".42"/><path d="M${x - 4} ${200 - h} L${x + w / 2} ${200 - h - 34} L${x + w + 4} ${200 - h} Z" fill="#6E9FC4" opacity=".55"/><rect x="${x + w / 2 - 3}" y="${200 - h + 14}" width="6" height="10" fill="#E8F8FF" opacity=".6"/>`;
+      for (let i = 0; i < 18; i++) {
+        const x = i * 23 + r() * 8;
+        g += `<path d="M${x} 0 L${x + 8} 0 L${x + 4} ${10 + r() * 22} Z" fill="#E8F8FF" opacity=".55"/>`;
+      }
+      break;
+    case 17: // The Dream Realm: moons, stairs to nowhere and clouds
+      g += `<circle cx="80" cy="50" r="26" fill="#FFF3B0" opacity=".45"/><circle cx="90" cy="44" r="22" fill="#FFB3D9" opacity=".6"/><circle cx="330" cy="40" r="10" fill="#FFF3B0" opacity=".5"/>`;
+      for (let i = 0; i < 7; i++) g += `<rect x="${200 + i * 16}" y="${150 - i * 14}" width="18" height="6" fill="${K}" opacity=".28"/>`;
+      for (let i = 0; i < 6; i++) g += `<rect x="${60 + i * 16}" y="${80 + i * 12}" width="18" height="6" fill="${K}" opacity=".22"/>`;
+      for (const [x, y] of [
+        [40, 150],
+        [300, 120],
+        [160, 30],
+      ] as const)
+        g += `<ellipse cx="${x}" cy="${y}" rx="34" ry="10" fill="#FFFFFF" opacity=".35"/><ellipse cx="${x + 18}" cy="${y - 6}" rx="22" ry="9" fill="#FFFFFF" opacity=".35"/>`;
+      break;
+    case 18: // The Void: broken pieces of the world drifting, and something watching
+      for (let i = 0; i < 9; i++) {
+        const x = 20 + r() * 360;
+        const y = 20 + r() * 150;
+        const s2 = 10 + r() * 22;
+        g += poly(
+          [
+            [x, y],
+            [x + s2, y + s2 * 0.2],
+            [x + s2 * 0.7, y + s2 * 0.9],
+            [x - s2 * 0.2, y + s2 * 0.6],
+          ],
+          '#2B1033',
+          0.55,
+        );
+      }
+      g += `<ellipse cx="200" cy="70" rx="46" ry="16" fill="#B388FF" opacity=".18"/><circle cx="200" cy="70" r="9" fill="#B388FF" opacity=".5"/><circle cx="200" cy="70" r="4" fill="${K}" opacity=".8"/>`;
+      break;
+    case 19: // The Pantheon: a temple on the horizon and lightning
+      g += `<path d="M110 92 L200 56 L290 92 Z" fill="${K}" opacity=".32"/><rect x="110" y="92" width="180" height="10" fill="${K}" opacity=".32"/>`;
+      for (let i = 0; i < 6; i++) g += `<rect x="${118 + i * 32}" y="104" width="12" height="90" fill="${K}" opacity=".3"/>`;
+      g += `<rect x="100" y="194" width="200" height="8" fill="${K}" opacity=".3"/><path d="M340 0 L322 50 L338 50 L316 110 L356 40 L340 40 L356 0 Z" fill="#FFE14D" opacity=".5"/>`;
+      break;
+    case 20: { // The First Wheel: the wheel itself, enormous, on the horizon
+      g += `<circle cx="200" cy="150" r="120" fill="none" stroke="${K}" stroke-width="9" opacity=".35"/><circle cx="200" cy="150" r="14" fill="${K}" opacity=".45"/>`;
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        g += `<path d="M200 150 L${(200 + Math.cos(a) * 120).toFixed(1)} ${(150 + Math.sin(a) * 120).toFixed(1)}" stroke="${K}" stroke-width="3" opacity=".3"/>`;
+      }
+      g += `<path d="M192 18 L208 18 L200 34 Z" fill="#FF4F8B" opacity=".7"/>`;
+      break;
+    }
+    default:
+      return null;
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240">${g}</svg>`;
+}
+
 // ---------------------------------------------------------------- ambient particles
 type AmbKind = 'ember' | 'snow' | 'rain' | 'leaf' | 'star' | 'spark' | 'fog' | 'dust' | 'steam' | 'autumn' | 'petal' | 'confetti';
 const AMB: Record<string, AmbKind> = {

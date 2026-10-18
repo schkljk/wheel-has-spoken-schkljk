@@ -478,3 +478,22 @@ html[data-motion='reduced'] *::after {
   animation: none !important;
   transition: none !important;
 }
+/* a toast with an action (gear swap Undo, upgrade 35) */
+.toast.act {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  pointer-events: auto;
+  padding-right: 0.4rem;
+}
+.toast-btn {
+  min-height: 2.2rem;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  border: 0;
+  background: var(--gold);
+  color: #1a1426;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}

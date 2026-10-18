@@ -56,6 +56,7 @@ import { choose, goMap, lootFlow, runSteps, showCine } from './nav';
 import { openArmory } from './armory';
 import { GearIcon, ItemIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
+import { tip } from '../state/tips';
 
 /** The step is done: on to the next one. */
 export function backToMap() {
@@ -313,6 +314,7 @@ async function campfireFlow() {
 // ---------------------------------------------------------------- merchants and haggling
 export async function haggleFlow(where: 'merchant' | 'base') {
   const F = G.F!;
+  tip('haggle');
   const opts = ([10, 25, 40, 60] as const).map((p) => {
     const c = Math.round(haggleChance(G, p) * 100);
     return { p, label: `Ask for ${p}% off`, sub: `${c}% chance it works. If not, prices go up ${Math.round(p / 2)}%` };
@@ -437,6 +439,7 @@ function MerchantBody() {
 export function merchantSheet(fresh = true) {
   if (fresh) act((g) => merchantStock(g));
   openSheet(<MerchantBody key={Math.random()} />, true);
+  tip('merchant');
 }
 
 // ---------------------------------------------------------------- the bag

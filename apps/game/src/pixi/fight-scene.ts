@@ -1,10 +1,10 @@
 import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Text, TextStyle } from 'pixi.js';
-import { COMBOS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
+import { COMBOS, WEAPONS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
-import { beep, finisherSound, procSound, thud } from '../ui/sound';
+import { beep, finisherSound, hitSound, procSound, thud, type HitKind } from '../ui/sound';
 import { buzz } from '../state/game';
 import { FighterView } from './fighter-view';
-import { Ambient, drawFloor, sceneSVG } from './scenery';
+import { Ambient, chapterSVG, drawFloor, sceneSVG } from './scenery';
 import { Tweens, ease } from './tween';
 import { WheelView } from './wheel';
 
@@ -113,6 +113,12 @@ export class FightScene {
   /** animation speed factor (fast mode halves it) */
   sp = 1;
   reduced = false;
+  /** the story chapter, whose horizon (Act II) goes behind the arena (upgrade 37) */
+  private chapter?: number;
+  /** what each side hits with, for the hit sounds (upgrade 36) */
+  private hitKinds: [HitKind, HitKind] = ['fist', 'fist'];
+  /** effects intensity: shake and particle bursts scale with it (upgrade 33) */
+  fxK = 1;
   private grads: FillGradient[] = [];
   private gray = new ColorMatrixFilter();
 
@@ -120,9 +126,11 @@ export class FightScene {
     readonly app: Application,
     looks: [Look, Look],
     readonly arena: Arena | null,
-    opts: { mythic?: boolean } = {},
+    opts: { mythic?: boolean; chapter?: number } = {},
   ) {
+    this.chapter = opts.chapter;
     this.ambient = new Ambient(arena?.k);
+    this.hitKinds = [hitKindOf(looks[0]), hitKindOf(looks[1])];
     this.F = [new FighterView(looks[0], 0, { mythic: opts.mythic }), new FighterView(looks[1], 1)];
     this.fighters.addChild(this.F[0], this.F[1]);
     this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.phaseGlow, this.fighters, this.fx, this.tint, this.vignette);
@@ -151,6 +159,15 @@ export class FightScene {
     this.sky.clear().rect(0, 0, W, d.groundY).fill({ color: sky });
     // scenery above the horizon: the legacy 400 x 240 backdrop, bottom-centered, covering the width
     for (const c of this.scenery.removeChildren()) c.destroy();
+    const far = chapterSVG(this.chapter);
+    if (far) {
+      const g = new Graphics().svg(far);
+      const sceneH = d.groundY - 10;
+      const k = Math.max(d.stageW / 400, sceneH / 240);
+      g.scale.set(k);
+      g.position.set(d.stageW / 2 - 200 * k, sceneH - 240 * k);
+      this.scenery.addChild(g);
+    }
     if (this.arena?.k) {
       const g = new Graphics().svg(sceneSVG(this.arena.k));
       const sceneH = d.groundY - 18;
@@ -224,8 +241,10 @@ export class FightScene {
   private ctr(i: 0 | 1) {
     return this.F[i].center();
   }
-  particles(x: number, y: number, colors: number[], n: number, spread = 40) {
+  particles(x: number, y: number, colors: number[], n0: number, spread0 = 40) {
     if (this.reduced) return;
+    const n = Math.max(1, Math.round(n0 * this.fxK));
+    const spread = spread0 * Math.sqrt(this.fxK);
     for (let i = 0; i < n; i++) {
       const p = new Graphics().rect(-2, -2, 4, 4).fill({ color: colors[i % colors.length]! });
       const sz = (3 + Math.random() * 5) / 4;
@@ -437,8 +456,9 @@ export class FightScene {
     this.tint.clear().rect(0, 0, d.W, d.H).fill({ color: col });
     void this.tw.run(dur, (u) => (this.tint.alpha = 0.42 * Math.sin(u * Math.PI)));
   }
-  shake(amp: number, dur: number) {
+  shake(amp0: number, dur: number) {
     if (this.reduced) return Promise.resolve();
+    const amp = amp0 * this.fxK;
     return this.tw.keys(dur, [0, -amp, amp, -amp * 0.6, amp * 0.4, 0], (v) => (this.world.pivot.x = v)).then(() => (this.world.pivot.x = 0));
   }
   private hitStop(ms: number) {
@@ -522,7 +542,9 @@ export class FightScene {
     if (a.guarded) this.floatAt(t, 'Guarded', 'info', dy);
     if (a.tint) this.tintFlash(a.tint as string, 440 * sp);
     if (big) void this.shake(a.t === 'ult' ? 10 : 6, 380 * sp);
-    thud(big);
+    // what it was dealt with, its element, and how hard it landed
+    const by = (a.by ?? 0) as 0 | 1;
+    hitSound(a.kind === 'power' || a.kind === 'ult' ? 'magic' : this.hitKinds[by], a.tint as string | undefined, big ? 1 : Math.min(1, (e.d || 0) / 30), !!a.crit);
     if (big) buzz(30);
   }
 
@@ -924,4 +946,15 @@ export class FightScene {
     this.tw.clear();
     for (const g of this.grads) g.destroy();
   }
+}
+
+/** What a fighter hits with, from their weapon's kind (upgrade 36). */
+function hitKindOf(look: Look): HitKind {
+  const w = WEAPONS.find((x) => x.n === look.weapon);
+  if (!w || (w as { fists?: boolean }).fists) return 'fist';
+  const t = new Set(w.t || []);
+  if (t.has('ranged') || t.has('string')) return 'ranged';
+  if (t.has('blade')) return 'blade';
+  if (t.has('blunt')) return 'blunt';
+  return 'fist';
 }

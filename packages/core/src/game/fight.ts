@@ -436,6 +436,12 @@ const winRateOf = (g: Game, f: CareerFighter) => rating.winRate(f, ctxOf(g));
 
 // ---------------------------------------------------------------- story fights
 /** After a story fight (legacy storyEndFight). */
+/** What a story win pays before bonuses (the map's node preview shows it too). */
+export const storyPay = (node: 'fight' | 'elite' | 'boss' | 'nemesis', ch: number) => ({
+  xp: { fight: 8, elite: 14, boss: 30, nemesis: 14 }[node] + ch * 2,
+  coins: { fight: 2, elite: 4, boss: 14, nemesis: 4 }[node] + Math.floor(ch / 2),
+  fame: { fight: 2, elite: 5, boss: 20, nemesis: 5 }[node] + ch,
+});
 export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightResult {
   const F = g.F!;
   const S = storyOf(g);
@@ -452,9 +458,10 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   const lines: string[] = [];
   const got: FightResult['got'] = [];
   const keys: string[] = [];
-  let xp = won ? { fight: 8, elite: 14, boss: 30, nemesis: 14 }[node] + ch * 2 : 4;
-  let coins = won ? { fight: 2, elite: 4, boss: 14, nemesis: 4 }[node] + Math.floor(ch / 2) : 0;
-  let fame = won ? { fight: 2, elite: 5, boss: 20, nemesis: 5 }[node] + ch : 0;
+  const pay = storyPay(node, ch);
+  let xp = won ? pay.xp : 4;
+  let coins = won ? pay.coins : 0;
+  let fame = won ? pay.fame : 0;
   if (won) {
     S.hp = Math.min(100, Math.max(1, Math.ceil(me.hp)) + 10);
     if (spec.odds < 0.35) keys.push('giant');

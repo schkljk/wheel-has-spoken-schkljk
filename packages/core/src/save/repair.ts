@@ -6,6 +6,7 @@ const isObj = (v: unknown): v is Raw => !!v && typeof v === 'object' && !Array.i
 const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? Math.max(0, Math.floor(v)) : 0);
 
 const MOTION = new Set(['system', 'reduced', 'full']);
+const FX = new Set(['soft', 'normal', 'big']);
 const TEXT = new Set(['small', 'normal', 'large', 'huge']);
 
 /**
@@ -29,7 +30,12 @@ export function repair(input: SaveData): { save: SaveData; fixed: string[] } {
     const st = s.settings as Raw;
     const def = defaultSettings() as unknown as Raw;
     for (const [k, v] of Object.entries(def)) {
-      const bad = typeof st[k] !== typeof v || (k === 'motion' && !MOTION.has(st[k] as string)) || (k === 'textSize' && !TEXT.has(st[k] as string));
+      const bad =
+        typeof st[k] !== typeof v ||
+        (k === 'motion' && !MOTION.has(st[k] as string)) ||
+        (k === 'textSize' && !TEXT.has(st[k] as string)) ||
+        (k === 'fx' && !FX.has(st[k] as string)) ||
+        (Array.isArray(v) && !(Array.isArray(st[k]) && (st[k] as unknown[]).every((x) => typeof x === 'string')));
       if (bad) {
         if (st[k] !== undefined) fixed.push(`setting "${k}" was reset`);
         st[k] = v;

@@ -14,6 +14,7 @@ import { goHub } from './flows/nav';
 import type { FightOutcome, FightResult, FightSpec } from '@whs/core';
 import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
 import { InfoHost } from './ui/Info';
+import { TipHost } from './ui/Tip';
 import { StatPopHost } from './ui/StatPop';
 
 function Screen() {
@@ -48,6 +49,7 @@ export function App() {
       <ConfirmHost />
       <CineHost />
       <InfoHost />
+      <TipHost />
       <StatPopHost />
       <ToastHost />
     </>

@@ -23,7 +23,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; compare?: boolean; trophies?: boolean; legends?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; compare?: boolean; seen?: boolean; trophies?: boolean; legends?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -46,6 +46,18 @@ export function careerSaveKV(
     f.armory = [...new Set([...(f.armory || []), 'vest'])];
     f.gup = { vest: 3 };
     f.gcopy = { vest: 1 };
+  }
+  // the fighter's own wheel results are in the collection (collection filters)
+  if (o.seen) {
+    const seen = save.profile.seen as Record<string, string[]>;
+    const add = (k: string, n: string | undefined) => n && (seen[k] = [...new Set([...(seen[k] || []), n])]);
+    add('race', f.race.n);
+    add('arch', f.arch.n);
+    add('weapon', f.weapon.n);
+    add('stance', f.stance?.n);
+    add('size', f.size?.n);
+    add('back', f.back?.n);
+    add('power', f.power.n);
   }
   // three knight pieces worn and the knight plate in the armory: wearing it starts the 4-piece bonus (gear compare)
   if (o.compare) {

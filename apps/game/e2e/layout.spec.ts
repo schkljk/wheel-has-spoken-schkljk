@@ -16,11 +16,8 @@ for (const [width, height] of VIEWS) {
     test('every screen fits', async ({ page }) => {
       const errors = watchErrors(page);
       await open(page);
-      await check(page, 'tutorial');
-      await page.getByRole('button', { name: 'Skip the tour' }).click();
       await check(page, 'empty title');
       await open(page, { 'wheel-has-spoken-v1': legacySave() });
-      await page.getByRole('button', { name: 'Skip the tour' }).click();
       await check(page, 'title with old save offer');
       await page.getByRole('button', { name: 'Bring it over' }).first().click();
       await check(page, 'import confirmation');

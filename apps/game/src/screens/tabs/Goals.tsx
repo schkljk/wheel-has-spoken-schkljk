@@ -1,5 +1,6 @@
-import { ARCHS, COL_STEP, GOALS, MASTERY, MASTERY_RW, codexCount, goalCur, masteryLvl, rwText } from '@whs/core';
-import { G, activeFighter, save } from '../../state/game';
+import { useEffect } from 'preact/hooks';
+import { ARCHS, COL_STEP, GOALS, MASTERY, MASTERY_RW, codexCount, goalCur, masteryLvl, rwText, seeGoals } from '@whs/core';
+import { G, act, activeFighter, save } from '../../state/game';
 import { openSheet } from '../../state/ui';
 import { Sheet, rise } from '../../ui/kit';
 
@@ -72,6 +73,10 @@ function AllMastery() {
 /** Permanent goals, class mastery and collection milestones: no timers, no resets. */
 export function GoalsTab() {
   void save.value;
+  // looking clears the tab's dot (upgrade 32)
+  useEffect(() => {
+    if (G.save.profile.extra.goalsSeen !== G.save.profile.goalsDone.length) act((g) => seeGoals(g));
+  });
   const F = activeFighter.value!;
   const done = G.save.profile.goalsDone;
   const open = GOALS.filter((g) => !done.includes(g.k))

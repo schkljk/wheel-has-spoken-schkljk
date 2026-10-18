@@ -66,10 +66,12 @@ import { spinWheel } from '../screens/Spin';
 import { evText } from '../screens/Fight';
 import { fight } from './fight';
 import { choose, goHub, goMap, runSteps, showCine } from './nav';
+import { tip } from '../state/tips';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
   go({ screen: 'bracket', run: T, key: Math.random() });
+  tip(T.kind === 'gauntlet' ? 'gauntlet' : 'bracket');
 }
 export function startTier(k: string) {
   const T = act((g) => (k === 'gauntlet' ? startGauntlet(g) : startCup(g, k)));
@@ -168,6 +170,7 @@ export async function dailyFlow() {
 // ---------------------------------------------------------------- the endless tower (upgrade 25)
 export async function towerFlow() {
   if (!towerOpen(G)) return toast(`Reach level ${TOWER_FROM} or clear chapter 1 to unlock the tower`);
+  tip('tower');
   await towerNext({ floor: 1, hp: 100, seed: Date.now() & 0xffffff });
 }
 async function towerNext(T: TowerState) {
@@ -218,6 +221,7 @@ export function hardFlow() {
   if (hardOf(G)) return goMap();
   const list = hardChapters(G);
   if (!list.length) return toast('Clear a chapter first. Hard mode needs something to be hard about');
+  tip('hard');
   openSheet(<HardPick key={Math.random()} />);
 }
 function HardPick() {
@@ -435,6 +439,7 @@ function ClubSheet({ c }: { c: Club }) {
 export function openClub() {
   const c = act((g) => clubMatchup(g));
   openSheet(<ClubSheet key={Math.random()} c={c} />);
+  tip('club');
 }
 
 export type { Cup, Gauntlet };

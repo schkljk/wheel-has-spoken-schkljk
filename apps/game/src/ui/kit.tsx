@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { buzz, toasts } from '../state/game';
+import { buzz, dropToast, toasts } from '../state/game';
+import { uiTap } from './sound';
 import { cine, closeSheet, confirmReq, sheet, sheetLocked } from '../state/ui';
 import { Icon, type IconName } from './Icon';
 
@@ -21,6 +22,7 @@ export function installPressFeedback() {
         setTimeout(() => rp.remove(), 600);
       }
       buzz(8);
+      uiTap();
     },
     { passive: true },
   );
@@ -102,8 +104,19 @@ export function ToastHost() {
   return (
     <div class="toasts" aria-live="polite">
       {toasts.value.map((t) => (
-        <div key={t.id} class="toast">
+        <div key={t.id} class={`toast${t.action ? ' act' : ''}`}>
           {t.text}
+          {t.action && (
+            <button
+              class="toast-btn"
+              onClick={() => {
+                dropToast(t.id);
+                t.action!.run();
+              }}
+            >
+              {t.action.label}
+            </button>
+          )}
         </div>
       ))}
     </div>

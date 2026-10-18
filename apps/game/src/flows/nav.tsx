@@ -39,6 +39,7 @@ import { beep } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { GearIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
+import { swapped } from './armory';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {
@@ -259,8 +260,10 @@ export async function gearChoice(g: Gear) {
       ],
     });
     if (c === 2 && !(await confirm({ title: `Salvage ${g.n}?`, body: `You get ${salv} coins. It is gone for good.`, yes: 'Salvage it' }))) continue;
+    const prev = F.gear![g.slot];
     act((x) => gearChoose(x, g, (['wear', 'store', 'salvage'] as const)[c]!));
-    toast(c === 0 ? `${g.e} ${g.n} equipped` : c === 1 ? `${g.e} ${g.n} added to your armory` : `+${salv} 🪙`);
+    if (c === 0) swapped(`${g.e} ${g.n} equipped`, g.slot, prev);
+    else toast(c === 1 ? `${g.e} ${g.n} added to your armory` : `+${salv} 🪙`);
     return;
   }
 }
