@@ -297,6 +297,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const kit = phaseKitOf(O);
     if (kit) sc.phaseKit = { light: kit.light, bpm: kit.tune.bpm };
     sc.layout(d.W, d.H);
+    sc.onSnap = (s) => setSnap(s);
     sceneRef.current = sc;
     // the end-to-end tests reach into the scene (combo banners on every screen size)
     if (navigator.webdriver) (window as unknown as { __whsFight?: FightScene }).__whsFight = sc;
@@ -350,7 +351,6 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       }
       const e = evs[i]!;
       S.log.push(e);
-      setSnap(e);
       if (e.a?.t === 'banner' && /sudden/i.test(String(e.a.text))) tip('sudden');
       // a boss's phase two brings its own music
       if (e.a?.t === 'phase' && e.a.on === 1) {
@@ -360,7 +360,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
           S.music = phaseMusic(kit.tune);
         }
       }
+      // the HUD follows the scene (onSnap), which shows the damage on impact; this only makes sure it ends in step
       await sc.play(e, S.procs(e), i === fin);
+      setSnap(e);
     }
   }
 

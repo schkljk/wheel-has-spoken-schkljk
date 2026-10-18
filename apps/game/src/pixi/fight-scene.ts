@@ -193,10 +193,13 @@ export class FightScene {
     a.setBrightness(1);
   }
 
+  /** told whenever the scene shows a new state, so the HUD's bars move when a blow lands, not before it */
+  onSnap: ((s: Snap) => void) | null = null;
   applySnap(s: Snap | null) {
     if (!s) return;
     for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!, s.sx?.[i] ?? []);
     if (s.h) this.hpPct = [s.h[0] ?? 100, s.h[1] ?? 100];
+    this.onSnap?.(s);
   }
 
   // ---------------------------------------------------------------- effect helpers
