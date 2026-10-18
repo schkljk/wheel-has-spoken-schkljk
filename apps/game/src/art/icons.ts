@@ -381,6 +381,23 @@ export const ICON_ART: Record<string, Draw> = {
   heart_empty(B) {
     S(B, heart(8, 7.5, 1), 1, 1, 15, 15, RP('#4A4458'), { ...O, bv: 3 });
   },
+  camp(B) {
+    // a campfire: two crossed logs, a flame, a few stones
+    C(B, 2, 14.2, 13, 11.2, 2.4, R('wood'), O);
+    C(B, 3, 11.2, 14, 14.2, 2.4, R('wood'), O);
+    S(B, or(ell(8, 9.2, 3.8, 3.4), poly([[4.4, 8.6], [8, 0.8], [11.6, 8.6]])), 3, 0, 13, 13, R('orange'), SH);
+    S(B, or(ell(8, 10.2, 2, 2.1), poly([[6.1, 10], [8, 5], [9.9, 10]])), 5, 4, 11, 13, R('gold'), { bv: 1, shine: true });
+    for (const x of [1.6, 14.4]) E(B, x, 13.6, 1.3, 1.1, R('iron'), O);
+  },
+  chest(B) {
+    Bx(B, 1.5, 7, 14.5, 14.8, R('wood'), 0.5, { ...O, bv: 2 });
+    S(B, and(ell(8, 7.2, 6.5, 5), (_x, y) => y < 7.4), 1.5, 2, 14.5, 7.5, R('wood'), { ...O, bv: 2 });
+    for (const x of [3.5, 12.5]) Bx(B, x - 0.8, 2.6, x + 0.8, 14.8, R('gold'), 0, { bv: 1, shine: true, onto: true });
+    ln(B, 2, 7.6, 14, 7.6, R('wood'), DEEP);
+    Bx(B, 6.8, 6.4, 9.2, 9.6, R('gold'), 0.4, { ...SH, bv: 1 });
+    dot(B, 8, 8.2, R('ink'), BASE);
+    raw(B, 5, 4, [255, 246, 200]);
+  },
 
   // ---- powers (the ones no other icon already shows)
   pw_shadow(B) {

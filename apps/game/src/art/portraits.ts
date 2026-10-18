@@ -4,6 +4,8 @@
 import { ARCHS, RACES, WEAPONS } from '@whs/core';
 import { iconPixels } from '../ui/icon-pixels';
 import { POWER_ICON } from './icons';
+import { drawDeco } from './map-deco';
+import { mapTheme } from './map-themes';
 import { buf, outline, toRGBA } from './px';
 import { SPRITE_H, SPRITE_W, buildSprite, type Look } from './sprite';
 import { weapon } from './sprite-weapons';
@@ -68,6 +70,14 @@ const url = (key: string, cv: () => HTMLCanvasElement | null) => {
 export const faceCanvas = (look: Look, rows = 30) =>
   cached(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => crop(buildSprite({ name: look.race || 'x', arch: 'npc', ...look, weapon: 'Bare fists' }).body, SPRITE_W, SPRITE_H, rows));
 export const facePortrait = (look: Look, rows = 30) => url(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => faceCanvas(look, rows));
+/** A chapter's badge: the piece of its map's scenery that stands for it (a bin for the alley, a gear for the citadel). */
+export const chapterIcon = (ch: number) =>
+  url(`chap|${ch}`, () =>
+    cached(`chap|${ch}`, () => {
+      const d = drawDeco(mapTheme(ch).icon, () => 0.3);
+      return d ? crop(toRGBA(d.B), d.B.w, d.B.h) : null;
+    }),
+  );
 /** One fighter's own face: their skin, hair and class outfit (the name picks the first two), for avatars. */
 export const fighterFace = (look: Look) =>
   url(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>

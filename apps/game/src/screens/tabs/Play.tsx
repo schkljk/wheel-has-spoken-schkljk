@@ -1,6 +1,7 @@
 import { useEffect } from 'preact/hooks';
 import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
+import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
 import { Hearts } from '../../ui/Hearts';
 import { Inf } from '../../ui/Info';
@@ -88,7 +89,7 @@ export function PlayTab() {
       <div class={`card story-card${S && S.hard ? ' hard' : ''}`} data-rise="" style={{ ...rise(n++).style, '--ch': C.col } as Record<string, string>}>
         <div class="sc-head">
           <span class="story-e" aria-hidden="true">
-            {C.e}
+            <ChapterIcon ch={ch} />
           </span>
           <span class="grow">
             <small class="sc-kick">

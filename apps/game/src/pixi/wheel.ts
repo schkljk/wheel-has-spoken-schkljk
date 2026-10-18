@@ -1,8 +1,10 @@
-import { Container, FillGradient, Graphics, Sprite, Text, TextStyle, Texture, CanvasTextMetrics } from 'pixi.js';
+import { Container, Graphics, Sprite, Text, TextStyle, Texture, CanvasTextMetrics } from 'pixi.js';
+import { SLICE_COLORS, bulb, sliceMask, wheelFace, wheelHub, wheelPointer, wheelRim, type Rgba } from '../art/wheel-art';
+import { emojiCanvas } from '../art/emoji-px';
 
 const TEX = new WeakMap<HTMLCanvasElement, Texture>();
 /** A crisp texture for an icon canvas, made once. */
-function texOf(c: HTMLCanvasElement) {
+export function texOf(c: HTMLCanvasElement) {
   let t = TEX.get(c);
   if (!t) {
     t = Texture.from(c);
@@ -22,18 +24,11 @@ export interface WheelSlice {
   mark?: 'up' | 'down' | '';
   /** a pixel icon drawn instead of the emoji */
   img?: HTMLCanvasElement | null;
+  /** its own color instead of the quality's (the title wheel) */
+  col?: string;
 }
 
 const TAU = Math.PI * 2;
-// legacy drawWheel colors: two shades per quality so neighbours differ
-const QC: [number, number][] = [
-  [0x525b6e, 0x465062],
-  [0x5b4bb7, 0x4e40a3],
-  [0x0e9f8e, 0x0b8a7b],
-  [0xe8a93a, 0xd99a2b],
-];
-const FONT = '"Atkinson Hyperlegible", system-ui, sans-serif';
-
 export const MIN_TURNS = 1.5;
 export interface Friction {
   k: number;
@@ -91,103 +86,136 @@ export interface WheelEvents {
   tooGentle?: (turns: number) => void;
 }
 
+/** A texture from pixel art, crisp when scaled up. */
+function texRgba(r: Rgba) {
+  const cv = document.createElement('canvas');
+  cv.width = r.w;
+  cv.height = r.h;
+  const x = cv.getContext('2d')!;
+  const id = x.createImageData(r.w, r.h);
+  id.data.set(r.d);
+  x.putImageData(id, 0, 0);
+  const t = Texture.from(cv);
+  t.source.scaleMode = 'nearest';
+  return t;
+}
+const PIXEL_FONT = '"WHS Display", "Saira Condensed", system-ui, sans-serif';
+
 /**
- * A spinning prize wheel in Pixi: brushed gold rim, bulbs, slices sized by weight, a pointer at the top
- * and a hub in the middle. It spins two ways: with physics (flicks and the Spin button; where it stops
- * decides the result) or straight to a chosen slice (combat and signature wheels pick first).
+ * A spinning prize wheel in Pixi, in pixel art like the rest of the game: a gold rim with bulbs that chase
+ * while it turns, slices sized by weight with a peg on every edge, a pointer on a spring at the top and a
+ * medallion hub. It spins two ways: with physics (flicks and the Spin button; where it stops decides the
+ * result) or straight to a chosen slice (combat and signature wheels pick first).
  */
 export class WheelView extends Container {
   readonly disc = new Container();
-  private slices = new Graphics();
+  private face = new Sprite();
+  private hilite = new Sprite();
   private labels = new Container();
-  private hilite = new Graphics();
-  private rim = new Graphics();
-  private overlay = new Graphics();
-  readonly pointer = new Graphics();
+  private rim = new Sprite();
+  private lights = new Container();
+  private bulbs: Sprite[] = [];
+  private bulbOn: Texture | null = null;
+  private bulbOff: Texture | null = null;
+  readonly pointer = new Container();
+  private pointerArt = new Sprite();
   readonly hub = new Container();
-  private hubDisc = new Graphics();
-  private hubText = new Text({ text: '?', style: { fontFamily: FONT, fontWeight: '800', fontSize: 30, fill: 0x2a1a05, align: 'center' } });
-  private rimG?: FillGradient;
-  private shadeG?: FillGradient;
-  private glossG?: FillGradient;
+  private hubArt = new Sprite();
+  private hubPic = new Sprite();
+  private hubR = 20;
+  private hubText = new Text({ text: '?', style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0x3a2200, align: 'center' } });
+  private sparks = new Container();
+  private owned: Texture[] = [];
+  private hiTex: Texture | null = null;
+  /** CSS pixels per art pixel */
+  private px = 3;
   items: WheelSlice[] = [];
   segs: [number, number][] = [];
   size = 300;
   rot = 0;
   private phys: Phys | null = null;
   private tween: Tween | null = null;
-  private flap = 0;
+  // the pointer's spring, the lights, the landing pop
+  private pa = 0;
+  private pv = 0;
   private lastFlapAt = 0;
+  private clock = 0;
+  private chase = 0;
+  private lastRot = 0;
+  private flashT = -1;
+  private popT = -1;
+  private suspenseOn = false;
+  private sparkV: { g: Graphics; vx: number; vy: number; life: number }[] = [];
   events: WheelEvents = {};
   reduced = false;
   rng: () => number = Math.random;
 
   constructor() {
     super();
-    this.disc.addChild(this.slices, this.hilite, this.labels);
-    this.hub.addChild(this.hubDisc, this.hubText);
+    this.hilite.visible = false;
+    this.disc.addChild(this.face, this.hilite, this.labels);
+    this.hub.addChild(this.hubArt, this.hubText, this.hubPic);
+    for (const sp of [this.face, this.hilite, this.rim, this.hubArt, this.hubPic]) sp.anchor.set(0.5);
     this.hubText.anchor.set(0.5);
-    this.addChild(this.rim, this.disc, this.overlay, this.hub, this.pointer);
+    this.hubPic.visible = false;
+    this.pointer.addChild(this.pointerArt);
+    this.addChild(this.rim, this.disc, this.lights, this.hub, this.pointer, this.sparks);
   }
 
   get spinning() {
     return !!this.phys || !!this.tween;
   }
 
+  private own(t: Texture) {
+    this.owned.push(t);
+    return t;
+  }
+
   /** Draws the wheel for these slices at this diameter (call again when either changes). */
   setItems(items: WheelSlice[], size = this.size, hi: number | null = null) {
     this.items = items;
     this.size = size;
-    const R = size / 2;
-    const rIn = R - 11;
+    // the old art goes after the next frame, once the renderer no longer holds it
+    const old = this.owned;
+    this.owned = [];
+    if (old.length) setTimeout(() => old.forEach((t) => t.destroy(true)), 100);
+    const p = (this.px = Math.max(2, Math.round(size / 105)));
+    const N = Math.max(40, Math.round(size / p));
+    const rw = Math.max(4, Math.round(N * 0.07));
+    const faceN = N - 2 * (rw - 1);
+    const hubN = Math.max(9, Math.round(N * 0.22));
+    const hole = hubN / faceN;
     const tot = items.reduce((a, b) => a + b.w, 0) || 1;
-    // brushed-gold rim
-    const rimG = (this.rimG ??= new FillGradient({
-      type: 'linear',
-      start: { x: 0, y: 0 },
-      end: { x: 1, y: 1 },
-      colorStops: [
-        { offset: 0, color: '#FBE3A6' },
-        { offset: 0.45, color: '#C98F2E' },
-        { offset: 0.55, color: '#F5D27A' },
-        { offset: 1, color: '#8C5E14' },
-      ],
-      textureSpace: 'local',
-    }));
-    this.rim.clear().circle(0, 0, R - 1).fill(rimG).stroke({ width: 1.5, color: 0x1a1328 });
-    // slices: angle 0 is the top, going clockwise
-    this.slices.clear();
     this.segs = [];
     let a = 0;
-    items.forEach((it, i) => {
+    const spans = items.map((it) => {
       const span = (it.w / tot) * TAU;
       this.segs.push([a, a + span]);
-      const q = it.q == null ? 1 : it.q;
-      this.slices
-        .moveTo(0, 0)
-        .arc(0, 0, rIn, a - Math.PI / 2, a + span - Math.PI / 2)
-        .closePath()
-        .fill({ color: QC[q]![i % 2]! })
-        .stroke({ width: 1.5, color: 0xfff6ea, alpha: 0.75 });
       a += span;
+      return span;
     });
-    // labels along each slice, right-aligned at the rim
-    // old labels go after the next frame, once the renderer no longer holds their textures
-    const old = this.labels.removeChildren();
-    if (old.length) setTimeout(() => old.forEach((c) => c.destroy({ children: true })), 100);
+    const colors = items.map((it, i) => it.col ?? SLICE_COLORS[it.q == null ? 1 : it.q]![i % 2]!);
+    this.face.texture = this.own(texRgba(wheelFace(faceN, spans.length ? spans : [TAU], colors.length ? colors : ['#5b4bb7'], hole)));
+    this.face.scale.set(p);
+    this.rim.texture = this.own(texRgba(wheelRim(N, rw)));
+    this.rim.scale.set(p);
+    // labels along each slice, right-aligned at the rim, in the pixel face
+    const rIn = (faceN * p) / 2;
+    const oldLabels = this.labels.removeChildren();
+    if (oldLabels.length) setTimeout(() => oldLabels.forEach((c) => c.destroy({ children: true })), 100);
     items.forEach((it, i) => {
       const [a0, a1] = this.segs[i]!;
       const span = a1 - a0;
       const mid = (a0 + a1) / 2;
       const arc = span * rIn * 0.6;
-      if (arc < 9) return;
-      let fs = Math.min(15, Math.max(9, size / 25), arc * 0.8);
-      const maxW = rIn * 0.68;
+      if (arc < 9 || (!it.n && !it.img)) return;
+      let fs = Math.min(17, Math.max(10, size / 22), arc * 0.9);
+      const maxW = rIn * 0.66;
       const mk = it.mark === 'up' ? '▲ ' : it.mark === 'down' ? '▼ ' : '';
       const pic = it.img ? texOf(it.img) : null;
       let label = mk + (it.e && !pic ? it.e + ' ' : '') + it.n;
       if (arc < fs * 1.7 && (it.e || pic)) label = pic ? mk : mk + it.e;
-      const style = new TextStyle({ fontFamily: FONT, fontWeight: '700', fontSize: fs, fill: it.q === 3 ? 0x2a1a05 : 0xffffff });
+      const style = new TextStyle({ fontFamily: PIXEL_FONT, fontSize: fs, fill: it.q === 3 ? 0x3a2200 : 0xffffff, stroke: it.q === 3 ? undefined : { color: 0x120d28, width: 3 } });
       const width = () => CanvasTextMetrics.measureText(label, style).width;
       while (width() > maxW && fs > 10) {
         fs -= 1;
@@ -198,79 +226,83 @@ export class WheelView extends Container {
       t.anchor.set(1, 0.5);
       const holder = new Container();
       holder.rotation = mid - Math.PI / 2;
-      t.position.set(rIn - 9, 0.5);
+      t.position.set(rIn - 3 * p, 0.5);
       holder.addChild(t);
       if (pic) {
-        // the icon sits just inside the label, upright along the slice
+        // the icon sits just inside the label, upright along the slice, scaled by whole pixels when it can be
         const sp = new Sprite(pic);
-        const ps = Math.round(Math.min(fs * 1.55, arc * 1.1));
-        sp.width = sp.height = ps;
+        const want = Math.min(fs * 1.7, arc * 1.15);
+        const k = want >= pic.width ? Math.floor(want / pic.width) : want / pic.width;
+        sp.scale.set(k);
         sp.anchor.set(1, 0.5);
-        sp.position.set(rIn - 9 - (label ? CanvasTextMetrics.measureText(label, style).width + 3 : 0), 0.5);
+        sp.position.set(rIn - 3 * p - (label ? width() + 3 : 0), 0.5);
         holder.addChild(sp);
       }
       this.labels.addChild(holder);
     });
     this.highlight(hi);
-    // depth, bulbs and a glossy dome over the slices (they don't turn)
-    const shade = (this.shadeG ??= new FillGradient({
-      type: 'radial',
-      center: { x: 0.5, y: 0.5 },
-      innerRadius: 0.175,
-      outerCenter: { x: 0.5, y: 0.5 },
-      outerRadius: 0.5,
-      colorStops: [
-        { offset: 0, color: 'rgba(0,0,0,0)' },
-        { offset: 1, color: 'rgba(0,0,0,0.28)' },
-      ],
-      textureSpace: 'local',
-    }));
-    const gloss = (this.glossG ??= new FillGradient({
-      type: 'radial',
-      center: { x: 0.33, y: 0.25 },
-      innerRadius: 0.03,
-      outerCenter: { x: 0.37, y: 0.33 },
-      outerRadius: 0.55,
-      colorStops: [
-        { offset: 0, color: 'rgba(255,255,255,0.26)' },
-        { offset: 0.45, color: 'rgba(255,255,255,0.06)' },
-        { offset: 1, color: 'rgba(255,255,255,0)' },
-      ],
-      textureSpace: 'local',
-    }));
-    this.overlay.clear().circle(0, 0, rIn).fill(shade).circle(0, 0, rIn).fill(gloss);
-    const nb = 28;
+    // the bulbs around the rim
+    const bs = Math.max(2, Math.round(rw * 0.55));
+    this.bulbOn = this.own(texRgba(bulb(true, bs)));
+    this.bulbOff = this.own(texRgba(bulb(false, bs)));
+    this.lights.removeChildren().forEach((c) => c.destroy());
+    const nb = size > 230 ? 20 : 16;
+    this.bulbs = [];
     for (let k = 0; k < nb; k++) {
-      const ang = (k / nb) * TAU;
-      this.overlay.circle(Math.cos(ang) * (R - 5.5), Math.sin(ang) * (R - 5.5), 2.6).fill({ color: k % 2 ? 0xffb627 : 0xff4f8b });
+      const ang = (k / nb) * TAU + TAU / nb / 2;
+      const b = new Sprite(this.bulbOn);
+      b.anchor.set(0.5);
+      b.scale.set(p);
+      b.position.set(Math.sin(ang) * ((N / 2 - rw / 2) * p), -Math.cos(ang) * ((N / 2 - rw / 2) * p));
+      this.lights.addChild(b);
+      this.bulbs.push(b);
     }
     // hub and pointer
-    const hr = Math.max(18, size * 0.11);
-    this.hubDisc.clear().circle(0, 0, hr).fill({ color: 0xfff6e0 }).stroke({ width: Math.max(3, size * 0.014), color: 0xd99a2b });
-    this.hubText.style.fontSize = hr * 0.95;
-    const pw = Math.max(9, size * 0.045);
-    this.pointer.clear().poly([-pw, 0, pw, 0, 0, pw * 1.9]).fill({ color: 0xe5484d }).stroke({ width: 2, color: 0x8e1d22 });
-    this.pointer.pivot.set(0, pw * 0.4);
-    this.pointer.position.set(0, -R - pw * 0.5);
+    this.hubArt.texture = this.own(texRgba(wheelHub(hubN)));
+    this.hubArt.scale.set(p);
+    const hr = (hubN * p) / 2;
+    this.hubR = hr;
+    this.hubText.style.fontSize = Math.round(hr * 1.05);
+    this.hubPic.width = this.hubPic.height = hr * 1.15;
+    const pt = wheelPointer(Math.max(8, Math.round(N * 0.115)));
+    this.pointerArt.texture = this.own(texRgba(pt));
+    this.pointerArt.scale.set(p);
+    this.pointerArt.anchor.set(pt.px / pt.w, pt.py / pt.h);
+    this.pointer.position.set(0, -(N / 2) * p + rw * p * 0.15);
     this.disc.rotation = this.rot;
+    this.lastRot = this.rot;
   }
 
-  /** Marks the landed slice. */
+  /** Marks the landed slice: it glows, pulsing. */
   highlight(hi: number | null) {
-    this.hilite.clear();
+    if (this.hiTex) {
+      const t = this.hiTex;
+      setTimeout(() => t.destroy(true), 100);
+      this.hiTex = null;
+    }
+    this.hilite.visible = false;
     if (hi == null || !this.segs[hi]) return;
-    const rIn = this.size / 2 - 11;
+    const p = this.px;
+    const N = Math.max(40, Math.round(this.size / p));
+    const rw = Math.max(4, Math.round(N * 0.07));
+    const faceN = N - 2 * (rw - 1);
+    const hubN = Math.max(9, Math.round(N * 0.22));
     const [h0, h1] = this.segs[hi]!;
-    this.hilite
-      .moveTo(0, 0)
-      .arc(0, 0, rIn, h0 - Math.PI / 2, h1 - Math.PI / 2)
-      .closePath()
-      .fill({ color: 0xffffff, alpha: 0.28 })
-      .stroke({ width: 4, color: 0xffb627 });
+    this.hiTex = texRgba(sliceMask(faceN, h0, h1, hubN / faceN));
+    this.hilite.texture = this.hiTex;
+    this.hilite.scale.set(p);
+    this.hilite.visible = true;
   }
 
+  /** The hub shows a word, or an emoji as its pixel icon. */
   setHub(text: string) {
-    this.hubText.text = text;
+    const cv = /^[\p{Extended_Pictographic}\uFE0F\u200D]+$/u.test(text) ? emojiCanvas(text) : null;
+    this.hubPic.visible = !!cv;
+    this.hubText.visible = !cv;
+    if (cv) {
+      this.hubPic.texture = texOf(cv);
+      this.hubPic.width = this.hubPic.height = this.hubR * 1.15;
+    } else this.hubText.text = text;
   }
 
   /** The slice under the pointer at rotation r. */
@@ -299,9 +331,30 @@ export class WheelView extends Container {
   private onEdge(dir: number, heavy: boolean) {
     this.events.tick?.(heavy);
     const now = performance.now();
-    if (this.reduced || now - this.lastFlapAt < 35) return;
+    if (this.reduced || now - this.lastFlapAt < 30) return;
     this.lastFlapAt = now;
-    this.flap = dir > 0 ? -1 : 1;
+    // the flapper gets knocked the way the pegs pass, harder by a bounce
+    this.pv += (dir > 0 ? -1 : 1) * (heavy ? 16 : 9);
+  }
+
+  /** The win: the bulbs flash, the wheel pops and sparks fly off the pointer. */
+  private celebrate() {
+    this.suspenseOn = false;
+    if (this.reduced) return;
+    this.flashT = 0;
+    this.popT = 0;
+    const p = this.px;
+    const tip = this.pointer.y + this.pointerArt.height * 0.55;
+    for (let i = 0; i < 16; i++) {
+      const g = new Graphics()
+        .rect(-p * 0.75, -p * 0.75, p * 1.5, p * 1.5)
+        .fill({ color: [0xffe27a, 0xffffff, 0xffb627, 0xff8ad8][i % 4]! });
+      g.position.set(0, tip);
+      const a = -Math.PI / 2 + (this.rng() - 0.5) * 2.6;
+      const v = 140 + this.rng() * 180;
+      this.sparks.addChild(g);
+      this.sparkV.push({ g, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.55 + this.rng() * 0.3 });
+    }
   }
 
   /** Physics spin: a flick at w rad/s, or a machine push that always clears the 1½-turn rule. */
@@ -314,6 +367,7 @@ export class WheelView extends Container {
     }
     const valid = predictTravel(w, fr) >= MIN_TURNS * TAU;
     this.highlight(null);
+    this.suspenseOn = false;
     this.phys = { w, fr, valid, kind, seg: this.segAt(), bounces: 0, suspense: false, travel: 0 };
   }
 
@@ -346,12 +400,9 @@ export class WheelView extends Container {
     return fwd(a) <= fwd(b) ? a : b;
   }
 
-  /** Advances spins and the pointer flap; call every frame with the elapsed seconds. */
+  /** Advances spins, the pointer, the lights and the sparks; call every frame with the elapsed seconds. */
   update(dt: number) {
-    if (this.flap) {
-      this.pointer.rotation = this.flap * 0.3;
-      this.flap = 0;
-    } else this.pointer.rotation *= 0.75;
+    this.animate(Math.min(0.05, dt));
     const t = this.tween;
     if (t) {
       const k = Math.min(1, (performance.now() - t.t0) / t.dur);
@@ -365,6 +416,7 @@ export class WheelView extends Container {
       if (k >= 1) {
         this.tween = null;
         this.highlight(t.idx);
+        this.celebrate();
         this.events.land?.(t.idx, { turns: Math.abs(t.to - t.from) / TAU, flick: false });
       }
       return;
@@ -399,6 +451,7 @@ export class WheelView extends Container {
     }
     if (p.valid && !p.suspense && Math.abs(p.w) < 2.4) {
       p.suspense = true;
+      this.suspenseOn = true;
       this.events.suspense?.();
     }
     if (Math.abs(p.w) <= 0.02) {
@@ -406,17 +459,81 @@ export class WheelView extends Container {
       this.setRot(((this.rot % TAU) + TAU) % TAU);
       const turns = p.travel / TAU;
       if (!p.valid) {
+        this.suspenseOn = false;
         this.events.tooGentle?.(turns);
         return;
       }
       const idx = this.segAt();
       this.highlight(idx);
+      this.celebrate();
       this.events.land?.(idx, { turns, flick: p.kind === 'flick' });
     }
   }
 
+  private animate(dt: number) {
+    this.clock += dt;
+    // the pointer: a damped spring the pegs keep knocking
+    if (this.reduced) {
+      this.pa = this.pv = 0;
+    } else {
+      this.pv += (-260 * this.pa - 16 * this.pv) * dt;
+      this.pa = Math.max(-0.7, Math.min(0.7, this.pa + this.pv * dt));
+    }
+    this.pointer.rotation = this.pa;
+    // the bulbs: a slow twinkle at rest, a chase as fast as the wheel while it spins, a blink while it slows
+    // down, three flashes when it lands
+    const speed = Math.abs(this.rot - this.lastRot) / Math.max(dt, 1e-3);
+    this.lastRot = this.rot;
+    const nb = this.bulbs.length;
+    let lit: (k: number) => boolean;
+    if (this.reduced) lit = () => true;
+    else if (this.flashT >= 0) {
+      this.flashT += dt;
+      const on = Math.floor(this.flashT * 7) % 2 === 0;
+      lit = () => on;
+      if (this.flashT > 0.85) this.flashT = -1;
+    } else if (this.spinning && this.suspenseOn) {
+      const on = Math.floor(this.clock * 9) % 2 === 0;
+      lit = (k) => (k % 2 === 0) === on;
+    } else if (this.spinning) {
+      this.chase += (speed / TAU) * nb * dt * 0.9 + dt * 4;
+      const head = Math.floor(this.chase) % nb;
+      lit = (k) => (k - head + nb) % 4 === 0;
+    } else {
+      const half = Math.floor(this.clock / 0.7) % 2;
+      lit = (k) => k % 2 === half;
+    }
+    if (this.bulbOn && this.bulbOff) this.bulbs.forEach((b, k) => (b.texture = lit(k) ? this.bulbOn! : this.bulbOff!));
+    // the slice that won pulses
+    if (this.hilite.visible) this.hilite.alpha = this.reduced ? 0.85 : 0.6 + 0.4 * Math.sin(this.clock * 7) ** 2;
+    // the pop when it lands
+    if (this.popT >= 0) {
+      this.popT += dt;
+      const k = Math.min(1, this.popT / 0.3);
+      this.scale.set(1 + 0.05 * Math.sin(Math.PI * k) * (1 - k * 0.3));
+      if (k >= 1) {
+        this.popT = -1;
+        this.scale.set(1);
+      }
+    }
+    // sparks fly and fall
+    for (let i = this.sparkV.length - 1; i >= 0; i--) {
+      const s = this.sparkV[i]!;
+      s.life -= dt;
+      s.vy += 520 * dt;
+      s.g.x += s.vx * dt;
+      s.g.y += s.vy * dt;
+      s.g.alpha = Math.max(0, Math.min(1, s.life * 3));
+      if (s.life <= 0) {
+        s.g.destroy();
+        this.sparkV.splice(i, 1);
+      }
+    }
+  }
+
   override destroy(options?: Parameters<Container['destroy']>[0]) {
+    const owned = [...this.owned, ...(this.hiTex ? [this.hiTex] : [])];
     super.destroy(options);
-    for (const g of [this.rimG, this.shadeG, this.glossG]) g?.destroy();
+    owned.forEach((t) => t.destroy(true));
   }
 }
