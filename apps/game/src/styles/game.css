@@ -508,6 +508,14 @@
   transform: translateY(2px);
 }
 /* charisma options: a violet edge, and a chip saying what they need */
+.ev-fx,
+.ev-flav {
+  display: block;
+}
+.ev-flav {
+  margin-top: 0.3rem;
+  color: var(--muted);
+}
 .ch-opt.talk {
   border-color: color-mix(in srgb, #b388ff 55%, var(--line));
   background: color-mix(in srgb, #b388ff 10%, var(--surface));

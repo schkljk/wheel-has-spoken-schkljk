@@ -16,3 +16,4 @@ export * from './data/content/personality';
 export * from './data/content/hidden-synergies';
 export * from './data/content/charisma';
 export * from './data/content/nemesis';
+export * from './data/content/chapter-events';

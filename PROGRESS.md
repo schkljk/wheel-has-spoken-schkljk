@@ -39,6 +39,21 @@ That's the whole "Combat feel" group (6 to 13). Next up is "Balance and system h
 That closes "Balance and system health". Next up is "Content and long-term progression" (19 onwards).
 
 - [x] 19. The nemesis follows you into the story
+- [x] 20. Every chapter has encounters of its own
+
+### 20. Every chapter has encounters of its own
+
+- **What changed (content):** 40 new story encounters, two per chapter, mixed in with the classic twelve. When a chapter still has one of its own left, an encounter step deals it 60% of the time, so a chapter's own two usually both show up and nothing repeats within a chapter. Examples:
+  - 🍢 **Mystery skewers** (Night Market): *"The vendor will not say which animal. The vendor will not make eye contact."*
+  - 👻 **A ghost with a grudge** (Haunted Highlands): it died mid-punch in 1743 and wants you to finish the fight (an elite).
+  - 🦾 **Back-alley implant** (Neon Megacity): a "mostly legal" reflex chip, 75% to get +1 speed for good.
+  - 📜 **A contract in brimstone** (Underworld): *"The fine print is on fire."*
+  - 🧦 **Lost and found** (the Void): everything that ever went missing, mostly single socks.
+  - Every one has a 🗣️ charisma option (30 to 60), like the classic twelve since upgrade 17.
+- **Mechanics line, then the joke.** Each option's line under it is written from what it does, so it can't drift: "4 coins. 70%: heal 30% HP. 30%: lose 10% HP". The result shows what happened in bold ("Heal 30% HP") and the joke in italics underneath (*"Delicious. You decide not to know."*). The effects are a small vocabulary (coins, HP, fame, +1 to a stat, next-fight buffs, a free bag item, cures, injuries, blessings, fights, loot, the mystery wheel), so a new encounter is one table row with no code.
+- **Balance:** the same kind of small trades as the classic twelve. Story sims (seed 1, 60 runs per strength): reaching the end 27 / 58 / 82% with them vs 30 / 60 / 78% without, within noise.
+- Behind a `themedEvents` switch; `npx tsx tools/sim/story-run.ts --off themedEvents` plays without them.
+- Tested: `chapter-events.test.ts` (6 tests) checks that every chapter has two, keys are unique, every charisma option is between 30 and 60, and items and stats exist. It also checks that every outcome has its joke, the mechanics lines read right, that a chapter deals only its own and never twice, that the old balance keeps the classic twelve, that effects do what they say (including a gamble landing both ways and charging its cost either way), and that every charisma option locks, opens at 60 and pays out. A new e2e test opens a Night Market encounter on a 320 px phone and checks the option lines, the charisma option, the bold result and the italic joke, with nothing cut off.
 
 ### 19. The nemesis follows you into the story
 
