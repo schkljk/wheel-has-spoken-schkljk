@@ -16,3 +16,4 @@ export * from './lab';
 export * from './nemesis';
 export * from './forge';
 export * from './trophies';
+export * from './exhibition';

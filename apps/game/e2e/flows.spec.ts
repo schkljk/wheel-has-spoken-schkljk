@@ -519,3 +519,29 @@ test('the trophy room: belts, boss kills, rare titles and class mastery on shelv
   await expect(page.getByText('Giant Slayer').last()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('an exhibition: two legends from the hall of fame fight while the commentators talk', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, careerSaveKV({ seed: 6, lvl: 8, legends: true, fast: true }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Exhibition/ }).click();
+  await expect(page.getByText('The hall of fame (4)')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: 'Old Man Uppercut in the blue corner' }).click();
+  await page.getByRole('button', { name: /Ring the bell/ }).click();
+  // reduced motion plays the whole broadcast at once
+  await expect(page.getByRole('button', { name: /Rematch/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.ex-call')).not.toHaveCount(0);
+  await expect(page.locator('.ex-call.c0').first()).toContainText('Rex Thundermic');
+  await expect(page.locator('.ex-corner.lost')).toHaveCount(1);
+  await expect(page.locator('.ex-corner').nth(1)).toContainText('Old Man Uppercut');
+  for (const [width, height] of [[320, 568], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(300);
+    expect((await layoutProblems(page)).clipped, `${width}x${height}`).toEqual([]);
+  }
+  expect(errors).toEqual([]);
+});

@@ -2,6 +2,7 @@ import { useEffect } from 'preact/hooks';
 import { BALANCE, CHAPTERS, TIERS_T, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure } from '../../state/game';
 import { Icon } from '../../ui/Icon';
+import { openExhibition } from '../../flows/exhibition';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goMap } from '../../flows/nav';
@@ -119,6 +120,13 @@ export function PlayTab() {
         <span class="grow">
           <b>Fight club</b>
           <small>Bet on strangers. Lose money with friends</small>
+        </span>
+      </button>
+      <button class="card tap mode" onClick={() => openExhibition()} {...rise(n++)}>
+        <Icon name="people" class="lg" />
+        <span class="grow">
+          <b>Exhibition</b>
+          <small>Hall of fame legends fight for pride, with commentary. Nobody gets paid</small>
         </span>
       </button>
       <button class="card tap mode" onClick={() => openBaseShop()} {...rise(n++)}>

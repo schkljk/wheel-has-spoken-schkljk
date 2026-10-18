@@ -43,6 +43,16 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 21. Gear upgrades, +1 to +5
 - [x] 22. Four new gear sets: pirate, chef, cosmic, royal
 - [x] 23. Trophy room
+- [x] 24. Hall of fame exhibitions
+
+### 24. Hall of fame exhibitions
+
+- **What changed (mode):** Play → **Exhibition**. Two legends from the hall of fame fight for pride while two commentators call it: 🎙️ **Rex Thundermic** on play-by-play (*"THE SIGNATURE MOVE! Bob has been saving that since the Bronze Age!"*) and 🩺 **Dr. Brenda Kneecap** on colour (*"I have notes for Bob. The first note is: duck."*).
+- Legends are champions (cup and story winners) and, from now on, retirees: retiring keeps the fighter in the hall of fame for this, for the best six, like champions. Pick the red and blue corners from the list or 🎲 shuffle, then 🔔 ring the bell.
+- The broadcast plays round by round in a sheet: both fighters' sprites and HP bars, each round's narration, and one call per round about its biggest moment: a signature move, a crit, plot armor, a big hit, a read, a dodge, a heal, a lead change, someone hanging on below a quarter HP, or a quiet round (*"Riveting. I am going to check my phone."*). The commentators take turns and don't repeat a line until they've used the others. Skip to the end any time; reduced motion shows it all at once. Then rematch or pick a new matchup.
+- No rewards and nothing at stake: it's a show. With fewer than two legends it says how to get some (*"The arena is empty. The janitor is doing push-ups."*).
+- The fight is the normal engine, two AIs, from a seed; the commentators pick lines from their own stream, so commentary never changes a fight.
+- Tested: `exhibition.test.ts` (4 tests) covers who counts as a legend (champions and retirees with a fighter, best first, no doubles), that a seed always gives the same fight and calls, that calls take turns with every name filled in, HP stays 0-100 and the winner is the one standing, and that every moment has lines for both commentators. A new e2e test sets up a hall of fame, puts the retiree in the blue corner, plays the exhibition, and checks the calls, the loser's greyed corner, and the layout at 320×568 and 844×390.
 
 ### 23. Trophy room
 

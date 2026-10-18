@@ -13,6 +13,9 @@ import {
   type CareerFighter,
   type Game,
   type Story,
+  champEntry,
+  lookOf,
+  serFighter,
 } from '../../packages/core/src';
 
 /**
@@ -20,7 +23,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; trophies?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; trophies?: boolean; legends?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -50,6 +53,18 @@ export function careerSaveKV(
     f.story = { ...newChapter(g, 4, 0), cleared: [1, 2, 3] } as never;
     save.profile.ach = { ...save.profile.ach, giant: true, flawless: true };
     save.profile.mastery = { tank: 120, brawler: 20, mage: 6 };
+  }
+  // a hall of fame: three champions and a retiree, each with their fighter (exhibitions)
+  if (o.legends) {
+    const champs = ['Grandma Haymaker', 'Sir Reginald Bonk', 'The Quiet Pigeon'].map((n, i) => {
+      const c = randomFighter(n, rng) as CareerFighter;
+      c.lvl = 10 + i * 3;
+      return champEntry(g, c, `World championship. Level ${c.lvl} ${c.race.n.toLowerCase()}`, 40 + i);
+    });
+    save.profile.champs = champs as never;
+    const r = randomFighter('Old Man Uppercut', rng) as CareerFighter;
+    r.lvl = 14;
+    save.roster.retired = [{ n: r.name, look: lookOf(r), s: 'Level 14 legend', d: '2026-01-01', score: 30, e: r.race.e, fd: serFighter(r) }] as never;
   }
   // an encounter on the step you stand on
   if (o.event && f.story) (f.story as unknown as Story).rows[(f.story as unknown as Story).row] = ['event'];

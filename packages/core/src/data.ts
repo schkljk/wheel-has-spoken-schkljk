@@ -18,3 +18,4 @@ export * from './data/content/charisma';
 export * from './data/content/nemesis';
 export * from './data/content/chapter-events';
 export * from './data/content/gear-sets';
+export * from './data/content/commentary';
