@@ -48,6 +48,9 @@ const CHIP_ROW = 4;
 export class FighterView extends Container {
   readonly flip = new Container();
   readonly body = new Container();
+  /** breathing while standing (upgrade 39): scales from the feet, under everything else the body does */
+  private breath = new Container();
+  private breathT = 0;
   private bodySprite: Sprite;
   private arm: Sprite;
   readonly armPivot = new Container();
@@ -73,7 +76,10 @@ export class FighterView extends Container {
     this.arm = new Sprite(t.arm);
     this.arm.anchor.set(t.sx / SPRITE_W, t.sy / SPRITE_H);
     this.armPivot.addChild(this.arm);
-    this.body.addChild(this.bodySprite, this.armPivot);
+    this.breath.addChild(this.bodySprite, this.armPivot);
+    this.body.addChild(this.breath);
+    // the two fighters breathe out of step
+    this.breathT = side * 1.1;
     this.flip.addChild(this.glow, this.body);
     this.addChild(this.flip, this.badges);
     if (side === 1) this.flip.scale.x = -1;
@@ -83,7 +89,10 @@ export class FighterView extends Container {
 
   /** Sizes the fighter to a height (before their size wheel scale). */
   setHeight(chH: number) {
-    const sc = (this.look.size && SIZE_H[this.look.size]) || 1;
+    // bosses stand 15% taller than their size alone would make them, up to the tallest size the stage is
+    // laid out for (upgrade 38)
+    const sz = (this.look.size && SIZE_H[this.look.size]) || 1;
+    const sc = this.look.boss ? Math.min(SIZE_H.Colossal!, sz * 1.15) : sz;
     const hh = Math.round(chH * sc);
     const ww = Math.round((hh * 100) / 120);
     this.h = hh;
@@ -183,6 +192,20 @@ export class FighterView extends Container {
     if (!this.statusOn) this.body.filters = null;
     else this.body.filters = [m];
     this.setChips(chips);
+  }
+
+  /**
+   * Idle breathing: a slow rise and fall of the chest (a hair taller, a hair narrower), quicker when hurt.
+   * Lying down, it stops.
+   */
+  breathe(ms: number, hurt = false) {
+    if (this.down) {
+      this.breath.scale.set(1);
+      return;
+    }
+    this.breathT += (ms / 1000) * (hurt ? 1.6 : 1);
+    const k = Math.sin((this.breathT / 2.6) * Math.PI * 2);
+    this.breath.scale.set(1 - 0.006 * k, 1 + 0.016 * k);
   }
 
   /** Knocked out: lies on the floor, faded (or gets back up). */

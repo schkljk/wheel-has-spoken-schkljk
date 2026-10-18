@@ -15,6 +15,7 @@ import type { FightOutcome, FightResult, FightSpec } from '@whs/core';
 import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
 import { InfoHost } from './ui/Info';
 import { TipHost } from './ui/Tip';
+import { WipeHost } from './ui/Wipe';
 import { StatPopHost } from './ui/StatPop';
 
 function Screen() {
@@ -45,6 +46,7 @@ export function App() {
   return (
     <>
       <Screen />
+      <WipeHost />
       <SheetHost />
       <ConfirmHost />
       <CineHost />

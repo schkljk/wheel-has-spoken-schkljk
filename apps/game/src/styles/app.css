@@ -502,3 +502,33 @@ html[data-motion='reduced'] *::after {
   max-height: calc(100dvh - 2 * var(--gutter));
   overflow-y: auto;
 }
+/* the wheel wipe between screens (upgrade 40) */
+.wipe {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 260vmax;
+  height: 260vmax;
+  margin: -130vmax 0 0 -130vmax;
+  z-index: 45;
+  pointer-events: none;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, var(--primary) 0 30deg, var(--gold) 30deg 60deg, var(--teal) 60deg 90deg, #5b4bb7 90deg 120deg);
+  animation: wipe 0.42s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+@keyframes wipe {
+  0% {
+    clip-path: circle(0% at 50% 50%);
+    transform: rotate(0deg);
+    opacity: 0.95;
+  }
+  45% {
+    clip-path: circle(50% at 50% 50%);
+    opacity: 0.9;
+  }
+  100% {
+    clip-path: circle(50% at 50% 50%);
+    transform: rotate(140deg);
+    opacity: 0;
+  }
+}

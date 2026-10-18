@@ -115,6 +115,10 @@ export class FightScene {
   reduced = false;
   /** the story chapter, whose horizon (Act II) goes behind the arena (upgrade 37) */
   private chapter?: number;
+  /** HP in %, for breathing harder when hurt (upgrade 39) */
+  private hpPct: [number, number] = [100, 100];
+  /** each side's class, for their victory pose (upgrade 39) */
+  private archs: [string, string] = ['', ''];
   /** what each side hits with, for the hit sounds (upgrade 36) */
   private hitKinds: [HitKind, HitKind] = ['fist', 'fist'];
   /** effects intensity: shake and particle bursts scale with it (upgrade 33) */
@@ -131,6 +135,7 @@ export class FightScene {
     this.chapter = opts.chapter;
     this.ambient = new Ambient(arena?.k);
     this.hitKinds = [hitKindOf(looks[0]), hitKindOf(looks[1])];
+    this.archs = [looks[0].arch || '', looks[1].arch || ''];
     this.F = [new FighterView(looks[0], 0, { mythic: opts.mythic }), new FighterView(looks[1], 1)];
     this.fighters.addChild(this.F[0], this.F[1]);
     this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.phaseGlow, this.fighters, this.fx, this.tint, this.vignette);
@@ -140,6 +145,7 @@ export class FightScene {
     app.stage.addChild(this.world, this.wheel, this.top);
     app.ticker.add((t) => {
       this.tw.update(t.deltaMS);
+      if (!this.reduced) this.F.forEach((f, i) => f.breathe(t.deltaMS, this.hpPct[i]! < 30));
       if (!this.reduced) this.ambient.update(t.deltaMS / 1000);
       this.wheel.update(t.deltaMS / 1000);
       if (this.phaseAmt > 0) {
@@ -235,6 +241,7 @@ export class FightScene {
   applySnap(s: Snap | null) {
     if (!s) return;
     for (const i of [0, 1] as const) this.F[i].setStatus(s.st[i]!, s.sx?.[i] ?? []);
+    if (s.h) this.hpPct = [s.h[0] ?? 100, s.h[1] ?? 100];
   }
 
   // ---------------------------------------------------------------- effect helpers
@@ -548,6 +555,47 @@ export class FightScene {
     if (big) buzz(30);
   }
 
+  /**
+   * The winner's pose, by class (upgrade 39): the strong flex, casters float with their weapon held high,
+   * the quick ones twirl, the honourable salute, the showmen dance, everyone else hops with an arm up.
+   */
+  private async victoryPose(w: 0 | 1) {
+    const sp = this.sp;
+    const f = this.F[w];
+    const b = f.body;
+    const pose = POSE[this.archs[w]] ?? 'hop';
+    if (this.reduced) {
+      void this.armTo(w, [0, -150], 1);
+      return this.tw.wait(500);
+    }
+    if (pose === 'flex') {
+      void this.armTo(w, [0, -120, -95, -120], 900 * sp);
+      void this.tw.keys(900 * sp, [0, 1, 0, 1, 0], (v) => b.scale.set(1 + 0.08 * v, 1 - 0.06 * v));
+      void this.shake(4, 300 * sp);
+    } else if (pose === 'float') {
+      void this.armTo(w, [0, -170], 500 * sp);
+      void this.tw.keys(1000 * sp, [0, -16, -12, -16], (v) => (b.y = v));
+      const c = this.ctr(w);
+      setTimeout(() => this.particles(c.x, c.y - 20, [0xb388ff, 0xffffff, 0x3dd6c6], 16, 60), 300 * sp);
+    } else if (pose === 'twirl') {
+      void this.tw.keys(700 * sp, [1, -1, 1], (v) => (f.flip.scale.x = (w === 1 ? -1 : 1) * v));
+      void this.armTo(w, [0, -60, -150], 800 * sp);
+      void this.tw.keys(700 * sp, [0, -14, 0], (v) => (b.y = v));
+    } else if (pose === 'salute') {
+      void this.armTo(w, [0, -95, -95], 700 * sp);
+      void this.tw.keys(900 * sp, [0, 0.12, 0.12, 0], (v) => (b.rotation = (w === 0 ? 1 : -1) * v * 0.35));
+    } else if (pose === 'dance') {
+      const home = f.x;
+      void this.armTo(w, [0, -150, -40, -150, -40, -150], 1000 * sp);
+      void this.tw.keys(1000 * sp, [0, -8, 8, -8, 8, 0], (v) => (f.x = home + v));
+      void this.tw.keys(1000 * sp, [0, -10, 0, -10, 0, -10, 0], (v) => (b.y = v));
+    } else {
+      void this.armTo(w, [0, -160], 500 * sp);
+      void this.tw.keys(800 * sp, [0, -22, 0, -12, 0], (v) => (b.y = v));
+    }
+    await this.tw.wait(1000 * sp);
+  }
+
   // ---------------------------------------------------------------- battle animations
   /** Phase two: the arena slowly takes on the boss's light. */
   phaseLight() {
@@ -775,20 +823,14 @@ export class FightScene {
           const w = a.win as 0 | 1;
           const cw = this.ctr(w);
           setTimeout(() => this.particles(cw.x, cw.y - 30, [0xffb627, 0xff4f8b, 0x3dd6c6, 0xb388ff, 0xffffff], 30, 90), 200 * sp);
-          void this.armTo(w, [0, -160], 500 * sp);
-          const wb = this.F[w].body;
-          void this.tw.keys(800 * sp, [0, -22, 0, -12, 0], (v) => (wb.y = v));
           thud(true);
-          await this.tw.wait(900 * sp);
+          await this.victoryPose(w);
           break;
         }
         case 'win': {
           this.applySnap(e);
           void this.banner('Decision', 700 * sp, true);
-          void this.armTo(a.on!, [0, -160], 500 * sp);
-          const wb = this.F[a.on!].body;
-          void this.tw.keys(600 * sp, [0, -22, 0], (v) => (wb.y = v));
-          await this.tw.wait(800 * sp);
+          await this.victoryPose(a.on! as 0 | 1);
           break;
         }
         case 'read': {
@@ -958,3 +1000,13 @@ function hitKindOf(look: Look): HitKind {
   if (t.has('blunt')) return 'blunt';
   return 'fist';
 }
+
+/** Victory poses by class (upgrade 39). */
+type Pose = 'flex' | 'float' | 'twirl' | 'salute' | 'dance' | 'hop';
+const POSE: Record<string, Pose> = {
+  brawler: 'flex', berserker: 'flex', tank: 'flex', wrestler: 'flex', slayer: 'flex', resilient: 'flex',
+  mage: 'float', necro: 'float', alchemist: 'float', druid: 'float', chosen: 'float', monk: 'float',
+  assassin: 'twirl', trickster: 'twirl', ninja: 'twirl', gunslinger: 'twirl',
+  paladin: 'salute', samurai: 'salute', pirate: 'salute', tamer: 'salute',
+  bard: 'dance', streamer: 'dance', gambler: 'dance', chef: 'dance',
+};

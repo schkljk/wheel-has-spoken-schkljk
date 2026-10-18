@@ -27,6 +27,8 @@ export interface Look {
   weapon?: string;
   power?: string;
   ench?: string;
+  /** a story boss: their own silhouette on top of the build (upgrade 38) */
+  boss?: string;
 }
 
 type Named = { n?: string } | null | undefined;
@@ -41,6 +43,7 @@ export interface LookSource {
   weapon?: Named;
   power?: Keyed;
   ench?: Keyed;
+  isBoss?: boolean;
 }
 
 export function lookOf(f: LookSource): Look {
@@ -53,11 +56,12 @@ export function lookOf(f: LookSource): Look {
     weapon: f.weapon?.n,
     power: f.power?.k,
     ench: f.ench?.k,
+    ...(f.isBoss && f.name ? { boss: f.name } : {}),
   };
 }
 
 /** Cache key: the fields that change the pixels (size and power are drawn around the sprite, not in it). */
-export const spriteKey = (L: Look) => [L.name, L.race, L.rsub, L.arch, L.weapon, L.ench].join('|');
+export const spriteKey = (L: Look) => [L.name, L.race, L.rsub, L.arch, L.weapon, L.ench].join('|') + (L.boss ? '|boss' : '');
 
 // ---------- tables shared with the old vector art (legacy art_build.js) ----------
 /** Outline ink used by the vector art and the mystery silhouette. */
@@ -487,6 +491,7 @@ export function buildSprite(L: Look): SpriteLayers {
     [sx, sy] = CREATURE[plan](B, A, L, race, out, S, O1, O2, hs, skinHex);
   }
   weaponSprite(A, L.weapon, L.ench, sx, sy);
+  if (L.boss) bossDress(B, L.boss);
   outline(B);
   outline(A);
   return { body: toRGBA(B), arm: toRGBA(A), sx, sy };
@@ -1251,4 +1256,159 @@ function weaponSprite(A: Buf, name: string | undefined, ench: string | undefined
   } else {
     blade(hx + 1, hy - 3, hx + 10, hy - 22, 3, steel);
   }
+}
+
+// ---------------------------------------------------------------- boss silhouettes (upgrade 38)
+/**
+ * Each story boss gets something nobody else has, on top of their race and class: a crown, horns, a halo, a
+ * collar, a fin, a wheel... Placed from the sprite's own head (the topmost rows of pixels) so it fits any build.
+ * Things behind the body only fill pixels the body left empty.
+ */
+function bossDress(B: Buf, name: string) {
+  // the head: topmost row with pixels, and the columns of the first few rows
+  let top = 0;
+  while (top < SH && !B.px.slice(top * SW, top * SW + SW).some(Boolean)) top++;
+  const cols = (y: number) => {
+    let a = SW,
+      b = -1;
+    for (let x = 0; x < SW; x++)
+      if (B.px[y * SW + x]) {
+        a = Math.min(a, x);
+        b = Math.max(b, x);
+      }
+    return [a, b] as const;
+  };
+  const [h0, h1] = cols(Math.min(SH - 1, top + 3));
+  const hx = (h0 + h1) / 2;
+  const hw = Math.max(8, h1 - h0);
+  // the shoulders: the first row well below the head that is much wider than it
+  let sh = top + 8;
+  while (sh < Math.min(SH - 20, top + 22) && cols(sh)[1] - cols(sh)[0] < hw * 1.5) sh++;
+  const [s0, s1] = cols(sh + 1);
+  const back = sbuf();
+  const gold = RP('#F2B544'),
+    dark = RP('#2A2140'),
+    white = RP('#F4F1EA');
+  const crown = (y: number, w: number, R: Ramp) => P(B, [[hx - w, y + 4], [hx - w, y], [hx - w / 2, y + 2], [hx, y - 2], [hx + w / 2, y + 2], [hx + w, y], [hx + w, y + 4]], R);
+  const ring = (L: Buf, cx: number, cy: number, r: number, w: number, R: Ramp) =>
+    shape(L, (x, y) => {
+      const d = Math.hypot(x - cx, y - cy);
+      return d <= r && d >= r - w;
+    }, cx - r, cy - r, cx + r, cy + r, R);
+  switch (name) {
+    case 'Big Tony': // spiked bouncer shoulders and a heavy gold chain
+      for (const x of [s0 + 1, s1 - 1]) {
+        E(B, x, sh, 4.5, 3, RP('#3A3A44'));
+        for (const d of [-3, 0, 3]) P(B, [[x + d - 1.2, sh - 2], [x + d, sh - 6], [x + d + 1.2, sh - 2]], RP('#C9C2D8'));
+      }
+      for (let i = 0; i < 9; i++) E(B, s0 + 4 + i * ((s1 - s0 - 8) / 8), sh + 5 + (4 - Math.abs(4 - i)) * 0.7, 1.2, 1.2, gold, { flat: 1 });
+      break;
+    case 'Mama Gnocchi': // a giant wooden spoon on her back and pearls
+      cap(back, hx - 14, sh + 30, hx + 10, top - 4, 3.5, RP('#B98B5E'));
+      E(back, hx + 12, top - 6, 5, 6, RP('#B98B5E'));
+      for (let i = 0; i < 6; i++) put(B, s0 + 4 + i * ((s1 - s0 - 8) / 5), sh + 3, white[3], white);
+      break;
+    case 'Lady Venom': // a towering collar and a tiara
+      P(back, [[s0 - 2, sh + 4], [hx - hw / 2 - 4, top - 4], [hx, sh - 2], [hx + hw / 2 + 4, top - 4], [s1 + 2, sh + 4]], RP('#5B1730'));
+      crown(top - 2, 3, RP('#C9C2D8'));
+      break;
+    case 'Admiral Saltbeard': // gold epaulettes with fringe
+      for (const x of [s0 + 1, s1 - 1]) {
+        E(B, x, sh + 1, 4, 2.4, gold);
+        for (let k = -3; k <= 3; k += 2) line(B, x + k, sh + 3, x + k, sh + 5, gold[1], gold);
+      }
+      break;
+    case 'The Professor': // tentacles reaching from behind and a monocle
+      for (const [a, b, c, d] of [[-14, 0, -20, -14], [14, 0, 22, -12], [-10, 10, -22, 2]] as const) cap(back, hx + a, sh + b, hx + c, sh + d, 3, RP('#6A4C93'));
+      ring(B, hx + hw / 4, top + 6, 2.2, 1, gold);
+      break;
+    case 'Count Crypt': // bone spikes from the shoulders and a crown of bones
+      for (const [x, d] of [[s0, -1], [s1, 1]] as const) cap(back, x, sh + 2, x + d * 7, top - 6, 2.5, RP('#E8E1CC'));
+      crown(top - 3, 6, RP('#E8E1CC'));
+      break;
+    case 'Titan Prime': // boulder shoulders and peaks behind
+      E(B, s0 + 1, sh, 5, 3.5, RP('#7D7469'));
+      E(B, s1 - 1, sh, 5, 3.5, RP('#7D7469'));
+      P(back, [[hx - 18, sh + 2], [hx - 11, top - 2], [hx - 4, sh + 2]], RP('#6B6258'));
+      P(back, [[hx + 4, sh + 2], [hx + 12, top], [hx + 19, sh + 2]], RP('#6B6258'));
+      break;
+    case 'Neon Ronin': // a neon visor and two swords on his back
+      Bx(B, hx - 2, top + 6, hx + hw / 2 + 1, top + 7, RP('#2DF0FF'), 0, { flat: 1 });
+      cap(back, hx - 12, sh + 18, hx + 6, top - 3, 2, RP('#C9C2D8'));
+      cap(back, hx + 12, sh + 18, hx - 6, top - 3, 2, RP('#C9C2D8'));
+      break;
+    case 'Queen Hivemind': // a crown and a second pair of wings
+      crown(top - 3, 5, gold);
+      P(back, [[hx, sh + 6], [hx - 22, sh - 6], [hx - 24, sh + 6]], RP('#CFE8F5'), { al: 190 });
+      P(back, [[hx, sh + 6], [hx + 22, sh - 6], [hx + 24, sh + 6]], RP('#CFE8F5'), { al: 190 });
+      break;
+    case 'The Wheelmaster': // the wheel behind him, and a crown
+      ring(back, hx, sh - 2, 18, 2, gold);
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * Math.PI * 2;
+        line(back, hx + Math.cos(a) * 4, sh - 2 + Math.sin(a) * 4, hx + Math.cos(a) * 16, sh - 2 + Math.sin(a) * 16, gold[2], gold);
+      }
+      crown(top - 2, 4, gold);
+      break;
+    case 'Captain Cumulus': // a plume and clouds at his feet
+      cap(B, hx + 2, top - 1, hx + 9, top - 8, 2, white);
+      for (let i = 0; i < 4; i++) E(B, 18 + i * 11, 79, 6, 3, white);
+      break;
+    case 'Baron Brimstone': // great curled horns and a crown of fire
+      P(back, [[hx - 10, top + 6], [hx - 14, top - 6], [hx - 6, top - 9], [hx, top - 4], [hx + 6, top - 9], [hx + 14, top - 6], [hx + 10, top + 6]], RP('#FF7A2F'), { al: 220 });
+      cap(B, hx - hw / 2, top + 3, hx - hw / 2 - 6, top - 5, 3, RP('#2B1A16'));
+      cap(B, hx + hw / 2, top + 3, hx + hw / 2 + 6, top - 5, 3, RP('#2B1A16'));
+      break;
+    case 'The Clockmaker': { // a big gear behind him and goggles
+      const g = RP('#C9A25B');
+      ring(back, hx, sh - 1, 14, 4, g);
+      for (let i = 0; i < 10; i++) {
+        const a = (i / 10) * Math.PI * 2;
+        E(back, hx + Math.cos(a) * 15, sh - 1 + Math.sin(a) * 15, 2, 2, g);
+      }
+      ring(B, hx + hw / 4, top + 6, 2.2, 1, RP('#B87333'));
+      ring(B, hx - 1, top + 6, 2.2, 1, RP('#B87333'));
+      break;
+    }
+    case 'Leviathan Rex': // a crown and a great dorsal fin
+      P(back, [[hx - 6, sh + 12], [hx - 20, top - 8], [hx - 14, sh + 2], [hx - 18, sh + 14]], RP('#4E7FA6'));
+      crown(top - 3, 5, gold);
+      break;
+    case 'Mister Giggles': // a frilled ruff and a red balloon
+      for (let i = 0; i < 7; i++) E(B, hx - 8 + i * (16 / 6), sh - 1, 2.6, 2.4, i % 2 ? RP('#E5484D') : white);
+      line(back, hx - 12, sh + 10, hx - 16, top - 2, RP('#C9C2D8')[2]);
+      E(back, hx - 16, top - 6, 4, 5, RP('#E5484D'));
+      break;
+    case 'The Frost Queen': // a crown of ice spikes
+      for (const [dx, h] of [[-6, 7], [-3, 10], [0, 13], [3, 10], [6, 7]] as const) P(B, [[hx + dx - 1.5, top + 1], [hx + dx, top + 1 - h], [hx + dx + 1.5, top + 1]], RP('#BFE9FF'));
+      break;
+    case 'The Sandman': // a crescent moon behind his head and sand at his feet
+      shape(back, (x, y) => Math.hypot(x - (hx - 8), y - (top - 1)) <= 7 && Math.hypot(x - (hx - 5), y - (top - 3)) > 6, hx - 15, top - 8, hx - 1, top + 6, RP('#FFE082'));
+      for (let i = 0; i < 12; i++) put(B, 14 + ((i * 37) % 44), 76 + (i % 3), RP('#E8C987')[2]);
+      break;
+    case 'Null': // a dark ring with an eye, and reaching tendrils
+      ring(back, hx, top + 4, 13, 3, RP('#3B1F5E'));
+      E(back, hx, top - 7, 3, 2, RP('#B388FF'));
+      for (const [a, c, d] of [[-1, -24, sh + 18], [1, 24, sh + 16], [-1, -20, sh + 30]] as const) cap(back, hx + a * 6, sh + 8, hx + c, d, 2.5, RP('#2B1033'));
+      break;
+    case 'Aurelion the Radiant': // a golden halo and a tall plume
+      ring(B, hx, top - 3, 6, 1.5, gold);
+      P(back, [[hx - 3, top + 4], [hx - 14, top - 9], [hx - 9, top - 10], [hx + 1, top + 1]], gold);
+      break;
+    case 'The First Wheel': // the wheel itself behind them, a halo and a crown
+      ring(back, hx, sh, 22, 3, RP('#FF4F8B'));
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        line(back, hx + Math.cos(a) * 5, sh + Math.sin(a) * 5, hx + Math.cos(a) * 19, sh + Math.sin(a) * 19, RP('#FF4F8B')[2]);
+      }
+      crown(top - 2, 5, gold);
+      break;
+  }
+  // behind the body: only where the body left room
+  for (let i = 0; i < SW * SH; i++)
+    if (!B.px[i] && back.px[i]) {
+      B.px[i] = back.px[i]!;
+      B.rp[i] = back.rp[i] ?? null;
+      B.a[i] = back.a[i]!;
+    }
 }
