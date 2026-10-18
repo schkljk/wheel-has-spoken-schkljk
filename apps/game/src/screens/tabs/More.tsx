@@ -16,7 +16,7 @@ export function MoreTab() {
     ['save', 'Your save', 'Backups, export, import, bring over the old save', () => openSheet(<SaveSheet />)],
     ['cup', 'Records and legacy', 'Seasons, legacy perks, the hall of fame', () => openSheet(<RecordsSheet />)],
     ['card', 'Collection', 'Everything your fighters have found', () => go({ screen: 'codex' })],
-    ['cup', 'Trophy room', 'Belts, boss kills, rare titles and mastered classes', () => void import('../../sheets/Trophies').then((m) => m.openTrophies())],
+    ['shield', 'Trophy room', 'Belts, boss kills, rare titles and mastered classes', () => void import('../../sheets/Trophies').then((m) => m.openTrophies())],
     ['book', 'How to play', 'A quick tour of the game', startTutorial],
     ['people', 'Your fighters', 'Switch fighter', () => go({ screen: 'title' })],
   ];
@@ -34,8 +34,8 @@ export function MoreTab() {
       <a class="card tap row" href={OLD_VERSION} {...rise(items.length)}>
         <Icon name="robot" class="lg" />
         <span class="grow">
-          <b>The current version</b>
-          <small style={{ display: 'block' }}>Every mode, while the new one is being built</small>
+          <b>The old version</b>
+          <small style={{ display: 'block' }}>The first build of the game, still playable</small>
         </span>
       </a>
       <small class="center" {...rise(items.length + 1)}>

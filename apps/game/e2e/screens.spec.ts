@@ -39,7 +39,7 @@ for (const [width, height] of VIEWS) {
       await page.getByRole('button', { name: 'So far' }).click();
       await check(page, 'so far sheet');
       await sheetClose(page);
-      await page.getByRole('button', { name: 'Spin the rest for me' }).click();
+      await page.getByRole('button', { name: 'Spin the rest' }).click();
       await page.getByRole('button', { name: 'Start their career' }).waitFor({ timeout: 90_000 });
       // the scouting report: three strengths, the biggest weakness, the best synergy
       await expect(page.locator('.scout .sr-l')).toHaveCount(5);
@@ -103,7 +103,7 @@ for (const [width, height] of VIEWS) {
       await check(page, 'hard chapter intro');
       await page.getByRole('button', { name: 'Begin' }).click();
       await check(page, 'hard map');
-      await page.getByRole('button', { name: 'Fighter page' }).click();
+      await page.getByRole('button', { name: 'Home' }).click();
       await page.getByText('Hard mode, chapter 2').waitFor();
       await check(page, 'hard story card');
       expect(errors).toEqual([]);
@@ -175,11 +175,11 @@ for (const [width, height] of VIEWS) {
       await page.locator('.ch-opt, .tabbar, .maphead, .spin-foot').first().waitFor();
       await check(page, 'after the fight');
       await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);
-      await page.getByRole('button', { name: 'Fighter page' }).click();
+      await page.getByRole('button', { name: 'Home' }).click();
       await page.locator('.tabbar').waitFor();
       await page.getByRole('button', { name: /Local brawl/ }).click();
       await check(page, 'bracket');
-      await page.getByRole('button', { name: 'Back to your fighter' }).click();
+      await page.getByRole('button', { name: /^Leave for now/ }).click();
       await page.getByRole('button', { name: 'Resume' }).waitFor();
       await page.getByRole('button', { name: 'Abandon it' }).click();
       await page.getByRole('alertdialog').getByRole('button', { name: 'Abandon it' }).click();

@@ -50,7 +50,10 @@ export interface ChoiceOpt {
   tag?: string;
   /** styled as a charisma option */
   talk?: boolean;
+  /** a way out rather than a choice ("Not now", "Walk back down"): styled quieter (guessed from the label) */
+  quiet?: boolean;
 }
+const QUIET = /^(not now|leave|walk |no thanks|maybe later|back\b)/i;
 /** Asks the player to pick one option (legacy askChoice). Resolves with its index. */
 export function choose(o: { emoji?: string; title: string; sub?: string; body?: ComponentChildren; options: ChoiceOpt[] }): Promise<number> {
   return new Promise((resolve) => {
@@ -61,7 +64,7 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
           {o.options.map((x, i) => (
             <button
               key={x.label}
-              class={`ch-opt${x.talk ? ' talk' : ''}`}
+              class={`ch-opt${x.talk ? ' talk' : ''}${(x.quiet ?? QUIET.test(x.label)) ? ' quiet' : ''}`}
               disabled={x.disabled}
               onClick={() => {
                 closeSheet();

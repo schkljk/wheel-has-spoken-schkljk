@@ -128,7 +128,7 @@ export function Title() {
         <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
           <Icon name="cup" /> <span class="ellipsis">Records</span>
         </button>
-        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex' })}>
+        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex', from: 'title' })}>
           <Icon name="card" /> <span class="ellipsis">Collection</span>
         </button>
         <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>

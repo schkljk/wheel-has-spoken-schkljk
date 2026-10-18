@@ -434,6 +434,13 @@ export function rankOf(f: { fame?: number } | null | undefined) {
   return r;
 }
 
+/** What reaching rank `r` pays out: coins, talent points and (at the top) gems. */
+export function rankReward(r: number) {
+  return { coins: 6 * r, tp: 1 + (r === 5 || r === 8 ? 2 : 0), gems: (({ 7: 5, 8: 10, 9: 25 }) as Record<number, number>)[r] || 0 };
+}
+/** Ranks whose perk does something beyond the payout (a shop discount, legendary gear, the aura). */
+export const RANK_EFFECT = new Set([2, 4, 6, 9]);
+
 /** Adds fame (talents and legacy add to it); returns lines describing any rank-ups. */
 export function gainFame(g: Game, n: number): string[] {
   const F = g.F;
@@ -445,11 +452,10 @@ export function gainFame(g: Game, n: number): string[] {
   const out: string[] = [];
   for (let r = before + 1; r <= after; r++) {
     const R = RANKS[r]!;
-    const coins = 6 * r;
+    const { coins, tp, gems } = rankReward(r);
     addCoins(g, coins);
-    const tp = 1 + (r === 5 || r === 8 ? 2 : 0);
     F.tp = (F.tp || 0) + tp;
-    if (r >= 7) awardGems(g, ({ 7: 5, 8: 10, 9: 25 } as Record<number, number>)[r] || 0);
+    if (r >= 7) awardGems(g, gems);
     // legacy said "1 talent point" at Eternal although it paid 3; the text now matches the payout
     out.push(`${R.e} Rank up: ${R.n}! +${coins} 🪙 and ${pl(tp, 'talent point')}. ${R.perk}`);
     if (r === 6) award(g, ['mythic'], []);

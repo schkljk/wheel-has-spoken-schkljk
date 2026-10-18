@@ -313,6 +313,18 @@ export const STAT_INFO: Record<string, [e: string, n: string, d: string]> = {
 
 /** Tap-for-info rules pages. */
 /** Help pages the new game adds (the old game's RULES stay as they were). */
+/** Rules reworded since the port, where the new game's screens moved or renamed things (read before RULES). */
+export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: string[]]> = {
+  base: [
+    '🏠',
+    'Your base',
+    [
+      'The base shop is on the Play tab, at home. It sells basics, a daily gear deal, premium gear and services.',
+      'You can only shop at base between chapters: once a chapter has started, use the merchants you meet on the map instead.',
+    ],
+  ],
+};
+
 export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {
   nemstory: [
     '😈',

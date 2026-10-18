@@ -1,4 +1,4 @@
-import { seeGoals, tabDots } from '@whs/core';
+import { RANKS, rankOf, seeGoals, tabDots } from '@whs/core';
 import { G, activeFighter, activeSlot, ensure, go, route, save, type Tab } from '../state/game';
 import { openSheet } from '../state/ui';
 import { SettingsSheet } from '../sheets/Settings';
@@ -41,7 +41,10 @@ export function Hub({ tab }: { tab: Tab }) {
         </button>
         <span class="grow ellipsis bar-name">
           <b>{f.name}</b>
-          <small>Level {f.lvl || 1}</small>
+          <small>
+            {RANKS[rankOf(f)]!.n}
+            {f.story ? `, chapter ${(f.story as { ch: number }).ch}` : ''}
+          </small>
         </span>
         <span class="chip" aria-label={`${slot.coins} coins`}>
           <Icon name="coin" /> {slot.coins}

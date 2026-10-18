@@ -36,7 +36,8 @@ function Screen() {
     case 'bracket':
       return <BracketScreen key={r.key as number} run={r.run as Run} />;
     case 'codex':
-      return <CodexScreen back={() => (G.F ? void goHub('more') : go({ screen: 'title' }))} />;
+      // back to wherever it was opened from (the title screen or a fighter's More tab)
+      return <CodexScreen back={() => (r.from === 'title' || !G.F ? go({ screen: 'title' }) : void goHub('more'))} />;
     default:
       return <Title />;
   }

@@ -12,8 +12,8 @@ export type Focus = 'atk' | 'def' | 'pow' | 'ult';
 export const CW_FOCUS: [Focus, string, string][] = [
   ['atk', '⚔️', 'Attack'],
   ['def', '🛡️', 'Defend'],
-  ['pow', '✨', 'Skill'],
-  ['ult', '🌟', 'Special'],
+  ['pow', '✨', 'Power'],
+  ['ult', '🌟', 'Signature'],
 ];
 /** The focus that counters what the read says they will do. */
 export const CW_REC: Record<string, Focus> = { strike: 'def', power: 'atk', guard: 'pow', ult: 'def', feint: 'atk', focus: 'atk' };
@@ -43,7 +43,7 @@ export const cwPowOk = (me: Side) => me.f.power.k !== 'none' && !me.f.power.pass
 
 /**
  * A focus wheel's slices: this fighter's own moves for that focus plus a few basics, near-equal in size and
- * nudged by stats (legacy cwSlices). The Special wheel is the signature move's damage wheel.
+ * nudged by stats (legacy cwSlices). The Signature wheel is the signature move's damage wheel.
  */
 export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult: number }[] {
   if (focus === 'ult') {

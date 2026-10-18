@@ -46,7 +46,14 @@ const armF = signal<GearFilter>({});
 const armOpen = signal(false);
 
 /** The armory: every piece the fighter has found, by slot. Swap any time; nothing is lost by swapping. */
-export function openArmory(slot?: string) {
+// where the armory goes back to when it was opened from another sheet (the bag)
+let armBack: (() => void) | null = null;
+/** The armory, opened from the fighter page, or from another sheet that it then steps back to. */
+export function openArmory(slot?: string, back?: () => void) {
+  armBack = back ?? null;
+  showArmory(slot);
+}
+function showArmory(slot?: string) {
   act((g) => syncArmory(g, g.F));
   openSheet(<ArmorySheet key={Math.random()} slot={slot} />);
   tip('armory');
@@ -86,7 +93,7 @@ function ArmorySheet({ slot }: { slot?: string }) {
             const g = GEARK[F.gear![s]!];
             const n = own.filter((x) => x.slot === s).length;
             return (
-              <button key={s} class={`arm-slot${g ? ' r-' + g.r : ''}`} onClick={() => openArmory(s)}>
+              <button key={s} class={`arm-slot${g ? ' r-' + g.r : ''}`} onClick={() => showArmory(s)}>
                 <span class="as-e">{g ? <GearIcon g={g} /> : <SlotIcon slot={s} />}</span>
                 <span class="as-t">
                   <small>{SLOT_N[s]}</small>
@@ -116,11 +123,7 @@ function ArmorySheet({ slot }: { slot?: string }) {
     const list = filterGear(base, slot ? { ...f, slot: '' } : f).sort((a, b) => ORDER.indexOf(a.r) - ORDER.indexOf(b.r) || a.slot.localeCompare(b.slot));
     body = (
       <>
-        {slot ? (
-          <button class="btn ghost sm" onClick={() => openArmory()}>
-            ← All slots
-          </button>
-        ) : (
+        {slot ? null : (
           <button
             class="btn ghost sm"
             onClick={() => {
@@ -146,7 +149,13 @@ function ArmorySheet({ slot }: { slot?: string }) {
     );
   }
   return (
-    <Sheet icon="shield" title="Armory" sub={`${own.length} of ${ARMORY_CAP} spaces used. Swap any time`}>
+    <Sheet
+      icon="shield"
+      title={slot ? `Armory: ${SLOT_N[slot as keyof typeof SLOT_N]}` : 'Armory'}
+      sub={`${own.length} of ${ARMORY_CAP} spaces used. Swap any time`}
+      back={slot ? () => showArmory() : (armBack ?? undefined)}
+      locked={!!armBack}
+    >
       <div class="stack">
         {filters}
         {body}
@@ -166,7 +175,7 @@ export function swapped(text: string, slotK: string, prev: string | undefined, v
       const now = G.F!.gear![slotK as GearSlot];
       act((x) => (prev ? wear(x, prev) : now ? takeOff(x, now) : undefined));
       toast(prev ? `${GEARK[prev]!.e} ${GEARK[prev]!.n} is back on` : 'Slot empty again');
-      if (sheetIsArmory()) openArmory(view);
+      if (sheetIsArmory()) showArmory(view);
     },
   });
 }
@@ -203,7 +212,7 @@ function Piece({ g, slot }: { g: Gear; slot?: string }) {
             onClick={() => {
               act((x) => takeOff(x, g.k));
               swapped(`${g.e} ${g.n} taken off`, g.slot, g.k, slot);
-              openArmory(slot);
+              showArmory(slot);
             }}
           >
             Take off
@@ -219,7 +228,7 @@ function Piece({ g, slot }: { g: Gear; slot?: string }) {
               act((x) => wear(x, g.k));
               beep(880, 0.1, 'triangle', 0.05);
               swapped(`${g.e} ${g.n} equipped`, g.slot, prev, slot);
-              openArmory(slot);
+              showArmory(slot);
             }}
           >
             Wear
@@ -242,9 +251,9 @@ export function openForge(k: string) {
   const u = upgradeNext(G, k);
   const cp = copiesOf(F, k);
   const on = F.gear![g.slot] === k;
-  const back = () => openArmory(g.slot);
+  const back = () => showArmory(g.slot);
   openSheet(
-    <Sheet icon="hammer" title={`${g.n}${L ? ` +${L}` : ''}`} sub={`${RARITY[g.r]?.n ?? ''} ${SLOT_N[g.slot].toLowerCase()}. ${g.d}`}>
+    <Sheet icon="hammer" title={`${g.n}${L ? ` +${L}` : ''}`} sub={`${RARITY[g.r]?.n ?? ''} ${SLOT_N[g.slot].toLowerCase()}. ${g.d}`} back={back} locked={!!armBack}>
       <div class="stack">
         <div class="forge-pips" aria-label={`Upgrade level ${L} of ${UPGRADE_MAX}`}>
           {Array.from({ length: UPGRADE_MAX }, (_, i) => (
@@ -323,9 +332,6 @@ export function openForge(k: string) {
             Salvage {g.n}
           </button>
         )}
-        <button class="btn ghost sm" onClick={back}>
-          ← {SLOT_N[g.slot]}
-        </button>
       </div>
     </Sheet>,
   );

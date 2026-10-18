@@ -31,7 +31,7 @@ import { lookOf } from '../art/sprite';
 import { PixiWheel, type WheelHandle } from '../pixi/PixiWheel';
 import type { WheelSlice } from '../pixi/wheel';
 import { G, act, buzz, go, reducedMotion, settings } from '../state/game';
-import { openSheet } from '../state/ui';
+import { confirm, openSheet } from '../state/ui';
 import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
@@ -67,6 +67,8 @@ export function OddsChips({ reasons, unlock }: { reasons: OddsReason[] | { cls: 
 /** The result under the wheel: what landed, the crowd's reaction, what it does, extra notes. */
 export interface Landed {
   name: string;
+  /** which wheel it came from, said above it, since the next wheel is already up by then */
+  wheel?: string;
   infoKey?: string;
   rx: string;
   desc?: string;
@@ -78,6 +80,7 @@ function LandedPanel({ landed, msg }: { landed: Landed | null; msg: ComponentChi
     <div class="landed" aria-live="polite">
       {landed ? (
         <div class="landed-in" key={landed.name + landed.rx}>
+          {landed.wheel && <small class="lwheel">{landed.wheel}</small>}
           <div class={`ln q${landed.q}`}>{landed.infoKey ? <Inf k={landed.infoKey}>{landed.name}</Inf> : landed.name}</div>
           <div class="rx">{landed.rx}</div>
           {landed.desc && <div class="ds">{landed.desc}</div>}
@@ -163,7 +166,7 @@ export function BuildScreen({ name }: { name: string }) {
   const [, setV] = useState(0);
   const rerender = () => setV((x) => x + 1);
   const [landed, setLanded] = useState<Landed | null>(null);
-  const [msg, setMsg] = useState<ComponentChildren>('Flick the wheel with your finger, or tap Spin');
+  const [msg, setMsg] = useState<ComponentChildren>('Flick the wheel with your finger, or tap the button');
   const [hub, setHub] = useState('?');
   const [hi, setHi] = useState<number | null>(null);
   const wheel = useRef<WheelHandle | null>(null);
@@ -255,7 +258,7 @@ export function BuildScreen({ name }: { name: string }) {
       );
     if (info.flick) notes.push(<div class="turns">Your flick: {info.turns.toFixed(1)} turns</div>);
     if (r.subWheel) notes.push(<div class="note sub">Sub-wheel unlocked: {r.subWheel}</div>);
-    setLanded({ name: `${it.e ? it.e + ' ' : ''}${it.n}`, infoKey: itemKeyFor(Wk.k, it, S.f), rx: reaction(G, it), desc: it.d, notes, q: r.best });
+    setLanded({ name: `${it.e ? it.e + ' ' : ''}${it.n}`, wheel: labelOf(Wk, S.f), infoKey: itemKeyFor(Wk.k, it, S.f), rx: reaction(G, it), desc: it.d, notes, q: r.best });
     landSound(r.best);
     buzz(r.best >= 3 ? [30, 50, 60] : 25);
     if (r.best >= 3) burst();
@@ -303,7 +306,15 @@ export function BuildScreen({ name }: { name: string }) {
     <main class="screen spin-screen">
       <header class="spin-head pad">
         <div class="row">
-          <button class="iconbtn" aria-label="Scrap this fighter" onClick={() => go({ screen: 'title' })}>
+          <button
+            class="iconbtn"
+            aria-label="Scrap this fighter"
+            onClick={async () => {
+              // nothing spun yet: just leave; otherwise those spins are a big thing to throw away
+              if (done > 0 && !(await confirm({ title: `Scrap ${name}?`, body: 'Every spin so far is lost. The wheel will not remember them fondly.', yes: 'Scrap them', danger: true }))) return;
+              go({ screen: 'title' });
+            }}
+          >
             <Icon name="back" />
           </button>
           <span class="grow">
@@ -329,7 +340,8 @@ export function BuildScreen({ name }: { name: string }) {
         <button class="btn block" disabled={S.spinning && !S.done} onClick={() => (S.done ? finish() : doSpin())}>
           {S.done ? 'See the finished fighter' : `Spin for ${W && (W.k === 'rsub' || W.k === 'asub') ? label.toLowerCase() : W?.lc}`}
         </button>
-        {!S.done && !S.auto && (
+        {/* the free reroll still works on the last wheel */}
+        {(!S.done || canReroll) && !S.auto && (
           <div class="row">
             <button
               class="btn ghost sm grow"
@@ -346,17 +358,19 @@ export function BuildScreen({ name }: { name: string }) {
             >
               <Icon name="dice" /> {(S.f.free || 0) > 0 ? (S.lastSpun >= 0 ? `Reroll ${WHEELS[S.lastSpun]!.lc}` : 'Reroll (1 free)') : 'Reroll used'}
             </button>
-            <button
-              class="btn ghost sm grow"
-              disabled={S.spinning}
-              onClick={() => {
-                S.auto = true;
-                rerender();
-                doSpin();
-              }}
-            >
-              Spin the rest for me
-            </button>
+            {!S.done && (
+              <button
+                class="btn ghost sm grow"
+                disabled={S.spinning}
+                onClick={() => {
+                  S.auto = true;
+                  rerender();
+                  doSpin();
+                }}
+              >
+                Spin the rest
+              </button>
+            )}
           </div>
         )}
       </footer>
@@ -395,7 +409,7 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
   const [spinning, setSpinning] = useState(false);
   const [hub, setHub] = useState('?');
   const [hi, setHi] = useState<number | null>(null);
-  const [msg, setMsg] = useState<ComponentChildren>('Flick the wheel with your finger, or tap Spin');
+  const [msg, setMsg] = useState<ComponentChildren>(`Flick the wheel with your finger, or tap ${spec.spinLabel || 'the button'}`);
   const wheel = useRef<WheelHandle | null>(null);
   const stopDrum = useRef<() => void>(() => {});
   const fast = settings.value.fast;

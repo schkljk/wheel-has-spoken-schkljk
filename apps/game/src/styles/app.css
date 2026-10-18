@@ -266,6 +266,10 @@ img.pxe {
   color: inherit;
   transition: transform 0.12s ease;
 }
+a.card {
+  text-decoration: none;
+  color: inherit;
+}
 .card.tap:active {
   transform: translateY(2px) scale(0.99);
 }

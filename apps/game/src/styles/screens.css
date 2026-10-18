@@ -417,3 +417,9 @@
     right: 0.6rem;
   }
 }
+
+/* retiring is a big, rare choice: quiet and red, at the bottom, behind a confirmation */
+.btn.retire {
+  color: #ff9a9d;
+  margin-top: 0.4rem;
+}

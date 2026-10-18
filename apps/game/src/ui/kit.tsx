@@ -29,11 +29,17 @@ export function installPressFeedback() {
 }
 
 /** Layout for a bottom sheet: title row, a scrolling body, and buttons at the bottom. */
-export function Sheet(props: { icon?: IconName; emoji?: string; title: string; sub?: string; children: ComponentChildren; foot?: ComponentChildren; locked?: boolean }) {
+export function Sheet(props: { icon?: IconName; emoji?: string; title: string; sub?: string; children: ComponentChildren; foot?: ComponentChildren; locked?: boolean; back?: () => void }) {
   return (
     <>
       <div class="sheet-grab" />
       <div class="sheet-head">
+        {/* a sheet opened from another one steps back to it */}
+        {props.back && (
+          <button class="iconbtn sheet-back" aria-label="Back" onClick={props.back}>
+            <Icon name="back" />
+          </button>
+        )}
         {props.icon && <Icon name={props.icon} class="lg" />}
         {props.emoji && (
           <span class="sheet-emoji" aria-hidden="true">

@@ -535,6 +535,25 @@
 .ch-opt:disabled {
   opacity: 0.5;
 }
+/* the choices are framed panels; the way out is a quiet one under them */
+.ch-opt {
+  border: 2px solid var(--edge);
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface) 75%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    0 3px 0 var(--edge);
+}
+.ch-opt.quiet {
+  background: transparent;
+  border-color: var(--line);
+  box-shadow: none;
+  color: var(--muted);
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+.ch-opt.quiet b {
+  font-weight: 400;
+}
 .ch-opt b {
   font-size: 1.02rem;
 }
@@ -1058,6 +1077,13 @@
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+/* short landscape screens: the help gets a smaller size instead of being cut off */
+@media (max-height: 460px) {
+  .cw-out small {
+    font-size: 0.7rem;
+    -webkit-line-clamp: 5;
+  }
 }
 /* a held slice's preview */
 .cw-out .peek {
@@ -3250,4 +3276,14 @@ img.pxi.wpn {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--muted);
+}
+
+/* the wheel a result came from, over it on the spin screen */
+.landed .lwheel {
+  display: block;
+  font: 400 0.82rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.15rem;
 }

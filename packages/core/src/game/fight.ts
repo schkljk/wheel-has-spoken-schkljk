@@ -374,7 +374,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
     desc = `${O.name} sends ${F.name} home.${T && T.done && T.champ != null ? ` ${T.fs[T.champ]!.name} went on to win it all.` : ''} Who's next? 💀`;
   }
   const next: Step[] = [];
-  let button = 'Back to your fighter';
+  let button = 'Home';
   let bracket = false;
   if (G) {
     if (won) {

@@ -65,13 +65,16 @@ export function NumBlock({ f }: { f: CareerFighter }) {
 
 /** What a rolled stat does to the real numbers (legacy modTxt). */
 export function modTxt(k: string, v: number) {
+  // against an average roll (6); an average roll just says so
+  if (v === 6) return 'average';
   const p = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x))}%`;
   if (k === 'str') return p((Math.pow(1.17, 0.6 * (v - 6)) - 1) * 100) + ' Attack';
   if (k === 'wm') return p((Math.pow(1.17, 0.4 * (v - 6)) - 1) * 100) + ' Attack';
   if (k === 'dur') return p((Math.pow(1.17, v - 6) - 1) * 100) + ' Defense';
   if (k === 'pm') return p((Math.pow(1.17, 0.75 * (v - 6)) - 1) * 100) + ' Power';
   if (k === 'iq') return p((v - 6) * 0.8) + ' crit, reads';
-  if (k === 'spd') return `${4 * v} Speed`;
+  // Speed is 4 per point plus 2 per level: say the rolled part against an average roll, like the others
+  if (k === 'spd') return `${v >= 6 ? '+' : '−'}${Math.abs(4 * (v - 6))} Speed`;
   if (k === 'cha') return p((v - 6) * 0.4) + ' crit, haggling';
   return '';
 }

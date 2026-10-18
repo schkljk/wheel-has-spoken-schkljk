@@ -252,7 +252,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
     ['basics', 'bag', 'Basics'],
     ['deal', 'star', 'Deal'],
     ['vault', 'gem', 'Premium'],
-    ['services', 'gear', 'Services'],
+    ['services', 'hammer', 'Services'],
   ];
   return (
     <Sheet
@@ -264,14 +264,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
         {!open && (
           <div class="lockbar">🔒 You're in the middle of chapter {F.story!.ch}. The base shop opens again once you finish it. Merchants on the map sell supplies on the road.</div>
         )}
-        <div class="shop-tabs" role="tablist">
-          {tabs.map(([k, ic, n]) => (
-            <button key={k} role="tab" aria-selected={tab === k} class={`fchip light${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>
-              <Icon name={ic} /> {n}
-            </button>
-          ))}
-        </div>
-        {body}
+        {/* haggling changes every price below it, so it comes first */}
         {open && !baseHagDone(G) && (
           <button
             class="btn ghost sm"
@@ -281,9 +274,17 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
               openBaseShop(tab);
             }}
           >
-            🤝 Haggle (once a day)
+            🤝 Haggle first (once a day)
           </button>
         )}
+        <div class="shop-tabs" role="tablist">
+          {tabs.map(([k, ic, n]) => (
+            <button key={k} role="tab" aria-selected={tab === k} class={`fchip light${tab === k ? ' on' : ''}`} onClick={() => setTab(k)}>
+              <Icon name={ic} /> {n}
+            </button>
+          ))}
+        </div>
+        {body}
         <Inf k="rule|base" class="hint">
           How the base shop works
         </Inf>

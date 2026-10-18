@@ -342,6 +342,21 @@ function MerchantBody() {
   return (
     <Sheet emoji={M[0]} title={M[1]} sub={`${M[2]}. 🪙 ${coins}`} locked>
       <div class="stack">
+        {/* haggling changes every price below it, so it comes first */}
+        {!S.hagDone ? (
+          <button
+            class="btn ghost sm"
+            onClick={async () => {
+              closeSheet();
+              await haggleFlow('merchant');
+              merchantSheet(false);
+            }}
+          >
+            🤝 Haggle first
+          </button>
+        ) : (
+          <p class="hint center">{hm < 1 ? `🤝 Deal: ${Math.round((1 - hm) * 100)}% off everything` : `😤 Prices up ${Math.round((hm - 1) * 100)}%`}</p>
+        )}
         {(S.stock || []).map((k) => {
           const i = ITEMK[k]!;
           const p = itemPriceM(G, i);
@@ -404,20 +419,6 @@ function MerchantBody() {
             </div>
           );
         })}
-        {!S.hagDone ? (
-          <button
-            class="btn ghost sm"
-            onClick={async () => {
-              closeSheet();
-              await haggleFlow('merchant');
-              merchantSheet(false);
-            }}
-          >
-            🤝 Haggle
-          </button>
-        ) : (
-          <p class="hint center">{hm < 1 ? `🤝 Deal: ${Math.round((1 - hm) * 100)}% off everything` : `😤 Prices up ${Math.round((hm - 1) * 100)}%`}</p>
-        )}
         <div class="row">
           <button class="btn ghost sm grow" onClick={() => openBag(() => merchantSheet(false))}>
             <Icon name="bag" /> Open bag
@@ -479,12 +480,14 @@ export function openBag(back?: () => void) {
           How the bag works
         </Inf>
         <div class="row">
-          <button class="btn ghost sm grow" onClick={() => openArmory()}>
+          <button class="btn ghost sm grow" onClick={() => openArmory(undefined, () => openBag(back))}>
             <Icon name="shield" /> Armory
           </button>
-          <button class="btn ghost sm grow" onClick={() => (back ? back() : closeSheet())}>
-            {back ? 'Back' : 'Close'}
-          </button>
+          {back && (
+            <button class="btn ghost sm grow" onClick={back}>
+              Back
+            </button>
+          )}
         </div>
       </div>
     </Sheet>,
