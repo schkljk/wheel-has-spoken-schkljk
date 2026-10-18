@@ -5,6 +5,7 @@ import { save } from './state/game';
 import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
 import { installErrorLog } from './state/errlog';
+import { installNative } from './native';
 import { loadPx } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import './styles/tokens.css';
@@ -13,6 +14,7 @@ import './styles/screens.css';
 import './styles/game.css';
 
 installErrorLog();
+void installNative();
 installPressFeedback();
 render(<App />, document.getElementById('app')!);
 
