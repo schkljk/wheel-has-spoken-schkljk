@@ -1,12 +1,13 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure } from '../../state/game';
 import { Icon } from '../../ui/Icon';
+import { openExhibition } from '../../flows/exhibition';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goMap } from '../../flows/nav';
 import { openBag } from '../../flows/story';
-import { abandon, challengeFlow, dailyFlow, dailyWheel, openClub, resumeRun, rushFlow, startTier } from '../../flows/modes';
+import { abandon, challengeFlow, dailyFlow, dailyWheel, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
 import { go } from '../../state/game';
@@ -114,11 +115,31 @@ export function PlayTab() {
           </small>
         </span>
       </button>
+      <button class={`card tap mode${towerOpen(G) ? '' : ' locked'}`} onClick={() => void towerFlow()} {...rise(n++)}>
+        <span class="te" aria-hidden="true">
+          🗼
+        </span>
+        <span class="grow">
+          <b>Endless tower</b>
+          <small>
+            {towerOpen(G)
+              ? `One floor per fight, a new twist every five. Your best: floor ${F.towerBest || 0}${towerBest(G).floor ? `, record ${towerBest(G).floor}` : ''}`
+              : `Reach level ${TOWER_FROM} or clear chapter 1. The stairs are judging you`}
+          </small>
+        </span>
+      </button>
       <button class="card tap mode" onClick={() => openClub()} {...rise(n++)}>
         <Icon name="dice" class="lg" />
         <span class="grow">
           <b>Fight club</b>
           <small>Bet on strangers. Lose money with friends</small>
+        </span>
+      </button>
+      <button class="card tap mode" onClick={() => openExhibition()} {...rise(n++)}>
+        <Icon name="people" class="lg" />
+        <span class="grow">
+          <b>Exhibition</b>
+          <small>Hall of fame legends fight for pride, with commentary. Nobody gets paid</small>
         </span>
       </button>
       <button class="card tap mode" onClick={() => openBaseShop()} {...rise(n++)}>

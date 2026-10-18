@@ -43,6 +43,34 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 21. Gear upgrades, +1 to +5
 - [x] 22. Four new gear sets: pirate, chef, cosmic, royal
 - [x] 23. Trophy room
+- [x] 24. Hall of fame exhibitions
+- [x] 25. Endless tower
+
+### 25. Endless tower
+
+- **What changed (mode):** Play → 🗼 **Endless tower** (from level 5 or chapter 1). One fight per floor, each a bit higher up the ranked pool and a level stronger every four floors, with smarter AI as you climb.
+- **A twist every five floors:** from floor 5 on, each block of five floors has a mutator from the daily challenge's list (glass cannons, sudden death and the rest), the same for the whole block, different every climb.
+- **HP carries over:** +30% after each win, and a full rest on every fifth floor's landing before the next twist. **Three hearts:** a loss costs one and you try the floor again at 60% HP against someone new; the last heart ends the climb. You can walk back down any time and keep your floor.
+- **Rewards and records:** a few coins and XP per floor (more higher up), a gem and an elite loot spin on every tenth floor's landing. Your fighter's best floor shows on the Play card next to the save's record ("record 23"), and beating the record gets a 🏅 line.
+- **Simulated** (`npx tsx tools/sim/tower.ts`, 30 climbs per cell, auto-battle, six random pieces of gear), floors cleared:
+
+| Median (top 10%) | Lvl 10 | Lvl 20 | Lvl 30 |
+|---|---|---|---|
+| Weak build | 3 (7) | 3 (7) | 4 (10) |
+| Average build | 8 (13) | 10 (16) | 6 (13) |
+| Strong build | 15 (24) | 14 (27) | 11 (22) |
+
+  The first version had no hearts and only +20% HP between floors: average builds cleared 1 to 3 floors and weak ones almost none, so every climb ended at the bottom. With hearts and rests, a typical climb lasts a few landings and a good one gets deep.
+- Tested: `tower.test.ts` (3 tests) checks that the twists start on floor 5 and stay for the whole block, vary between climbs, and opponents get stronger. It also checks HP carries with +30% and a full rest every fifth floor, the tenth floor's chest, a lost heart sending you back up the same floor, and the last heart ending the climb with the records kept. A new e2e test climbs floor 1 on a 320 px phone and checks the hearts, the fight's label, the next floor (or a heart down) and walking back down.
+
+### 24. Hall of fame exhibitions
+
+- **What changed (mode):** Play → **Exhibition**. Two legends from the hall of fame fight for pride while two commentators call it: 🎙️ **Rex Thundermic** on play-by-play (*"THE SIGNATURE MOVE! Bob has been saving that since the Bronze Age!"*) and 🩺 **Dr. Brenda Kneecap** on colour (*"I have notes for Bob. The first note is: duck."*).
+- Legends are champions (cup and story winners) and, from now on, retirees: retiring keeps the fighter in the hall of fame for this, for the best six, like champions. Pick the red and blue corners from the list or 🎲 shuffle, then 🔔 ring the bell.
+- The broadcast plays round by round in a sheet: both fighters' sprites and HP bars, each round's narration, and one call per round about its biggest moment: a signature move, a crit, plot armor, a big hit, a read, a dodge, a heal, a lead change, someone hanging on below a quarter HP, or a quiet round (*"Riveting. I am going to check my phone."*). The commentators take turns and don't repeat a line until they've used the others. Skip to the end any time; reduced motion shows it all at once. Then rematch or pick a new matchup.
+- No rewards and nothing at stake: it's a show. With fewer than two legends it says how to get some (*"The arena is empty. The janitor is doing push-ups."*).
+- The fight is the normal engine, two AIs, from a seed; the commentators pick lines from their own stream, so commentary never changes a fight.
+- Tested: `exhibition.test.ts` (4 tests) covers who counts as a legend (champions and retirees with a fighter, best first, no doubles), that a seed always gives the same fight and calls, that calls take turns with every name filled in, HP stays 0-100 and the winner is the one standing, and that every moment has lines for both commentators. A new e2e test sets up a hall of fame, puts the retiree in the blue corner, plays the exhibition, and checks the calls, the loser's greyed corner, and the layout at 320×568 and 844×390.
 
 ### 23. Trophy room
 

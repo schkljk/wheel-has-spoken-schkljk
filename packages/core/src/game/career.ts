@@ -32,6 +32,9 @@ export interface Retired {
   s: string;
   d: string;
   score: number;
+  /** their race's emblem, and the fighter itself for hall of fame exhibitions (upgrade 24, the best six only) */
+  e?: string;
+  fd?: SerFighter;
 }
 export interface Rival {
   f: SerFighter;
@@ -604,6 +607,8 @@ export function retire(g: Game) {
     s: `Level ${F.lvl} ${RANKS[rankOf(F)]!.n}, ${pl(rec.w, 'win')}, ${pl(rec.l, 'loss', 'losses')}${belts ? ', belts ' + belts : ''}`,
     d: g.clock.date,
     score: (F.lvl || 1) + Object.values(F.belts || {}).filter(Boolean).length * 3 + rankOf(F) * 2,
+    e: F.race.e,
+    fd: serFighter(F),
   });
   pruneDB(g);
   g.save.roster.retired = g.save.roster.retired.slice(0, 20);
@@ -623,6 +628,9 @@ export function pruneDB(g: Game) {
   });
   p.champs = top as unknown as Json[];
   const retired = (g.save.roster.retired as unknown as Retired[]).filter(Boolean).sort((a, b) => (b.score || 0) - (a.score || 0));
+  retired.forEach((r, i) => {
+    if (i >= 6 && r.fd) delete r.fd;
+  });
   g.save.roster.retired = retired.slice(0, 10) as never;
   g.save.roster.rivals = rivalsOf(g)
     .filter((r) => r && r.f && (p.entered || 0) - (r.at || 0) <= 25)

@@ -47,6 +47,10 @@ import {
   applyEvent,
   startBattle,
   storyEnsure,
+  towerOpponent,
+  towerMutator,
+  towerTier,
+  endTowerFight,
   upgradeNext,
   upgradeGear,
   coinsOf,
@@ -65,6 +69,7 @@ import {
   useItem,
   winRate,
   type CareerFighter,
+  type TowerState,
   type FightOutcome,
   type FightResult,
   type FightSpec,
@@ -214,6 +219,19 @@ function fight(g: Game, node: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: Care
   const o = opp ?? storyOpponent(g, node as 'fight' | 'elite');
   const spec = { kind: 'story', node, tier: { k: 'story', n: 'Story fight', e: '📖', xpW: 0, coins: 0 }, opp: o } as FightSpec;
   return battle(g, spec, (out) => endStoryFight(g, spec, out)).won;
+}
+
+/** One climb of the endless tower on auto-battle (upgrade 25). Returns the floors cleared. */
+export function playTower(g: Game): number {
+  const T: TowerState = { floor: 1, hp: 100, seed: Math.floor(g.rng() * 1e6) };
+  for (let i = 0; i < 200; i++) {
+    const o = towerOpponent(g, T);
+    const m = towerMutator(T);
+    const spec = { kind: 'tower', tier: towerTier(T), opp: o, rushHp: T.hp, mut: m ? { mods: m.mods, arena: m.arena } : undefined } as FightSpec;
+    // a loss with hearts left climbs on; the last heart ends it
+    if (!battle(g, spec, (out) => endTowerFight(g, T, o, out)).next.some((x) => x.t === 'tower')) break;
+  }
+  return T.floor - 1;
 }
 
 /** A whole cup at the highest open tier, as a side mode. Returns how many fights it took. */

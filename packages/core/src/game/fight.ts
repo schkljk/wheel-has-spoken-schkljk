@@ -38,7 +38,7 @@ import { noteBelt, noteBoss } from './trophies';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower';
 export interface FightTier {
   k: string;
   n: string;
@@ -119,8 +119,8 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
     m0.hp = S.hp;
     if (m0.halfHp) m0.hp = Math.max(1, Math.ceil(S.hp / 2));
   }
-  if (spec.kind === 'rush' && spec.rushHp != null) m0.hp = spec.rushHp;
-  if (spec.kind === 'daily' && spec.mut) {
+  if ((spec.kind === 'rush' || spec.kind === 'tower') && spec.rushHp != null) m0.hp = spec.rushHp;
+  if ((spec.kind === 'daily' || spec.kind === 'tower') && spec.mut) {
     Object.assign(m0, spec.mut.mods[0]);
     Object.assign(m1, spec.mut.mods[1]);
   }
@@ -172,7 +172,8 @@ export type Step =
   | { t: 'hub' }
   | { t: 'bracket' }
   | { t: 'gauntlet' }
-  | { t: 'rush' };
+  | { t: 'rush' }
+  | { t: 'tower' };
 export interface FightResult {
   won: boolean;
   big: string;
