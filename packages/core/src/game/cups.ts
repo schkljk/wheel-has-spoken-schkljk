@@ -46,7 +46,9 @@ export type Run = Cup | Gauntlet;
 
 /** Which cups are open: Regional from chapter 2 of the story, World from chapter 4. */
 export function tierUnlocked(t: Tier, f: CareerFighter) {
-  const ch = (f.story && f.story.ch) || 1;
+  // a hard run (upgrade 26) replays an old chapter: the main story decides
+  const st = f.storyMain || f.story;
+  const ch = (st && st.ch) || 1;
   if (t.k === 'regional') return ch >= 2;
   if (t.k === 'world') return ch >= 4;
   return true;

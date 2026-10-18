@@ -15,6 +15,7 @@ import {
   gearPriceM,
   haggle,
   haggleChance,
+  hardMutator,
   hpTxt,
   itemPriceM,
   LS,
@@ -66,18 +67,25 @@ export function backToMap() {
 export function chapterIntro() {
   const S = storyOf(G);
   const C = CHAPTERS[S.ch - 1]!;
+  const HM = S.hard ? hardMutator(G) : null;
   [262, 330, 392].forEach((f, i) => beep(f, 0.25, 'triangle', 0.05, i * 0.12));
   return showCine(
     <>
       <div class="cine-kicker">
-        Chapter {S.ch}
+        {HM ? '🔥 Hard mode, chapter ' : 'Chapter '}
+        {S.ch}
         {S.ng ? `, encore ${S.ng}` : ''}
       </div>
       <div class="cine-emoji">{C.e}</div>
       <h2>{C.n}</h2>
-      <p>{C.intro}</p>
+      <p>{HM ? 'You have been here before. It remembers. It has been working out.' : C.intro}</p>
+      {HM && (
+        <p class="cine-twist">
+          {HM.e} Twist for the whole chapter: <b>{HM.n}</b>. {HM.d}.
+        </p>
+      )}
       <div class="cine-meta">
-        {pl(maxGrit(G), 'grit', 'grit')}. {S.rows.length} steps. One boss.
+        {pl(maxGrit(G), 'grit', 'grit')}. {S.rows.length} steps. One boss{HM ? ', and it is in a mood' : ''}.
       </div>
     </>,
     'Begin',

@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure } from '../../state/game';
 import { Icon } from '../../ui/Icon';
 import { openExhibition } from '../../flows/exhibition';
@@ -7,7 +7,7 @@ import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goMap } from '../../flows/nav';
 import { openBag } from '../../flows/story';
-import { abandon, challengeFlow, dailyFlow, dailyWheel, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
+import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
 import { go } from '../../state/game';
@@ -27,17 +27,20 @@ export function PlayTab() {
   const chal = F.challenge as { kind: string; name: string } | null;
   const open = rushOpen(G);
   const act2 = !!(S && (S.cleared || []).includes(11));
+  // a hard run of a cleared chapter (upgrade 26) takes the story card's place until it ends
+  const HM = S && S.hard ? hardMutator(G) : null;
+  const HC = hardChapters(G);
   let n = 0;
   return (
     <div class="stack tab-stack">
-      <div class="card story-card" data-rise="" style={{ ...rise(n++).style, '--ch': C.col } as Record<string, string>}>
+      <div class={`card story-card${S && S.hard ? ' hard' : ''}`} data-rise="" style={{ ...rise(n++).style, '--ch': C.col } as Record<string, string>}>
         <div class="row">
           <span class="story-e" aria-hidden="true">
             {C.e}
           </span>
           <span class="grow">
             <small>
-              Story, chapter {ch} of {CHAPTERS.length}
+              {S && S.hard ? `🔥 Hard mode, chapter ${ch}` : `Story, chapter ${ch} of ${CHAPTERS.length}`}
               {S && S.ng ? `, encore ${S.ng}` : ''}
             </small>
             <h3>{C.n}</h3>
@@ -55,16 +58,27 @@ export function PlayTab() {
           {'❤️'.repeat(Math.max(0, S ? S.grit : maxGrit(G)))}
           {'🖤'.repeat(Math.max(0, maxGrit(G) - (S ? S.grit : maxGrit(G))))}
         </small>
+        {HM && (
+          <Inf k={`it|mut|${HM.n}`} class="hard-mut">
+            {HM.e} <b>{HM.n}</b>: {HM.d}
+          </Inf>
+        )}
         <button class="btn block" onClick={() => goMap()}>
-          {!S || (S.row === 0 && !S.seenIntro) ? 'Start the chapter' : 'Continue the story'}
+          {S && S.hard ? (S.row === 0 && !S.seenIntro ? 'Start on hard' : 'Continue on hard') : !S || (S.row === 0 && !S.seenIntro) ? 'Start the chapter' : 'Continue the story'}
         </button>
         <div class="row">
           <button class="btn ghost sm grow" onClick={() => openBag()}>
             <Icon name="bag" /> Bag
           </button>
-          <button class="btn ghost sm grow" onClick={() => go({ screen: 'title' })}>
-            <Icon name="people" /> Your fighters
-          </button>
+          {S && S.hard ? (
+            <button class="btn ghost sm grow" onClick={() => void leaveHard()}>
+              🚪 Walk away
+            </button>
+          ) : (
+            <button class="btn ghost sm grow" onClick={() => go({ screen: 'title' })}>
+              <Icon name="people" /> Your fighters
+            </button>
+          )}
         </div>
       </div>
       {chal && (
@@ -125,6 +139,21 @@ export function PlayTab() {
             {towerOpen(G)
               ? `One floor per fight, a new twist every five. Your best: floor ${F.towerBest || 0}${towerBest(G).floor ? `, record ${towerBest(G).floor}` : ''}`
               : `Reach level ${TOWER_FROM} or clear chapter 1. The stairs are judging you`}
+          </small>
+        </span>
+      </button>
+      <button class={`card tap mode${HC.length ? '' : ' locked'}`} onClick={() => hardFlow()} {...rise(n++)}>
+        <span class="te" aria-hidden="true">
+          🔥
+        </span>
+        <span class="grow">
+          <b>Hard mode</b>
+          <small>
+            {S && S.hard
+              ? `On it: chapter ${ch}. Tap to get back in there`
+              : HC.length
+                ? `Replay a cleared chapter, meaner, with a twist and better loot. Beaten on hard: ${HC.filter((c) => c.done).length} of ${HC.length}`
+                : 'Clear a chapter first. Hard mode needs something to be hard about'}
           </small>
         </span>
       </button>

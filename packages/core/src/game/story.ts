@@ -43,6 +43,8 @@ export interface Story extends StoryState {
   /** the step the nemesis waits on this chapter, and whether that is settled (upgrade 19) */
   nemRow?: number;
   nemOk?: number;
+  /** a hard run of a cleared chapter (upgrade 26) */
+  hard?: { mut: string };
 }
 export const storyOf = (g: Game) => g.F!.story as Story;
 
@@ -172,17 +174,19 @@ export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
     lo = Math.min(0.96, lo + 0.15);
     hi = Math.min(1, hi + 0.12);
   }
-  lo = Math.min(0.96, lo + ng * 0.08);
-  hi = Math.min(1, hi + ng * 0.08);
+  // hard runs (upgrade 26) draw from higher up the pool, three levels up, with more gear and sharper AI
+  const hard = S.hard ? 1 : 0;
+  lo = Math.min(0.96, lo + ng * 0.08 + hard * 0.15);
+  hi = Math.min(1, hi + ng * 0.08 + hard * 0.15);
   const o = poolPick(g.pool, lo, hi, g.rng, undefined, ctxOf(g));
-  levelUp(o, Math.max(0, C.lvl + ng * 4 + (kind === 'elite' ? 2 : 0) + Math.floor(g.rng() * 2) - 1), g.rng);
-  if (kind === 'elite' || S.ch >= 3) randomGear(o, kind === 'elite' ? 2 : 1, g.rng);
-  o.aiSkill = 0.06 * (S.ch - 1) + (kind === 'elite' ? 0.1 : 0) + ng * 0.05;
+  levelUp(o, Math.max(0, C.lvl + ng * 4 + (kind === 'elite' ? 2 : 0) + hard * 3 + Math.floor(g.rng() * 2) - 1), g.rng);
+  if (kind === 'elite' || S.ch >= 3 || hard) randomGear(o, (kind === 'elite' ? 2 : 1) + hard, g.rng);
+  o.aiSkill = 0.06 * (S.ch - 1) + (kind === 'elite' ? 0.1 : 0) + ng * 0.05 + hard * 0.1;
   return o;
 }
 
 /** The chapter boss, built from its table and tuned to stay a real fight. */
-export function makeBoss(g: Game, ch: number): CareerFighter {
+export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && storyOf(g).hard)): CareerFighter {
   const def = BOSSES[ch - 1]!;
   const ng = storyOf(g).ng || 0;
   const f = { name: def.name, bonus: {}, boons: [] } as unknown as CareerFighter;
@@ -213,8 +217,10 @@ export function makeBoss(g: Game, ch: number): CareerFighter {
     lvl: BALANCE.bossLvl(ch, ng),
   });
   if (ng) for (const k of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[k] = (f.bonus[k] || 0) + ng * 2;
-  tuneUp(g, f, BALANCE.bossTarget(ch, ng), BALANCE.bossTuneCap);
-  for (let i = 0; i < BALANCE.easeMax && storyOdds(g, f) < BALANCE.easeBelow; i++) {
+  // a hard boss (upgrade 26): +2 to everything, tuned to give you 12 points less, three more levels of room
+  if (hard) for (const k of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[k] = (f.bonus[k] || 0) + 2;
+  tuneUp(g, f, BALANCE.bossTarget(ch, ng) - (hard ? 0.12 : 0), BALANCE.bossTuneCap + (hard ? 3 : 0));
+  for (let i = 0; i < BALANCE.easeMax && !hard && storyOdds(g, f) < BALANCE.easeBelow; i++) {
     applyBonus(f, { k: 'curse', n: 'Eased off', e: '🕊️' });
     invalidate(f);
   }

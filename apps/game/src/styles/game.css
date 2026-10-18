@@ -2504,3 +2504,59 @@ img.pxi.race {
   color: var(--muted);
   font-style: normal;
 }
+
+/* ---------- hard mode (upgrade 26) ---------- */
+.story-card.hard {
+  border-color: #ff6a3d;
+  box-shadow: 0 0 0 1px #ff6a3d55, 0 6px 22px -10px #ff6a3d;
+}
+.hard-mut {
+  display: block;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #ff6a3d 14%, var(--surface));
+  text-decoration: none;
+}
+.hard-list li {
+  padding: 0;
+}
+.hard-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hard-done {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.hard-done.on {
+  color: #ff8a5c;
+  font-weight: 700;
+}
+.map-screen.hard .maphead {
+  background: linear-gradient(90deg, color-mix(in srgb, #ff6a3d 22%, var(--bg)), color-mix(in srgb, var(--ch, var(--bg)) 14%, var(--bg)));
+  border-bottom-color: #ff6a3d;
+}
+.mh-mut {
+  flex: none;
+  font-size: 1.25rem;
+  text-decoration: none;
+  line-height: 1;
+}
+.cine-twist {
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: #ff6a3d22;
+  border: 1px solid #ff6a3d66;
+}

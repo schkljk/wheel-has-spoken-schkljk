@@ -1,6 +1,6 @@
 import { Fragment } from 'preact';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { BOSSES, CHAPTERS, hpTxt, maxGrit, myNemesis, nodeOf, storyOf, type NodeKind } from '@whs/core';
+import { BOSSES, CHAPTERS, hardMutator, hpTxt, maxGrit, myNemesis, nodeOf, storyOf, type NodeKind } from '@whs/core';
 import { G, activeFighter, act } from '../state/game';
 import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
@@ -14,6 +14,7 @@ export function MapScreen() {
   const C = CHAPTERS[S.ch - 1]!;
   const boss = BOSSES[S.ch - 1]!;
   const NM = myNemesis(G);
+  const HM = S.hard ? hardMutator(G) : null;
   const box = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState({ h: 420, w: 400 });
   useLayoutEffect(() => {
@@ -50,15 +51,16 @@ export function MapScreen() {
   const doneLine = lo > 0 && need(before, after) + 23 <= room.h;
   const hearts = Array.from({ length: maxGrit(G) }, (_, i) => (i < S.grit ? '❤️' : '🖤')).join('');
   return (
-    <main class="screen map-screen" style={{ '--ch': C.col } as Record<string, string>}>
+    <main class={`screen map-screen${HM ? ' hard' : ''}`} style={{ '--ch': C.col } as Record<string, string>}>
       <header class="maphead pad">
         <div class="row">
           <span class="mh-e" aria-hidden="true">
             {C.e}
           </span>
           <div class="grow">
-            <small>
-              Chapter {S.ch}
+            <small class="ellipsis">
+              {HM ? '🔥 Hard, chapter ' : 'Chapter '}
+              {S.ch}
               {S.ng ? `, encore ${S.ng}` : ''}
             </small>
             <h2 class="ellipsis">{C.n}</h2>
@@ -68,6 +70,11 @@ export function MapScreen() {
           </Inf>
         </div>
         <div class="row mh-stats">
+          {HM && (
+            <Inf k={`it|mut|${HM.n}`} class="mh-mut" label={`Twist: ${HM.n}. ${HM.d}`}>
+              {HM.e}
+            </Inf>
+          )}
           <div class="grow">
             <small>HP {hpTxt(G, S.hp)}</small>
             <div class="hpbar2">

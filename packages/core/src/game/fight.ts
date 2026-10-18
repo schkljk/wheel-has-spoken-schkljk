@@ -35,6 +35,8 @@ import { RNAME1, nextGauntletOpp, recordCup, resolveMyRound, saveRun, simRest, t
 import { LASTCH, hpTxt, newChapter, storyOf } from './story';
 import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
+import { endHard } from './hard';
+import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
@@ -118,6 +120,12 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
     const S = storyOf(g);
     m0.hp = S.hp;
     if (m0.halfHp) m0.hp = Math.max(1, Math.ceil(S.hp / 2));
+    // a hard run's twist holds for every fight in it (upgrade 26)
+    const hm = S.hard && MUTATORS.find((m) => m.k === S.hard!.mut);
+    if (hm) {
+      Object.assign(m0, hm.mods[0]);
+      Object.assign(m1, hm.mods[1]);
+    }
   }
   if ((spec.kind === 'rush' || spec.kind === 'tower') && spec.rushHp != null) m0.hp = spec.rushHp;
   if ((spec.kind === 'daily' || spec.kind === 'tower') && spec.mut) {
@@ -472,10 +480,22 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   coins += nem.coins;
   fame += nem.fame;
   if (won) coins = Math.round((coins + 2 * talEcon(F, 'coins')) * (1 + 0.25 * talEcon(F, 'gold')));
+  // a hard run (upgrade 26): half again the coins, and its own way to end
+  const hard = !!S.hard;
+  if (hard) coins = Math.round(coins * 1.5);
+  let hardDone = false;
+  let hardOut = false;
   let cleared = false;
   let reset = false;
   const trust = lgLvl(p, 'trust');
-  if (won && node === 'boss') {
+  if (hard && won && node === 'boss') {
+    hardDone = true;
+    coins += 10 + ch * 2;
+    lines.push(`🔥 Chapter ${ch} beaten on hard: ${CHAPTERS[ch - 1]!.n}. Your story is right where you left it`);
+  } else if (hard && !won && S.grit <= 0) {
+    hardOut = true;
+    lines.push(`🔥 Out of grit. The hard run ends, no coins lost. Your story is right where you left it`);
+  } else if (won && node === 'boss') {
     noteBoss(g, ch, F);
     cleared = true;
     keys.push('story' + ch);
@@ -499,7 +519,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   addCoins(g, coins);
   award(g, keys, got);
   lines.unshift(`+${xp} XP, +${coins} 🪙`);
-  if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
   if (won) {
     track(g, 'wins');
     addMasteryWin(g, F);
@@ -510,26 +530,33 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   lines.push(...gainFame(g, fame));
   if (fame) lines.push(`⭐ +${fame} fame`);
   // move along the map
-  if (cleared) {
+  if (hardDone || hardOut) endHard(g, hardDone);
+  else if (cleared) {
     let nxt = ch < LASTCH ? ch + 1 : LASTCH;
     const ng = ch < LASTCH ? S.ng : (S.ng || 0) + 1;
     if (ch < LASTCH) while (nxt < LASTCH && (S.cleared || []).includes(nxt) && !S.ng) nxt++;
     F.story = { ...newChapter(g, nxt, ng), cleared: S.cleared } as never;
   } else if (reset) F.story = { ...newChapter(g, ch, S.ng), cleared: S.cleared } as never;
   else if (won || node !== 'boss') S.row++;
-  const big = cleared ? (ch === LASTCH ? 'The wheel has spoken' : `Chapter ${ch} cleared`) : won ? (node === 'boss' ? 'Boss down' : 'Victory') : 'Defeat';
+  const big = hardDone ? 'Hard mode cleared' : cleared ? (ch === LASTCH ? 'The wheel has spoken' : `Chapter ${ch} cleared`) : won ? (node === 'boss' ? 'Boss down' : 'Victory') : 'Defeat';
   const desc = won
-    ? `${F.name} beats ${O.name}.${!cleared ? ` HP ${hpTxt(g, storyOf(g).hp)}.` : ''}`
-    : `${O.name} wins this one.${!reset ? ` ${node === 'boss' ? 'The boss is still waiting.' : 'You move on.'}` : ''}`;
+    ? `${F.name} beats ${O.name}.${!cleared && !hardDone ? ` HP ${hpTxt(g, storyOf(g).hp)}.` : ''}`
+    : `${O.name} wins this one.${!reset && !hardOut ? ` ${node === 'boss' ? 'The boss is still waiting.' : 'You move on.'}` : ''}`;
   const next: Step[] = [];
   if (won) {
-    if (node === 'boss') next.push({ t: 'loot', table: 'boss' });
+    if (node === 'boss') next.push({ t: 'loot', table: 'boss' }, ...(hardDone ? [{ t: 'loot', table: 'treasure' } as Step] : []));
     else {
-      if (node === 'elite' || node === 'nemesis') next.push({ t: 'loot', table: 'elite' });
+      if (node === 'elite' || node === 'nemesis') next.push({ t: 'loot', table: hard ? 'boss' : 'elite' });
       next.push({ t: 'reward' });
     }
   }
   next.push({ t: 'levelups' });
+  if (hardDone) next.push({ t: 'celebrate', icon: '🔥', title: `Chapter ${ch} beaten on hard`, sub: `${CHAPTERS[ch - 1]!.n}, the hard way. It is on your record for good` });
+  if (hardDone || hardOut) {
+    next.push({ t: 'hub' });
+    invalidate(F);
+    return { won, big, desc, lines, got, next, button: 'Continue', q: won ? 3 : 0, confetti: won };
+  }
   if (cleared)
     next.push({
       t: 'celebrate',

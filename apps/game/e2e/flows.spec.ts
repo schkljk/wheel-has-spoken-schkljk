@@ -573,3 +573,40 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   await expect(page.locator('.tabbar, [role=tablist]').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk away to the story', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'hard' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Hard mode/ }).click();
+  await expect(page.getByText('Beaten on hard: 0 of 2', { exact: true })).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /Chapter 1/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: /Bring it/ }).click();
+  await expect(page.getByText(/Twist for the whole chapter/)).toBeVisible();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.locator('.mnode.now.t-fight').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await page.locator('.fresult .btn').first().click();
+  // a win offers a reward first, then it is the hard map again
+  await expect(page.locator('.maphead, [role=dialog]').first()).toBeVisible({ timeout: 30_000 });
+  const prize = page.getByRole('button', { name: /Prize money/ });
+  if (await prize.count()) await prize.click();
+  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Fighter page' }).click();
+  await expect(page.getByText('🔥 Hard mode, chapter 1')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /Walk away/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Leave it' }).click();
+  await expect(page.getByText(/^Story, chapter 3 of/)).toBeVisible();
+  expect(errors).toEqual([]);
+});

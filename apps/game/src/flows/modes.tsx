@@ -16,6 +16,11 @@ import {
   dailyState,
   dailyWinCoins,
   deserFighter,
+  endHard,
+  hardChapters,
+  hardMutator,
+  hardOf,
+  startHard,
   hpTxt,
   loadRun,
   makeBoss,
@@ -60,7 +65,7 @@ import { landSound, tick } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { evText } from '../screens/Fight';
 import { fight } from './fight';
-import { choose, goHub, runSteps, showCine } from './nav';
+import { choose, goHub, goMap, runSteps, showCine } from './nav';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
@@ -206,6 +211,66 @@ async function towerNext(T: TowerState) {
     { tower: T, ...(m && m.arena ? { arena: dailyArena(m.arena) } : {}) },
   );
   await runSteps(r.next, { tower: () => void towerNext(T) });
+}
+
+// ---------------------------------------------------------------- hard mode (upgrade 26)
+export function hardFlow() {
+  if (hardOf(G)) return goMap();
+  const list = hardChapters(G);
+  if (!list.length) return toast('Clear a chapter first. Hard mode needs something to be hard about');
+  openSheet(<HardPick key={Math.random()} />);
+}
+function HardPick() {
+  const list = hardChapters(G);
+  const pickCh = async (ch: number, n: string) => {
+    const ok = await confirm({
+      title: `Chapter ${ch} on hard?`,
+      body: `${n}, again, but meaner: tougher fights, a nastier boss and one twist for the whole chapter. Better loot. Your story waits right where it is.`,
+      yes: '🔥 Bring it',
+    });
+    if (!ok) return;
+    if (!act((g) => startHard(g, ch))) return toast('That one is not open');
+    closeSheet();
+    goMap();
+  };
+  return (
+    <Sheet emoji="🔥" title="Hard mode" sub={`Beaten on hard: ${list.filter((c) => c.done).length} of ${list.length}`}>
+      <div class="stack">
+        <Inf k="rule|hard" class="hint">
+          Fights from higher up the ranks, three levels stronger. One twist for the whole chapter. Half again the coins, and an extra treasure spin on the boss.
+        </Inf>
+        <ul class="ex-list hard-list">
+          {list.map((c) => (
+            <li key={c.ch}>
+              <button class="hard-row" onClick={() => void pickCh(c.ch, c.n)}>
+                <span class="ex-e" aria-hidden="true">
+                  {c.e}
+                </span>
+                <span class="grow ex-t">
+                  <small>Chapter {c.ch}</small>
+                  <b class="ellipsis">{c.n}</b>
+                </span>
+                <span class={`hard-done${c.done ? ' on' : ''}`}>{c.done ? '🔥 Beaten' : 'Not yet'}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Sheet>
+  );
+}
+/** Walks away from a hard run: nothing lost but the run itself. */
+export async function leaveHard() {
+  const m = hardMutator(G);
+  const ok = await confirm({
+    title: 'Leave hard mode?',
+    body: `This hard run ends here${m ? ` (${m.n} and all)` : ''}. Coins and loot you got stay yours. Your story picks up where you left it.`,
+    yes: 'Leave it',
+    danger: true,
+  });
+  if (!ok) return;
+  act((g) => endHard(g, false));
+  toast('🔥 Hard run over. The chapter will be there, smug as ever');
 }
 
 // ---------------------------------------------------------------- boss rush

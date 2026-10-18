@@ -79,6 +79,7 @@ import {
   type PoolRanking,
   type Rng,
   type Step,
+  hardOf,
 } from '../../packages/core/src';
 
 export interface ChapterLog {
@@ -351,6 +352,22 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     }
   }
   return { chapters: out, stuck: null, upLevels: upSum(F), coins: coinsOf(g) };
+}
+
+/** Plays a hard run (upgrade 26) until it is won or out of grit. Returns whether the boss went down, and the fights. */
+export function playHard(g: Game): { won: boolean; fights: number } {
+  const F = g.F!;
+  const ch = storyOf(g).ch;
+  const before = (F.rec || { w: 0, l: 0 }).w + (F.rec || { w: 0, l: 0 }).l;
+  for (let guard = 0; guard < 200 && hardOf(g); guard++) {
+    const S = storyOf(g);
+    const row = S.rows[S.row]!;
+    const i = pickNode(g, row);
+    S.picks[S.row] = i;
+    visit(g, row[i]!);
+  }
+  const rec = F.rec || { w: 0, l: 0 };
+  return { won: (F.hardCleared || []).includes(ch), fights: rec.w + rec.l - before };
 }
 
 export const CH_NAMES = CHAPTERS.map((c) => c.n);

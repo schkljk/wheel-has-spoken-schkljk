@@ -325,6 +325,18 @@ export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: s
       'Walk past their step and they are back next chapter. They noticed.',
     ],
   ],
+  hard: [
+    '🔥',
+    'Hard mode',
+    [
+      'Any chapter you have cleared can be played again on hard, from the Play tab. Your story waits exactly where you left it.',
+      'Opponents come from higher up the ranks, three levels stronger, with more gear and sharper reads. The boss gets +2 to every stat, is tuned meaner and never eases off.',
+      'One twist holds for every fight in the chapter. You see it on the map before the first fight.',
+      'Better loot: half again the coins, boss loot from elites, and the boss pays 3 more gems, a bonus purse and an extra treasure spin.',
+      'Run out of grit and the hard run ends. No coins lost. You can also walk away from it any time on the Play tab.',
+      'Beat the boss and the chapter gets its 🔥 on your record for good.',
+    ],
+  ],
   momentum: [
     '⏫',
     'Momentum',
