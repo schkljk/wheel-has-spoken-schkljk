@@ -1,10 +1,9 @@
-import { GEAR } from '../data/gear';
 import { simulate } from '../battle';
 import { randomFighter, levelUp } from '../fighter';
 import { mulberry32, type Rng } from '../rng';
 import { pick, shuffle } from '../random';
 import { junkCount } from '../data/content/hidden-synergies';
-import { personalityOf } from '../stats';
+import { GEARK, gearPool, personalityOf } from '../stats';
 import type { Fighter } from '../types';
 import { invalidate, randomGear } from './career';
 
@@ -32,9 +31,9 @@ export interface LabReport {
   tables: LabTable[];
 }
 
-const SETS = [...new Set(GEAR.filter((g) => g.set).map((g) => g.set!))];
+const SETS = [...new Set(gearPool().filter((g) => g.set).map((g) => g.set!))];
 /** One junk piece per slot, for junk outfits. */
-const JUNK = [...new Map(GEAR.filter((g) => g.r === 'junk').map((g) => [g.slot, g])).values()];
+const JUNK = [...new Map(gearPool().filter((g) => g.r === 'junk').map((g) => [g.slot, g])).values()];
 
 /** A lab fighter: random build, level, gear, and in 40% of cases 2, 4 or 6 pieces of one set. */
 export function labFighter(rng: Rng, lvl: number): Fighter {
@@ -44,7 +43,7 @@ export function labFighter(rng: Rng, lvl: number): Fighter {
   randomGear(f, Math.floor(rng() * 7), rng);
   if (rng() < 0.4) {
     const set = pick(rng, SETS);
-    const pieces = GEAR.filter((g) => g.set === set);
+    const pieces = gearPool().filter((g) => g.set === set);
     const want = Math.min(pieces.length, pick(rng, [2, 4, 6]));
     f.gear = f.gear || {};
     for (const g of pieces.slice(0, want)) f.gear[g.slot] = g.k;
@@ -60,7 +59,7 @@ export function labFighter(rng: Rng, lvl: number): Fighter {
 
 /** What a fighter counts as in each table. */
 function keysOf(f: Fighter): Record<string, [k: string, label: string, e: string]> {
-  const sets = SETS.map((s) => [s, Object.values(f.gear || {}).filter((k) => GEAR.find((g) => g.k === k)?.set === s).length] as const).filter(
+  const sets = SETS.map((s) => [s, Object.values(f.gear || {}).filter((k) => GEARK[k ?? '']?.set === s).length] as const).filter(
     ([, n]) => n >= 2,
   );
   const [set, n] = sets.sort((a, b) => b[1] - a[1])[0] ?? ['', 0];

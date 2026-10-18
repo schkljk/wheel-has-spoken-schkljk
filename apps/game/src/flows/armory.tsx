@@ -66,7 +66,7 @@ export function openArmory(slot?: string) {
             ))}
           </>
         ) : (
-          <p class="hint">Wear matching knight, shadow, arcane or clown pieces for set bonuses.</p>
+          <p class="hint">Wear matching knight, shadow, arcane, clown, pirate, chef, cosmic or royal pieces for set bonuses.</p>
         )}
       </>
     );

@@ -1,7 +1,8 @@
 import { ARCHS, ASUB, BACKS, CHAOS, CURED, ENCHANTS, POWER_ALL, QUIRKS, RACES, RSUB, SIDEKICKS, SIZES, STANCES, TITLES, ULTS, WEAKS, WEAPONS } from '../data/wheels';
 import { ARENAS } from '../data/arenas';
 import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc';
-import { GEAR, RARITY } from '../data/gear';
+import { RARITY } from '../data/gear';
+import { SYN_SETS } from '../data/content/gear-sets';
 import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
@@ -9,7 +10,7 @@ import { PERSONALITIES, type PersonalityKey } from '../data/content/personality'
 import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { findMove } from '../kits';
-import { STATLBL } from '../stats';
+import { GEAR_ALL, STATLBL } from '../stats';
 import type { StatMods, TraitFx } from '../types';
 import { TIERK } from './lookups';
 
@@ -128,7 +129,7 @@ function findItem(cat: string, name: string): AnyItem | null {
       list = TITLES;
       break;
     case 'syn':
-      list = [...SYN, ...SYN_HIDDEN];
+      list = [...SYN, ...SYN_HIDDEN, ...SYN_SETS];
       break;
     case 'arena':
       list = ARENAS;
@@ -151,7 +152,7 @@ function findItem(cat: string, name: string): AnyItem | null {
       list = MUTATORS;
       break;
     case 'gear':
-      list = GEAR;
+      list = GEAR_ALL;
       break;
     case 'daily':
       list = DAILY;
