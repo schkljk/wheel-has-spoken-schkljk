@@ -26,19 +26,19 @@ export const hardMutator = (g: Game) => {
   const h = hardOf(g);
   return h ? (MUTATORS.find((m) => m.k === h.mut) ?? null) : null;
 };
-/** The story waiting while a hard run is on (the active one otherwise). */
-export const mainStory = (g: Game): Story => ((g.F!.storyMain as Story | undefined) ?? storyOf(g)) as Story;
+/** The story waiting while a hard run is on (the active one otherwise; null before the story starts). */
+export const mainStory = (g: Game): Story | null => ((g.F!.storyMain as Story | undefined) ?? (g.F!.story as Story | null)) || null;
 /** Cleared chapters, and whether each was beaten on hard too. */
 export function hardChapters(g: Game) {
   const done = new Set(g.F!.hardCleared || []);
-  return [...new Set(mainStory(g).cleared || [])]
+  return [...new Set(mainStory(g)?.cleared || [])]
     .sort((a, b) => a - b)
     .map((ch) => ({ ch, n: CHAPTERS[ch - 1]!.n, e: CHAPTERS[ch - 1]!.e, done: done.has(ch) }));
 }
 /** Starts a hard run of a cleared chapter; the main story waits. */
 export function startHard(g: Game, ch: number): boolean {
   const F = g.F!;
-  if (hardOf(g) || !(storyOf(g).cleared || []).includes(ch)) return false;
+  if (hardOf(g) || !F.story || !(storyOf(g).cleared || []).includes(ch)) return false;
   const m = pick(g.rng, HARD_TWISTS);
   F.storyMain = F.story;
   F.story = { ...newChapter(g, ch, 0), cleared: [...(storyOf(g).cleared || [])], hard: { mut: m.k }, seenIntro: false } as unknown as StoryState;

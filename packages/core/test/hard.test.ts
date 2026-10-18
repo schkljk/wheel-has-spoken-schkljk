@@ -75,6 +75,15 @@ describe('hard mode', () => {
     expect(g.F!.hardCleared).toBeUndefined();
   });
 
+  it('copes with a fighter whose story has not started', () => {
+    const g = game();
+    g.F!.story = null;
+    expect(hardChapters(g)).toEqual([]);
+    expect(startHard(g, 1)).toBe(false);
+    expect(hardOf(g)).toBeNull();
+    expect(mainStory(g)).toBeNull();
+  });
+
   it('never draws a twist that sets your HP or forces an arena', () => {
     for (const m of HARD_TWISTS) {
       expect(m.arena).toBeUndefined();
