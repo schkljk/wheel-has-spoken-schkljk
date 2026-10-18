@@ -15,6 +15,7 @@ import {
   gearPriceM,
   haggle,
   haggleChance,
+  hardMutator,
   hpTxt,
   itemPriceM,
   LS,
@@ -54,6 +55,8 @@ import { fight } from './fight';
 import { choose, goMap, lootFlow, runSteps, showCine } from './nav';
 import { openArmory } from './armory';
 import { GearIcon, ItemIcon } from '../ui/GearIcon';
+import { GearCompareView } from '../ui/GearCompare';
+import { tip } from '../state/tips';
 
 /** The step is done: on to the next one. */
 export function backToMap() {
@@ -66,18 +69,25 @@ export function backToMap() {
 export function chapterIntro() {
   const S = storyOf(G);
   const C = CHAPTERS[S.ch - 1]!;
+  const HM = S.hard ? hardMutator(G) : null;
   [262, 330, 392].forEach((f, i) => beep(f, 0.25, 'triangle', 0.05, i * 0.12));
   return showCine(
     <>
       <div class="cine-kicker">
-        Chapter {S.ch}
+        {HM ? '🔥 Hard mode, chapter ' : 'Chapter '}
+        {S.ch}
         {S.ng ? `, encore ${S.ng}` : ''}
       </div>
       <div class="cine-emoji">{C.e}</div>
       <h2>{C.n}</h2>
-      <p>{C.intro}</p>
+      <p>{HM ? 'You have been here before. It remembers. It has been working out.' : C.intro}</p>
+      {HM && (
+        <p class="cine-twist">
+          {HM.e} Twist for the whole chapter: <b>{HM.n}</b>. {HM.d}.
+        </p>
+      )}
       <div class="cine-meta">
-        {pl(maxGrit(G), 'grit', 'grit')}. {S.rows.length} steps. One boss.
+        {pl(maxGrit(G), 'grit', 'grit')}. {S.rows.length} steps. One boss{HM ? ', and it is in a mood' : ''}.
       </div>
     </>,
     'Begin',
@@ -304,6 +314,7 @@ async function campfireFlow() {
 // ---------------------------------------------------------------- merchants and haggling
 export async function haggleFlow(where: 'merchant' | 'base') {
   const F = G.F!;
+  tip('haggle');
   const opts = ([10, 25, 40, 60] as const).map((p) => {
     const c = Math.round(haggleChance(G, p) * 100);
     return { p, label: `Ask for ${p}% off`, sub: `${c}% chance it works. If not, prices go up ${Math.round(p / 2)}%` };
@@ -380,7 +391,7 @@ function MerchantBody() {
                 class="buy"
                 disabled={coins < p}
                 onClick={async () => {
-                  if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙.`, yes: 'Buy it' }))) return;
+                  if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙. You wear it right away.`, extra: <GearCompareView k={k} />, yes: 'Buy it' }))) return;
                   if (act((x) => buyMerchantGear(x, k))) {
                     toast(`${g.e} ${g.n} equipped`);
                     beep(880, 0.15, 'triangle', 0.05);
@@ -428,6 +439,7 @@ function MerchantBody() {
 export function merchantSheet(fresh = true) {
   if (fresh) act((g) => merchantStock(g));
   openSheet(<MerchantBody key={Math.random()} />, true);
+  tip('merchant');
 }
 
 // ---------------------------------------------------------------- the bag

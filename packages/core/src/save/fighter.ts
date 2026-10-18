@@ -46,6 +46,9 @@ export interface CareerFighter extends Fighter {
   armory?: string[];
   /** the highest tower floor this fighter cleared (upgrade 25) */
   towerBest?: number;
+  /** chapters beaten on hard, and the main story waiting while a hard run is on (upgrade 26) */
+  hardCleared?: number[];
+  storyMain?: StoryState | null;
   contract?: Json;
   offers?: Json;
   /** cached rating against random level 1 fighters (runtime only; cleared when the build changes) */
@@ -123,6 +126,8 @@ export function serFighter(f: CareerFighter): SerFighter {
   if (f.gup && Object.keys(f.gup).length) o.gup = { ...f.gup };
   if (f.gcopy && Object.keys(f.gcopy).length) o.gcopy = { ...f.gcopy };
   if (f.towerBest) o.towerBest = f.towerBest;
+  if (f.hardCleared && f.hardCleared.length) o.hardCleared = f.hardCleared.slice();
+  if (f.storyMain) o.storyMain = f.storyMain;
   if (f.reinc && !(f.reinc as { skip?: boolean }).skip) o.reinc = { n: f.reinc.n, e: f.reinc.e, q: f.reinc.q, m: f.reinc.m, d: f.reinc.d };
   if (f.weak && f.weak.k === 'cured') o.cured = 1;
   return o;
@@ -180,6 +185,8 @@ export function deserFighter(o: SerFighter | null | undefined): CareerFighter | 
   if (o.gup && typeof o.gup === 'object') f.gup = { ...(o.gup as Record<string, number>) };
   if (o.gcopy && typeof o.gcopy === 'object') f.gcopy = { ...(o.gcopy as Record<string, number>) };
   if (typeof o.towerBest === 'number') f.towerBest = o.towerBest;
+  if (Array.isArray(o.hardCleared)) f.hardCleared = (o.hardCleared as number[]).slice();
+  if (o.storyMain && typeof o.storyMain === 'object') f.storyMain = o.storyMain as StoryState;
   f.contract = o.contract || null;
   f.offers = o.offers || null;
   f.fame = o.fame || 0;

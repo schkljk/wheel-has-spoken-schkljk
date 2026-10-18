@@ -152,7 +152,7 @@ export function rushBoss(g: Game, R: RushState) {
   const S = storyOf(g);
   const keep = S.hp;
   S.hp = R.hp;
-  const b = makeBoss(g, off + R.i + 1);
+  const b = makeBoss(g, off + R.i + 1, false);
   S.hp = keep;
   return { boss: b, def: set[R.i]! };
 }

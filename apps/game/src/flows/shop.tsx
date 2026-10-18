@@ -35,9 +35,11 @@ import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
 import { beep } from '../ui/sound';
 import { gearChoice } from './nav';
+import { GearCompareView } from '../ui/GearCompare';
 import { haggleFlow } from './story';
 import { GearIcon, ItemIcon } from '../ui/GearIcon';
 import { Icon, type IconName } from '../ui/Icon';
+import { tip } from '../state/tips';
 
 type Tab = 'basics' | 'deal' | 'vault' | 'services';
 const flav = (n: string) => (FLAVOR[n] ? <i class="flav"> {FLAVOR[n]}</i> : null);
@@ -127,7 +129,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
               class="buy"
               disabled={dis(coins >= p)}
               onClick={async () => {
-                if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙.`, yes: 'Buy it' }))) return openBaseShop(tab);
+                if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙. You wear it right away.`, extra: <GearCompareView k={g.k} />, yes: 'Buy it' }))) return openBaseShop(tab);
                 if (act((x) => buyDeal(x, g.k))) toast(`${g.e} ${g.n} equipped`);
                 openBaseShop(tab);
               }}
@@ -153,7 +155,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
           const own = F.gear![g.slot] === g.k;
           const gp = gemPrice(g.k);
           const buy = async (cur: 'gem' | 'coin') => {
-            if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${cur === 'gem' ? gp + ' 💎' : g.cost + ' 🪙'}. You have ${cur === 'gem' ? gems + ' 💎' : coins + ' 🪙'}.`, yes: 'Buy it' })))
+            if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${cur === 'gem' ? gp + ' 💎' : g.cost + ' 🪙'}. You have ${cur === 'gem' ? gems + ' 💎' : coins + ' 🪙'}. You wear it right away.`, extra: <GearCompareView k={g.k} />, yes: 'Buy it' })))
               return openBaseShop(tab);
             if (act((x) => buyPremium(x, g.k, cur))) toast(`${g.e} ${g.n} equipped`);
             openBaseShop(tab);
@@ -291,4 +293,5 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
 }
 export function openBaseShop(tab: Tab = 'basics') {
   openSheet(<BaseShop key={Math.random()} tab={tab} />);
+  tip('shop');
 }

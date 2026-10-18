@@ -2504,3 +2504,416 @@ img.pxi.race {
   color: var(--muted);
   font-style: normal;
 }
+
+/* ---------- hard mode (upgrade 26) ---------- */
+.story-card.hard {
+  border-color: #ff6a3d;
+  box-shadow: 0 0 0 1px #ff6a3d55, 0 6px 22px -10px #ff6a3d;
+}
+.hard-mut {
+  display: block;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  background: color-mix(in srgb, #ff6a3d 14%, var(--surface));
+  text-decoration: none;
+}
+.hard-list li {
+  padding: 0;
+}
+.hard-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.4rem 0.55rem;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.hard-done {
+  flex: none;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+.hard-done.on {
+  color: #ff8a5c;
+  font-weight: 700;
+}
+.map-screen.hard .maphead {
+  background: linear-gradient(90deg, color-mix(in srgb, #ff6a3d 22%, var(--bg)), color-mix(in srgb, var(--ch, var(--bg)) 14%, var(--bg)));
+  border-bottom-color: #ff6a3d;
+}
+.mh-mut {
+  flex: none;
+  font-size: 1.25rem;
+  text-decoration: none;
+  line-height: 1;
+}
+.cine-twist {
+  padding: 0.4rem 0.6rem;
+  border-radius: 10px;
+  background: #ff6a3d22;
+  border: 1px solid #ff6a3d66;
+}
+
+/* ---------- seasonal arenas (upgrade 27) ---------- */
+.cx-season h3 span {
+  text-align: right;
+}
+.cx-season .tile.unfought .e {
+  filter: grayscale(0.8);
+  opacity: 0.6;
+}
+.cx-season .tile.now {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--teal) 45%, transparent);
+}
+.cx-season .tile.now small {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+/* ---------- gear compare (upgrade 28) ---------- */
+.gcmp {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  text-align: left;
+}
+.gc-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+}
+.gc-side {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.4rem;
+  align-items: center;
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+}
+.gc-side .gc-i {
+  grid-row: span 2;
+  font-size: 1.4rem;
+  display: grid;
+  place-items: center;
+}
+.gc-side small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.gc-side b {
+  font-size: 0.85rem;
+  min-width: 0;
+}
+.gc-arrow {
+  font-weight: 800;
+  color: var(--muted);
+}
+.gc-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.gc-rows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+.gc-rows li.up {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+.gc-rows li.down {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.gc-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gc-v em {
+  font-style: normal;
+  font-weight: 800;
+}
+.gc-rows li.up em {
+  color: var(--good);
+}
+.gc-rows li.down em {
+  color: var(--danger);
+}
+.gc-same {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.gc-syn {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 8px;
+}
+.gc-syn.up {
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+}
+.gc-syn.down {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--muted);
+}
+.gc-fx {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+}
+.confirm {
+  max-height: calc(100dvh - 1.5rem);
+  overflow-y: auto;
+}
+
+/* ---------- scouting report after the wheels (upgrade 29) ---------- */
+.scout {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.scout h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.sr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+.sr-l {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+.sr-l.good {
+  background: color-mix(in srgb, var(--good) 11%, transparent);
+}
+.sr-l.bad {
+  background: color-mix(in srgb, var(--danger) 11%, transparent);
+}
+.sr-l.syn {
+  background: color-mix(in srgb, var(--teal) 11%, transparent);
+}
+.sr-e {
+  flex: none;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+.sr-t {
+  display: grid;
+  min-width: 0;
+}
+.sr-t .flav {
+  display: block;
+}
+.sr-close {
+  margin: 0.1rem 0 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* ---------- filters and search (upgrade 30) ---------- */
+.codex-screen.with-filters {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+.cx-filters,
+.arm-filters {
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.5rem;
+  min-width: 0;
+}
+.cx-filters > .row,
+.arm-filters > .row {
+  gap: 0.4rem;
+  min-width: 0;
+}
+.fsearch {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.fsearch > .pxi {
+  position: absolute;
+  left: 0.6rem;
+  pointer-events: none;
+}
+.fsearch input {
+  width: 100%;
+  min-height: 2.6rem;
+  padding-left: 2.1rem;
+  padding-right: 2.6rem;
+}
+.fsearch input::-webkit-search-cancel-button {
+  display: none;
+}
+.fs-clear {
+  position: absolute;
+  right: 0.2rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 0;
+  background: none;
+}
+.fbtn {
+  flex: none;
+  min-height: 2.6rem;
+}
+.fbtn.on {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+.fchips {
+  display: flex;
+  gap: 0.3rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 0.1rem;
+  min-width: 0;
+}
+.fchips::-webkit-scrollbar {
+  display: none;
+}
+.fchip {
+  flex: none;
+  white-space: nowrap;
+  cursor: pointer;
+  min-height: 2.1rem;
+  font-size: 0.82rem;
+}
+.fchip[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
+}
+.cx-none {
+  margin-top: 1rem;
+  text-align: center;
+}
+
+/* ---------- first-time tips (upgrade 31) ---------- */
+.tipcard {
+  position: fixed;
+  z-index: 50;
+  top: calc(env(safe-area-inset-top) + 0.6rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(calc(100% - 2 * var(--gutter)), 24rem);
+  max-height: calc(100dvh - 1.2rem);
+  overflow-y: auto;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: var(--bg);
+  border: 2px solid var(--gold);
+  box-shadow: var(--card-shadow), 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+  animation: tip-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes tip-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -12px) scale(0.96);
+  }
+}
+.tipcard p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.tc-head {
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+.tc-head small {
+  display: block;
+  color: var(--gold);
+  font-weight: 800;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tc-e {
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+/* ---------- map step previews (upgrade 34) ---------- */
+button.mnode {
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+button.mnode.t-nemesis {
+  color: var(--bg);
+}
+.mnode.later.t-boss {
+  opacity: 0.85;
+}
+.mn-lv {
+  position: absolute;
+  bottom: -0.4rem;
+  right: -0.55rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 6px;
+  background: var(--gold);
+  color: #1a1426;
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.mn-lv.low {
+  background: var(--danger);
+  color: #fff;
+}
+.np-lines {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+/* short landscape screens: intros get compact (after the .cine-card rules above) */
+@media (max-height: 460px) {
+  .cine-card {
+    gap: 0.4rem;
+  }
+  .cine-emoji {
+    font-size: 2.2rem;
+  }
+  .cine-card h2 {
+    font-size: 1.5rem;
+  }
+  .cine-card p {
+    font-size: 0.9rem;
+  }
+}

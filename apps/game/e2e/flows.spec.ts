@@ -4,16 +4,17 @@ import { deserFighter, migrate, numStats } from '@whs/core';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
 import { autopilot, layoutProblems, legacySave, open, watchErrors } from './helpers';
 
-const skipTour = (page: Page) => page.getByRole('button', { name: 'Skip the tour' }).click();
 const confirmLoad = (page: Page) => page.getByRole('alertdialog').getByRole('button', { name: /^Load / }).click();
 const openSave = async (page: Page) => {
   await page.getByRole('button', { name: 'Settings' }).first().click();
   await page.getByRole('button', { name: 'Your save and backups' }).click();
 };
 
-test('first launch: the tour, once', async ({ page }) => {
+test('the tour is there when asked for, never in the way (upgrade 31)', async ({ page }) => {
   const errors = watchErrors(page);
   await open(page);
+  await expect(page.getByRole('heading', { name: 'Spin a fighter' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'How to play' }).first().click();
   for (const title of ['Spin a fighter', 'Play the story', 'Fight with the combat wheel']) {
     await expect(page.getByRole('heading', { name: title })).toBeVisible();
     await page.getByRole('button', { name: 'Next' }).click();
@@ -21,8 +22,6 @@ test('first launch: the tour, once', async ({ page }) => {
   await expect(page.getByText('Twenty chapters in two acts')).toHaveCount(0);
   await page.getByRole('button', { name: "Let's go" }).click();
   await expect(page.getByText('Your fighters')).toBeVisible();
-  await page.reload();
-  await expect(page.getByRole('heading', { name: 'Spin a fighter' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -30,7 +29,6 @@ test("brings over the old version's save from the same site, without touching it
   const errors = watchErrors(page);
   const txt = legacySave();
   await open(page, { 'wheel-has-spoken-v1': txt });
-  await skipTour(page);
   await expect(page.getByText('Found your save from the old version')).toBeVisible();
   await page.getByRole('button', { name: 'Bring it over' }).click();
   await expect(page.getByRole('alertdialog').getByText(/3 fighters: /)).toBeVisible();
@@ -46,7 +44,6 @@ test("brings over the old version's save from the same site, without touching it
 
 test('the Fighter tab shows the engine numbers', async ({ page }) => {
   await open(page, { 'wheel-has-spoken-v1': legacySave() });
-  await skipTour(page);
   await page.getByRole('button', { name: 'Bring it over' }).click();
   await confirmLoad(page);
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
@@ -63,7 +60,6 @@ test('the Fighter tab shows the engine numbers', async ({ page }) => {
 test('paste a save; junk is refused', async ({ page }) => {
   const errors = watchErrors(page);
   await open(page);
-  await skipTour(page);
   await openSave(page);
   await page.getByRole('button', { name: 'Paste save text' }).click();
   await page.getByLabel('Save text').fill('definitely not a save');
@@ -79,7 +75,6 @@ test('paste a save; junk is refused', async ({ page }) => {
 test('a backup file survives erasing everything; automatic backups restore', async ({ page }) => {
   const errors = watchErrors(page);
   await open(page, { 'wheel-has-spoken-v1': legacySave() });
-  await skipTour(page);
   await page.getByRole('button', { name: 'Bring it over' }).click();
   await confirmLoad(page);
   await openSave(page);
@@ -110,27 +105,30 @@ test('a backup file survives erasing everything; automatic backups restore', asy
 
 test('settings stick and change the page', async ({ page }) => {
   await open(page);
-  await skipTour(page);
   await page.getByRole('button', { name: 'Settings' }).click();
   const sound = page.getByRole('switch', { name: /^Sound/ });
   await expect(sound).toHaveAttribute('aria-checked', 'true');
   await sound.click();
   await expect(sound).toHaveAttribute('aria-checked', 'false');
   await page.getByRole('group', { name: 'Text size' }).getByRole('button', { name: 'Large' }).click();
+  // hit effects (upgrade 33): shown unless animations are calm
+  await page.getByRole('group', { name: 'Hit effects' }).getByRole('button', { name: 'Big' }).click();
   await page.getByRole('group', { name: 'Animations' }).getByRole('button', { name: 'Calm' }).click();
+  await expect(page.getByRole('group', { name: 'Hit effects' })).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-text', 'large');
   await expect(page.locator('html')).toHaveAttribute('data-motion', 'reduced');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-text', 'large');
   await page.getByRole('button', { name: 'Settings' }).click();
   await expect(page.getByRole('switch', { name: /^Sound/ })).toHaveAttribute('aria-checked', 'false');
+  await page.getByRole('group', { name: 'Animations' }).getByRole('button', { name: 'Full' }).click();
+  await expect(page.getByRole('group', { name: 'Hit effects' }).getByRole('button', { name: 'Big' })).toHaveAttribute('aria-pressed', 'true');
 });
 
 test("today's ranked pool builds in a worker and is cached", async ({ page }) => {
   test.setTimeout(120_000);
   const errors = watchErrors(page);
   await open(page, { 'wheel-has-spoken-v1': legacySave() });
-  await skipTour(page);
   await page.getByRole('button', { name: 'Bring it over' }).click();
   await confirmLoad(page);
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
@@ -571,5 +569,95 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   if (again) await expect(page.getByText(/❤️❤️🖤\. Record/)).toBeVisible();
   await page.getByRole('button', { name: /Walk back down/ }).click();
   await expect(page.locator('.tabbar, [role=tablist]').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk away to the story', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'hard' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Hard mode/ }).click();
+  await expect(page.getByText('Beaten on hard: 0 of 2', { exact: true })).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /Chapter 1/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: /Bring it/ }).click();
+  await expect(page.getByText(/Twist for the whole chapter/)).toBeVisible();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.locator('.mnode.now.t-fight').first().click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await page.locator('.fresult .btn').first().click();
+  // a win offers a reward first, then it is the hard map again
+  await expect(page.locator('.maphead, [role=dialog]').first()).toBeVisible({ timeout: 30_000 });
+  const prize = page.getByRole('button', { name: /Prize money/ });
+  if (await prize.count()) await prize.click();
+  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Fighter page' }).click();
+  await expect(page.getByText('🔥 Hard mode, chapter 1')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /Walk away/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Leave it' }).click();
+  await expect(page.getByText(/^Story, chapter 3 of/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('seasonal arenas: a heads-up in season, and a collection section that never counts them', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 6, ch: 2 }), 'whs:today': '2026-12-10' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await expect(page.getByText(/Snow globe is in season: on the arena wheel until 6 January/)).toBeVisible();
+  await page.getByRole('tab', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Collection/ }).click();
+  const sec = page.locator('.cx-season');
+  await sec.scrollIntoViewIfNeeded();
+  await expect(sec.getByText('Not counted. They come back every year')).toBeVisible();
+  await expect(sec.locator('.tile')).toHaveCount(9);
+  await expect(sec.locator('.tile.now')).toHaveCount(1);
+  await expect(sec.locator('.tile.now')).toContainText('In season now');
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await sec.getByRole('button', { name: /Pumpkin patch/ }).click();
+  const card = page.getByRole('dialog');
+  await expect(card.getByText(/Seasonal: on the arena wheel every October, until 2 November. Comes back every year/)).toBeVisible();
+  await expect(card.getByText(/judging your build/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('gear compare: what a piece changes, green and red, before it goes on', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, careerSaveKV({ seed: 9, lvl: 8, compare: true }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await page.getByRole('button', { name: /Armory/ }).click();
+  await page.locator('.arm-slot').first().click();
+  await page.getByRole('button', { name: 'Wear' }).click();
+  const dlg = page.getByRole('alertdialog');
+  await expect(dlg.getByText('Wear Knight plate?')).toBeVisible();
+  await expect(dlg.locator('.gc-side').first()).toContainText('Now');
+  await expect(dlg.locator('.gc-rows li.up').filter({ hasText: 'Defense' })).toHaveCount(1);
+  await expect(dlg.locator('.gc-syn.up')).toContainText('Knight set (4)');
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.setViewportSize({ width: 667, height: 375 });
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.setViewportSize({ width: 320, height: 568 });
+  // backing out changes nothing
+  await dlg.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('button', { name: 'Wear' })).toBeVisible();
+  await page.getByRole('button', { name: 'Wear' }).click();
+  await dlg.getByRole('button', { name: 'Wear it' }).click();
+  await expect(page.getByText(/Knight plate equipped/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Take off' })).toHaveCount(1);
   expect(errors).toEqual([]);
 });

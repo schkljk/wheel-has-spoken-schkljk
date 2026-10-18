@@ -37,10 +37,12 @@ export async function open(page: Page, seed: Record<string, string> = {}) {
   // no network fonts in tests: answer with an empty stylesheet instead of failing the request
   await page.route('**/fonts.{googleapis,gstatic}.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await page.goto('./');
+  // a day with no seasonal arena on the wheel, so seeded fights don't change with the calendar; and no
+  // first-time tips, which only their own test wants
   await page.evaluate((s) => {
     localStorage.clear();
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-  }, seed);
+  }, { 'whs:today': '2026-05-15', 'whs:notips': '1', ...seed });
   await page.reload();
 }
 
@@ -81,8 +83,9 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
       if (inScroll && sc) {
         const sr = sc.getBoundingClientRect();
         if (sr.bottom > vh + 1 || sr.right > vw + 1 || sr.left < -1 || sr.top < -1) out.push('panel ' + name(sc));
-        // horizontal clipping inside a vertical scroller is still clipping
-        if (r.right > sr.right + 2 || r.left < sr.left - 2) out.push(name(el));
+        // horizontal clipping inside a vertical scroller is still clipping; rows marked data-hscroll scroll
+        // sideways on purpose (filter chips), so what's past their edge is reachable
+        if ((r.right > sr.right + 2 || r.left < sr.left - 2) && !sc.hasAttribute('data-hscroll')) out.push(name(el));
         continue;
       }
       let bad = r.right > vw + 1 || r.left < -1 || r.bottom > vh + 1 || r.top < -1;

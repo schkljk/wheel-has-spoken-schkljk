@@ -38,6 +38,8 @@ import { burst } from '../ui/fx';
 import { beep } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { GearIcon } from '../ui/GearIcon';
+import { GearCompareView } from '../ui/GearCompare';
+import { swapped } from './armory';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {
@@ -54,7 +56,7 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
   return new Promise((resolve) => {
     openSheet(
       <Sheet emoji={o.emoji} title={o.title} sub={o.sub} locked>
-        {o.body && <p class="ch-body">{o.body}</p>}
+        {o.body && <div class="ch-body">{o.body}</div>}
         <div class="ch-opts">
           {o.options.map((x, i) => (
             <button
@@ -247,15 +249,8 @@ export async function gearChoice(g: Gear) {
       sub: `${RARITY[g.r] ? RARITY[g.r].n : ''}. ${g.d}`,
       body: (
         <>
-          You're wearing{' '}
-          {old ? (
-            <>
-              {old.e} <b>{old.n}</b>: {old.d}
-            </>
-          ) : (
-            'nothing in this slot'
-          )}
-          . Whatever you don't wear stays in your armory.
+          <GearCompareView k={g.k} />
+          <small class="hint">Whatever you don't wear stays in your armory.</small>
         </>
       ),
       options: [
@@ -265,8 +260,10 @@ export async function gearChoice(g: Gear) {
       ],
     });
     if (c === 2 && !(await confirm({ title: `Salvage ${g.n}?`, body: `You get ${salv} coins. It is gone for good.`, yes: 'Salvage it' }))) continue;
+    const prev = F.gear![g.slot];
     act((x) => gearChoose(x, g, (['wear', 'store', 'salvage'] as const)[c]!));
-    toast(c === 0 ? `${g.e} ${g.n} equipped` : c === 1 ? `${g.e} ${g.n} added to your armory` : `+${salv} 🪙`);
+    if (c === 0) swapped(`${g.e} ${g.n} equipped`, g.slot, prev);
+    else toast(c === 1 ? `${g.e} ${g.n} added to your armory` : `+${salv} 🪙`);
     return;
   }
 }

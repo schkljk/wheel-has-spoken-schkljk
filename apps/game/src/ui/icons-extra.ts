@@ -156,4 +156,19 @@ export const EXTRA_ICONS: Record<string, string[]> = {
     '..kkk..kkk..',
     '............',
   ],
+  // search: a magnifying glass (collection and armory filters)
+  search: [
+    '...kkkk.....',
+    '..kCCCCk....',
+    '.kCwCCCCk...',
+    '.kCwCCCCk...',
+    '.kCCCCCCk...',
+    '.kCCCCCCk...',
+    '..kCCCCk....',
+    '...kkkknk...',
+    '.......knk..',
+    '........knk.',
+    '.........knk',
+    '..........kk',
+  ],
 };

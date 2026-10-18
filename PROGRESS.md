@@ -45,6 +45,161 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 23. Trophy room
 - [x] 24. Hall of fame exhibitions
 - [x] 25. Endless tower
+- [x] 26. Hard mode for cleared chapters
+- [x] 27. Calendar-themed arenas
+
+That closes "Content and progression". Next up is "UI, clarity, navigation" (28 onwards).
+
+- [x] 28. Gear compare before equipping
+- [x] 29. Scouting report after the wheels
+- [x] 30. Filters and search in the collection and armory
+- [x] 31. First-time tips instead of a tour
+- [x] 32. Notification dots on the tabs
+- [x] 33. Settings: text size and animation intensity
+- [x] 34. Story map previews and the boss's recommended level
+- [x] 35. Three-second undo for gear swaps
+
+That closes "UI, clarity, navigation". Next up is "Art, animation, audio" (36 onwards).
+
+- [x] 36. Real sound design and a music loop per arena
+- [x] 37. Unique scenery for every Act II chapter
+
+### 37. Unique scenery for every Act II chapter
+
+- **What changed (art):** story fights in chapters 11 to 20 now happen on that chapter's own horizon, drawn behind whichever arena the wheel picked:
+  - ☁️ Sky Islands: floating islands with dangling roots and rope bridges.
+  - 🔥 The Underworld: stalactites, hanging chains and a glow from below.
+  - ⚙️ Clockwork Citadel: house-sized gears and a clock tower.
+  - 🌊 The Sunken Kingdom: a drowned domed city, seaweed and bubbles.
+  - 🎪 Carnival of Nightmares: a big top, a ferris wheel and bunting.
+  - ❄️ The Glacier Court: an ice palace and icicles.
+  - 💭 The Dream Realm: two moons, stairs to nowhere and clouds.
+  - 🕳️ The Void: broken pieces of the world drifting, and an eye.
+  - ⚡ The Pantheon: a temple on the horizon and lightning.
+  - 🎡 The First Wheel: the Wheel itself, enormous, behind everything.
+- The arena still decides the fight's rules, sky, floor, near scenery and weather; the chapter adds the far horizon, mostly as dark silhouettes so the arena stays readable. Purely visual: no rules or balance change.
+
+### 36. Real sound design and a music loop per arena
+
+- **Hits sound like what dealt them:** blades swish and ring, blunt weapons thump, ranged shots whoosh then thock, fists slap, and powers and signature moves boom. All synthesized, no audio files.
+- **Hit strength** changes the sound: harder hits are louder and deeper (by damage, and big hits get the full weight). Crits add a bright ting on top.
+- **Elements** add a layer on top of the hit: fire crackles, ice chimes, lightning zaps, water splashes, wind whooshes, shadow hums low, light sparkles, poison bubbles, plants rustle, sonic beats, gravity drops, earth rumbles, mind warbles.
+- **UI taps:** every button press gives a very soft click (with the ripple and the buzz it already had). Wheel ticks were already there.
+- **Music:** a light loop plays in every arena (24 arenas, seasonal ones included), each with its own root note, tempo, key and lead sound: soft bass, a pad, a few notes on top and a quiet hat. Lava is a fast minor sawtooth; the ball pit is a bouncy major square wave; the void is slow and low. A boss's phase two still swaps in its own driving loop.
+- **Separate switches:** Settings now has **Sound effects** and **Music**, each on its own. Both loops fade in and out with the Music switch, even mid-fight.
+- Sound is optional everywhere: if the browser has no audio, nothing breaks.
+
+### 35. Three-second undo for gear swaps
+
+- **What changed (UI):** wearing or taking off a piece in the armory, and wearing new loot from the swap-or-keep choice, shows the usual toast with an **Undo** button for three seconds. Undo puts back what was in the slot before (or empties it again) and says so (*"🧥 Leather vest is back on"*); the armory refreshes if it's open, and the stats popup shows the numbers going back.
+- Buying gear isn't a swap and has its own confirmation, so it has no undo; the piece you replaced stays in your armory anyway.
+- Tested: a new e2e test wears a piece, taps Undo, and checks the old piece is worn again.
+
+### 34. Story map previews and the boss's recommended level
+
+- **What changed (UI):** every step on the story map can be tapped, not just the current one, for a preview of what it holds:
+  - **Fight / Elite / Nemesis:** what a win pays (*"Win: about 26 XP, 7 🪙 and 11 fame"*, the same numbers the fight uses), the extras (an elite's gem and loot spin, the nemesis's revenge bonus) and what a loss costs.
+  - **Boss:** name and title, *"Recommended level 14. You are level 11: 3 short"*, and the gems and loot spin it pays.
+  - **Merchant:** this chapter's merchant (*"🕯️ Graveyard keeper: Sells things the dead left behind"*), what they stock and the gear rarities for this chapter.
+  - **Campfire, Treasure, Encounter:** the choices and what they do.
+- The boss step shows its **recommended level** as a badge on the map (*"Lv 14"*), red when you're below it. Hard runs expect three levels more, and the previews show hard mode's extra coins, gems and treasure.
+- What a story win pays now comes from one function (`storyPay`) that both the fight and the preview use, so they can't drift apart. The numbers are unchanged.
+- Tested: `preview.test.ts` (4 tests) covers every kind of step, the pay matching `storyPay`, the boss's level line and gems, and the hard-mode numbers. The 12-size layout test's map check covers the badge.
+
+### 33. Settings: text size and animation intensity
+
+- Text size (Small to Huge) and Animations (Like my phone / Calm / Full) were already in Settings from Phase 2, and the e2e settings test covers them.
+- **New: Hit effects** (Soft / Normal / Big), shown unless animations are Calm. It scales the fight's screen shake and particle bursts: Soft is a bit under half, Big is 1.6× the shake with more and wider sparks. Calm still turns them off completely, as before.
+- Saved with the other settings; old saves get Normal, and a broken value is put back to Normal.
+- Tested: `tips.test.ts` gains a check for the default and the repair; the e2e settings test now also sets Big and checks it survives a reload.
+
+### 32. Notification dots on the tabs
+
+- **What changed (UI):** a small red dot on a tab when something new is waiting there (screen readers hear "something new"):
+  - **Play:** the daily wheel or today's daily challenge is ready, or a challenger is waiting.
+  - **Fighter:** talent points to spend.
+  - **Goals:** a goal finished since you last looked at the tab. Looking clears it.
+- No dot ever counts a missed day: a new day simply has its own daily wheel and challenge. The dot doesn't show on the tab you're already on.
+- Tested: `dots.test.ts` (3 tests) covers each tab's dot turning on and off, and a new day bringing a new Play dot without any mention of the day before.
+
+### 31. First-time tips instead of a tour
+
+- **What changed (UI):** the five-page tour no longer opens on first launch. Instead, each system explains itself the first time it shows up, in a small card at the top of the screen: what it is, how it works in plain words, and a joke, with **Got it** and **No more tips**. Each tip shows once, ever.
+- 15 tips: the combat wheel and reading the opponent (first fight), sudden death (when it first starts), the story map, the base shop, story merchants, haggling, talents, the armory, the forge, tournaments, the gauntlet, fight club, the endless tower and hard mode. For example, 💀 **Sudden death**: *"The round limit is up and this fight never goes to the judges. Every hit lands harder, more each round, until someone falls. A story win in sudden death pays a gem."* / *"Nobody leaves until somebody leaves horizontally."*
+- Every tip was checked against the rules it describes (haggle odds and the price rise, talent points per level and rank-up, grit, the sudden-death gem).
+- Settings has a **Tips** switch and *Show all tips again*. The full tour is still in More → How to play. Saves keep which tips were seen; old saves start with tips on and none seen.
+- Tests switch tips off by default (`whs:notips`, like `whs:seed`) so other tests aren't interrupted; the tests that skipped the old tour no longer need to.
+- Tested: `tips.test.ts` (2 tests) checks every tip is complete and that old or broken settings get tips on with a clean list. Two new e2e tests: no tour on first launch, and a tip that shows once (armory), the next one (talents), and *No more tips* stopping the rest, with the layout checked at 320×568.
+
+### 30. Filters and search in the collection and armory
+
+- **What changed (UI):** both have a search field (pixel magnifier, clear button) and a **Filters** button that opens rows of chips and shows how many are on (*"Filters (2)"*). Filters stay set while you look around.
+  - **Armory:** search by name, effect, set, rarity or slot (*"knight"*, *"durability"*, *"helmet"*). Filter by rarity, slot and set; only rarities and sets you own are offered. With anything on, the slot grid becomes one list of matching pieces from every slot (*"Matching pieces (4 of 5)"*), each with Wear (and its compare) and Forge. Inside a slot, the filters narrow that slot's list. *Clear filters* goes back to the slots.
+  - **Collection:** search, *Found* or *Still missing*, a tier (Cooked to Goated), and a category (Races, Weapons, Gear…). Categories with nothing matching are hidden, and an empty result says so (*"The collection is big, not psychic."*). Search never matches an undiscovered "???" entry by its name, since that would give it away; it can match its parent (a sub-race's race, say).
+- Search ignores case and accents and needs every word to match somewhere, so *"plate knight"* finds the Knight plate.
+- The chip rows scroll sideways inside themselves when they don't fit; the page itself never scrolls.
+- Tested: `filters.test.ts` (4 tests) covers the forgiving search, gear filters by set, slot, rarity and words, the collection's found/missing/tier filters, and that a hidden entry can't be found by name. Two new e2e tests use the armory (search, slot chip, the count on the Filters button, nothing-matches, clear) and the collection (missing, found, a category, nothing-matches, layout at 320×568 and 667×375).
+
+### 29. Scouting report after the wheels
+
+- **What changed (UI):** the "Meet your fighter" screen opens with a 📋 **Scouting report**: three strengths, the biggest weakness and the best synergy, each as a plain-words label, the number behind it and a joke, then a sign-off that depends on the verdict:
+  - 🛡️ **Tough.** Durability 20, among the very best. *Has been hit by worse. Mostly by furniture.*
+  - 🕯️ **Biggest weakness: Weak power.** Power mastery 1, among the very lowest. *The power is more of a party trick.*
+  - ⛈️ **Best synergy: Storm caller.** Lightning power and a shocking weapon: chains three times as often. *Two things that should not mix, mixing beautifully.*
+  - *"This one could go places. Mostly forward, fast."*
+- "Strong" and "weak" are measured against every fighter the wheels can make (a fixed sample of 600), in words: among the very best, well above average, above average, about average. Crit and dodge chances count too. Power mastery only counts when there's a power to use.
+- The weakness is a clearly low stat when there is one, otherwise the weakness the wheel gave them (with its own flavor line). Hidden synergies stay hidden: the report never names one. Jokes are picked by the fighter's name, so the report is the same every time you look.
+- All the text is one table (`build-summary.ts`): nine kinds of strength and weakness with three jokes each, plus sign-offs for each verdict.
+- Tested: `summary.test.ts` (5 tests) checks every report has three different strengths and a weakness that isn't one of them, everything filled in, the same report every time, a towering stat leading and a tiny one as the weakness, the trait fallback, and no hidden synergy named. The 12-size layout test now checks the report's five lines on the card screen.
+
+### 28. Gear compare before equipping
+
+- **What changed (UI):** before a piece goes on, a compare view shows what's in the slot now next to the new piece (pixel icons and names), then every real number that would move: *Defense 38 → **44** +6* on green, *Speed 61 → **57** −4* on red. Set bonuses and synergies it would start (*"✨ Starts ⚜️ Knight set (4)"*) or end (*"✖ Ends ⚜️ Knight set (2)"*) are listed, then both pieces' effect lines. If no number moves it says so (*"The difference is in what it does."*).
+- It shows everywhere gear goes on: **Wear** in the armory (now a quick confirm with Wear it / Back), the **swap-or-keep** choice for new loot, and buying gear in the **base shop** (daily deal and premium) and from **story merchants** (those put it on right away, and now say so).
+- The numbers come from the same stat code as the fighter page (`gearCompare` in core, on a copy of the fighter), so the compare and the "Stats changed" popup afterwards always agree. Forge upgrades on either piece are included.
+- Tested: `compare.test.ts` (3 tests) checks the numbers match wearing it for real and the fighter isn't touched, that set bonuses gained and lost are named, and that the worn piece compares as no change. A new e2e test opens the armory with three knight pieces on, taps Wear on the knight plate, checks the green Defense row and "Knight set (4)", the layout at 320×568 and 667×375, backs out, then wears it.
+
+### 27. Calendar-themed arenas
+
+- **What changed (content):** nine seasonal arenas join the arena wheel in their season, by the phone's date, and come back every year:
+
+| Arena | When | Effect |
+|---|---|---|
+| ❄️ Snow globe | 1 December to 6 January | Ice +30%, more freezes |
+| 🎆 New Year's rooftop | 30 December to 2 January | Fire and light +20%, stray fireworks (25% a round, 6 damage to someone) |
+| 💘 Lovers' ring | 1 to 20 February | Mind +30%, crits +8% |
+| 🍀 Clover field | 10 to 24 March | Plants +30%, crits +5%, dodge +4% |
+| 🐣 Egg hunt meadow | 1 to 21 April | Plants +20%, everyone +1 speed |
+| 🔥 Midsummer bonfire | 18 June to 8 July | Fire +30%, light +20%, sunlight-weak fighters burn |
+| 🏊 Heatwave pool party | 20 July to 25 August | Water +30%, everyone −1 speed |
+| 🎃 Pumpkin patch | 1 October to 2 November | Shadow +30%, fire +20%, unholy fighters +1 strength and speed |
+| 🍂 Leaf pile | November | Wind +30%, everyone dodges a bit more |
+
+- Each has its own drawn backdrop and weather (snow, confetti, petals, autumn leaves, embers), a mechanics line and a flavor line (*"The pumpkins are carved with faces. The faces are judging your build."*). In season, the arena wheel's odds list says *"🎃 Pumpkin patch is in season"*, and the Play tab says so once a season in a toast.
+- **No FOMO:** nothing is tied to them. No rewards, no goals, no achievements, and they don't count toward the collection total or its milestones. The collection has a separate *Seasonal arenas* section that always shows all nine with their dates (*"Not counted. They come back every year"*), marks the one in season, and opens each one's info card.
+- **Balance check** (`npx tsx tools/sim/seasonal.ts`, 1,500 random pairs fight in every arena with the same dice): how often the winner differs from the Colosseum. Regular arenas: 4.3% to 21.3%. Seasonal: 4.3% to 7.3%, and 21.7% for the New Year's fireworks (like the Thunderdome's lightning, 21.3%). Average rounds stay at 6.1 to 6.5, as in the regular arenas. They sit inside the existing range.
+- Tests pin the date (`whs:today`, like `whs:seed`) to a day with no season, so seeded fights don't change with the calendar.
+- Tested: `seasonal.test.ts` (6 tests) covers the calendar windows (including across New Year), unique keys and names, seasons of at most six weeks, the wheel and its odds note in and out of season, fights in every seasonal arena, the collection count not moving, the info card, and one heads-up per season (again next year). A new e2e test sets the date to 10 December and checks the toast, the collection section (9 tiles, Snow globe in season) and an info card at 320×568.
+
+### 26. Hard mode for cleared chapters
+
+- **What changed (mode):** Play → 🔥 **Hard mode** (once a chapter is cleared). Pick any cleared chapter and play it again, meaner:
+  - Fights come from higher up the ranked pool (+15%), three levels stronger, with an extra piece of gear and sharper AI (+0.1).
+  - The boss gets +2 to every stat, is tuned to give you 12 points less of a chance, has 3 more levels of room to tune up, and never "eases off".
+  - **One twist for the whole chapter**, drawn when you start from the daily challenge's mutators (not the ones that force an arena or set your HP, since story HP carries over). It shows on the chapter intro, the map header and the Play card.
+- **Better loot:** half again the coins, boss loot from elites and nemeses, and the boss pays 3 more gems, a purse of 10 + 2 × chapter coins and an extra treasure spin.
+- **Your story waits:** the main story is set aside untouched and comes back when the hard run ends. Beat the boss and the chapter gets its 🔥 for good (*"Beaten on hard: 3 of 12"*). Run out of grit and the run just ends, with no coins lost. You can also walk away from the Play card any time (with a confirm). Cups unlock from the main story's chapter, not the hard run's.
+- The story card turns orange while a hard run is on, with the twist and *Continue on hard* / *Walk away*.
+- **Simulated** (`npx tsx tools/sim/hard.ts`, auto-battle bot): each fighter plays the story up to a chapter, then tries that chapter on hard and the one two chapters back, from the same save:
+
+| Build | Cleared to | Beat hard, same chapter | Beat hard, 2 back | Fights per run | Coins per run |
+|---|---|---|---|---|---|
+| Weak | ch 4 / 8 / 12 | 33% / 26% / 40% | 57% / 74% / 73% | 6 to 9 | 62 to 175 |
+| Average | ch 4 / 8 / 12 | 33% / 33% / 57% | 71% / 63% / 65% | 7 to 9 | 63 to 175 |
+| Strong | ch 4 / 8 / 12 | 58% / 42% / 79% | 96% / 46% / 75% | 8 to 9 | 101 to 206 |
+
+  Right after clearing a chapter, its hard version is a real fight (a third to a half of tries for average builds). A couple of chapters later it's more likely than not. Nothing in the normal story changed.
+- Tested: `hard.test.ts` (6 tests) covers which chapters open, the main story waiting untouched (and surviving a save), cups following the main story, the twist pool, the twist in every fight with HP still carried, stronger fights and bosses, more coins, the boss win (loot, treasure, celebration, home, marked for good), running out of grit with no coin loss, and the legacy save shape. New e2e tests: a full hard flow on a 320 px phone (picker, confirm, twist intro, hard map, a fight, the reward, the hard Play card, walking away), and the picker, confirm, intro, map and Play card at all 12 screen sizes.
 
 ### 25. Endless tower
 

@@ -3,7 +3,6 @@ import type { HistoryEntry } from '@whs/core';
 import { App } from './App';
 import { save } from './state/game';
 import { ensurePool } from './state/pool';
-import { startTutorial } from './sheets/Tutorial';
 import { installPressFeedback } from './ui/kit';
 import './styles/tokens.css';
 import './styles/app.css';
@@ -14,8 +13,8 @@ installPressFeedback();
 render(<App />, document.getElementById('app')!);
 
 const s = save.value;
-// first launch: the tour, unless there are fighters already (as in the legacy game)
-if (!s.settings.tutorialSeen && !s.roster.slots.some(Boolean)) startTutorial();
+// no tour up front any more: each system explains itself the first time it shows up (upgrade 31). The tour
+// is still in More, How to play.
 
 // today's ranked pool builds in a worker while you look around
 const p = s.profile;

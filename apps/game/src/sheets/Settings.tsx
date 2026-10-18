@@ -1,4 +1,4 @@
-import type { MotionPref, TextSize } from '@whs/core';
+import type { FxLevel, MotionPref, TextSize } from '@whs/core';
 import { commit, settings } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Segmented, Sheet, Toggle } from '../ui/kit';
@@ -13,10 +13,17 @@ export function SettingsSheet() {
   const set = (change: (s: typeof st) => void) => commit((s) => change(s.settings));
   return (
     <Sheet icon="gear" title="Settings" sub="Saved on this device">
-      <Toggle label="Sound" sub="Wheel ticks, hits and fanfares" on={st.sound} onToggle={() => set((s) => (s.sound = !s.sound))} />
+      <Toggle label="Sound effects" sub="Wheel ticks, hits, taps and fanfares" on={st.sound} onToggle={() => set((s) => (s.sound = !s.sound))} />
+      <Toggle label="Music" sub="A light loop in every arena, and the bosses' own" on={st.music !== false} onToggle={() => set((s) => (s.music = s.music === false))} />
       <Toggle label="Vibration" sub="Buzzes on presses, big hits and spins, on phones that support it" on={st.haptics} onToggle={() => set((s) => (s.haptics = !s.haptics))} />
       <Toggle label="Fast mode" sub="Quicker spins and fight animations" on={st.fast} onToggle={() => set((s) => (s.fast = !s.fast))} />
       <Toggle label="Auto-battle by default" sub="Fights play themselves unless you switch it off" on={st.autoBattle} onToggle={() => set((s) => (s.autoBattle = !s.autoBattle))} />
+      <Toggle label="Tips" sub="Each thing explains itself the first time it shows up" on={st.tips !== false} onToggle={() => set((s) => (s.tips = s.tips === false))} />
+      {(st.tipsSeen || []).length > 0 && st.tips !== false && (
+        <button class="btn ghost sm" onClick={() => set((s) => (s.tipsSeen = []))}>
+          Show all tips again ({st.tipsSeen.length} seen)
+        </button>
+      )}
       <div style={{ paddingTop: '0.7rem' }}>
         <Segmented<TextSize>
           label="Text size"
@@ -39,6 +46,18 @@ export function SettingsSheet() {
           ]}
           onChange={(v) => set((s) => (s.motion = v))}
         />
+        {st.motion !== 'reduced' && (
+          <Segmented<FxLevel>
+            label="Hit effects"
+            value={st.fx || 'normal'}
+            options={[
+              ['soft', 'Soft'],
+              ['normal', 'Normal'],
+              ['big', 'Big'],
+            ]}
+            onChange={(v) => set((s) => (s.fx = v))}
+          />
+        )}
       </div>
       <div class="stack" style={{ marginTop: '0.4rem' }}>
         <button class="btn ghost block" onClick={startTutorial}>

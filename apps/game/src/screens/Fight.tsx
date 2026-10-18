@@ -41,7 +41,7 @@ import { lookOf } from '../art/sprite';
 import { FightScene, fightDims, type FightDims } from '../pixi/fight-scene';
 import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
-import { G, act, buzz, reducedMotion, settings, commit, SPF } from '../state/game';
+import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
@@ -50,8 +50,9 @@ import { FighterCard } from '../ui/FighterCard';
 import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
-import { ac, landSound, phaseMusic, tick } from '../ui/sound';
+import { ac, arenaMusic, landSound, phaseMusic, tick } from '../ui/sound';
 import { CHIP_ICON } from '../ui/status-icons';
+import { tip } from '../state/tips';
 
 const PILLN: Record<string, string> = { crit: 'crit', weak: 'weak spot', guard: 'guarded', broke: 'guard broken', interrupted: 'interrupted', caught: 'caught mid-cast' };
 /** A narration line with the fighters' names in it. */
@@ -279,9 +280,14 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
 
   const { host } = usePixi((app) => {
     const d = fightDims(app.screen.width, app.screen.height);
-    const sc = new FightScene(app, [lookOf(F), lookOf(O)], spec.arena, { mythic: !!F.career && rankOf(F) >= 6 });
+    const sc = new FightScene(app, [lookOf(F), lookOf(O)], spec.arena, {
+      mythic: !!F.career && rankOf(F) >= 6,
+      // story fights in Act II happen on that chapter's own horizon (upgrade 37)
+      chapter: spec.kind === 'story' && G.F?.story ? (G.F.story as { ch: number }).ch : undefined,
+    });
     sc.sp = SPF();
     sc.reduced = reducedMotion();
+    sc.fxK = fxScale();
     sc.wheel.rng = Math.random;
     sc.wheel.events = {
       tick: () => tick(),
@@ -344,6 +350,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       const e = evs[i]!;
       S.log.push(e);
       setSnap(e);
+      if (e.a?.t === 'banner' && /sudden/i.test(String(e.a.text))) tip('sudden');
       // a boss's phase two brings its own music
       if (e.a?.t === 'phase' && e.a.on === 1) {
         const kit = phaseKitOf(O);
@@ -358,6 +365,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
 
   async function start(sc: FightScene) {
     ac();
+    // a light loop for the arena (upgrade 36); a boss's phase two swaps in its own
+    S.music();
+    S.music = arenaMusic(sc.arena?.k);
     S.procs = procFeed();
     await sc.intro();
     const bt = act((g) => startBattle(g, spec));
@@ -368,6 +378,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       setTimeout(() => sceneRef.current?.showProc({ kind: 'synergy', k: s.k, n: s.n, e: s.e, sub: 'Hidden synergy found', side: 0, anti: false }), i * 1700),
     );
     if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = bt;
+    // the first fight explains the wheel and the reads (upgrade 31)
+    tip('fight');
+    tip('reads');
     S.playing = true;
     setSnap(bt.snap());
     sc.applySnap(bt.snap());

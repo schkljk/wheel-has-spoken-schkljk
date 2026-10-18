@@ -1,5 +1,6 @@
 import { ARCHS, ASUB, BACKS, CHAOS, CURED, ENCHANTS, POWER_ALL, QUIRKS, RACES, RSUB, SIDEKICKS, SIZES, STANCES, TITLES, ULTS, WEAKS, WEAPONS } from '../data/wheels';
 import { ARENAS } from '../data/arenas';
+import { SEASONAL_ARENAS } from '../data/content/seasonal';
 import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc';
 import { RARITY } from '../data/gear';
 import { SYN_SETS } from '../data/content/gear-sets';
@@ -28,6 +29,7 @@ export interface Info {
 const tagList = (t?: readonly string[]) => (t || []).map((x) => TAGN[x] || x);
 const pctS = (v: number) => Math.round(Math.abs(v) * 100) + '%';
 const cap = (s: string) => s.replace(/^./, (c) => c.toUpperCase());
+const lc1 = (s: string) => s.replace(/^./, (c) => c.toLowerCase());
 
 export function modsText(m?: StatMods | null): string {
   return Object.entries(m || {})
@@ -132,7 +134,7 @@ function findItem(cat: string, name: string): AnyItem | null {
       list = [...SYN, ...SYN_HIDDEN, ...SYN_SETS];
       break;
     case 'arena':
-      list = ARENAS;
+      list = [...ARENAS, ...SEASONAL_ARENAS];
       break;
     case 'ach':
       list = ACHIEVEMENTS;
@@ -283,6 +285,7 @@ export function infoFor(key: string): Info | null {
     if (it.stat) lines.push(`Both fighters: ${modsText(it.stat as StatMods)}`);
     const hz = it.hazard as { one?: boolean; chance: number; dmg: number } | undefined;
     if (hz) lines.push(hz.one ? `${Math.round(hz.chance * 100)}% chance each round to hit someone for ${hz.dmg}` : `Both fighters take ${hz.dmg} damage every round`);
+    if (it.when) lines.push(`Seasonal: on the arena wheel ${lc1(it.when as string)}. Comes back every year`);
   }
   if (a === 'inj') {
     const dur = it.dur as number;

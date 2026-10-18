@@ -17,8 +17,16 @@ import {
   upgradeLevel,
   upgradeNext,
   wear,
+  filterGear,
+  gearFilterOn,
+  setsOf,
   type Gear,
+  type GearFilter,
+  type GearSlot,
+  type RarityKey,
 } from '@whs/core';
+import { signal } from '@preact/signals';
+import { Chips, SearchBox } from '../ui/Filters';
 import { G, act, toast } from '../state/game';
 import { confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
@@ -26,18 +34,51 @@ import { Sheet } from '../ui/kit';
 import { beep } from '../ui/sound';
 import { burst } from '../ui/fx';
 import { GearIcon, SlotIcon } from '../ui/GearIcon';
+import { GearCompareView } from '../ui/GearCompare';
+import { tip } from '../state/tips';
 
 const ORDER = ['premium', 'mythic', 'legendary', 'epic', 'rare', 'common', 'junk'];
 const pl = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+// filters stay put while the armory is open and reopened (upgrade 30)
+const armF = signal<GearFilter>({});
+const armOpen = signal(false);
 
 /** The armory: every piece the fighter has found, by slot. Swap any time; nothing is lost by swapping. */
 export function openArmory(slot?: string) {
   act((g) => syncArmory(g, g.F));
+  openSheet(<ArmorySheet key={Math.random()} slot={slot} />);
+  tip('armory');
+}
+
+function ArmorySheet({ slot }: { slot?: string }) {
   const F = G.F!;
   const own = (F.armory || []).map((k) => GEARK[k]).filter(Boolean) as Gear[];
+  const f = armF.value;
+  const on = gearFilterOn(f);
+  const sets = setsOf(own);
+  const nOn = [f.rarity, f.slot, f.set].filter(Boolean).length;
+  const filters = (
+    <div class="arm-filters">
+      <div class="row">
+        <SearchBox label="Search your gear" placeholder="Search your gear" value={f.text || ''} onInput={(text) => (armF.value = { ...f, text })} />
+        <button class={`btn ghost sm fbtn${nOn ? ' on' : ''}`} aria-expanded={armOpen.value} onClick={() => (armOpen.value = !armOpen.value)}>
+          Filters{nOn ? ` (${nOn})` : ''}
+        </button>
+      </div>
+      {armOpen.value && (
+        <>
+          <Chips label="Rarity" value={f.rarity || null} options={ORDER.filter((r) => own.some((g) => g.r === r)).map((r) => [r, RARITY[r as RarityKey]!.n] as [string, string])} onChange={(r) => (armF.value = { ...f, rarity: (r || '') as RarityKey | '' })} />
+          {!slot && <Chips label="Slot" value={f.slot || null} options={GEAR_SLOTS.map((s) => [s, SLOT_N[s]] as [string, string])} onChange={(v) => (armF.value = { ...f, slot: (v || '') as GearSlot | '' })} />}
+          {sets.length > 0 && <Chips label="Set" value={f.set || null} options={sets.map((x) => [x, `${cap(x)} set`] as [string, string])} onChange={(v) => (armF.value = { ...f, set: v || '' })} />}
+        </>
+      )}
+    </div>
+  );
   let body;
-  if (!slot) {
-    const sets = synOf(F).filter((x) => x.k.startsWith('set_'));
+  if (!slot && !on) {
+    const bonus = synOf(F).filter((x) => x.k.startsWith('set_'));
     body = (
       <>
         <div class="arm-grid">
@@ -56,10 +97,10 @@ export function openArmory(slot?: string) {
             );
           })}
         </div>
-        {sets.length ? (
+        {bonus.length ? (
           <>
             <span class="sec-label">Set bonuses</span>
-            {sets.map((x) => (
+            {bonus.map((x) => (
               <div class="arm-set" key={x.k}>
                 {x.e} <b>{x.n}</b> <small>{x.d}</small>
               </div>
@@ -71,82 +112,130 @@ export function openArmory(slot?: string) {
       </>
     );
   } else {
-    const list = own.filter((x) => x.slot === slot).sort((a, b) => ORDER.indexOf(a.r) - ORDER.indexOf(b.r));
+    const base = slot ? own.filter((x) => x.slot === slot) : own;
+    const list = filterGear(base, slot ? { ...f, slot: '' } : f).sort((a, b) => ORDER.indexOf(a.r) - ORDER.indexOf(b.r) || a.slot.localeCompare(b.slot));
     body = (
       <>
-        <button class="btn ghost sm" onClick={() => openArmory()}>
-          ← All slots
-        </button>
+        {slot ? (
+          <button class="btn ghost sm" onClick={() => openArmory()}>
+            ← All slots
+          </button>
+        ) : (
+          <button
+            class="btn ghost sm"
+            onClick={() => {
+              armF.value = {};
+              armOpen.value = false;
+            }}
+          >
+            Clear filters
+          </button>
+        )}
         <span class="sec-label">
-          {SLOT_N[slot as keyof typeof SLOT_N]} ({list.length})
+          {slot ? SLOT_N[slot as keyof typeof SLOT_N] : 'Matching pieces'} ({list.length}
+          {on && list.length !== base.length ? ` of ${base.length}` : ''})
         </span>
         {list.length ? (
-          list.map((g) => {
-            const on = F.gear![g.slot] === g.k;
-            const L = upgradeLevel(F, g.k);
-            const cp = copiesOf(F, g.k);
-            return (
-              <div class={`shopitem r-${g.r}`} key={g.k}>
-                <span class="se"><GearIcon g={g} /></span>
-                <div class="st2">
-                  <b>
-                    <Inf k={`it|gear|${g.n}`}>{g.n}</Inf>
-                    {L ? <span class="up-lv"> +{L}</span> : null}
-                    {on ? ' ✓' : ''}
-                  </b>
-                  <small>
-                    <span class={`rar r-${g.r}`}>{RARITY[g.r]?.n ?? ''}</span>
-                    {g.set ? <span class="rar">{g.set} set</span> : null} {g.d}
-                    {L ? <span class="up-fx"> {upgradeNext(G, g.k).now}</span> : null}
-                    {cp ? <span class="up-cp"> · {cp === 1 ? '1 copy' : `${cp} copies`}</span> : null}
-                  </small>
-                </div>
-                <div class="buy2">
-                  {on ? (
-                    <button
-                      class="buy ghostbuy"
-                      onClick={() => {
-                        act((x) => takeOff(x, g.k));
-                        openArmory(g.slot);
-                      }}
-                    >
-                      Take off
-                    </button>
-                  ) : (
-                    <button
-                      class="buy"
-                      onClick={() => {
-                        act((x) => wear(x, g.k));
-                        beep(880, 0.1, 'triangle', 0.05);
-                        toast(`${g.e} ${g.n} equipped`);
-                        openArmory(g.slot);
-                      }}
-                    >
-                      Wear
-                    </button>
-                  )}
-                  <button class="buy ghostbuy" onClick={() => openForge(g.k)}>
-                    {L >= UPGRADE_MAX ? 'Forge ★' : 'Forge'}
-                  </button>
-                </div>
-              </div>
-            );
-          })
+          list.map((g) => <Piece key={g.k} g={g} slot={slot} />)
+        ) : on ? (
+          <p class="hint">Nothing matches. Your gear is here somewhere, just not under that name.</p>
         ) : (
           <p class="hint">Nothing for this slot yet. Loot spins, merchants and the base shop all drop gear.</p>
         )}
       </>
     );
   }
-  openSheet(
+  return (
     <Sheet icon="shield" title="Armory" sub={`${own.length} of ${ARMORY_CAP} spaces used. Swap any time`}>
-      <div class="stack">{body}</div>
-    </Sheet>,
+      <div class="stack">
+        {filters}
+        {body}
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * A gear swap can be undone for three seconds (upgrade 35): Undo puts back what was in the slot before (or
+ * empties it again). `view` is the armory view to refresh, if the armory is open.
+ */
+export function swapped(text: string, slotK: string, prev: string | undefined, view?: string) {
+  toast(text, 3000, {
+    label: 'Undo',
+    run: () => {
+      const now = G.F!.gear![slotK as GearSlot];
+      act((x) => (prev ? wear(x, prev) : now ? takeOff(x, now) : undefined));
+      toast(prev ? `${GEARK[prev]!.e} ${GEARK[prev]!.n} is back on` : 'Slot empty again');
+      if (sheetIsArmory()) openArmory(view);
+    },
+  });
+}
+const sheetIsArmory = () => !!document.querySelector('.sheet .arm-filters');
+
+/** One owned piece: wear or take off (with a compare first), and the forge. */
+function Piece({ g, slot }: { g: Gear; slot?: string }) {
+  const F = G.F!;
+  const on = F.gear![g.slot] === g.k;
+  const L = upgradeLevel(F, g.k);
+  const cp = copiesOf(F, g.k);
+  return (
+    <div class={`shopitem r-${g.r}`}>
+      <span class="se">
+        <GearIcon g={g} />
+      </span>
+      <div class="st2">
+        <b>
+          <Inf k={`it|gear|${g.n}`}>{g.n}</Inf>
+          {L ? <span class="up-lv"> +{L}</span> : null}
+          {on ? ' ✓' : ''}
+        </b>
+        <small>
+          <span class={`rar r-${g.r}`}>{RARITY[g.r]?.n ?? ''}</span>
+          {g.set ? <span class="rar">{g.set} set</span> : null} {!slot ? <span class="rar">{SLOT_N[g.slot]}</span> : null} {g.d}
+          {L ? <span class="up-fx"> {upgradeNext(G, g.k).now}</span> : null}
+          {cp ? <span class="up-cp"> · {cp === 1 ? '1 copy' : `${cp} copies`}</span> : null}
+        </small>
+      </div>
+      <div class="buy2">
+        {on ? (
+          <button
+            class="buy ghostbuy"
+            onClick={() => {
+              act((x) => takeOff(x, g.k));
+              swapped(`${g.e} ${g.n} taken off`, g.slot, g.k, slot);
+              openArmory(slot);
+            }}
+          >
+            Take off
+          </button>
+        ) : (
+          <button
+            class="buy"
+            onClick={async () => {
+              // what it changes first (upgrade 28)
+              const ok = await confirm({ title: `Wear ${g.n}?`, body: 'Swap back any time. Nothing is lost.', extra: <GearCompareView k={g.k} />, yes: 'Wear it', no: 'Back' });
+              if (!ok) return;
+              const prev = F.gear![g.slot];
+              act((x) => wear(x, g.k));
+              beep(880, 0.1, 'triangle', 0.05);
+              swapped(`${g.e} ${g.n} equipped`, g.slot, prev, slot);
+              openArmory(slot);
+            }}
+          >
+            Wear
+          </button>
+        )}
+        <button class="buy ghostbuy" onClick={() => openForge(g.k)}>
+          {L >= UPGRADE_MAX ? 'Forge ★' : 'Forge'}
+        </button>
+      </div>
+    </div>
   );
 }
 
 /** The forge: one piece's upgrade levels, the next step and its price, its copies, and salvaging. */
 export function openForge(k: string) {
+  tip('forge');
   const F = G.F!;
   const g = GEARK[k]!;
   const L = upgradeLevel(F, k);

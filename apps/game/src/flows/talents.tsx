@@ -5,6 +5,7 @@ import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burstFrom } from '../ui/fx';
 import { landSound } from '../ui/sound';
+import { tip } from '../state/tips';
 
 const pl = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
 
@@ -86,4 +87,5 @@ function Talents({ br: br0 }: { br: string }) {
 }
 export function openTalents(br = 'off') {
   openSheet(<Talents key={Math.random()} br={br} />);
+  tip('talents');
 }

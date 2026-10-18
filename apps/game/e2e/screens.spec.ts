@@ -41,6 +41,8 @@ for (const [width, height] of VIEWS) {
       await sheetClose(page);
       await page.getByRole('button', { name: 'Spin the rest for me' }).click();
       await page.getByRole('button', { name: 'Start their career' }).waitFor({ timeout: 90_000 });
+      // the scouting report: three strengths, the biggest weakness, the best synergy
+      await expect(page.locator('.scout .sr-l')).toHaveCount(5);
       await check(page, 'fighter card');
       expect(errors).toEqual([]);
     });
@@ -85,6 +87,25 @@ for (const [width, height] of VIEWS) {
       await sheetClose(page);
       await page.getByRole('button', { name: /Collection/ }).click();
       await check(page, 'collection');
+      expect(errors).toEqual([]);
+    });
+
+    test('hard mode fits', async ({ page }) => {
+      const errors = watchErrors(page);
+      await open(page, save());
+      await play(page);
+      await page.getByRole('button', { name: /^Hard mode/ }).click();
+      await check(page, 'hard mode picker');
+      await page.getByRole('button', { name: /Chapter 2/ }).click();
+      await check(page, 'hard mode confirm');
+      await page.getByRole('alertdialog').getByRole('button', { name: /Bring it/ }).click();
+      await page.getByText(/Twist for the whole chapter/).waitFor();
+      await check(page, 'hard chapter intro');
+      await page.getByRole('button', { name: 'Begin' }).click();
+      await check(page, 'hard map');
+      await page.getByRole('button', { name: 'Fighter page' }).click();
+      await page.getByText('🔥 Hard mode, chapter 2').waitFor();
+      await check(page, 'hard story card');
       expect(errors).toEqual([]);
     });
 
