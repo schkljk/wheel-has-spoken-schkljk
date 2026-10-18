@@ -1,0 +1,12 @@
+/*
+ * The display face, Jersey 10: chunky pixel letters with digits that stay readable at a glance (a 3 is a 3).
+ * It runs small for its size, so it gets its own family name scaled to sit next to the body face.
+ */
+@font-face {
+  font-family: 'WHS Display';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('@fontsource/jersey-10/files/jersey-10-latin-400-normal.woff2') format('woff2');
+  size-adjust: 128%;
+}

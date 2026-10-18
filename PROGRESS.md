@@ -25,6 +25,27 @@
 - **Cause:** Pixi only resizes its canvas when the window resizes. On the spin screen the wheel's box shrinks when an odds row or a long result appears, but the canvas kept its old size and covered the text under it.
 - **Fix:** every Pixi canvas now follows its own box (a ResizeObserver), and the wheel's box clips, so the wheel can never cover the result even for a frame. Checked at 360×800, 320×568 and 412×915 across several spins.
 
+### New look: the arena at night
+
+- **Asked for:** a UI that fits the game's theme and is as clear as other games of this type.
+- **One theme:** deep indigo panels with a dark outline and a bevel, lit from the top like the pixel art. The light theme is gone.
+- **Buttons:** chunky and three-dimensional, and they sink into their drop shadow when pressed.
+  - **Gold** is the main action on any screen.
+  - **Dark** is secondary.
+  - **Red** is for big choices.
+  - **Pink** is the daily wheel.
+- **Fonts:** bundled with the game, so they also work offline and inside the Android app.
+  - **Jersey 10** for titles, buttons, numbers and tabs. It is a pixel face whose digits stay readable: a 3 never looks like an 8.
+  - **Atkinson Hyperlegible** for body text. It was designed for legibility.
+  - The Google Fonts link is gone.
+- **Header:** your fighter's own pixel face, with a gold level badge, instead of a generic icon. Tap it to see your fighters. Coins and gems sit in inset wells. The roster on the title screen shows each fighter's face too.
+- **Tab bar:** the selected tab is a raised panel. The others are dimmed.
+- **Play tab, laid out like a mobile game's home screen:**
+  - **Story first:** a hero panel tinted with the chapter's colour, a segmented progress bar, an HP pill and the grit hearts. One big gold button continues the story.
+  - **Modes as tiles,** two per row on phones and more on wider screens. Each tile shows its icon, its status in gold ("Best: floor 3", "1 of 2 beaten on hard"), and one short joke underneath. Locked tiles are greyed out with a padlock and say what unlocks them.
+  - **Cups and the gauntlet** use the same tiles.
+- **Small screens:** at 320 px wide the footer and the story card's buttons tighten instead of cutting words off. Checked on all 12 screen sizes, with nothing clipped.
+
 ### The Android app (APK)
 
 - **What it is:** the same game, packaged with Capacitor (`apps/game/android`). It works offline.

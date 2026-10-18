@@ -57,6 +57,8 @@ test('the daily challenge, once a day', async ({ page }) => {
 });
 
 test('a boss rush until it ends', async ({ page }) => {
+  // up to ten boss fights back to back: a strong run takes over five minutes on a slow CI machine
+  test.setTimeout(600_000);
   const errors = watchErrors(page);
   await start(page, { seed: 25, lvl: 10 });
   await page.getByRole('button', { name: /Boss rush/ }).click();

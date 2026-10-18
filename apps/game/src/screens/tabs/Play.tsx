@@ -12,7 +12,16 @@ import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
 import { go } from '../../state/game';
 
-/** Every way to play, in one place: the story first, then the modes, cups and the gauntlet. */
+interface Mode {
+  n: string;
+  icon: string;
+  st: string;
+  fl: string;
+  locked?: boolean;
+  go: () => void;
+}
+
+/** Every way to play, in one place: the story first, then the modes as tiles, cups and the gauntlet. */
 export function PlayTab() {
   const F = activeFighter.value!;
   useEffect(() => {
@@ -34,16 +43,56 @@ export function PlayTab() {
   const HM = S && S.hard ? hardMutator(G) : null;
   const HC = hardChapters(G);
   let n = 0;
+  const rushBest = G.save.profile.rushBest || 0;
+  const tb = towerBest(G).floor;
+  const hardDone = HC.filter((c) => c.done).length;
+  const cta = S && S.hard ? (S.row === 0 && !S.seenIntro ? 'Start on hard' : 'Continue on hard') : !S || (S.row === 0 && !S.seenIntro) ? 'Start the chapter' : 'Continue the story';
+  const modes: Mode[] = [
+    { n: 'Daily challenge', icon: 'calendar', st: dailyText(G), fl: 'One twist, zero refunds', go: () => void dailyFlow() },
+    {
+      n: 'Boss rush',
+      icon: 'skull',
+      locked: !open,
+      st: open ? `${act2 ? 'Act II' : 'Act I'} bosses. Best ${rushBest}/10` : 'Chapter 2 or level 10',
+      fl: open ? 'Back to back, no snacks' : 'Bosses do not do walk-ins',
+      go: () => void rushFlow(),
+    },
+    {
+      n: 'Endless tower',
+      icon: 'tower',
+      locked: !towerOpen(G),
+      st: towerOpen(G) ? `Best: floor ${F.towerBest || 0}${tb ? `. Record ${tb}` : ''}` : `Level ${TOWER_FROM} or chapter 1`,
+      fl: towerOpen(G) ? 'A new twist every five floors' : 'The stairs are judging you',
+      go: () => void towerFlow(),
+    },
+    {
+      n: 'Hard mode',
+      icon: 'flame',
+      locked: !HC.length,
+      st: S && S.hard ? `On it: chapter ${ch}` : HC.length ? `${hardDone} of ${HC.length} beaten on hard` : 'Clear a chapter first',
+      fl: 'Same chapter, worse day, better loot',
+      go: () => hardFlow(),
+    },
+    { n: 'Fight club', icon: 'dice', st: 'Bet on strangers', fl: 'Lose money with friends', go: () => openClub() },
+    { n: 'Exhibition', icon: 'star', st: 'Legends fight for pride', fl: 'With commentary. Nobody gets paid', go: () => void import('../../flows/exhibition').then((m) => m.openExhibition()) },
+    {
+      n: 'Base shop',
+      icon: 'cart',
+      st: baseOpen(G) ? 'Supplies and a daily deal' : 'Closed until the chapter ends',
+      fl: 'Gear priced like rent',
+      go: () => openBaseShop(),
+    },
+  ];
   return (
     <div class="stack tab-stack">
       <div class={`card story-card${S && S.hard ? ' hard' : ''}`} data-rise="" style={{ ...rise(n++).style, '--ch': C.col } as Record<string, string>}>
-        <div class="row">
+        <div class="sc-head">
           <span class="story-e" aria-hidden="true">
             {C.e}
           </span>
           <span class="grow">
-            <small>
-              {S && S.hard ? `🔥 Hard mode, chapter ${ch}` : `Story, chapter ${ch} of ${CHAPTERS.length}`}
+            <small class="sc-kick">
+              {S && S.hard ? `Hard mode, chapter ${ch}` : `Story, chapter ${ch} of ${CHAPTERS.length}`}
               {S && S.ng ? `, encore ${S.ng}` : ''}
             </small>
             <h3>{C.n}</h3>
@@ -56,17 +105,24 @@ export function PlayTab() {
             ))}
           </div>
         )}
-        <small>
-          HP {hpTxt(G, S ? S.hp : 100)}. {(F.lvl || 1) < C.lvl && <span class="reclvl">Recommended level {C.lvl}, you are {F.lvl || 1}. </span>}
+        <div class="sc-stats">
+          <span class="sc-hp">
+            <Icon name="heart" /> HP {hpTxt(G, S ? S.hp : 100)}
+          </span>
           <Hearts n={S ? S.grit : maxGrit(G)} max={maxGrit(G)} />
-        </small>
+        </div>
+        {(F.lvl || 1) < C.lvl && (
+          <small class="reclvl">
+            Recommended level {C.lvl}, you are {F.lvl || 1}.
+          </small>
+        )}
         {HM && (
           <Inf k={`it|mut|${HM.n}`} class="hard-mut">
             {HM.e} <b>{HM.n}</b>: {HM.d}
           </Inf>
         )}
-        <button class="btn block" onClick={() => goMap()}>
-          {S && S.hard ? (S.row === 0 && !S.seenIntro ? 'Start on hard' : 'Continue on hard') : !S || (S.row === 0 && !S.seenIntro) ? 'Start the chapter' : 'Continue the story'}
+        <button class="btn block big" onClick={() => goMap()}>
+          {cta}
         </button>
         <div class="row">
           <button class="btn ghost sm grow" onClick={() => openBag()}>
@@ -74,7 +130,7 @@ export function PlayTab() {
           </button>
           {S && S.hard ? (
             <button class="btn ghost sm grow" onClick={() => void leaveHard()}>
-              🚪 Walk away
+              <Icon name="back" /> Walk away
             </button>
           ) : (
             <button class="btn ghost sm grow" onClick={() => go({ screen: 'title' })}>
@@ -113,69 +169,19 @@ export function PlayTab() {
         </Inf>
       )}
       <span class="sec-label">More ways to play</span>
-      <button class="card tap mode" onClick={() => void dailyFlow()} {...rise(n++)}>
-        <Icon name="calendar" class="lg" />
-        <span class="grow">
-          <b>Daily challenge</b>
-          <small>{dailyText(G)}. One fight, one twist, zero refunds</small>
-        </span>
-      </button>
-      <button class={`card tap mode${open ? '' : ' locked'}`} onClick={() => void rushFlow()} {...rise(n++)}>
-        <Icon name="skull" class="lg" />
-        <span class="grow">
-          <b>Boss rush</b>
-          <small>
-            {open
-              ? `${act2 ? 'Act II' : 'Act I'} bosses back to back. Best: ${G.save.profile.rushBest || 0}/10`
-              : 'Beat chapter 2 or reach level 10. Bosses do not do walk-ins'}
-          </small>
-        </span>
-      </button>
-      <button class={`card tap mode${towerOpen(G) ? '' : ' locked'}`} onClick={() => void towerFlow()} {...rise(n++)}>
-        <Icon name="tower" class="lg" />
-        <span class="grow">
-          <b>Endless tower</b>
-          <small>
-            {towerOpen(G)
-              ? `One floor per fight, a new twist every five. Your best: floor ${F.towerBest || 0}${towerBest(G).floor ? `, record ${towerBest(G).floor}` : ''}`
-              : `Reach level ${TOWER_FROM} or clear chapter 1. The stairs are judging you`}
-          </small>
-        </span>
-      </button>
-      <button class={`card tap mode${HC.length ? '' : ' locked'}`} onClick={() => hardFlow()} {...rise(n++)}>
-        <Icon name="flame" class="lg" />
-        <span class="grow">
-          <b>Hard mode</b>
-          <small>
-            {S && S.hard
-              ? `On it: chapter ${ch}. Tap to get back in there`
-              : HC.length
-                ? `Replay a cleared chapter, meaner, with a twist and better loot. Beaten on hard: ${HC.filter((c) => c.done).length} of ${HC.length}`
-                : 'Clear a chapter first. Hard mode needs something to be hard about'}
-          </small>
-        </span>
-      </button>
-      <button class="card tap mode" onClick={() => openClub()} {...rise(n++)}>
-        <Icon name="dice" class="lg" />
-        <span class="grow">
-          <b>Fight club</b>
-          <small>Bet on strangers. Lose money with friends</small>
-        </span>
-      </button>
-      <button class="card tap mode" onClick={() => void import('../../flows/exhibition').then((m) => m.openExhibition())} {...rise(n++)}>
-        <Icon name="people" class="lg" />
-        <span class="grow">
-          <b>Exhibition</b>
-          <small>Hall of fame legends fight for pride, with commentary. Nobody gets paid</small>
-        </span>
-      </button>
-      <button class="card tap mode" onClick={() => openBaseShop()} {...rise(n++)}>
-        <Icon name="cart" class="lg" />
-        <span class="grow">
-          <b>Base shop</b>
-          <small>{baseOpen(G) ? 'Supplies, one daily deal, gear priced like rent' : 'Closed. Finish the chapter, then shop'}</small>
-        </span>
-      </button>
+      <div class="mtiles">
+        {modes.map((m) => (
+          <button key={m.n} class={`mtile${m.locked ? ' locked' : ''}`} onClick={m.go} {...rise(n++)}>
+            <span class="mtile-ic">
+              <Icon name={m.icon} />
+              {m.locked && <Icon name="lock" class="mtile-lock" />}
+            </span>
+            <b>{m.n}</b>
+            <small>{m.st}</small>
+            <i>{m.fl}</i>
+          </button>
+        ))}
+      </div>
       <span class="sec-label">Cups and the gauntlet</span>
       {run && (
         <div class="card resume" {...rise(n++)}>
@@ -193,26 +199,36 @@ export function PlayTab() {
           </div>
         </div>
       )}
-      {TIERS_T.map((t) => {
-        const ok = tierUnlocked(t, F) && !run;
-        const def = F.belts && F.belts[t.k];
-        const reward = t.size ? `Win it: ${t.coins} 🪙${def ? '. You hold this belt' : ''}` : `Your best: ${F.gbest || 0} in a row`;
-        return (
-          <button key={t.k} class={`card tap mode tier${ok ? '' : ' locked'}`} disabled={!ok} onClick={() => startTier(t.k)} {...rise(n++)}>
-            <span class="te" aria-hidden="true">
-              {t.e}
-            </span>
-            <span class="grow">
+      <div class="mtiles">
+        {TIERS_T.map((t) => {
+          const ok = tierUnlocked(t, F) && !run;
+          const def = F.belts && F.belts[t.k];
+          return (
+            <button key={t.k} class={`mtile tier${ok ? '' : ' locked'}`} disabled={!ok} onClick={() => startTier(t.k)} {...rise(n++)}>
+              <span class="mtile-ic">
+                <span class="te" aria-hidden="true">
+                  {t.e}
+                </span>
+                {!ok && <Icon name="lock" class="mtile-lock" />}
+              </span>
               <b>
                 {t.n}
                 {def ? ' (defending)' : ''}
               </b>
-              <small>{ok ? t.d : run && tierUnlocked(t, F) ? 'Finish or abandon the current one first' : t.lock}</small>
-              {ok && <small>{reward}</small>}
-            </span>
-          </button>
-        );
-      })}
+              <small>
+                {ok
+                  ? t.size
+                    ? `Win it: ${t.coins} 🪙${def ? '. Your belt' : ''}`
+                    : `Your best: ${F.gbest || 0} in a row`
+                  : run && tierUnlocked(t, F)
+                    ? 'Finish or abandon the current one first'
+                    : t.lock}
+              </small>
+              <i>{t.d}</i>
+            </button>
+          );
+        })}
+      </div>
       <small class="center hint">🪙 {coinsOf(G)} to spend</small>
     </div>
   );

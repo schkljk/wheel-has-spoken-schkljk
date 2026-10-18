@@ -1586,46 +1586,179 @@
   white-space: nowrap;
 }
 
-/* ---------- fighter page ---------- */
+/* ---------- play tab: the story up top, then every mode as a tile ---------- */
 .story-card {
   display: grid;
+  gap: 0.55rem;
+  position: relative;
+  overflow: hidden;
+  padding-top: 0.9rem;
+  background:
+    radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--ch, var(--primary)) 34%, transparent), transparent 62%),
+    linear-gradient(180deg, var(--surface-hi), var(--surface) 70%);
+  border-color: var(--edge);
+  box-shadow:
+    inset 0 3px 0 color-mix(in srgb, var(--ch, var(--primary)) 80%, white 10%),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    var(--card-shadow);
+}
+.sc-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.sc-head .grow {
+  min-width: 0;
+}
+.sc-kick {
+  display: block;
+  font: 400 0.9rem/1.1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.sc-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  border-top: 4px solid var(--ch, var(--primary));
+  flex-wrap: wrap;
+}
+.sc-hp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.4rem;
+  border-radius: 999px;
+  background: var(--well);
+  border: 2px solid var(--edge);
+  font: 400 1.05rem/1 var(--display);
 }
 .sc-prog {
   display: flex;
   gap: 3px;
+  padding: 3px;
+  border-radius: 8px;
+  background: var(--well);
+  border: 2px solid var(--edge);
 }
 .sc-prog i {
   flex: 1;
-  height: 0.35rem;
-  border-radius: 9px;
-  background: var(--surface-2);
+  height: 0.5rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
 }
 .sc-prog i.d {
   background: var(--teal);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 .sc-prog i.c {
   background: var(--primary);
+  box-shadow: 0 0 8px var(--primary);
 }
 .reclvl {
   color: var(--primary);
   font-weight: 700;
 }
-.mode {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
+.btn.big {
+  min-height: 3.6rem;
+  font-size: clamp(1.25rem, 6.4vw, 1.5rem);
 }
-.mode small {
-  display: block;
+.mtiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(8.3rem, 100%), 1fr));
+  gap: 0.6rem;
 }
-.mode.locked,
-.tier.locked {
-  opacity: 0.6;
+.mtile {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  justify-items: start;
+  align-content: start;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.65rem 0.7rem 0.7rem;
+  text-align: left;
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  border-radius: var(--r-card);
+  background:
+    radial-gradient(90% 70% at 100% 0%, rgba(255, 255, 255, 0.07), transparent 60%),
+    linear-gradient(180deg, var(--surface-hi), var(--surface) 75%);
+  box-shadow:
+    inset 0 -3px 0 rgba(0, 0, 0, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    0 3px 0 var(--edge);
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.tier .te {
-  font-size: 1.7rem;
+.mtile:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow:
+    inset 0 -1px 0 rgba(0, 0, 0, 0.28),
+    inset 0 2px 0 rgba(255, 255, 255, 0.08),
+    0 1px 0 var(--edge);
+}
+.mtile-ic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.9rem;
+  height: 2.9rem;
+  margin-bottom: 0.2rem;
+  border-radius: 10px;
+  background: var(--well);
+  border: 2px solid var(--edge);
+  box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.3);
+}
+.mtile-ic .pxi {
+  width: 2rem;
+  height: 2rem;
+}
+.mtile-ic .te {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.mtile-ic .mtile-lock {
+  position: absolute;
+  right: -0.45rem;
+  bottom: -0.45rem;
+  width: 1.3rem;
+  height: 1.3rem;
+}
+.mtile b {
+  font: 400 1.2rem/1.05 var(--display);
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.35);
+}
+.mtile small {
+  color: var(--gold);
+  font-weight: 700;
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+.mtile i {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.25;
+}
+.mtile.locked {
+  background: linear-gradient(180deg, #2a2348, #221c3d 75%);
+}
+.mtile.locked .mtile-ic > .pxi:first-child,
+.mtile.locked .te {
+  filter: grayscale(1) brightness(0.7);
+}
+.mtile.locked b {
+  color: var(--muted);
+}
+.mtile.locked small {
+  color: var(--muted);
+}
+.mtile:disabled {
+  cursor: default;
 }
 .challenge,
 .resume {
@@ -1634,7 +1767,14 @@
   border-color: var(--gold);
 }
 .btn.daily {
-  background: linear-gradient(90deg, var(--q3), var(--primary));
+  font-size: clamp(1.05rem, 5.4vw, 1.2rem);
+  background: linear-gradient(180deg, #ff9fd0, #ff5fa8 52%);
+  color: #fff;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 -4px 0 #b02a6e,
+    inset 0 2px 0 rgba(255, 255, 255, 0.45),
+    0 3px 0 var(--edge);
 }
 .nem {
   display: block;

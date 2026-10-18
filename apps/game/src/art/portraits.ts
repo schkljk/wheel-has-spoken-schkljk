@@ -68,6 +68,13 @@ const url = (key: string, cv: () => HTMLCanvasElement | null) => {
 export const faceCanvas = (look: Look, rows = 30) =>
   cached(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => crop(buildSprite({ name: look.race || 'x', arch: 'npc', ...look, weapon: 'Bare fists' }).body, SPRITE_W, SPRITE_H, rows));
 export const facePortrait = (look: Look, rows = 30) => url(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => faceCanvas(look, rows));
+/** One fighter's own face: their skin, hair and class outfit (the name picks the first two), for avatars. */
+export const fighterFace = (look: Look) =>
+  url(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
+    cached(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
+      crop(buildSprite({ ...look, weapon: 'Bare fists' }).body, SPRITE_W, SPRITE_H, 30),
+    ),
+  );
 
 /** A weapon on its own (with its enchant's glow), held at an angle. */
 export const weaponCanvas = (name: string, ench?: string) =>

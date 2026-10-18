@@ -2,6 +2,7 @@ import { seeGoals, tabDots } from '@whs/core';
 import { G, activeFighter, activeSlot, ensure, go, route, save, type Tab } from '../state/game';
 import { openSheet } from '../state/ui';
 import { SettingsSheet } from '../sheets/Settings';
+import { FighterFace } from '../art/FighterFace';
 import { Icon, type IconName } from '../ui/Icon';
 import { FighterTab } from './tabs/Fighter';
 import { GoalsTab } from './tabs/Goals';
@@ -30,8 +31,13 @@ export function Hub({ tab }: { tab: Tab }) {
   return (
     <main class="screen hub">
       <header class="bar pad row">
-        <button class="iconbtn" aria-label="Your fighters" onClick={() => go({ screen: 'title' })}>
-          <Icon name="people" />
+        <button class="bar-me" aria-label="Your fighters" onClick={() => go({ screen: 'title' })}>
+          <span class="bar-face">
+            <FighterFace f={f} e={f.race?.e} />
+          </span>
+          <span class="bar-lvl" aria-hidden="true">
+            {f.lvl || 1}
+          </span>
         </button>
         <span class="grow ellipsis bar-name">
           <b>{f.name}</b>
