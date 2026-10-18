@@ -18,6 +18,7 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) 
     let a: Application | null = null;
     let disposed = false;
     let cleanup: void | (() => void);
+    let ro: ResizeObserver | null = null;
     void loadPx().then(async (P) => {
       if (disposed) return;
       const app = (a = new P.Application());
@@ -25,12 +26,17 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) 
       if (disposed) return app.destroy(true, { children: true });
       app.canvas.style.display = 'block';
       el.appendChild(app.canvas);
+      // Pixi's resizeTo only follows the window; the host also changes size when the content around it does
+      // (an odds row appears, a result grows), and a canvas that kept its old size would cover that content
+      ro = new ResizeObserver(() => app.renderer && app.resize());
+      ro.observe(el);
       if (location.search.includes('perf')) timeFrames(app);
       cleanup = setup(app, el, P);
       setApp(app);
     });
     return () => {
       disposed = true;
+      ro?.disconnect();
       if (cleanup) cleanup();
       if (a && a.renderer) a.destroy(true, { children: true });
     };

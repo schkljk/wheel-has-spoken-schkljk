@@ -46,6 +46,7 @@ export function Icon({ name, class: cls, label, tint }: { name: IconName; class?
   return (
     <svg
       class={`pxi${cls ? ' ' + cls : ''}`}
+      data-i={name}
       viewBox={`0 0 ${r.size} ${r.size}`}
       shape-rendering="crispEdges"
       role={label ? 'img' : undefined}

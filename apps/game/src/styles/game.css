@@ -87,6 +87,7 @@
 .pixiwheel {
   position: absolute;
   inset: 0;
+  overflow: hidden;
 }
 .pixiwheel.live {
   cursor: grab;

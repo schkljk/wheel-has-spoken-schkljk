@@ -5,6 +5,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 // GitHub Pages serves the site under /<repo>/; the deploy workflow sets BASE_PATH.
 const base = process.env.BASE_PATH ?? '/';
 
+// the Android app (Capacitor) serves the files itself and updates by reinstalling: no service worker there
+const app = !!process.env.CAP_BUILD;
+
 // shown in Settings: the commit on CI, the date otherwise
 const build = (process.env.GITHUB_SHA ?? '').slice(0, 7) || new Date().toISOString().slice(0, 10);
 
@@ -14,6 +17,7 @@ export default defineConfig({
   plugins: [
     preact(),
     VitePWA({
+      disable: app,
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {

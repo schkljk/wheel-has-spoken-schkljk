@@ -3,6 +3,7 @@
 **Play links:**
 - New game: https://schkljk.github.io/wheel-has-spoken-schkljk/
 - Current game: https://schkljk.github.io/wheel-has-spoken-schkljk/legacy/
+- Android app (APK, rebuilt on every update): https://github.com/schkljk/wheel-has-spoken-schkljk/releases/latest/download/wheel-has-spoken.apk
 
 - [x] Phase 0: study and set up
 - [x] Phase 1: core parity
@@ -17,6 +18,24 @@
 - **Reported:** "HP goes down before the strike, ruining the immersion."
 - **Cause:** the fight screen handed each event's numbers to the HUD before the scene played it, so the HP, energy and momentum bars changed during the wind-up.
 - **Fix:** the scene now tells the HUD when it shows a new state, which for hits is the moment of impact (mid-lunge for melee, on arrival for projectiles). The HUD also settles once each event has finished, as a safety net. Skip and reduced motion behave as before.
+
+### Spin screen: no more text hidden behind the wheel
+
+- **Reported:** when spinning a character, some text was cut off behind the wheel.
+- **Cause:** Pixi only resizes its canvas when the window resizes. On the spin screen the wheel's box shrinks when an odds row or a long result appears, but the canvas kept its old size and covered the text under it.
+- **Fix:** every Pixi canvas now follows its own box (a ResizeObserver), and the wheel's box clips, so the wheel can never cover the result even for a frame. Checked at 360×800, 320×568 and 412×915 across several spins.
+
+### The Android app (APK)
+
+- **What it is:** the same game, packaged with Capacitor (`apps/game/android`). It works offline.
+- **Back button:** the phone's back button walks back through the game: it closes a dialog, then a sheet, then presses the screen's own back button, then returns to the Play tab. Only on the Play tab does it send the game to the background.
+- **Service worker:** none in the app. The app updates by installing the new APK.
+- **Icon and splash screens:** a pixel-art wheel drawn with the sprite engine (`tools/art/app-icon.ts`), scaled by whole numbers for each screen density.
+- **How it's built:** `.github/workflows/android.yml` builds a signed APK on every update to main and replaces the "Android app" release, so the link at the top of this file always gives the newest one. It runs on GitHub's machines, which have the Android SDK; this cloud sandbox can't download it (dl.google.com is blocked).
+  - Every build is signed with the same key (`apps/game/android/app/sideload.jks`), so new versions install over old ones and keep the save.
+  - That key is meant for personal sideloading only. A store release would use a secret key, which the `ANDROID_KEYSTORE_*` variables take over.
+- **Saves:** the app's save is separate from the browser's. Settings has "copy save" and import, to move a career between them.
+- **Local build:** `npm run apk` (needs the Android SDK).
 
 ### New pixel art: fighters and icons
 
