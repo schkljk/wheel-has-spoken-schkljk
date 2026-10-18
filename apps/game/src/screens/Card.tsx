@@ -1,5 +1,6 @@
 import { buildSummary, ctxOf, enterCareer, type CareerFighter, type SumLine } from '@whs/core';
 import { G, act, go } from '../state/game';
+import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
 import { Icon } from '../ui/Icon';
@@ -29,7 +30,12 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         >
           <Icon name="check" /> Start their career
         </button>
-        <button class="btn ghost block" onClick={() => go({ screen: 'title' })}>
+        <button
+          class="btn ghost block"
+          onClick={async () => {
+            if (await confirm({ title: `Scrap ${f.name}?`, body: 'They go back into the wheel. Every spin is lost.', yes: 'Scrap them', danger: true })) go({ screen: 'title' });
+          }}
+        >
           Scrap them
         </button>
       </footer>

@@ -5,13 +5,16 @@ import {
   GEAR_SLOTS,
   INJK,
   RANKS,
+  RANK_EFFECT,
   SLOT_N,
   TIERS_T,
   contractOffers,
   dropContract,
   fullName,
   legacyEarned,
+  pl,
   rankOf,
+  rankReward,
   retire,
   takeContract,
   xpNeed,
@@ -27,6 +30,12 @@ import { Sheet, rise } from '../../ui/kit';
 import { openArmory } from '../../flows/armory';
 import { openTalents } from '../../flows/talents';
 import { GearIcon, SlotIcon } from '../../ui/GearIcon';
+
+/** What the next rank pays, in words: "+18 🪙 and 1 talent point". */
+function nextReward(r: number) {
+  const w = rankReward(r);
+  return `+${w.coins} 🪙 and ${pl(w.tp, 'talent point')}${w.gems ? `, ${w.gems} 💎` : ''}`;
+}
 
 /** The fighter page: level, rank, talents, contract, gear and the full card. */
 export function FighterTab() {
@@ -113,7 +122,12 @@ export function FighterTab() {
         <div class="xpbar">
           <i style={{ width: `${NX ? Math.round(((fm - RK.fame) / (NX.fame - RK.fame)) * 100) : 100}%` }} />
         </div>
-        {NX && <small>Next unlock: {NX.perk}</small>}
+        {NX && (
+          <small>
+            At {NX.n}: {nextReward(rk + 1)}
+            {RANK_EFFECT.has(rk + 1) ? `. ${NX.perk}` : ''}
+          </small>
+        )}
       </div>
       <button class="btn ghost block" onClick={() => openTalents()} {...rise(n++)}>
         <Icon name="star" /> Talents{F.tp ? `: ${F.tp} ${F.tp === 1 ? 'point' : 'points'} to spend` : ''}
@@ -158,7 +172,7 @@ export function FighterTab() {
       <div class="card gearline" {...rise(n++)}>
         <div class="row">
           <Inf k="rule|gear" class="grow">
-            🎒 Gear
+            <Icon name="slot_armor" /> Gear
           </Inf>
           <button class="btn ghost sm" onClick={() => openArmory()}>
             <Icon name="shield" /> Armory ({(F.armory || []).length})
@@ -180,7 +194,7 @@ export function FighterTab() {
         <Icon name="card" /> Every wheel result and trait
       </button>
       <button
-        class="btn danger block"
+        class="btn ghost sm block retire"
         onClick={async () => {
           const ok = await confirm({
             title: `Retire ${F.name}?`,

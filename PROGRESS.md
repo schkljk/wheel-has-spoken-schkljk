@@ -25,6 +25,54 @@
 - **Cause:** Pixi only resizes its canvas when the window resizes. On the spin screen the wheel's box shrinks when an odds row or a long result appears, but the canvas kept its old size and covered the text under it.
 - **Fix:** every Pixi canvas now follows its own box (a ResizeObserver), and the wheel's box clips, so the wheel can never cover the result even for a frame. Checked at 360×800, 320×568 and 412×915 across several spins.
 
+### Illogical UI, fixed
+
+- **Asked for:** "fix and rework illogical UI elements." A fresh-eyes audit toured every screen at three sizes and listed 30 problems. These are fixed:
+- **Big choices ask first:**
+  - **Boss rush:** asks before you start, with the rules and rewards. Between bosses you choose to fight the next one or walk away, keeping what you won (your best is saved).
+  - **Scrapping a half-spun fighter** (the back arrow while spinning, and "Scrap them" on the card) now asks first.
+  - **Legacy perks** are permanent, so buying one asks first.
+- **The fight menu after a fight:** Skip, Forfeit and the toggles are gone once it's decided. You could forfeit a fight you had already won. Only the log, their card and help remain.
+- **One name for going home:**
+  - "Fighter page", "Back to your fighter" and the like all landed on the Play tab. They now say **Home**.
+  - The bracket's back arrow says "Leave for now (your run is saved)".
+- **Things that contradicted the rules:**
+  - The Fighter tab said the next rank "Unlocks the Regional cup", but cups unlock by story chapter. It now shows what the next rank really pays (coins, talent points, gems) and its perk only when the perk does something.
+  - The rank-up messages themselves stay word for word, for parity with the old game.
+- **Same thing, one name:** the combat wheel's "Skill" and "Special" focus chips are now **Power** and **Signature**, which is what the reads, the move history and the signature button already called them.
+- **Duplicates removed:**
+  - "Your fighters" on the story card (the header face and More already open the roster).
+  - The second coin count at the bottom of Play.
+  - The Collection card inside Records.
+  - The Bag's second close button.
+  - The level shown twice in the header: the header now shows your rank and chapter under your name, and the face keeps the level badge.
+- **Dead ends:**
+  - The bracket no longer offers a shop that is closed mid-chapter.
+  - Collection opened from the title screen goes back to the title screen.
+  - The in-progress cup or gauntlet card moved up, right under the story.
+- **Consistent locks:** every locked tile is greyed with a padlock and says why when tapped. That includes cups, Exhibition (needs two legends) and the base shop (closed mid-chapter).
+- **Sheets step back:**
+  - Sheets opened from other sheets have a back arrow: Bag → Armory → a slot → the Forge.
+  - The armory opened from a merchant's bag can't be closed by accident and lose the merchant.
+- **Clearer layouts:**
+  - **Haggle** is at the top of both shops, since it changes every price below it.
+  - **Way-out options** in choice sheets ("Not now", "Walk away", "Leave") are quieter than the real choices.
+  - **Retire** is a quiet red button at the bottom instead of the loudest thing on the Fighter tab.
+  - **Trophy room** has its own icon.
+  - **The old game** in More is labelled "The old version".
+- **Spinning a fighter:**
+  - The result panel says which wheel it came from ("RACE: Frogfolk"), since the next wheel is already up.
+  - The free reroll also works on the last wheel.
+  - "Spin the rest" no longer wraps.
+- **Smaller fixes:**
+  - The fighter card's Speed row matches the stat tile, and average rolls say "average" instead of "+0%".
+  - The fight help text isn't cut off on phones held sideways.
+  - The arena hint names its real button.
+  - Gear uses an armor icon instead of the Bag's backpack.
+- **Left as they are, on purpose:**
+  - Settings is still reachable from both the header and More. That's normal for games, and the title screen needs its own way to the save.
+  - Selling and salvaging gear stay separate. Merging them would change the economy, which isn't a UI fix.
+
 ### No emojis left: every one is a pixel icon
 
 - **Asked for:** "replace any emojis left over with custom icons."

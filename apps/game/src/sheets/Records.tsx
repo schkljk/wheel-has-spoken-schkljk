@@ -1,7 +1,7 @@
-import { LEGACY, buyLegacy, codexCount, legacyCost, lgLvl, type Champ, type PatchNote, type Retired } from '@whs/core';
+import { LEGACY, buyLegacy, legacyCost, lgLvl, type Champ, type PatchNote, type Retired } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
-import { G, act, go, save } from '../state/game';
-import { openSheet } from '../state/ui';
+import { G, act, save } from '../state/game';
+import { confirm, openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { Inf } from '../ui/Info';
 import { landSound } from '../ui/sound';
@@ -67,13 +67,11 @@ function StatsList() {
 export function RecordsSheet() {
   const s = save.value;
   const p = s.profile;
-  const cc = codexCount(G);
   const champs = p.champs as unknown as Champ[];
   const retired = s.roster.retired as unknown as Retired[];
   return (
-    <Sheet icon="cup" title="Records and legacy" sub="Seasons, legacy perks, collection and the hall of fame">
+    <Sheet icon="cup" title="Records and legacy" sub="Seasons, legacy perks, your numbers and the hall of fame">
       <div class="stack">
-        <StatsList />
         <div class="card">
           <div class="row">
             <b class="grow">Season {p.season.n}</b>
@@ -113,7 +111,9 @@ export function RecordsSheet() {
                   <button
                     class="buy"
                     disabled={p.legacy.pts < cost}
-                    onClick={() => {
+                    onClick={async () => {
+                      // perks are for good: ask first
+                      if (!(await confirm({ title: `${x.n}${lv ? `, level ${lv + 1}` : ''}?`, body: `${cost} ✦ of legacy, for good. ${x.d}.`, yes: 'Buy it' }))) return openSheet(<RecordsSheet />);
                       if (act((g) => buyLegacy(g, x.k))) {
                         landSound(3);
                         openSheet(<RecordsSheet />);
@@ -127,20 +127,8 @@ export function RecordsSheet() {
             );
           })}
         </div>
-        <div class="card">
-          <div class="row">
-            <b class="grow">Collection</b>
-            <span>
-              {cc.f} of {cc.t} found
-            </span>
-          </div>
-          <div class="xpbar">
-            <i style={{ width: `${Math.round((cc.f / cc.t) * 100)}%` }} />
-          </div>
-          <button class="btn ghost sm" onClick={() => go({ screen: 'codex' })}>
-            Open the collection
-          </button>
-        </div>
+        <h3>Your numbers</h3>
+        <StatsList />
         <h3>Hall of fame</h3>
         <p class="hint">Only the top 10 champions stay. The best can return as legends to challenge future fighters.</p>
         {champs.length ? (

@@ -1,4 +1,4 @@
-import { RNAMES, coinsOf, fullName, myMatch, type CareerFighter, type Run } from '@whs/core';
+import { RNAMES, baseOpen, coinsOf, fullName, myMatch, type CareerFighter, type Run } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, activeFighter } from '../state/game';
@@ -36,16 +36,17 @@ function Chip({ f, you, state, right }: { f: CareerFighter; you?: boolean; state
 export function BracketScreen({ run: T }: { run: Run }) {
   void activeFighter.value;
   const F = G.F!;
-  const shop = (
+  // the base shop only opens between chapters; mid-chapter there is nothing to buy here
+  const shop = baseOpen(G) ? (
     <button class="btn ghost sm" onClick={() => openBaseShop()}>
       <Icon name="cart" /> Shop (🪙 {coinsOf(G)})
     </button>
-  );
+  ) : null;
   if (T.kind === 'gauntlet') {
     return (
       <main class="screen bracket-screen">
         <header class="bar pad row">
-          <button class="iconbtn" aria-label="Back to your fighter" onClick={() => void goHub()}>
+          <button class="iconbtn" aria-label="Leave for now (your run is saved)" onClick={() => void goHub()}>
             <Icon name="back" />
           </button>
           <h2 class="grow">🔥 The gauntlet</h2>
@@ -122,7 +123,7 @@ export function BracketScreen({ run: T }: { run: Run }) {
   return (
     <main class="screen bracket-screen">
       <header class="bar pad row">
-        <button class="iconbtn" aria-label="Back to your fighter" onClick={() => void goHub()}>
+        <button class="iconbtn" aria-label="Leave for now (your run is saved)" onClick={() => void goHub()}>
           <Icon name="back" />
         </button>
         <h2 class="grow ellipsis">

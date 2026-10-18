@@ -60,7 +60,7 @@ async function buildScript(page: Page) {
   await page.getByRole('button', { name: /^Spin for/ }).click();
   await page.waitForTimeout(5500);
   await shot(page, 'build-landed');
-  await page.getByRole('button', { name: 'Spin the rest for me' }).click();
+  await page.getByRole('button', { name: 'Spin the rest' }).click();
   // spinning the rest goes straight to the finished fighter
   await page.getByRole('button', { name: 'Start their career' }).waitFor({ timeout: 240_000 });
   await shot(page, 'card');
@@ -122,9 +122,9 @@ async function modesScript(page: Page) {
   await page.getByRole('tab', { name: 'Play' }).click();
   await page.getByRole('button', { name: /daily wheel/ }).click();
   await page.getByRole('button', { name: 'Spin the daily wheel' }).click();
-  await page.getByRole('button', { name: 'Back to your fighter' }).waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Home' }).waitFor({ timeout: 30_000 });
   await shot(page, 'daily-wheel');
-  await page.getByRole('button', { name: 'Back to your fighter' }).click();
+  await page.getByRole('button', { name: 'Home' }).click();
   await page.getByRole('button', { name: /Base shop/ }).click();
   await shot(page, 'shop');
   await page.keyboard.press('Escape');

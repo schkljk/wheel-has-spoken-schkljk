@@ -110,7 +110,7 @@ export async function dailyWheel() {
     who: 'One free spin every day',
     list: dailyList(),
     spinLabel: 'Spin the daily wheel',
-    nextLabel: 'Back to your fighter',
+    nextLabel: 'Home',
     onLand: (it) => {
       const out = dailyLand(G, it);
       if (it.q >= 3) setTimeout(() => burst(), 200);
@@ -280,11 +280,42 @@ export async function leaveHard() {
 // ---------------------------------------------------------------- boss rush
 export async function rushFlow() {
   if (!rushOpen(G)) return toast('Beat chapter 2 or reach level 10 to unlock');
+  // boss fights ask first: the rush is a run, not a single fight
+  const n = rushBosses(G).length;
+  const best = G.save.profile.rushBest || 0;
+  const c = await choose({
+    emoji: '💀',
+    title: 'Boss rush',
+    sub: `${pl(n, 'boss', 'bosses')} back to back. Your best: ${best}/${n}`,
+    body: (
+      <p class="hint">
+        Your HP carries over, plus 25 after every win. Each boss pays coins, XP and a gem; all {n} pay 90 coins and 10 gems on top. You can walk away between bosses with what you won. Lose and the run ends, you keep what you won.
+      </p>
+    ),
+    options: [{ label: 'Start the rush', sub: `First up: boss 1 of ${n}` }, { label: 'Not now' }],
+  });
+  if (c !== 0) return;
   await rushNext({ i: 0, hp: 100 });
 }
 async function rushNext(R: RushState) {
   const n = rushBosses(G).length;
   const { boss, def } = act((g) => rushBoss(g, R));
+  // between bosses: keep going, or walk away with the best so far on record
+  if (R.i > 0) {
+    const c = await choose({
+      emoji: '💀',
+      title: `Boss rush: ${R.i} of ${n} down`,
+      sub: `You have ${hpTxt(G, R.hp)} HP`,
+      options: [
+        { label: `Next boss: ${boss.name}`, sub: `Boss ${R.i + 1} of ${n}` },
+        { label: 'Walk away', sub: `Keep what you won. Best: ${Math.max(G.save.profile.rushBest || 0, R.i)}/${n}` },
+      ],
+    });
+    if (c !== 0) {
+      act((g) => (g.save.profile.rushBest = Math.max(g.save.profile.rushBest || 0, R.i)));
+      return void goHub();
+    }
+  }
   await rushIntro(boss, pick(G.rng, def.lines), `Boss rush, ${R.i + 1} of ${n}`, R);
   const r = await fight({ kind: 'rush', tier: rushTier(G, R), opp: boss, node: 'boss', rushHp: R.hp }, { rush: R });
   await runSteps(r.next, { rush: () => void rushNext(R) });

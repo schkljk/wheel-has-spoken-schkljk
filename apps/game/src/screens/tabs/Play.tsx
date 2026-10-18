@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
@@ -11,7 +11,6 @@ import { openBag } from '../../flows/story';
 import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
-import { go } from '../../state/game';
 
 interface Mode {
   n: string;
@@ -75,10 +74,15 @@ export function PlayTab() {
       go: () => hardFlow(),
     },
     { n: 'Fight club', icon: 'dice', st: 'Bet on strangers', fl: 'Lose money with friends', go: () => openClub() },
-    { n: 'Exhibition', icon: 'star', st: 'Legends fight for pride', fl: 'With commentary. Nobody gets paid', go: () => void import('../../flows/exhibition').then((m) => m.openExhibition()) },
+    {
+      n: 'Exhibition',
+      icon: 'star',
+      locked: exhibitionLegends(G).length < 2,
+      st: exhibitionLegends(G).length < 2 ? 'Needs two hall of fame legends' : 'Legends fight for pride', fl: 'With commentary. Nobody gets paid', go: () => void import('../../flows/exhibition').then((m) => m.openExhibition()) },
     {
       n: 'Base shop',
       icon: 'cart',
+      locked: !baseOpen(G),
       st: baseOpen(G) ? 'Supplies and a daily deal' : 'Closed until the chapter ends',
       fl: 'Gear priced like rent',
       go: () => openBaseShop(),
@@ -129,17 +133,29 @@ export function PlayTab() {
           <button class="btn ghost sm grow" onClick={() => openBag()}>
             <Icon name="bag" /> Bag
           </button>
-          {S && S.hard ? (
+          {S && S.hard && (
             <button class="btn ghost sm grow" onClick={() => void leaveHard()}>
               <Icon name="back" /> Walk away
-            </button>
-          ) : (
-            <button class="btn ghost sm grow" onClick={() => go({ screen: 'title' })}>
-              <Icon name="people" /> Your fighters
             </button>
           )}
         </div>
       </div>
+      {run && (
+        <div class="card resume" {...rise(n++)}>
+          <b>
+            {run.e} {run.n} in progress
+          </b>
+          <small>{run.sub}</small>
+          <div class="row">
+            <button class="btn sm grow" onClick={() => resumeRun()}>
+              Resume
+            </button>
+            <button class="btn ghost sm" onClick={() => void abandon()}>
+              Abandon it
+            </button>
+          </div>
+        </div>
+      )}
       {chal && (
         <div class="card challenge" {...rise(n++)}>
           <b>⚔️ {chal.kind === 'legend' ? 'A hall of fame legend wants to test you' : 'An old rival wants a rematch'}</b>
@@ -184,28 +200,18 @@ export function PlayTab() {
         ))}
       </div>
       <span class="sec-label">Cups and the gauntlet</span>
-      {run && (
-        <div class="card resume" {...rise(n++)}>
-          <b>
-            {run.e} {run.n} in progress
-          </b>
-          <small>{run.sub}</small>
-          <div class="row">
-            <button class="btn sm grow" onClick={() => resumeRun()}>
-              Resume
-            </button>
-            <button class="btn ghost sm" onClick={() => void abandon()}>
-              Abandon it
-            </button>
-          </div>
-        </div>
-      )}
       <div class="mtiles">
         {TIERS_T.map((t) => {
           const ok = tierUnlocked(t, F) && !run;
           const def = F.belts && F.belts[t.k];
           return (
-            <button key={t.k} class={`mtile tier${ok ? '' : ' locked'}`} disabled={!ok} onClick={() => startTier(t.k)} {...rise(n++)}>
+            <button
+              key={t.k}
+              class={`mtile tier${ok ? '' : ' locked'}`}
+              aria-disabled={!ok}
+              onClick={() => (ok ? startTier(t.k) : toast(run && tierUnlocked(t, F) ? 'Finish or abandon the current one first' : t.lock))}
+              {...rise(n++)}
+            >
               <span class="mtile-ic">
                 <span class="te" aria-hidden="true">
                   {t.e}
@@ -230,7 +236,6 @@ export function PlayTab() {
           );
         })}
       </div>
-      <small class="center hint">🪙 {coinsOf(G)} to spend</small>
     </div>
   );
 }

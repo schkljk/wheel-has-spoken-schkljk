@@ -183,7 +183,7 @@ export function MapScreen() {
           <Icon name="bag" /> Bag
         </button>
         <button class="btn ghost" onClick={() => void goHub()}>
-          <Icon name="house" /> Fighter page
+          <Icon name="house" /> Home
         </button>
       </footer>
     </main>

@@ -484,7 +484,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
         lines: [],
         got: [],
         next: [{ t: 'hub' }],
-        button: 'Back to your fighter',
+        button: 'Home',
         q: 0,
         confetti: false,
       };
@@ -673,6 +673,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   };
   const openMenu = () => {
     const bt = btRef.current;
+    // once it's decided, the menu only looks back: no skipping, forfeiting or switching modes
+    const over = phaseRef.current === 'over' || S.ended;
     const pct = Math.round(spec.odds * 100);
     const ctx = ctxOf(G);
     // what is on each fighter right now (the icons over their heads, tappable here)
@@ -714,14 +716,16 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             )}
           </div>
         )}
-        <Toggle label="Auto-battle" sub="Your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />
-        <Toggle label="Fast mode" sub="Quicker animations" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />
+        {!over && <Toggle label="Auto-battle" sub="This fight only: your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />}
+        {!over && <Toggle label="Fast mode" sub="Quicker animations in every fight (saved)" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />}
         <div class="fm-grid">
-          <button class="menu-i" onClick={() => (closeSheet(), skip())}>
-            <Icon name="skip" />
-            <b>Skip</b>
-            <small>Jump to the result</small>
-          </button>
+          {!over && (
+            <button class="menu-i" onClick={() => (closeSheet(), skip())}>
+              <Icon name="skip" />
+              <b>Skip</b>
+              <small>Plays the rest out instantly</small>
+            </button>
+          )}
           <button class="menu-i" onClick={openLog}>
             <Icon name="scroll" />
             <b>Fight log</b>
@@ -742,11 +746,13 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
             <b>Settings</b>
             <small>Sound, vibration</small>
           </button>
-          <button class="menu-i danger" onClick={() => void forfeit()}>
-            <Icon name="flag" />
-            <b>Forfeit</b>
-            <small>Counts as a loss</small>
-          </button>
+          {!over && (
+            <button class="menu-i danger" onClick={() => void forfeit()}>
+              <Icon name="flag" />
+              <b>Forfeit</b>
+              <small>Counts as a loss</small>
+            </button>
+          )}
         </div>
       </Sheet>,
     );

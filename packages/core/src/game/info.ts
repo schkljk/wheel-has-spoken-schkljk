@@ -8,7 +8,7 @@ import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, RULES_NOW, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { findMove } from '../kits';
 import { GEAR_ALL, STATLBL } from '../stats';
@@ -179,7 +179,7 @@ export function infoFor(key: string): Info | null {
   if (kind === 'mv') {
     const m = findMove(a);
     if (!m) return null;
-    const fam = ({ atk: 'Attack', def: 'Defend', pow: 'Skill' } as Record<string, string>)[m.fam] || '';
+    const fam = ({ atk: 'Attack', def: 'Defend', pow: 'Power' } as Record<string, string>)[m.fam] || '';
     const base = ({ strike: 'a strike', guard: 'a guard', power: 'a power move', focus: 'a focus', dodge: 'a sidestep' } as Record<string, string>)[m.c] || 'a move';
     return {
       e: m.e,
@@ -191,7 +191,7 @@ export function infoFor(key: string): Info | null {
     };
   }
   if (kind === 'rule') {
-    const r = RULES[a] ?? RULES_MORE[a];
+    const r = RULES_NOW[a] ?? RULES[a] ?? RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }
   if (kind === 'stat') {
