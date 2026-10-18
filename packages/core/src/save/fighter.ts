@@ -118,6 +118,8 @@ export function serFighter(f: CareerFighter): SerFighter {
     gbest: f.gbest || 0, trained: f.trained || 0, isNem: f.isNem ? 1 : 0, cid: f.cid || null, gear: f.gear || null, armory: f.armory || [],
     contract: f.contract || null, offers: f.offers || null,
   };
+  if (f.gup && Object.keys(f.gup).length) o.gup = { ...f.gup };
+  if (f.gcopy && Object.keys(f.gcopy).length) o.gcopy = { ...f.gcopy };
   if (f.reinc && !(f.reinc as { skip?: boolean }).skip) o.reinc = { n: f.reinc.n, e: f.reinc.e, q: f.reinc.q, m: f.reinc.m, d: f.reinc.d };
   if (f.weak && f.weak.k === 'cured') o.cured = 1;
   return o;
@@ -172,6 +174,8 @@ export function deserFighter(o: SerFighter | null | undefined): CareerFighter | 
   if (!f.quirk) f.quirk = QUIRKS[0];
   f.gear = o.gear ? { ...o.gear } : {};
   f.armory = (o.armory || []).slice();
+  if (o.gup && typeof o.gup === 'object') f.gup = { ...(o.gup as Record<string, number>) };
+  if (o.gcopy && typeof o.gcopy === 'object') f.gcopy = { ...(o.gcopy as Record<string, number>) };
   f.contract = o.contract || null;
   f.offers = o.offers || null;
   f.fame = o.fame || 0;

@@ -126,6 +126,21 @@ export const EXTRA_ICONS: Record<string, string[]> = {
     '...kkkkk....',
     '............',
   ],
+  // hammer: the forge (gear upgrades)
+  hammer: [
+    '............',
+    '..kkkkkkk...',
+    '.ksSSSSSsk..',
+    '.ksSSSSSssk.',
+    '..kkkNNkkkk.',
+    '.....kNk....',
+    '.....kNk....',
+    '.....kNk....',
+    '.....knk....',
+    '.....knk....',
+    '.....knk....',
+    '.....kkk....',
+  ],
   // momentum: a double chevron climbing
   momentum: [
     '............',

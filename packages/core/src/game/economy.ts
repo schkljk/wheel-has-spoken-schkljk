@@ -13,6 +13,8 @@ import { addInjury, gainXP, injText, invalidate, markSeen, priceOf, syncArmory, 
 import { GEARK } from '../stats';
 import { ITEMK } from './lookups';
 import { storyEnsure, type Story } from './story';
+import { addCopy, bonusCopy, forgetPiece } from './forge';
+import { BALANCE } from '../data/balance';
 
 export interface WheelEntry<T> {
   it: T;
@@ -82,7 +84,8 @@ export function lootStart(g: Game, table: LootTable): OddsNote[] {
 export type LootResult =
   | { kind: 'coins'; n: number }
   | { kind: 'item'; item: (typeof ITEMS)[number] }
-  | { kind: 'gear'; gear: Gear; then: 'equipped' | 'salvaged' | 'choose'; coins?: number };
+  /** `copy`: you had it, so it became a copy for upgrades; `bonus`: a copy of a piece you wear came with it (upgrade 21) */
+  | { kind: 'gear'; gear: Gear; then: 'equipped' | 'salvaged' | 'choose' | 'copy'; coins?: number; bonus?: Gear | null };
 
 /** The loot wheel landed. Gear goes on if the slot is empty; a duplicate is salvaged; otherwise the player chooses. */
 export function lootLand(g: Game, it: LootSlice): LootResult | null {
@@ -102,17 +105,21 @@ export function lootLand(g: Game, it: LootSlice): LootResult | null {
     if (!pool.length) pool = GEAR.filter((x) => x.r === it.rar);
     const gear = pick(g.rng, pool);
     markSeen(g, 'gear', gear.n);
+    if (BALANCE.gearUpgrades && own.has(gear.k)) {
+      addCopy(g, gear.k);
+      return { kind: 'gear', gear, then: 'copy', bonus: bonusCopy(g) };
+    }
     if (!F.gear![gear.slot]) {
       F.gear![gear.slot] = gear.k;
       invalidate(F);
-      return { kind: 'gear', gear, then: 'equipped' };
+      return { kind: 'gear', gear, then: 'equipped', bonus: bonusCopy(g) };
     }
     if (F.gear![gear.slot] === gear.k) {
       const c = Math.max(2, Math.round(gear.cost / 3));
       addCoins(g, c);
       return { kind: 'gear', gear, then: 'salvaged', coins: c };
     }
-    return { kind: 'gear', gear, then: 'choose' };
+    return { kind: 'gear', gear, then: 'choose', bonus: bonusCopy(g) };
   }
   return null;
 }
@@ -135,6 +142,7 @@ export function gearChoose(g: Game, x: Gear, c: GearPick) {
   } else if (c === 'salvage') {
     F.armory = F.armory!.filter((k) => k !== x.k);
     addCoins(g, salvageValue(x));
+    forgetPiece(g, x.k);
   }
 }
 export function wear(g: Game, k: string) {
@@ -156,6 +164,7 @@ export function salvageStored(g: Game, k: string) {
   const x = GEARK[k]!;
   F.armory = (F.armory || []).filter((y) => y !== k);
   addCoins(g, Math.max(1, x.r === 'premium' ? 20 : Math.round(x.cost / 3)));
+  forgetPiece(g, k);
 }
 
 // ---------------------------------------------------------------- haggling
@@ -261,7 +270,7 @@ export const SERVICES: { k: Service; e: string; n: string; cost: number }[] = [
 ];
 export const serviceOk = (g: Game, k: Service) => (k === 'physio' ? (g.F!.inj || []).length > 0 : k === 'respec' ? talentPoints(g.F!) > 0 : true);
 /** Buys a service. The mystery box returns the gear it held and whether the player must choose. */
-export function buyService(g: Game, k: Service): { gear?: Gear; choose?: boolean; refunded?: number } | null {
+export function buyService(g: Game, k: Service): { gear?: Gear; choose?: boolean; copy?: boolean; refunded?: number } | null {
   const s = SERVICES.find((x) => x.k === k)!;
   if (!baseOpen(g) || !serviceOk(g, k) || !spend(g, basePrice(g, s.cost))) return null;
   const F = g.F!;
@@ -282,6 +291,10 @@ export function buyService(g: Game, k: Service): { gear?: Gear; choose?: boolean
   const r = rs[pickW(g.rng, rs.map((x) => ({ w: W[x]! })))]!;
   const x = pick(g.rng, GEAR.filter((y) => y.r === r));
   markSeen(g, 'gear', x.n);
+  if (BALANCE.gearUpgrades && (Object.values(F.gear || {}).includes(x.k) || (F.armory || []).includes(x.k))) {
+    addCopy(g, x.k);
+    return { gear: x, copy: true };
+  }
   if (!F.gear![x.slot]) {
     F.gear![x.slot] = x.k;
     invalidate(F);
@@ -301,6 +314,7 @@ export function sellGear(g: Game, k: string): boolean {
   addCoins(g, sellValue(x));
   delete F.gear![x.slot];
   F.armory = (F.armory || []).filter((y) => y !== k);
+  forgetPiece(g, k);
   invalidate(F);
   return true;
 }

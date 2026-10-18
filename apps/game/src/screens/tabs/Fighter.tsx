@@ -170,6 +170,7 @@ export function FighterTab() {
             return (
               <span key={sl} class={`gl-i${g ? ' r-' + g.r : ''}`} title={SLOT_N[sl]}>
                 {g ? <GearIcon g={g} /> : <SlotIcon slot={sl} />}
+                {g && F.gup?.[g.k] ? <b class="gl-up">+{F.gup[g.k]}</b> : null}
               </span>
             );
           })}

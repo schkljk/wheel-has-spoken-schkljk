@@ -8,7 +8,7 @@ import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
 import { POWER_SCALE } from './data/misc';
 import { clamp } from './random';
 import { SYN_TESTS } from './synergy-tests';
-import type { Fighter, Gear, Pet, StatKey, StatMods, Stats, Synergy, TalentMap, TraitFx } from './types';
+import type { Fighter, Gear, GearSlot, Pet, StatKey, StatMods, Stats, Synergy, TalentMap, TraitFx } from './types';
 
 /** Outside state the rules read: balance patches and past champions (both come from the save). */
 export interface GameContext {
@@ -38,12 +38,39 @@ export const STATLBL: Record<string, string> = {
 export const ALL = (n: number): StatMods => ({ str: n, spd: n, dur: n, iq: n, wm: n, pm: n });
 
 // ---------- gear ----------
+/**
+ * What each upgrade level of a piece adds (upgrade 21), by slot: armor and helmets take hits better, boots and
+ * capes get out of the way, gloves and trinkets find weak spots. Small on purpose: whole stat points were worth
+ * a level or more per piece (PROGRESS.md has the numbers).
+ */
+export const UPGRADE_FX: Record<GearSlot, [k: 'dr' | 'dodgeB' | 'critB', per: number, word: string]> = {
+  armor: ['dr', 0.02, 'damage reduction'],
+  helm: ['dr', 0.01, 'damage reduction'],
+  boots: ['dodgeB', 0.01, 'dodge'],
+  cape: ['dodgeB', 0.01, 'dodge'],
+  gloves: ['critB', 0.01, 'crit'],
+  trinket: ['critB', 0.01, 'crit'],
+};
+const UPG_CACHE = new Map<string, Gear>();
+/** A piece at an upgrade level, with the bonus folded into its traits. */
+export function upgraded(g: Gear, L: number): Gear {
+  if (!L) return g;
+  const id = `${g.k}+${L}`;
+  let u = UPG_CACHE.get(id);
+  if (!u) {
+    const [k, per] = UPGRADE_FX[g.slot];
+    u = { ...g, fx: { ...(g.fx || {}), [k]: (((g.fx || {}) as Record<string, number>)[k] || 0) + per * L } };
+    UPG_CACHE.set(id, u);
+  }
+  return u;
+}
 export function gearOf(f: Fighter | null | undefined): Gear[] {
   if (!f || !f.gear) return [];
   const out: Gear[] = [];
+  const up = BALANCE.gearUpgrades && f.gup;
   for (const s of ['armor', 'trinket', 'boots', 'helm', 'gloves', 'cape'] as const) {
     const g = GEARK[f.gear[s] ?? ''];
-    if (g) out.push(g);
+    if (g) out.push(up && up[g.k] ? upgraded(g, up[g.k]!) : g);
   }
   return out;
 }

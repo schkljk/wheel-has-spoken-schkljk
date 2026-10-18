@@ -83,6 +83,9 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
     console.log(
       `Nemesis fights per run (won, retired): ${STRENGTHS.map((s) => `${s} ${(sum(s, 'nem') / runs).toFixed(1)} (${Math.round((sum(s, 'nemWins') / Math.max(1, sum(s, 'nem'))) * 100)}%, ${(sum(s, 'nemRetired') / runs).toFixed(2)})`).join(', ')}`,
     );
+  const ups = (s: Strength) => all[s].reduce((a, r) => a + (r.upLevels || 0), 0) / runs;
+  if (STRENGTHS.some((s) => ups(s))) console.log(`Gear upgrade levels at the end (all pieces): ${STRENGTHS.map((s) => `${s} ${ups(s).toFixed(1)}`).join(', ')}`);
+  console.log(`Coins left at the end: ${STRENGTHS.map((s) => `${s} ${Math.round(all[s].reduce((a, r) => a + (r.coins || 0), 0) / runs)}`).join(', ')}`);
   if (cups) console.log(`Cups played per run: ${STRENGTHS.map((s) => `${s} ${(all[s].reduce((a, r) => a + r.chapters.reduce((b, c) => b + c.cups, 0), 0) / runs).toFixed(1)}`).join(', ')}`);
   console.log(`(${runs * 3} runs in ${((Date.now() - t0) / 1000).toFixed(0)} s on ${Math.min(availableParallelism(), jobs.length)} threads)`);
 }

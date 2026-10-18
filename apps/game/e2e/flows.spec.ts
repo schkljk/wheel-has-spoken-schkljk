@@ -468,3 +468,30 @@ test("a chapter's own encounter: what it does under each option, then what happe
   expect((await layoutProblems(page)).clipped).toEqual([]);
   expect(errors).toEqual([]);
 });
+
+test('the forge: upgrade a worn piece with a copy, confirm, and see the numbers change', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, careerSaveKV({ seed: 9, lvl: 8, coins: 200, forge: true }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await expect(page.locator('.gl-up')).toHaveText('+3');
+  await page.getByRole('button', { name: /Armory/ }).click();
+  await page.locator('.arm-slot').first().click();
+  await expect(page.locator('.up-lv').first()).toHaveText(' +3');
+  await expect(page.getByText('1 copy')).toBeVisible();
+  await page.getByRole('button', { name: /^Forge/ }).first().click();
+  await expect(page.locator('.forge-pips .pip.on')).toHaveCount(3);
+  await expect(page.getByText('Next: +4, +2% damage reduction')).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /^Upgrade for \d+ 🪙 \+ a copy$/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Upgrade it' }).click();
+  await expect(page.locator('.forge-pips .pip.on')).toHaveCount(4);
+  // its own number goes up and the popup says so
+  await expect(page.locator('.statpop')).toContainText('Defense');
+  await expect(page.getByText(/Needs a copy of it|Needs \d+ coins/)).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  expect(errors).toEqual([]);
+});
