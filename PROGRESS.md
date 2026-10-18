@@ -42,6 +42,18 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 20. Every chapter has encounters of its own
 - [x] 21. Gear upgrades, +1 to +5
 - [x] 22. Four new gear sets: pirate, chef, cosmic, royal
+- [x] 23. Trophy room
+
+### 23. Trophy room
+
+- **What changed (progression):** More → **Trophy room**, a set of wooden shelves with everything your fighters have won, across the whole roster and the hall of fame:
+  - **Belts:** Local brawl, Regional cup and World championship, with how many times and who won each first.
+  - **Boss kills:** all 20 bosses as trophies ("3 of 20"). Beaten ones show their emblem and a ×N for repeat kills; the rest are question marks with their chapter.
+  - **Rare titles:** the rarest titles (boss titles live on the boss shelf). Earned ones open their info card; the rest are "???" silhouettes.
+  - **Class mastery:** every class with at least one mastery level, with five pips; fully mastered classes glow gold.
+- Belts and boss kills are counted in the save as they happen (`profile.trophies`). The first time the room is opened, it also counts what the fighters on the roster and in the hall of fame already hold, so existing saves start with their silverware. Nothing else in the save changes.
+- Items pop in one after another (skipped with reduced motion). The sub line reads *"Everything your fighters have won. Dust not included"*, and an empty room says *"An empty room echoes. Go win something."*
+- Tested: `trophies.test.ts` (3 tests) checks the one-time count of existing belts and bosses, that later wins add up and remember who was first, and the shelves' contents. A new e2e test opens the room for a career with a belt, three bosses, two rare titles and a mastered class, checks the counts and the gold class, opens a title's info card, and checks nothing is cut off at 320×568, 390×844, 844×390 and 1280×720.
 
 ### 22. Four new gear sets: pirate, chef, cosmic, royal
 

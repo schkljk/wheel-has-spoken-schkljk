@@ -34,6 +34,7 @@ import { ACHK, CONTRACTK } from './lookups';
 import { RNAME1, nextGauntletOpp, recordCup, resolveMyRound, saveRun, simRest, type Cup, type Gauntlet, type Tier } from './cups';
 import { LASTCH, hpTxt, newChapter, storyOf } from './story';
 import { nemFought, storyNemesisEnd } from './nemesis';
+import { noteBelt, noteBoss } from './trophies';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
@@ -389,6 +390,7 @@ function finishCup(g: Game, T: Cup, won: boolean, keys: string[], lines: string[
   recordCup(g, T);
   F.belts = F.belts || {};
   if (won) {
+    noteBelt(g, tier.k, F);
     p.won++;
     if (T.defending) {
       F.defenses = (F.defenses || 0) + 1;
@@ -473,6 +475,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   let reset = false;
   const trust = lgLvl(p, 'trust');
   if (won && node === 'boss') {
+    noteBoss(g, ch, F);
     cleared = true;
     keys.push('story' + ch);
     S.cleared = (S.cleared || []).concat(ch);
