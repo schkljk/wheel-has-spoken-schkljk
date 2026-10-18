@@ -6,6 +6,7 @@ import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
 import { installErrorLog } from './state/errlog';
 import { loadPx } from './pixi/usePixi';
+import { warmPortraits } from './art/portraits';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/screens.css';
@@ -29,3 +30,5 @@ ensurePool({
 // the Pixi chunk (wheels and fights) loads once the first screen is up, so the first spin doesn't wait for it
 if ('requestIdleCallback' in window) requestIdleCallback(() => void loadPx());
 else setTimeout(() => void loadPx(), 300);
+// and the pixel icons the wheels show, a few at a time
+warmPortraits();

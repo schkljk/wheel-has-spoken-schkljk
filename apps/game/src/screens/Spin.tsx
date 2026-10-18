@@ -1,4 +1,5 @@
 import type { ComponentChildren } from 'preact';
+import { contentCanvas } from '../art/portraits';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   WHEELS,
@@ -42,8 +43,9 @@ export interface Entry<T = Slice> {
   w: number;
   mult: number;
 }
-export const toSlices = (list: Entry<{ n: string; e?: string; q?: number }>[]): WheelSlice[] =>
-  list.map((e) => ({ n: e.it.n, e: e.it.e, q: e.it.q, w: e.w, mark: e.mult >= 1.5 ? 'up' : e.mult <= 0.67 ? 'down' : '' }));
+/** Wheel slices; races, classes, weapons and enchantments get their pixel icon (`race` is the parent of sub-races). */
+export const toSlices = (list: Entry<{ n: string; e?: string; q?: number; k?: string }>[], cat?: string, race?: string): WheelSlice[] =>
+  list.map((e) => ({ n: e.it.n, e: e.it.e, q: e.it.q, w: e.w, mark: e.mult >= 1.5 ? 'up' : e.mult <= 0.67 ? 'down' : '', img: contentCanvas(cat, e.it, race) }));
 
 export function OddsChips({ reasons, unlock }: { reasons: OddsReason[] | { cls: string; txt: string }[]; unlock?: string }) {
   const shown = reasons.slice(0, 5);
@@ -190,7 +192,7 @@ export function BuildScreen({ name }: { name: string }) {
   useMemo(load, []);
 
   const W = WHEELS[S.idx];
-  const items = useMemo(() => toSlices(S.list), [S.list]);
+  const items = useMemo(() => toSlices(S.list, W?.k, S.f.race?.n), [S.list]);
   // timers outlive the render that set them, so spins read the current slices from here
   const itemsRef = useRef(items);
   itemsRef.current = items;
@@ -396,7 +398,7 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
   const wheel = useRef<WheelHandle | null>(null);
   const stopDrum = useRef<() => void>(() => {});
   const fast = settings.value.fast;
-  const items = useMemo(() => toSlices(spec.list), [spec]);
+  const items = useMemo(() => toSlices(spec.list, spec.cat), [spec]);
   const timers = useRef<number[]>([]);
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
   const finished = result != null;

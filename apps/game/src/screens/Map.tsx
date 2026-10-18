@@ -1,4 +1,5 @@
 import { Fragment } from 'preact';
+import { Hearts } from '../ui/Hearts';
 import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { BOSSES, CHAPTERS, hardMutator, hpTxt, maxGrit, myNemesis, nodePreview, nodeOf, recLevel, storyOf, type NodeKind } from '@whs/core';
 import { G, activeFighter, act } from '../state/game';
@@ -52,7 +53,6 @@ export function MapScreen() {
   const hi = Math.min(last - 1, S.row + after);
   // the "⋯ done" line only when there is room for it
   const doneLine = lo > 0 && need(before, after) + 23 <= room.h;
-  const hearts = Array.from({ length: maxGrit(G) }, (_, i) => (i < S.grit ? '❤️' : '🖤')).join('');
   return (
     <main class={`screen map-screen${HM ? ' hard' : ''}`} style={{ '--ch': C.col } as Record<string, string>}>
       <header class="maphead pad">
@@ -85,7 +85,7 @@ export function MapScreen() {
             </div>
           </div>
           <Inf k="rule|grit" class="mh-grit">
-            {hearts}
+            <Hearts n={S.grit} max={maxGrit(G)} />
           </Inf>
         </div>
       </header>

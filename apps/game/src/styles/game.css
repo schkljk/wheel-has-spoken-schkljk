@@ -1276,6 +1276,13 @@
   text-decoration: none;
   letter-spacing: 0.05em;
 }
+.mh-grit .hearts {
+  gap: 0;
+}
+.mh-grit .hearts .pxi {
+  width: 0.95em;
+  height: 0.95em;
+}
 .maprows {
   min-height: 0;
   /* the steps are picked to fit; on the smallest screens the list scrolls inside itself */
@@ -2158,7 +2165,8 @@
   height: 1.15em;
   vertical-align: middle;
 }
-img.pxi.race {
+img.pxi.race,
+img.pxi.wpn {
   object-fit: contain;
 }
 
