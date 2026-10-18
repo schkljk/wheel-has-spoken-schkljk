@@ -207,9 +207,12 @@ export function BuildScreen({ name }: { name: string }) {
     setHub('?');
     rerender();
   };
+  // a tap before Pixi has drawn the wheel waits for it instead of getting lost
+  const pending = useRef(false);
   const doSpin = () => {
     const v = wheel.current?.view;
-    if (!v || S.done) return;
+    if (S.done) return;
+    if (!v) return void (pending.current = true);
     prep();
     if (reducedMotion()) {
       v.spinTo(pickW(G.rng, itemsRef.current), { dur: 500, turns: 1 });
@@ -315,7 +318,7 @@ export function BuildScreen({ name }: { name: string }) {
         <OddsChips reasons={S.reasons} unlock={unlock} />
       </header>
       <div class="wheel-area">
-        <PixiWheel items={items} hi={hi} hub={hub} live={!S.spinning && !S.done} onFlick={onFlick} onTap={doSpin} events={events} handle={wheel} label={`${label} wheel`} />
+        <PixiWheel items={items} hi={hi} hub={hub} live={!S.spinning && !S.done} onFlick={onFlick} onTap={doSpin} events={events} handle={wheel} onReady={() => pending.current && ((pending.current = false), doSpin())} label={`${label} wheel`} />
       </div>
       <LandedPanel landed={landed} msg={S.done ? 'Every wheel has spoken.' : msg} />
       <footer class="spin-foot pad">
@@ -405,9 +408,12 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
     setMsg('Round and round it goes…');
     setHub('?');
   };
+  // a tap before Pixi has drawn the wheel waits for it instead of getting lost
+  const pending = useRef(false);
   const doSpin = () => {
     const v = wheel.current?.view;
-    if (!v || spinning || finished) return;
+    if (spinning || finished) return;
+    if (!v) return void (pending.current = true);
     prep();
     if (reducedMotion()) v.spinTo(pickW(G.rng, items), { dur: 500, turns: 1 });
     else v.spinPhysics('button', fast);
@@ -473,7 +479,7 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
         <OddsChips reasons={spec.reasons || []} unlock={spec.unlock} />
       </header>
       <div class="wheel-area">
-        <PixiWheel items={items} hi={hi} hub={hub} live={!spinning && !finished} onFlick={onFlick} onTap={doSpin} events={events} handle={wheel} label={`${spec.title} wheel`} />
+        <PixiWheel items={items} hi={hi} hub={hub} live={!spinning && !finished} onFlick={onFlick} onTap={doSpin} events={events} handle={wheel} onReady={() => pending.current && ((pending.current = false), doSpin())} label={`${spec.title} wheel`} />
       </div>
       <LandedPanel landed={landed} msg={msg} />
       <footer class="spin-foot pad">

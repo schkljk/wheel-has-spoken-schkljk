@@ -8,7 +8,7 @@
 - [x] Phase 1: core parity
 - [x] Phase 2: app shell, saves, performance foundations
 - [x] Phase 3: every screen ported
-- [ ] Phase 4: upgrades (see docs/UPGRADES.md)
+- [x] Phase 4: upgrades 1–45 (see docs/UPGRADES.md). Item 46, sharing, is optional and waits until the game is shared
 
 ## Phase 4 log: upgrades
 
@@ -68,6 +68,40 @@ That closes "UI, clarity, navigation". Next up is "Art, animation, audio" (36 on
 - [x] 40. A wheel-themed screen transition
 
 That closes "Art, animation, audio". Next up is "Technical" (41 onwards).
+
+- [x] 41. Ranked pool in a Web Worker, cached per day (verified)
+- [x] 42. Split save data (verified)
+- [x] 43. One-command regression suite
+- [x] 44. Performance budget: Pixi loads on demand, rare screens lazy, fights in budget
+- [x] 45. A hidden error log in settings
+
+That closes "Technical". What's left is the optional item 46 (sharing), only if the owner later shares the game.
+
+### 45. A hidden error log in settings
+
+- **What changed:** uncaught errors, failed promises and console errors are kept on the device (the last 60; repeats of the same error are counted, not listed again), outside the save. Nothing shows while all is well. Once something has gone wrong, Settings shows a small **⚠ N errors logged** button under the build line, which opens the log: when, where and what (with the first lines of the stack), **Copy log** for pasting into a message, and **Clear**.
+- Tested: a new e2e test (`errlog.spec.ts`) checks the button is absent at first, then breaks things on purpose (the same error twice and a failed promise), checks the count, the ×2, the messages, that the log survives a reload, and that Clear empties it.
+
+### 44. Performance budget
+
+- **Pixi loads on demand.** The renderer and everything built on it (wheels, the fight scene, fighters, scenery and particles) is now its own chunk, loaded the first time a wheel or a fight is on screen. Menus start without parsing it, and the offline install still caches it. The pure parts it used to drag along (the fight layout math and the SVG backdrops, which the DOM and the share card use) moved to their own Pixi-free modules.
+- **No lost taps:** the chunk starts loading in the background as soon as the first screen is up, and a Spin tap that comes before a wheel is drawn now waits for it and spins, instead of doing nothing (the tower test caught that).
+- **Rare screens load on demand too:** the hidden balance lab, the trophy room and hall of fame exhibitions.
+- **Bundle:** the main script went from 983 kB (335 kB gzipped) to 640 kB (225 kB gzipped); Pixi's 330 kB (105 kB gzipped) comes later, when needed.
+- **Fights stay in budget** (`npx tsx tools/dev/fps.ts`, Chrome with the CPU 4× slower, 390×844 at 2×, full animation, a story fight on auto, with all of this phase's additions: breathing, poses, hit sounds, music, horizons): the game's work per frame is 3.6 ms at the median (Phase 3: 5–6 ms), against the 16.7 ms a 60 fps frame allows; 3 of 60 sampled frames went over (first-time texture and text setup at the start of a fight). All JavaScript together used 3.8% of the main thread. The cloud machine draws in software, so the frame rate itself can only be confirmed on a phone.
+- The FPS tool now switches off first-time tips and pins the date, like the tests.
+
+### 43. One-command regression suite
+
+- `npm run e2e` runs everything (98 tests in 8 files): a full story chapter with its boss, a cup, the gauntlet, the daily challenge, the boss rush and fight club (`modes.spec.ts`); every screen at all 12 required screen sizes (`screens.spec.ts`, `layout.spec.ts`); and the flows for saves, settings, fights and every Phase 4 feature, including hard mode, the tower, exhibitions, seasonal arenas, gear compare, filters, tips, map previews, undo, dots and the error log. CI runs it in 3 shards on every push and pull request; `npm test` runs the 300+ unit and parity tests.
+
+### 42. Split save data (verified)
+
+- The save lives in separate keys (settings, roster, the active fighter, profile, meta) with three rolling automatic backups; unchanged sections aren't rewritten. Covered by `store.test.ts` (8 tests: round trip, the active fighter in its own key, rolling backups, recovering from damage, backups before replacing or erasing, a full storage, the old version's save, export and import) and the e2e backup and damaged-save tests.
+
+### 41. Ranked pool in a Web Worker, cached per day (verified)
+
+- Today's 1,000-fighter ranked pool builds in its own worker (its own chunk) while you look around, and is cached for the day. The e2e test checks it gets ranked, is stored, and comes back instantly after a reload.
 
 ### 40. A wheel-themed screen transition
 

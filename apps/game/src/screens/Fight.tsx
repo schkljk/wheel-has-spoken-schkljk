@@ -38,7 +38,8 @@ import {
   type RoundMod,
 } from '@whs/core';
 import { lookOf } from '../art/sprite';
-import { FightScene, fightDims, type FightDims } from '../pixi/fight-scene';
+import type { FightScene } from '../pixi/fight-scene';
+import { fightDims, type FightDims } from '../pixi/dims';
 import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF } from '../state/game';
@@ -278,9 +279,9 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     sc.placeWheel(r.left - h.left + r.width / 2, r.top - h.top + r.height / 2, Math.min(r.width, r.height));
   };
 
-  const { host } = usePixi((app) => {
+  const { host } = usePixi((app, _el, px) => {
     const d = fightDims(app.screen.width, app.screen.height);
-    const sc = new FightScene(app, [lookOf(F), lookOf(O)], spec.arena, {
+    const sc = new px.FightScene(app, [lookOf(F), lookOf(O)], spec.arena, {
       mythic: !!F.career && rankOf(F) >= 6,
       // story fights in Act II happen on that chapter's own horizon (upgrade 37)
       chapter: spec.kind === 'story' && G.F?.story ? (G.F.story as { ch: number }).ch : undefined,

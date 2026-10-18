@@ -4,11 +4,14 @@ import { App } from './App';
 import { save } from './state/game';
 import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
+import { installErrorLog } from './state/errlog';
+import { loadPx } from './pixi/usePixi';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/screens.css';
 import './styles/game.css';
 
+installErrorLog();
 installPressFeedback();
 render(<App />, document.getElementById('app')!);
 
@@ -22,3 +25,7 @@ ensurePool({
   patch: p.patch,
   history: { champs: (p.champs as unknown as HistoryEntry[]).filter((c) => c && c.best), lastTop: p.lastTop as unknown as HistoryEntry[] },
 });
+
+// the Pixi chunk (wheels and fights) loads once the first screen is up, so the first spin doesn't wait for it
+if ('requestIdleCallback' in window) requestIdleCallback(() => void loadPx());
+else setTimeout(() => void loadPx(), 300);

@@ -1,32 +1,38 @@
-import { Application } from 'pixi.js';
+import type { Application } from 'pixi.js';
 import { useEffect, useRef, useState } from 'preact/hooks';
+
+/** The Pixi side of the game, loaded on first use (upgrade 44). */
+export type Px = typeof import('./stage');
+let px: Promise<Px> | null = null;
+export const loadPx = () => (px ??= import('./stage'));
 
 /**
  * A Pixi application that fills its host element and lives as long as the component.
  * `setup` runs once the renderer is ready; whatever it returns runs on teardown.
  */
-export function usePixi(setup: (app: Application, host: HTMLDivElement) => void | (() => void)) {
+export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) => void | (() => void)) {
   const host = useRef<HTMLDivElement>(null);
   const [app, setApp] = useState<Application | null>(null);
   useEffect(() => {
     const el = host.current!;
-    const a = new Application();
+    let a: Application | null = null;
     let disposed = false;
     let cleanup: void | (() => void);
-    void a
-      .init({ resizeTo: el, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: Math.min(devicePixelRatio || 1, 2) })
-      .then(() => {
-        if (disposed) return a.destroy(true, { children: true });
-        a.canvas.style.display = 'block';
-        el.appendChild(a.canvas);
-        if (location.search.includes('perf')) timeFrames(a);
-        cleanup = setup(a, el);
-        setApp(a);
-      });
+    void loadPx().then(async (P) => {
+      if (disposed) return;
+      const app = (a = new P.Application());
+      await app.init({ resizeTo: el, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: Math.min(devicePixelRatio || 1, 2) });
+      if (disposed) return app.destroy(true, { children: true });
+      app.canvas.style.display = 'block';
+      el.appendChild(app.canvas);
+      if (location.search.includes('perf')) timeFrames(app);
+      cleanup = setup(app, el, P);
+      setApp(app);
+    });
     return () => {
       disposed = true;
       if (cleanup) cleanup();
-      if (a.renderer) a.destroy(true, { children: true });
+      if (a && a.renderer) a.destroy(true, { children: true });
     };
   }, []);
   return { host, app };
