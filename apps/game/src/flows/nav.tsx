@@ -329,7 +329,7 @@ export function goMap() {
 }
 
 /** What follows a fight result, in order. Steps that lead somewhere end the chain. */
-export async function runSteps(steps: Step[], places: { bracket?: () => void; gauntlet?: () => void; rush?: () => void } = {}) {
+export async function runSteps(steps: Step[], places: { bracket?: () => void; gauntlet?: () => void; rush?: () => void; tower?: () => void } = {}) {
   for (const s of steps) {
     switch (s.t) {
       case 'loot':
@@ -357,6 +357,8 @@ export async function runSteps(steps: Step[], places: { bracket?: () => void; ga
         return places.gauntlet?.();
       case 'rush':
         return places.rush?.();
+      case 'tower':
+        return places.tower?.();
     }
   }
   sync();

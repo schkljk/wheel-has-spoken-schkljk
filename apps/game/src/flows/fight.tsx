@@ -5,6 +5,7 @@ import {
   endRushFight,
   endStoryFight,
   endTierFight,
+  endTowerFight,
   fightOdds,
   type Arena,
   type CareerFighter,
@@ -12,12 +13,13 @@ import {
   type FightResult,
   type FightSpec,
   type RushState,
+  type TowerState,
 } from '@whs/core';
 import { G, act, go } from '../state/game';
 import { spinWheel } from '../screens/Spin';
 
 /** Spins the arena wheel (unless the arena is fixed), opens the fight and resolves with its result. */
-export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { arena?: Arena | null; rush?: RushState } = {}): Promise<FightResult> {
+export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { arena?: Arena | null; rush?: RushState; tower?: TowerState } = {}): Promise<FightResult> {
   const F = G.F!;
   const O: CareerFighter = spec0.opp;
   let arena: Arena | null;
@@ -45,6 +47,7 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
     if (spec.kind === 'story') return endStoryFight(G, spec, o);
     if (spec.kind === 'daily') return endDailyFight(G, O, o);
     if (spec.kind === 'rush') return endRushFight(G, opts.rush!, O, o);
+    if (spec.kind === 'tower') return endTowerFight(G, opts.tower!, O, o);
     return endTierFight(G, spec, o);
   };
   act(() => 0);

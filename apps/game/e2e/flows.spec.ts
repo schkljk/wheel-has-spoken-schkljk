@@ -545,3 +545,31 @@ test('an exhibition: two legends from the hall of fame fight while the commentat
   }
   expect(errors).toEqual([]);
 });
+
+test('the endless tower: a floor, its hearts, a fight, and the next floor or a heart down', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 9, fast: true }), 'whs:seed': 'tower' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /^Endless tower/ }).click();
+  await expect(page.getByText('Tower, floor 1')).toBeVisible();
+  await expect(page.getByText(/❤️❤️❤️\. Record/)).toBeVisible();
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.getByRole('button', { name: /Climb/ }).click();
+  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await expect(page.getByText('Tower, floor 1').first()).toBeVisible();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await page.locator('.fresult .btn').first().click();
+  // either floor 2, or floor 1 again with a heart gone
+  await expect(page.getByText(/^Tower, floor (2|1)$/)).toBeVisible({ timeout: 30_000 });
+  const again = (await page.getByText('Tower, floor 1').count()) > 0;
+  if (again) await expect(page.getByText(/❤️❤️🖤\. Record/)).toBeVisible();
+  await page.getByRole('button', { name: /Walk back down/ }).click();
+  await expect(page.locator('.tabbar, [role=tablist]').first()).toBeVisible();
+  expect(errors).toEqual([]);
+});

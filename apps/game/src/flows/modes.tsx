@@ -28,6 +28,13 @@ import {
   rushBoss,
   rushBosses,
   rushOpen,
+  TOWER_FROM,
+  TOWER_LIVES,
+  towerBest,
+  towerMutator,
+  towerOpen,
+  towerOpponent,
+  towerTier,
   rushTier,
   setDailyMutator,
   startCup,
@@ -39,6 +46,7 @@ import {
   type Gauntlet,
   type Run,
   type RushState,
+  type TowerState,
 } from '@whs/core';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
@@ -150,6 +158,54 @@ export async function dailyFlow() {
   if (c !== 0) return goHub();
   const r = await fight({ kind: 'daily', tier: DAILY_TIER, opp: o, mut: { mods: mut.mods, arena: mut.arena } }, mut.arena ? { arena: dailyArena(mut.arena) } : {});
   await runSteps(r.next);
+}
+
+// ---------------------------------------------------------------- the endless tower (upgrade 25)
+export async function towerFlow() {
+  if (!towerOpen(G)) return toast(`Reach level ${TOWER_FROM} or clear chapter 1 to unlock the tower`);
+  await towerNext({ floor: 1, hp: 100, seed: Date.now() & 0xffffff });
+}
+async function towerNext(T: TowerState) {
+  const o = act((g) => towerOpponent(g, T));
+  const m = towerMutator(T);
+  const best = towerBest(G);
+  const fresh = T.floor === 1 && (T.lives ?? TOWER_LIVES) === TOWER_LIVES;
+  const c = await choose({
+    emoji: '🗼',
+    title: `Tower, floor ${T.floor}`,
+    sub: `HP ${hpTxt(G, T.hp)} ${'❤️'.repeat(T.lives ?? TOWER_LIVES)}${'🖤'.repeat(TOWER_LIVES - (T.lives ?? TOWER_LIVES))}. Record: ${best.floor ? `floor ${best.floor} (${best.who})` : 'nobody yet'}`,
+    body: (
+      <>
+        <b>{o.name}</b>, level {o.lvl} {o.race.n.toLowerCase()} {o.arch.n.toLowerCase()}.
+        {m ? (
+          <>
+            <br />
+            {m.e} <b>{m.n}</b>: {m.d}. Until floor {Math.floor(T.floor / 5) * 5 + 4}.
+          </>
+        ) : (
+          <>
+            <br />
+            <span class="hint">No twist yet. From floor 5 on, every five floors bring a new one.</span>
+          </>
+        )}
+      </>
+    ),
+    options: [
+      { label: '⚔️ Climb', sub: T.floor % 10 === 0 ? 'A chest waits on this landing' : `Win: about ${2 + T.floor} 🪙 and ${6 + 2 * T.floor} XP` },
+      fresh
+        ? { label: 'Not now', sub: 'The stairs will wait' }
+        : { label: 'Walk back down', sub: T.floor > 1 ? `Keep floor ${T.floor - 1} as your result` : 'Pride is overrated anyway' },
+    ],
+  });
+  if (c !== 0) {
+    if (T.floor > 1) toast(`🗼 You cleared ${T.floor - 1} floors`);
+    return goHub();
+  }
+  const r = await fight(
+    { kind: 'tower', tier: towerTier(T), opp: o, rushHp: T.hp, mut: m ? { mods: m.mods, arena: m.arena } : undefined },
+    { tower: T, ...(m && m.arena ? { arena: dailyArena(m.arena) } : {}) },
+  );
+  await runSteps(r.next, { tower: () => void towerNext(T) });
 }
 
 // ---------------------------------------------------------------- boss rush

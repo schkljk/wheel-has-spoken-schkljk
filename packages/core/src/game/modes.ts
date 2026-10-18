@@ -218,6 +218,121 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
   };
 }
 
+// ---------------------------------------------------------------- the endless tower (upgrade 25)
+/**
+ * One fight per floor, each a bit higher up the ranked pool and a level stronger every four floors, HP carried
+ * between floors (+30% after a win, a full rest on every fifth floor's landing). From floor 5 on, every block of
+ * five floors has a mutator from the daily challenge's list. A loss ends the run; the best floor is kept, for
+ * the fighter and for the save.
+ */
+export interface TowerState {
+  /** the floor about to be fought (1 = the first) */
+  floor: number;
+  /** HP carried, 0-100 */
+  hp: number;
+  /** picks this run's mutators */
+  seed: number;
+  /** hearts left: a loss costs one and you try the floor again; the last one ends the climb */
+  lives?: number;
+}
+export const TOWER_FROM = 5;
+export const TOWER_LIVES = 3;
+export const towerOpen = (g: Game) => !!g.F && ((g.F.lvl || 1) >= TOWER_FROM || !!(g.F.story && ((g.F.story.cleared as number[]) || []).includes(1)));
+export const towerTier = (T: TowerState): FightTier => ({ k: 'tower', n: `Tower, floor ${T.floor}`, e: '🗼', xpW: 0, coins: 0 });
+/** The mutator on a floor: none on floors 1 to 4, then one per block of five, the same for the whole block. */
+export function towerMutator(T: TowerState, floor = T.floor) {
+  const block = Math.floor(floor / 5);
+  if (!block) return null;
+  const r = ((T.seed * 2654435761) ^ (block * 40503)) >>> 0;
+  // a few cheap rolls of a tiny hash, weighted like the daily challenge's mutator wheel
+  let x = r / 4294967296;
+  const total = MUTATORS.reduce((a, m) => a + m.w, 0);
+  x *= total;
+  for (const m of MUTATORS) {
+    if ((x -= m.w) < 0) return m;
+  }
+  return MUTATORS[MUTATORS.length - 1]!;
+}
+/** The fighter on a floor. */
+export function towerOpponent(g: Game, T: TowerState): CareerFighter {
+  const F = g.F!;
+  const lo = Math.min(0.92, 0.05 + T.floor * 0.025);
+  const o = poolPick(g.pool, lo, Math.min(1, lo + 0.12), g.rng, undefined, ctxOf(g)) as CareerFighter;
+  levelUp(o, Math.max(0, (F.lvl || 1) - 3 + Math.floor(T.floor / 4)), g.rng);
+  randomGear(o, Math.min(6, 1 + Math.floor(T.floor / 3)), g.rng);
+  o.aiSkill = Math.min(0.6, 0.04 * T.floor);
+  return o;
+}
+export interface TowerBest {
+  /** the highest floor cleared by anyone, and by whom */
+  floor: number;
+  who: string;
+}
+export const towerBest = (g: Game) => ((g.save.profile.extra.tower as unknown as TowerBest | undefined) ?? { floor: 0, who: '' });
+export function endTowerFight(g: Game, T: TowerState, O: CareerFighter, o: FightOutcome): FightResult {
+  const F = g.F!;
+  const won = o.w === 0;
+  commonAfter(g, won, O);
+  const lines: string[] = [];
+  const got: FightResult['got'] = [];
+  const keys: string[] = [];
+  const next: Step[] = [];
+  let xp = 4;
+  let coins = 0;
+  const best = towerBest(g);
+  const cleared = won ? T.floor : T.floor - 1;
+  if (won) {
+    track(g, 'wins');
+    addMasteryWin(g, F);
+    xp = 6 + 2 * T.floor;
+    coins = 2 + T.floor;
+    if (T.floor % 10 === 0) {
+      awardGems(g, 1 + T.floor / 10, lines);
+      next.push({ t: 'loot', table: 'elite' });
+      lines.push(`🗼 Floor ${T.floor}: a landing with a chest on it`);
+    }
+    T.floor++;
+    // a landing every five floors: a full rest before the next twist
+    const landing = T.floor % 5 === 0;
+    T.hp = landing ? 100 : Math.min(100, Math.max(1, Math.ceil(o.me.hp)) + 30);
+    const m = towerMutator(T);
+    lines.push(
+      `Next: floor ${T.floor}. You'll have ${hpTxt(g, T.hp)} HP${landing ? ' after a rest on the landing' : ''}${landing && m ? `. New twist from here: ${m.e} ${m.n}` : ''}`,
+    );
+    next.push({ t: 'tower' });
+  } else {
+    T.lives = (T.lives ?? TOWER_LIVES) - 1;
+    if (T.lives > 0) {
+      T.hp = 60;
+      lines.push(`💔 A heart down, ${pl(T.lives, 'heart')} left. Back up floor ${T.floor} with ${hpTxt(g, T.hp)} HP, against someone new`);
+      next.push({ t: 'tower' });
+    } else lines.push(`The tower wins on floor ${T.floor}. You cleared ${pl(cleared, 'floor')}`);
+  }
+  const over = !won && (T.lives ?? 0) <= 0;
+  // records: the fighter's own best, and the save's
+  F.towerBest = Math.max(F.towerBest || 0, cleared);
+  if (cleared > best.floor) {
+    g.save.profile.extra.tower = { floor: cleared, who: F.name } as unknown as Json;
+    if (over || cleared % 5 === 0) lines.push(`🏅 New tower record: floor ${cleared}`);
+  }
+  gainXP(g, F, xp);
+  addCoins(g, coins);
+  award(g, keys, got);
+  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  if (over) next.push({ t: 'levelups' }, { t: 'hub' });
+  return {
+    won,
+    big: won ? `Floor ${T.floor - 1} cleared` : over ? 'The tower wins' : 'Knocked down a floor',
+    desc: won ? `${F.name} beats ${O.name}.` : `${O.name} ends the climb.`,
+    lines,
+    got,
+    next,
+    button: 'Continue',
+    q: won ? 2 : 0,
+    confetti: won && (T.floor - 1) % 10 === 0,
+  };
+}
+
 // ---------------------------------------------------------------- fight club
 export interface Club {
   A: CareerFighter;
