@@ -1257,6 +1257,10 @@
 .maphead .grow {
   min-width: 0;
 }
+/* the rows never push the header wider than the screen; the chapter title truncates instead */
+.maphead > * {
+  min-width: 0;
+}
 .mh-e {
   font-size: 2.2rem;
 }
