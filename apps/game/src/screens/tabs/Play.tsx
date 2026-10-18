@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
-import { G, act, activeFighter, ensure } from '../../state/game';
+import { BALANCE, CHAPTERS, TIERS_T, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, coinsOf, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { Icon } from '../../ui/Icon';
 import { openExhibition } from '../../flows/exhibition';
 import { Inf } from '../../ui/Info';
@@ -18,6 +18,9 @@ export function PlayTab() {
   useEffect(() => {
     const pn = G.save.profile.patchNotes as { unseen?: boolean } | null;
     if (pn && pn.unseen) openPatchNotes();
+    // a seasonal arena on the wheel (upgrade 27): said once a season
+    const news = act((g) => seasonNews(g));
+    if (news) toast(news);
   }, []);
   const S = F.story as Story | null;
   const ch = S ? S.ch : 1;

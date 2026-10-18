@@ -41,6 +41,8 @@ for (const [width, height] of VIEWS) {
       await sheetClose(page);
       await page.getByRole('button', { name: 'Spin the rest for me' }).click();
       await page.getByRole('button', { name: 'Start their career' }).waitFor({ timeout: 90_000 });
+      // the scouting report: three strengths, the biggest weakness, the best synergy
+      await expect(page.locator('.scout .sr-l')).toHaveCount(5);
       await check(page, 'fighter card');
       expect(errors).toEqual([]);
     });

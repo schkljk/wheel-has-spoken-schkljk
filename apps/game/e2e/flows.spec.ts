@@ -610,3 +610,56 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   await expect(page.getByText(/^Story, chapter 3 of/)).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('seasonal arenas: a heads-up in season, and a collection section that never counts them', async ({ page }) => {
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 6, ch: 2 }), 'whs:today': '2026-12-10' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await expect(page.getByText(/Snow globe is in season: on the arena wheel until 6 January/)).toBeVisible();
+  await page.getByRole('tab', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Collection/ }).click();
+  const sec = page.locator('.cx-season');
+  await sec.scrollIntoViewIfNeeded();
+  await expect(sec.getByText('Not counted. They come back every year')).toBeVisible();
+  await expect(sec.locator('.tile')).toHaveCount(9);
+  await expect(sec.locator('.tile.now')).toHaveCount(1);
+  await expect(sec.locator('.tile.now')).toContainText('In season now');
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await sec.getByRole('button', { name: /Pumpkin patch/ }).click();
+  const card = page.getByRole('dialog');
+  await expect(card.getByText(/Seasonal: on the arena wheel every October, until 2 November. Comes back every year/)).toBeVisible();
+  await expect(card.getByText(/judging your build/)).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('gear compare: what a piece changes, green and red, before it goes on', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 320, height: 568 });
+  await open(page, careerSaveKV({ seed: 9, lvl: 8, compare: true }));
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('tab', { name: 'Fighter' }).click();
+  await page.getByRole('button', { name: /Armory/ }).click();
+  await page.locator('.arm-slot').first().click();
+  await page.getByRole('button', { name: 'Wear' }).click();
+  const dlg = page.getByRole('alertdialog');
+  await expect(dlg.getByText('Wear Knight plate?')).toBeVisible();
+  await expect(dlg.locator('.gc-side').first()).toContainText('Now');
+  await expect(dlg.locator('.gc-rows li.up').filter({ hasText: 'Defense' })).toHaveCount(1);
+  await expect(dlg.locator('.gc-syn.up')).toContainText('Knight set (4)');
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.setViewportSize({ width: 667, height: 375 });
+  expect((await layoutProblems(page)).clipped).toEqual([]);
+  await page.setViewportSize({ width: 320, height: 568 });
+  // backing out changes nothing
+  await dlg.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByRole('button', { name: 'Wear' })).toBeVisible();
+  await page.getByRole('button', { name: 'Wear' }).click();
+  await dlg.getByRole('button', { name: 'Wear it' }).click();
+  await expect(page.getByText(/Knight plate equipped/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Take off' })).toHaveCount(1);
+  expect(errors).toEqual([]);
+});

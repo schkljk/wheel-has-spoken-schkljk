@@ -36,6 +36,8 @@ export interface Balance {
   gearUpgrades: boolean;
   /** pirate, chef, cosmic and royal gear drop, with their set bonuses (upgrade 22) */
   moreSets: boolean;
+  /** calendar-themed arenas join the arena wheel in their season (upgrade 27) */
+  seasonal: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -55,6 +57,7 @@ export const LEGACY_BALANCE: Balance = {
   themedEvents: false,
   gearUpgrades: false,
   moreSets: false,
+  seasonal: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -98,6 +101,7 @@ export const BALANCE: Balance = {
   themedEvents: true,
   gearUpgrades: true,
   moreSets: true,
+  seasonal: true,
 };
 
 /**

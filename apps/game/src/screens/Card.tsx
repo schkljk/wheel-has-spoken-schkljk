@@ -1,5 +1,6 @@
-import { enterCareer, type CareerFighter } from '@whs/core';
-import { act, go } from '../state/game';
+import { buildSummary, ctxOf, enterCareer, type CareerFighter, type SumLine } from '@whs/core';
+import { G, act, go } from '../state/game';
+import { rise } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
 import { Icon } from '../ui/Icon';
 import { goHub } from '../flows/nav';
@@ -15,6 +16,7 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         </span>
       </header>
       <div class="scroll pad card-body">
+        <ScoutingReport f={f} />
         <FighterCard f={f} />
       </div>
       <footer class="dock pad">
@@ -32,5 +34,48 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         </button>
       </footer>
     </main>
+  );
+}
+
+/** The build in plain words (upgrade 29): three strengths, the biggest weakness and the best synergy, with jokes. */
+function ScoutingReport({ f }: { f: CareerFighter }) {
+  const r = buildSummary(f, ctxOf(G));
+  let n = 0;
+  const line = (cls: string, l: SumLine, label?: string) => (
+    <li class={`sr-l ${cls}`} key={cls + l.k} {...rise(n++)}>
+      <span class="sr-e" aria-hidden="true">
+        {l.e}
+      </span>
+      <span class="sr-t">
+        <b>
+          {label}
+          {l.n}.
+        </b>{' '}
+        {l.what}
+        <i class="flav">{l.joke}</i>
+      </span>
+    </li>
+  );
+  return (
+    <section class="card scout" aria-label="Scouting report">
+      <h3>📋 Scouting report</h3>
+      <ul class="sr-list">
+        {r.strengths.map((l) => line('good', l))}
+        {line('bad', r.weakness, 'Biggest weakness: ')}
+        {r.synergy ? (
+          line('syn', r.synergy, 'Best synergy: ')
+        ) : (
+          <li class="sr-l syn" {...rise(n++)}>
+            <span class="sr-e" aria-hidden="true">
+              🧩
+            </span>
+            <span class="sr-t">
+              <b>Best synergy:</b> {r.noSyn}
+            </span>
+          </li>
+        )}
+      </ul>
+      <p class="sr-close">{r.closer}</p>
+    </section>
   );
 }

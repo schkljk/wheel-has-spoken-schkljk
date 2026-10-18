@@ -55,6 +55,7 @@ import { fight } from './fight';
 import { choose, goMap, lootFlow, runSteps, showCine } from './nav';
 import { openArmory } from './armory';
 import { GearIcon, ItemIcon } from '../ui/GearIcon';
+import { GearCompareView } from '../ui/GearCompare';
 
 /** The step is done: on to the next one. */
 export function backToMap() {
@@ -388,7 +389,7 @@ function MerchantBody() {
                 class="buy"
                 disabled={coins < p}
                 onClick={async () => {
-                  if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙.`, yes: 'Buy it' }))) return;
+                  if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙. You wear it right away.`, extra: <GearCompareView k={k} />, yes: 'Buy it' }))) return;
                   if (act((x) => buyMerchantGear(x, k))) {
                     toast(`${g.e} ${g.n} equipped`);
                     beep(880, 0.15, 'triangle', 0.05);

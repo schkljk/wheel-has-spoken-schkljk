@@ -16,6 +16,7 @@
   --gold: #9a6a00;
   --teal: #0f766e;
   --danger: #b42318;
+  --good: #15803d;
   --q0: #525b6e;
   --q1: #5b4bb7;
   --q2: #0e9f8e;
@@ -46,6 +47,7 @@
     --gold: #f2b544;
     --teal: #2dd4bf;
     --danger: #ff6b6b;
+    --good: #4ade80;
     --glow: rgba(229, 72, 77, 0.16);
     --card-shadow: 0 12px 30px -18px rgba(0, 0, 0, 0.8);
     --scrim: rgba(0, 0, 0, 0.6);

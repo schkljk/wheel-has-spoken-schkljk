@@ -36,7 +36,14 @@ function seed() {
   crypto.getRandomValues(a);
   return a[0]!;
 }
-export const G: Game = { save: structuredClone(first.save), F: null, rng: mulberry32(seed()), clock: clockAt(), pool: null, notes: [] };
+/** Today, or the day tests pin with `?today=2026-12-10` or the `whs:today` key (seasonal arenas follow the date). */
+const pinned = (() => {
+  const q = new URLSearchParams(location.search).get('today') ?? kv.getItem('whs:today');
+  const [y, m, d] = (q || '').split('-').map(Number);
+  return y && m && d ? new Date(y, m - 1, d, 12).getTime() : 0;
+})();
+const today = () => (pinned ? new Date(pinned) : new Date());
+export const G: Game = { save: structuredClone(first.save), F: null, rng: mulberry32(seed()), clock: clockAt(today()), pool: null, notes: [] };
 /** Bumps whenever the live fighter changes, so screens that show it update. */
 export const fver = signal(0);
 
@@ -57,7 +64,7 @@ export function sync(): void {
 
 /** Runs a rule against the live game, then saves. */
 export function act<T>(fn: (g: Game) => T): T {
-  G.clock = clockAt();
+  G.clock = clockAt(today());
   const r = fn(G);
   sync();
   return r;

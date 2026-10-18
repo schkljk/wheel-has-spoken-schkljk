@@ -24,6 +24,8 @@ export interface ConfirmOpts {
   yes: string;
   no?: string;
   danger?: boolean;
+  /** shown under the body (e.g. a gear compare) */
+  extra?: ComponentChildren;
 }
 export const confirmReq = signal<(ConfirmOpts & { resolve: (ok: boolean) => void }) | null>(null);
 export const confirm = (o: ConfirmOpts) => new Promise<boolean>((resolve) => (confirmReq.value = { ...o, resolve }));

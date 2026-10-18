@@ -23,7 +23,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; trophies?: boolean; legends?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; compare?: boolean; trophies?: boolean; legends?: boolean } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -46,6 +46,11 @@ export function careerSaveKV(
     f.armory = [...new Set([...(f.armory || []), 'vest'])];
     f.gup = { vest: 3 };
     f.gcopy = { vest: 1 };
+  }
+  // three knight pieces worn and the knight plate in the armory: wearing it starts the 4-piece bonus (gear compare)
+  if (o.compare) {
+    f.gear = { helm: 'ironhelm', gloves: 'irongauntlets', boots: 'greaves', armor: 'vest' };
+    f.armory = [...new Set([...(f.armory || []), 'ironhelm', 'irongauntlets', 'greaves', 'vest', 'knightplate'])];
   }
   // a career with some silverware: a belt, three bosses, two rare titles, a mastered class and two started ones
   if (o.trophies) {

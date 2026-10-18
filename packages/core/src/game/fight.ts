@@ -36,6 +36,7 @@ import { LASTCH, hpTxt, newChapter, storyOf } from './story';
 import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
 import { endHard } from './hard';
+import { seasonalNow } from './seasonal';
 import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
@@ -80,6 +81,11 @@ export function fightLabel(spec: FightSpec) {
 export function arenaOdds(g: Game, A: CareerFighter, B: CareerFighter): { list: WheelEntry<Arena>[]; reasons: OddsNote[] } {
   const list = ARENAS.map((it) => ({ it, w: it.w, mult: 1 }));
   const reasons: OddsNote[] = [];
+  // calendar-themed arenas in their season (upgrade 27)
+  for (const it of seasonalNow(g)) {
+    list.push({ it, w: it.w, mult: 1 });
+    reasons.push({ cls: 'up', txt: `${it.e} ${it.n} is in season` });
+  }
   for (const f of [A, B]) {
     const tags = new Set([...(activePower(f) ? f.power.t : []), ...f.weapon.t, ...(f.ench.t || [])]);
     let hit = false;

@@ -86,6 +86,7 @@ export function ConfirmHost() {
       <section class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
         <h2 id="confirm-title">{c.title}</h2>
         <p style={{ margin: 0, color: 'var(--muted)' }}>{c.body}</p>
+        {c.extra}
         <button ref={yes} class={`btn block${c.danger ? ' danger' : ''}`} onClick={() => done(true)}>
           {c.yes}
         </button>

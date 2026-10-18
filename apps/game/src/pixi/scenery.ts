@@ -115,12 +115,102 @@ export function sceneSVG(k: string | undefined): string {
       g += dots(40, '#B388FF', 0, 220, 0.6, 1.8, 0.8);
       for (let i = 1; i <= 4; i++) g += `<ellipse cx="200" cy="90" rx="${i * 40}" ry="${i * 14}" fill="none" stroke="#B388FF" stroke-width="1.5" opacity="${0.5 - i * 0.09}"/>`;
       break;
+    // ---- calendar-themed arenas (upgrade 27)
+    case 'snowglobe':
+      for (let i = 0; i < 7; i++) {
+        const x = 18 + i * 58 + r() * 12;
+        const h = 50 + r() * 40;
+        g += `<path d="M${x} 196 L${x + 20} ${196 - h} L${x + 40} 196 Z" fill="#2E5E4E" opacity=".7"/><path d="M${x + 12} ${196 - h + 22} L${x + 20} ${196 - h} L${x + 28} ${196 - h + 22} Z" fill="#FFFFFF" opacity=".9"/>`;
+      }
+      g +=
+        `<ellipse cx="200" cy="214" rx="240" ry="38" fill="#FFFFFF" opacity=".85"/><path d="M14 210 A186 186 0 0 1 386 210" fill="none" stroke="#FFFFFF" stroke-width="6" opacity=".5"/><path d="M60 120 A150 150 0 0 1 150 44" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".55"/>` +
+        dots(46, '#FFFFFF', 0, 190, 1, 2.6, 0.9);
+      break;
+    case 'newyear':
+      g += `<circle cx="340" cy="40" r="14" fill="#F3EEFF" opacity=".8"/>`;
+      for (let i = 0; i < 10; i++) {
+        const x = i * 42 - 6;
+        const h = 50 + r() * 70;
+        g += `<rect x="${x}" y="${190 - h}" width="38" height="${h}" fill="#081029" opacity=".9"/>`;
+        for (let w = 0; w < 4; w++) g += `<rect x="${x + 6 + (w % 2) * 16}" y="${200 - h + 8 + Math.floor(w / 2) * 16}" width="8" height="8" fill="#FFD180" opacity="${r() > 0.5 ? 0.8 : 0.15}"/>`;
+      }
+      for (const [cx, cy, col] of [
+        [90, 48, '#FF5C8A'],
+        [210, 30, '#FFE14D'],
+        [290, 70, '#5CF2A0'],
+      ] as const) {
+        let rays = '';
+        for (let k = 0; k < 12; k++) {
+          const a = (k / 12) * Math.PI * 2;
+          rays += `M${(cx + Math.cos(a) * 6).toFixed(1)} ${(cy + Math.sin(a) * 6).toFixed(1)} L${(cx + Math.cos(a) * 24).toFixed(1)} ${(cy + Math.sin(a) * 24).toFixed(1)} `;
+        }
+        g += `<path d="${rays}" stroke="${col}" stroke-width="2.5" stroke-linecap="round" opacity=".85"/>`;
+      }
+      break;
+    case 'valentine': {
+      const heart = (x: number, y: number, s: number, col: string, op: number) =>
+        `<path d="M${x} ${y - 4 * s} C${x - 8 * s} ${y - 14 * s} ${x - 22 * s} ${y - 2 * s} ${x} ${y + 14 * s} C${x + 22 * s} ${y - 2 * s} ${x + 8 * s} ${y - 14 * s} ${x} ${y - 4 * s} Z" fill="${col}" opacity="${op}"/>`;
+      for (let i = 0; i < 9; i++) g += heart(20 + r() * 360, 20 + r() * 110, 0.6 + r() * 0.9, i % 2 ? '#E5484D' : '#FF8FB1', 0.55);
+      g += `<rect x="20" y="120" width="8" height="80" fill="#B0174A" opacity=".7"/><rect x="372" y="120" width="8" height="80" fill="#B0174A" opacity=".7"/>`;
+      for (const y of [132, 150, 168]) g += `<rect x="24" y="${y}" width="352" height="3" fill="#FFFFFF" opacity=".75"/>`;
+      break;
+    }
+    case 'clover':
+      g += `<path d="M40 150 A160 160 0 0 1 360 150" fill="none" stroke="#E5484D" stroke-width="6" opacity=".35"/><path d="M50 150 A150 150 0 0 1 350 150" fill="none" stroke="#F2B544" stroke-width="6" opacity=".35"/><path d="M60 150 A140 140 0 0 1 340 150" fill="none" stroke="#5CF2A0" stroke-width="6" opacity=".35"/><path d="M70 150 A130 130 0 0 1 330 150" fill="none" stroke="#3D8BFF" stroke-width="6" opacity=".35"/>`;
+      g += `<path d="M0 190 Q100 150 200 182 T400 176 V240 H0Z" fill="#2E7D32" opacity=".55"/>`;
+      for (let i = 0; i < 12; i++) {
+        const x = 12 + r() * 376;
+        const y = 186 + r() * 40;
+        g += `<circle cx="${x - 4}" cy="${y}" r="4.5" fill="#1B5E20" opacity=".8"/><circle cx="${x + 4}" cy="${y}" r="4.5" fill="#1B5E20" opacity=".8"/><circle cx="${x}" cy="${y - 6}" r="4.5" fill="#1B5E20" opacity=".8"/>`;
+      }
+      break;
+    case 'egghunt':
+      g += `<circle cx="70" cy="46" r="22" fill="#FFF59D" opacity=".9"/><path d="M0 182 Q90 140 190 176 T400 168 V240 H0Z" fill="#7CB342" opacity=".5"/>`;
+      for (let i = 0; i < 9; i++) {
+        const x = 20 + i * 44 + r() * 10;
+        const y = 196 + r() * 26;
+        const col = ['#FF8FB1', '#82B1FF', '#FFE082', '#B9F6CA', '#CE93D8'][i % 5];
+        g += `<ellipse cx="${x}" cy="${y}" rx="7" ry="9" fill="${col}" opacity=".95"/><rect x="${x - 6}" y="${y - 1}" width="12" height="2.5" fill="#FFFFFF" opacity=".8"/>`;
+      }
+      g += dots(16, ['#FFFFFF', '#FFD1DC'], 150, 200, 1.4, 2.4, 0.9);
+      break;
+    case 'bonfire':
+      g += `<circle cx="300" cy="120" r="34" fill="#FFB74D" opacity=".8"/><rect x="0" y="150" width="400" height="10" fill="#6D4C41" opacity=".3"/>`;
+      g += `<path d="M160 196 L240 176 M160 176 L240 196" stroke="#4E342E" stroke-width="9" stroke-linecap="round" opacity=".85"/>`;
+      g += `<path d="M168 184 Q176 140 192 150 Q196 112 208 136 Q220 104 226 146 Q240 132 232 184 Z" fill="#FF7A2F" opacity=".85"/><path d="M184 184 Q190 158 200 164 Q206 140 214 162 Q222 156 218 184 Z" fill="#FFE14D" opacity=".9"/>`;
+      g += dots(22, ['#FFB627', '#FF7A2F'], 60, 170, 1, 2.2, 0.8);
+      break;
+    case 'poolparty':
+      g += `<circle cx="330" cy="44" r="24" fill="#FFE082" opacity=".95"/><rect x="0" y="160" width="400" height="44" fill="#0288D1" opacity=".45"/><path d="M0 162 Q25 154 50 162 T100 162 T150 162 T200 162 T250 162 T300 162 T350 162 T400 162" stroke="#FFFFFF" stroke-width="3" fill="none" opacity=".7"/>`;
+      g += `<path d="M40 160 V120 M58 160 V120 M40 132 H58 M40 146 H58" stroke="#ECEFF1" stroke-width="3" opacity=".85"/>`;
+      g += `<circle cx="250" cy="172" r="14" fill="none" stroke="#FF5C8A" stroke-width="8" opacity=".9"/><path d="M110 150 V80 M70 92 Q110 56 150 92 Z" stroke="#ECEFF1" stroke-width="3" fill="#FF7043" opacity=".8"/>`;
+      break;
+    case 'pumpkin':
+      g += `<circle cx="80" cy="46" r="22" fill="#FFE0B2" opacity=".85"/>`;
+      for (let i = 0; i < 4; i++) {
+        const x = 30 + i * 110 + r() * 20;
+        g += `<path d="M${x} 196 V110 M${x} 140 L${x - 22} 118 M${x} 128 L${x + 20} 104 M${x} 160 L${x + 18} 146" stroke="#140C1C" stroke-width="5" stroke-linecap="round" opacity=".8"/>`;
+      }
+      for (let i = 0; i < 6; i++) {
+        const x = 30 + i * 68 + r() * 16;
+        const y = 206 + r() * 14;
+        g += `<ellipse cx="${x}" cy="${y}" rx="16" ry="12" fill="#F57C00" opacity=".95"/><rect x="${x - 2}" y="${y - 17}" width="4" height="7" fill="#33691E"/><path d="M${x - 8} ${y - 3} l4 -5 l4 5 Z M${x + 1} ${y - 3} l4 -5 l4 5 Z M${x - 7} ${y + 4} h14 l-3 3 h-8 Z" fill="#FFE14D" opacity=".95"/>`;
+      }
+      break;
+    case 'leafpile':
+      for (let i = 0; i < 5; i++) {
+        const x = 20 + i * 90 + r() * 16;
+        g += `<rect x="${x - 4}" y="110" width="8" height="86" fill="#5D4037" opacity=".75"/><circle cx="${x}" cy="96" r="${28 + r() * 10}" fill="${i % 2 ? '#E65100' : '#F9A825'}" opacity=".7"/>`;
+      }
+      g += `<ellipse cx="110" cy="214" rx="70" ry="18" fill="#D84315" opacity=".8"/><ellipse cx="300" cy="218" rx="80" ry="20" fill="#EF6C00" opacity=".8"/>`;
+      g += dots(30, ['#E65100', '#F9A825', '#BF360C'], 196, 230, 1.6, 3, 0.9);
+      break;
   }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240">${g}</svg>`;
 }
 
 // ---------------------------------------------------------------- ambient particles
-type AmbKind = 'ember' | 'snow' | 'rain' | 'leaf' | 'star' | 'spark' | 'fog' | 'dust' | 'steam';
+type AmbKind = 'ember' | 'snow' | 'rain' | 'leaf' | 'star' | 'spark' | 'fog' | 'dust' | 'steam' | 'autumn' | 'petal' | 'confetti';
 const AMB: Record<string, AmbKind> = {
   lava: 'ember',
   tundra: 'snow',
@@ -137,7 +227,17 @@ const AMB: Record<string, AmbKind> = {
   mirror: 'spark',
   beach: 'spark',
   ballpit: 'dust',
+  snowglobe: 'snow',
+  newyear: 'confetti',
+  valentine: 'petal',
+  clover: 'leaf',
+  egghunt: 'petal',
+  bonfire: 'ember',
+  poolparty: 'spark',
+  pumpkin: 'autumn',
+  leafpile: 'autumn',
 };
+const CONFETTI = [0xff5c8a, 0xffe14d, 0x5cf2a0, 0x82b1ff, 0xce93d8];
 interface Mote {
   g: Graphics;
   x: number;
@@ -159,11 +259,26 @@ export class Ambient extends Container {
     for (let i = 0; i < n; i++) {
       const t = this.kind;
       const g = new Graphics();
-      const sz = t === 'fog' ? 120 + (i % 3) * 60 : t === 'leaf' ? 7 + (i % 3) * 2 : 2 + (i % 4);
-      const col = { ember: 0xffb627, snow: 0xffffff, rain: 0xc8e1ff, leaf: 0x7cb342, star: 0xffffff, spark: 0xffffff, fog: 0xdcd2f0, dust: 0xfff0d2, steam: 0xffffff }[t];
+      const flake = t === 'leaf' || t === 'autumn' || t === 'petal';
+      const sz = t === 'fog' ? 120 + (i % 3) * 60 : flake ? 7 + (i % 3) * 2 : t === 'confetti' ? 5 + (i % 3) : 2 + (i % 4);
+      const col = {
+        ember: 0xffb627,
+        snow: 0xffffff,
+        rain: 0xc8e1ff,
+        leaf: 0x7cb342,
+        star: 0xffffff,
+        spark: 0xffffff,
+        fog: 0xdcd2f0,
+        dust: 0xfff0d2,
+        steam: 0xffffff,
+        autumn: i % 2 ? 0xe65100 : 0xf9a825,
+        petal: i % 2 ? 0xff8fb1 : 0xffd1dc,
+        confetti: CONFETTI[i % CONFETTI.length]!,
+      }[t];
       if (t === 'rain') g.rect(-0.75, -7, 1.5, 14).fill({ color: col, alpha: 0.8 });
       else if (t === 'fog') g.ellipse(0, 0, sz / 2, sz / 6).fill({ color: col, alpha: 0.16 });
-      else if (t === 'leaf') g.ellipse(0, 0, sz / 2, sz / 4).fill({ color: col });
+      else if (flake) g.ellipse(0, 0, sz / 2, sz / 4).fill({ color: col });
+      else if (t === 'confetti') g.rect(-sz / 2, -sz / 4, sz, sz / 2).fill({ color: col });
       else g.circle(0, 0, sz / 2).fill({ color: col, alpha: t === 'steam' ? 0.35 : t === 'dust' ? 0.7 : 1 });
       const dur = t === 'rain' ? 0.7 + (i % 5) * 0.12 : t === 'star' || t === 'spark' ? 2 + (i % 4) : 5 + (i % 6) * 1.3;
       this.motes.push({ g, x: ((i * 37 + 13) % 100) / 100, y: ((i * 29) % 70) / 100, dur, t: (i * 0.61) % 6, sz });
@@ -191,10 +306,13 @@ export class Ambient extends Container {
           break;
         case 'snow':
         case 'leaf':
+        case 'autumn':
+        case 'petal':
+        case 'confetti':
           y = h * (-0.06 + k * 1.06);
           a = Math.min(1, Math.sin(k * Math.PI) * 2);
           m.g.x = x + Math.sin(k * 5 + m.x * 7) * 18;
-          if (kind === 'leaf') m.g.rotation = k * 6;
+          if (kind !== 'snow') m.g.rotation = k * (kind === 'confetti' ? 14 : 6);
           break;
         case 'rain':
           y = h * (-0.1 + k * 1.1);

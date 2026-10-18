@@ -19,3 +19,5 @@ export * from './data/content/nemesis';
 export * from './data/content/chapter-events';
 export * from './data/content/gear-sets';
 export * from './data/content/commentary';
+export * from './data/content/seasonal';
+export * from './data/content/build-summary';

@@ -45,6 +45,74 @@ That closes "Balance and system health". Next up is "Content and long-term progr
 - [x] 23. Trophy room
 - [x] 24. Hall of fame exhibitions
 - [x] 25. Endless tower
+- [x] 26. Hard mode for cleared chapters
+- [x] 27. Calendar-themed arenas
+
+That closes "Content and progression". Next up is "UI, clarity, navigation" (28 onwards).
+
+- [x] 28. Gear compare before equipping
+- [x] 29. Scouting report after the wheels
+
+### 29. Scouting report after the wheels
+
+- **What changed (UI):** the "Meet your fighter" screen opens with a 📋 **Scouting report**: three strengths, the biggest weakness and the best synergy, each as a plain-words label, the number behind it and a joke, then a sign-off that depends on the verdict:
+  - 🛡️ **Tough.** Durability 20, among the very best. *Has been hit by worse. Mostly by furniture.*
+  - 🕯️ **Biggest weakness: Weak power.** Power mastery 1, among the very lowest. *The power is more of a party trick.*
+  - ⛈️ **Best synergy: Storm caller.** Lightning power and a shocking weapon: chains three times as often. *Two things that should not mix, mixing beautifully.*
+  - *"This one could go places. Mostly forward, fast."*
+- "Strong" and "weak" are measured against every fighter the wheels can make (a fixed sample of 600), in words: among the very best, well above average, above average, about average. Crit and dodge chances count too. Power mastery only counts when there's a power to use.
+- The weakness is a clearly low stat when there is one, otherwise the weakness the wheel gave them (with its own flavor line). Hidden synergies stay hidden: the report never names one. Jokes are picked by the fighter's name, so the report is the same every time you look.
+- All the text is one table (`build-summary.ts`): nine kinds of strength and weakness with three jokes each, plus sign-offs for each verdict.
+- Tested: `summary.test.ts` (5 tests) checks every report has three different strengths and a weakness that isn't one of them, everything filled in, the same report every time, a towering stat leading and a tiny one as the weakness, the trait fallback, and no hidden synergy named. The 12-size layout test now checks the report's five lines on the card screen.
+
+### 28. Gear compare before equipping
+
+- **What changed (UI):** before a piece goes on, a compare view shows what's in the slot now next to the new piece (pixel icons and names), then every real number that would move: *Defense 38 → **44** +6* on green, *Speed 61 → **57** −4* on red. Set bonuses and synergies it would start (*"✨ Starts ⚜️ Knight set (4)"*) or end (*"✖ Ends ⚜️ Knight set (2)"*) are listed, then both pieces' effect lines. If no number moves it says so (*"The difference is in what it does."*).
+- It shows everywhere gear goes on: **Wear** in the armory (now a quick confirm with Wear it / Back), the **swap-or-keep** choice for new loot, and buying gear in the **base shop** (daily deal and premium) and from **story merchants** (those put it on right away, and now say so).
+- The numbers come from the same stat code as the fighter page (`gearCompare` in core, on a copy of the fighter), so the compare and the "Stats changed" popup afterwards always agree. Forge upgrades on either piece are included.
+- Tested: `compare.test.ts` (3 tests) checks the numbers match wearing it for real and the fighter isn't touched, that set bonuses gained and lost are named, and that the worn piece compares as no change. A new e2e test opens the armory with three knight pieces on, taps Wear on the knight plate, checks the green Defense row and "Knight set (4)", the layout at 320×568 and 667×375, backs out, then wears it.
+
+### 27. Calendar-themed arenas
+
+- **What changed (content):** nine seasonal arenas join the arena wheel in their season, by the phone's date, and come back every year:
+
+| Arena | When | Effect |
+|---|---|---|
+| ❄️ Snow globe | 1 December to 6 January | Ice +30%, more freezes |
+| 🎆 New Year's rooftop | 30 December to 2 January | Fire and light +20%, stray fireworks (25% a round, 6 damage to someone) |
+| 💘 Lovers' ring | 1 to 20 February | Mind +30%, crits +8% |
+| 🍀 Clover field | 10 to 24 March | Plants +30%, crits +5%, dodge +4% |
+| 🐣 Egg hunt meadow | 1 to 21 April | Plants +20%, everyone +1 speed |
+| 🔥 Midsummer bonfire | 18 June to 8 July | Fire +30%, light +20%, sunlight-weak fighters burn |
+| 🏊 Heatwave pool party | 20 July to 25 August | Water +30%, everyone −1 speed |
+| 🎃 Pumpkin patch | 1 October to 2 November | Shadow +30%, fire +20%, unholy fighters +1 strength and speed |
+| 🍂 Leaf pile | November | Wind +30%, everyone dodges a bit more |
+
+- Each has its own drawn backdrop and weather (snow, confetti, petals, autumn leaves, embers), a mechanics line and a flavor line (*"The pumpkins are carved with faces. The faces are judging your build."*). In season, the arena wheel's odds list says *"🎃 Pumpkin patch is in season"*, and the Play tab says so once a season in a toast.
+- **No FOMO:** nothing is tied to them. No rewards, no goals, no achievements, and they don't count toward the collection total or its milestones. The collection has a separate *Seasonal arenas* section that always shows all nine with their dates (*"Not counted. They come back every year"*), marks the one in season, and opens each one's info card.
+- **Balance check** (`npx tsx tools/sim/seasonal.ts`, 1,500 random pairs fight in every arena with the same dice): how often the winner differs from the Colosseum. Regular arenas: 4.3% to 21.3%. Seasonal: 4.3% to 7.3%, and 21.7% for the New Year's fireworks (like the Thunderdome's lightning, 21.3%). Average rounds stay at 6.1 to 6.5, as in the regular arenas. They sit inside the existing range.
+- Tests pin the date (`whs:today`, like `whs:seed`) to a day with no season, so seeded fights don't change with the calendar.
+- Tested: `seasonal.test.ts` (6 tests) covers the calendar windows (including across New Year), unique keys and names, seasons of at most six weeks, the wheel and its odds note in and out of season, fights in every seasonal arena, the collection count not moving, the info card, and one heads-up per season (again next year). A new e2e test sets the date to 10 December and checks the toast, the collection section (9 tiles, Snow globe in season) and an info card at 320×568.
+
+### 26. Hard mode for cleared chapters
+
+- **What changed (mode):** Play → 🔥 **Hard mode** (once a chapter is cleared). Pick any cleared chapter and play it again, meaner:
+  - Fights come from higher up the ranked pool (+15%), three levels stronger, with an extra piece of gear and sharper AI (+0.1).
+  - The boss gets +2 to every stat, is tuned to give you 12 points less of a chance, has 3 more levels of room to tune up, and never "eases off".
+  - **One twist for the whole chapter**, drawn when you start from the daily challenge's mutators (not the ones that force an arena or set your HP, since story HP carries over). It shows on the chapter intro, the map header and the Play card.
+- **Better loot:** half again the coins, boss loot from elites and nemeses, and the boss pays 3 more gems, a purse of 10 + 2 × chapter coins and an extra treasure spin.
+- **Your story waits:** the main story is set aside untouched and comes back when the hard run ends. Beat the boss and the chapter gets its 🔥 for good (*"Beaten on hard: 3 of 12"*). Run out of grit and the run just ends, with no coins lost. You can also walk away from the Play card any time (with a confirm). Cups unlock from the main story's chapter, not the hard run's.
+- The story card turns orange while a hard run is on, with the twist and *Continue on hard* / *Walk away*.
+- **Simulated** (`npx tsx tools/sim/hard.ts`, auto-battle bot): each fighter plays the story up to a chapter, then tries that chapter on hard and the one two chapters back, from the same save:
+
+| Build | Cleared to | Beat hard, same chapter | Beat hard, 2 back | Fights per run | Coins per run |
+|---|---|---|---|---|---|
+| Weak | ch 4 / 8 / 12 | 33% / 26% / 40% | 57% / 74% / 73% | 6 to 9 | 62 to 175 |
+| Average | ch 4 / 8 / 12 | 33% / 33% / 57% | 71% / 63% / 65% | 7 to 9 | 63 to 175 |
+| Strong | ch 4 / 8 / 12 | 58% / 42% / 79% | 96% / 46% / 75% | 8 to 9 | 101 to 206 |
+
+  Right after clearing a chapter, its hard version is a real fight (a third to a half of tries for average builds). A couple of chapters later it's more likely than not. Nothing in the normal story changed.
+- Tested: `hard.test.ts` (6 tests) covers which chapters open, the main story waiting untouched (and surviving a save), cups following the main story, the twist pool, the twist in every fight with HP still carried, stronger fights and bosses, more coins, the boss win (loot, treasure, celebration, home, marked for good), running out of grit with no coin loss, and the legacy save shape. New e2e tests: a full hard flow on a 320 px phone (picker, confirm, twist intro, hard map, a fight, the reward, the hard Play card, walking away), and the picker, confirm, intro, map and Play card at all 12 screen sizes.
 
 ### 25. Endless tower
 

@@ -1,4 +1,4 @@
-import { CODEX, codexCount } from '@whs/core';
+import { BALANCE, CODEX, SEASONAL_ARENAS, codexCount, seasonalNow } from '@whs/core';
 import { G, save } from '../state/game';
 import { openInfo } from '../state/ui';
 import { ContentIcon } from '../ui/ContentIcon';
@@ -61,7 +61,32 @@ export function CodexScreen({ back }: { back: () => void }) {
             </section>
           );
         })}
+        {BALANCE.seasonal && <SeasonalSection fought={seen.arena || []} />}
       </div>
     </main>
+  );
+}
+
+/** Calendar-themed arenas (upgrade 27): all shown, with when they come back, and not counted toward the total. */
+function SeasonalSection({ fought }: { fought: string[] }) {
+  const now = new Set(seasonalNow(G).map((a) => a.k));
+  return (
+    <section class="cx-cat cx-season">
+      <h3>
+        Seasonal arenas
+        <span>Not counted. They come back every year</span>
+      </h3>
+      <div class="cx-grid">
+        {SEASONAL_ARENAS.map((a) => (
+          <button key={a.k} class={`tile q${a.q}${now.has(a.k) ? ' now' : ''}${fought.includes(a.n) ? '' : ' unfought'}`} onClick={() => openInfo(`it|arena|${a.n}`)}>
+            <span class="e">{a.e}</span>
+            <span class="t">
+              {a.n}
+              <small>{now.has(a.k) ? 'In season now' : a.when}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

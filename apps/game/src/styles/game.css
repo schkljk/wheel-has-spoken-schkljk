@@ -2560,3 +2560,179 @@ img.pxi.race {
   background: #ff6a3d22;
   border: 1px solid #ff6a3d66;
 }
+
+/* ---------- seasonal arenas (upgrade 27) ---------- */
+.cx-season h3 span {
+  text-align: right;
+}
+.cx-season .tile.unfought .e {
+  filter: grayscale(0.8);
+  opacity: 0.6;
+}
+.cx-season .tile.now {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--teal) 45%, transparent);
+}
+.cx-season .tile.now small {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+/* ---------- gear compare (upgrade 28) ---------- */
+.gcmp {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  text-align: left;
+}
+.gc-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.4rem;
+}
+.gc-side {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 0.4rem;
+  align-items: center;
+  padding: 0.35rem 0.45rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  min-width: 0;
+}
+.gc-side .gc-i {
+  grid-row: span 2;
+  font-size: 1.4rem;
+  display: grid;
+  place-items: center;
+}
+.gc-side small {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+.gc-side b {
+  font-size: 0.85rem;
+  min-width: 0;
+}
+.gc-arrow {
+  font-weight: 800;
+  color: var(--muted);
+}
+.gc-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+}
+.gc-rows li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+.gc-rows li.up {
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+}
+.gc-rows li.down {
+  background: color-mix(in srgb, var(--danger) 14%, transparent);
+}
+.gc-l {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.gc-v em {
+  font-style: normal;
+  font-weight: 800;
+}
+.gc-rows li.up em {
+  color: var(--good);
+}
+.gc-rows li.down em {
+  color: var(--danger);
+}
+.gc-same {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.gc-syn {
+  font-size: 0.85rem;
+  padding: 0.25rem 0.45rem;
+  border-radius: 8px;
+}
+.gc-syn.up {
+  background: color-mix(in srgb, var(--teal) 14%, transparent);
+}
+.gc-syn.down {
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: var(--muted);
+}
+.gc-fx {
+  display: grid;
+  gap: 0.15rem;
+  color: var(--muted);
+}
+.confirm {
+  max-height: calc(100dvh - 1.5rem);
+  overflow-y: auto;
+}
+
+/* ---------- scouting report after the wheels (upgrade 29) ---------- */
+.scout {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+.scout h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.sr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+.sr-l {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+.sr-l.good {
+  background: color-mix(in srgb, var(--good) 11%, transparent);
+}
+.sr-l.bad {
+  background: color-mix(in srgb, var(--danger) 11%, transparent);
+}
+.sr-l.syn {
+  background: color-mix(in srgb, var(--teal) 11%, transparent);
+}
+.sr-e {
+  flex: none;
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+.sr-t {
+  display: grid;
+  min-width: 0;
+}
+.sr-t .flav {
+  display: block;
+}
+.sr-close {
+  margin: 0.1rem 0 0;
+  font-weight: 700;
+  font-size: 0.9rem;
+}

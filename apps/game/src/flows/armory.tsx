@@ -26,6 +26,7 @@ import { Sheet } from '../ui/kit';
 import { beep } from '../ui/sound';
 import { burst } from '../ui/fx';
 import { GearIcon, SlotIcon } from '../ui/GearIcon';
+import { GearCompareView } from '../ui/GearCompare';
 
 const ORDER = ['premium', 'mythic', 'legendary', 'epic', 'rare', 'common', 'junk'];
 const pl = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
@@ -115,7 +116,10 @@ export function openArmory(slot?: string) {
                   ) : (
                     <button
                       class="buy"
-                      onClick={() => {
+                      onClick={async () => {
+                        // what it changes first (upgrade 28)
+                        const ok = await confirm({ title: `Wear ${g.n}?`, body: 'Swap back any time. Nothing is lost.', extra: <GearCompareView k={g.k} />, yes: 'Wear it', no: 'Back' });
+                        if (!ok) return;
                         act((x) => wear(x, g.k));
                         beep(880, 0.1, 'triangle', 0.05);
                         toast(`${g.e} ${g.n} equipped`);

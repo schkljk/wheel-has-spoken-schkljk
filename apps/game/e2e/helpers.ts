@@ -37,10 +37,11 @@ export async function open(page: Page, seed: Record<string, string> = {}) {
   // no network fonts in tests: answer with an empty stylesheet instead of failing the request
   await page.route('**/fonts.{googleapis,gstatic}.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
   await page.goto('./');
+  // a day with no seasonal arena on the wheel, so seeded fights don't change with the calendar
   await page.evaluate((s) => {
     localStorage.clear();
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
-  }, seed);
+  }, { 'whs:today': '2026-05-15', ...seed });
   await page.reload();
 }
 
