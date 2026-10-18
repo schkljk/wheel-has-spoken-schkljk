@@ -8,7 +8,7 @@
 - [x] Phase 1: core parity
 - [x] Phase 2: app shell, saves, performance foundations
 - [x] Phase 3: every screen ported
-- [ ] Phase 4: upgrades (see docs/UPGRADES.md)
+- [x] Phase 4: upgrades 1–45 (see docs/UPGRADES.md). Item 46, sharing, is optional and waits until the game is shared
 
 ## Phase 4 log: upgrades
 
