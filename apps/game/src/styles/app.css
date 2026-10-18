@@ -90,6 +90,15 @@ small {
 }
 
 /* ---------- icons ---------- */
+/* an emoji drawn as a pixel icon (ui/emoji.ts), sized with the text around it */
+img.pxe {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.22em;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
 .pxi {
   width: 1.25em;
   height: 1.25em;

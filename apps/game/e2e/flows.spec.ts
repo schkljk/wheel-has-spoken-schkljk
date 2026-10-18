@@ -313,7 +313,7 @@ test("a boss's phase two changes the light and adds its slice to one wheel", asy
   await page.waitForTimeout(300);
   const hint = page.locator('.cw-out small').filter({ hasText: /^Phase two: / });
   await expect(hint).toHaveCount(1);
-  const named = (await hint.innerText()).replace(/^Phase two: \S+ /, '').replace(/ is on your .*$/, '');
+  const named = (await hint.innerText()).replace(/^Phase two:\s+/, '').replace(/ is on your .*$/, '');
   expect((await page.evaluate('window.__whsFight.wheel.items.map((i) => i.n)')) as string[]).toContain(named);
   for (const [width, height] of [[320, 568], [844, 390]] as const) {
     await page.setViewportSize({ width, height });
@@ -435,7 +435,8 @@ test('the nemesis waits on the story map with a speech about your last fight', a
   await expect(page.getByText('Nemesis fight')).toBeVisible();
   await page.getByRole('button', { name: /^Skip/ }).click();
   await page.locator('.fresult').waitFor({ timeout: 60_000 });
-  await expect(page.locator('.fresult')).toContainText('😈');
+  // emojis show as pixel icons that keep the emoji as alt text
+  await expect(page.locator('.fresult img[alt="😈"]').first()).toBeVisible();
   expect(errors).toEqual([]);
 });
 
@@ -553,7 +554,7 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('button', { name: /^Endless tower/ }).click();
   await expect(page.getByText('Tower, floor 1')).toBeVisible();
-  await expect(page.getByText(/❤️❤️❤️\. Record/)).toBeVisible();
+  await expect(page.getByText(/\. Record/).locator('img[alt="❤️"]')).toHaveCount(3);
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.getByRole('button', { name: /Climb/ }).click();
   await page.getByRole('button', { name: 'Spin the arena' }).click();
@@ -566,7 +567,10 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   // either floor 2, or floor 1 again with a heart gone
   await expect(page.getByText(/^Tower, floor (2|1)$/)).toBeVisible({ timeout: 30_000 });
   const again = (await page.getByText('Tower, floor 1').count()) > 0;
-  if (again) await expect(page.getByText(/❤️❤️🖤\. Record/)).toBeVisible();
+  if (again) {
+    await expect(page.getByText(/\. Record/).locator('img[alt="❤️"]')).toHaveCount(2);
+    await expect(page.getByText(/\. Record/).locator('img[alt="🖤"]')).toHaveCount(1);
+  }
   await page.getByRole('button', { name: /Walk back down/ }).click();
   await expect(page.locator('.tabbar, [role=tablist]').first()).toBeVisible();
   expect(errors).toEqual([]);
@@ -586,7 +590,7 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   await page.getByRole('alertdialog').getByRole('button', { name: /Bring it/ }).click();
   await expect(page.getByText(/Twist for the whole chapter/)).toBeVisible();
   await page.getByRole('button', { name: 'Begin' }).click();
-  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible();
+  await expect(page.locator('.maphead').getByText('Hard, chapter 1')).toBeVisible();
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.locator('.mnode.now.t-fight').first().click();
   await page.getByRole('button', { name: 'Spin the arena' }).click();
@@ -599,7 +603,7 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   await expect(page.locator('.maphead, [role=dialog]').first()).toBeVisible({ timeout: 30_000 });
   const prize = page.getByRole('button', { name: /Prize money/ });
   if (await prize.count()) await prize.click();
-  await expect(page.locator('.maphead').getByText('🔥 Hard, chapter 1')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.maphead').getByText('Hard, chapter 1')).toBeVisible({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Fighter page' }).click();
   await expect(page.getByText('Hard mode, chapter 1')).toBeVisible();
   expect((await layoutProblems(page)).clipped).toEqual([]);

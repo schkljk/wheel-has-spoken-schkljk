@@ -25,6 +25,77 @@
 - **Cause:** Pixi only resizes its canvas when the window resizes. On the spin screen the wheel's box shrinks when an odds row or a long result appears, but the canvas kept its old size and covered the text under it.
 - **Fix:** every Pixi canvas now follows its own box (a ResizeObserver), and the wheel's box clips, so the wheel can never cover the result even for a frame. Checked at 360×800, 320×568 and 412×915 across several spins.
 
+### No emojis left: every one is a pixel icon
+
+- **Asked for:** "replace any emojis left over with custom icons."
+- **What changed:** the game used 514 different emojis (races, moves, items, ranks, cups, goals, events, text). Now every emoji the game shows is drawn as a pixel icon instead.
+  - **Hand-drawn icons** for the common ones (`art/emoji-px.ts`, about 60): coins, gems, hearts, bolts, flames, shields, swords, skulls, stars, gifts and so on.
+  - **The rest** are pixelized from the phone's own emoji. Each is drawn large, averaged down to 16×16, cut to a few flat colours, and given the same dark coloured outline as the sprites. Near-black ones get a pale rim so they show on the dark panels.
+- **How it reaches every screen:** one hook (`ui/emoji.ts`) swaps emojis in all the text the game renders before it is drawn. The icon keeps the emoji as its alt text, so screen readers still read it.
+  - Plain symbols like ★ → ✓ ⚠ stay text.
+  - Inside the fight and on the wheels, Pixi draws emojis as pixel sprites: flying effects, the wheel hub, and slices with no art of their own. Stage text (banners, combo names, damage numbers) keeps only its words.
+- **Chapter badges:** each chapter's badge on the Play tab and the map header is now a piece of its own map's scenery (a bin, a lantern, a gear...).
+- **Two new icons:** a campfire (rest stops) and a treasure chest.
+
+### The wheels are pixel art now
+
+- **Asked for:** "Rework the wheel and its animations too, it feels out of place."
+- **The look:** every wheel is now drawn with the sprites' pixel engine (`art/wheel-art.ts`): the spin screen, the arena wheel, the combat wheel, the signature wheel and the title wheel.
+  - **Rim:** a bevelled gold rim with bulbs.
+  - **Slices:** shaded in bands with a dithered seam, separated by outlined dividers with a lit edge, with a gold peg where each divider meets the rim.
+  - **Pointer and hub:** a red pointer hanging from a gold cap, and a gold medallion hub.
+  - **Labels** are in the pixel font with a dark outline, and slice icons scale by whole pixels.
+- **The animations:**
+  - **Bulbs:** twinkle at rest; chase around the rim as fast as the wheel turns; blink while it slows down and the suspense builds; flash three times when it lands.
+  - **Pointer:** a real spring. Every peg knocks it, and a bounce knocks it harder.
+  - **Landing:** the winning slice pulses gold, the wheel pops, and pixel sparks fly off the pointer.
+  - **Reduced motion:** the bulbs stay lit and nothing pops or flies.
+- **Unchanged:** the spin physics, so results are exactly as fair as before.
+
+### Chapters are real maps now
+
+- **Asked for:** "Can we make chapters into actual designed maps?"
+- **What a chapter looks like now:** a painted pixel-art landscape in the chapter's theme, which scrolls inside its panel.
+  - **The road** starts at the bottom, winds up through every step, and ends at the boss's lair at the top.
+  - **At each step** the road forks into one lane per choice, then joins again.
+  - **Your fighter** stands where you are. Coming back from a step, they walk to the stop you just took.
+  - **The way you came** has gold footprints. The lanes you can take now sparkle. Further ahead, the map fades into mist.
+  - **The boss** stands on its glowing lair as its own sprite, in shadow until you reach it, with a red name plate and the recommended level.
+- **Stops:** round pixel badges, one colour per kind:
+  - fight: fist
+  - elite: crossed swords
+  - event: question mark
+  - rest: campfire (new icon)
+  - shop: cart
+  - treasure: chest (new icon)
+  - nemesis: their face
+  
+  The stops you can take now are bigger, gold-ringed and bobbing, with their name and what they do. Every other stop can still be tapped for a preview.
+- **20 themes** (`art/map-themes.ts`). Each has its own ground, road and scenery:
+  - asphalt and bins in the alley
+  - lanterns and stalls at the night market
+  - water and buoys at the docks
+  - graves and dead trees on the moor
+  - honeycomb in the Hive
+  - floating islands and rope bridges in the sky
+  - lava cracks in the Underworld
+  - gears and pipes in the citadel
+  - coral on the seabed
+  - tents at the carnival
+  - snowy pines at the glacier
+  - candy and moons in dreams
+  - crystals in the Void
+  - columns in the Pantheon
+  
+  The road changes too: cobbles, planks, a yellow brick road, neon, ice.
+- **About 60 scenery pieces** (`art/map-deco.ts`), drawn with the fighters' pixel engine and light, so the maps match the sprites.
+- **Same chapter, same map:** the layout and scenery come from the chapter and its steps, so a map never reshuffles mid-chapter.
+- **Speed:** a map paints in about 20–35 ms on a laptop:
+  - scenery pieces are drawn once in three variants and reused
+  - the road is stamped from precomputed discs
+  - painting happens right after the screen appears
+- **Fits every screen:** on phones the stops keep to a phone-width column and the scenery fills the rest. Names shrink a little on the narrowest phones instead of being cut off.
+
 ### New look: the arena at night
 
 - **Asked for:** a UI that fits the game's theme and is as clear as other games of this type.

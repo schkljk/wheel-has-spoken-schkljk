@@ -1,8 +1,13 @@
-import { Fragment } from 'preact';
 import { Hearts } from '../ui/Hearts';
-import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
-import { BOSSES, CHAPTERS, hardMutator, hpTxt, maxGrit, myNemesis, nodePreview, nodeOf, recLevel, storyOf, type NodeKind } from '@whs/core';
-import { G, activeFighter, act } from '../state/game';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'preact/hooks';
+import { BOSSES, CHAPTERS, hardMutator, hashStr, hpTxt, maxGrit, myNemesis, nodePreview, nodeOf, recLevel, storyOf, type NodeKind } from '@whs/core';
+import { ChapterIcon } from '../art/ChapterIcon';
+import { FighterFace } from '../art/FighterFace';
+import { FighterSprite } from '../art/FighterSprite';
+import { bossLook, mapLayout, renderMap } from '../art/map-art';
+import { mapTheme } from '../art/map-themes';
+import { lookOf } from '../art/sprite';
+import { G, activeFighter, act, reducedMotion } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { Icon } from '../ui/Icon';
@@ -11,20 +16,26 @@ import { goHub } from '../flows/nav';
 import { chapterIntro, enterNode, openBag } from '../flows/story';
 import { tip } from '../state/tips';
 
-/** The chapter map: your step, what you picked, what is ahead, and the boss at the end. */
+// the stop each kind of step shows on the map
+const KIND_ICON: Partial<Record<NodeKind, string>> = { fight: 'fist', elite: 'attack', event: 'question', rest: 'camp', shop: 'cart', treasure: 'chest' };
+// where your fighter stood when you last left the map, so they can walk to the next stop when you come back
+let lastSpot: { ch: number; row: number; x: number; y: number } | null = null;
+
+/** The chapter map: a landscape in the chapter's theme, a road forking at every step, you on it, the boss at the end. */
 export function MapScreen() {
-  void activeFighter.value;
+  const F = activeFighter.value!;
   const S = storyOf(G);
   const C = CHAPTERS[S.ch - 1]!;
   const boss = BOSSES[S.ch - 1]!;
   const NM = myNemesis(G);
   const HM = S.hard ? hardMutator(G) : null;
   const box = useRef<HTMLDivElement>(null);
-  const [room, setRoom] = useState({ h: 420, w: 400 });
+  const cv = useRef<HTMLCanvasElement>(null);
+  const [cw, setCw] = useState(0);
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    const measure = () => setRoom({ h: el.clientHeight, w: el.clientWidth });
+    const measure = () => setCw(el.clientWidth);
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
@@ -37,28 +48,43 @@ export function MapScreen() {
     } else tip('map');
   }, []);
   const last = S.rows.length - 1;
-  // as many steps as the screen holds: one done step, the current one, what is next, and the boss. A step is
-  // about 53 px with its gap, the current one 62 (two lines of choices when three don't fit side by side), a
-  // "⋯ more ⋯" line 23, and the panel's padding 16.
-  const nowH = (S.rows[S.row] || []).length > 2 && room.w < 430 ? 126 : 62;
-  const need = (b: number, a: number) => {
-    const h = Math.min(last - 1, S.row + a);
-    return 16 + b * 53 + nowH + Math.max(0, h - S.row) * 53 + (h < last - 1 ? 23 : 0) + (S.row < last ? 53 : 0);
-  };
-  let before = S.row > 0 ? 1 : 0;
-  let after = 1;
-  while (S.row + after < last - 1 && need(before, after + 1) + 23 <= room.h) after++;
-  if (before && need(before, after) + 23 > room.h) before = 0;
-  const lo = Math.max(0, S.row - before);
-  const hi = Math.min(last - 1, S.row + after);
-  // the "⋯ done" line only when there is room for it
-  const doneLine = lo > 0 && need(before, after) + 23 <= room.h;
+  const seed = hashStr(`${S.ch}|${S.ng || 0}|${S.hard ? 1 : 0}|${S.rows.map((r) => r.join(',')).join('/')}`);
+  const L = useMemo(() => (cw ? mapLayout(S.rows, cw, seed) : null), [cw, seed]);
+  const f = L ? cw / L.W : 1;
+  const picks = S.picks.join(',');
+  // the picture under the stops, painted right after the screen shows (the ground color stands in until then)
+  useEffect(() => {
+    const c = cv.current;
+    if (!L || !c) return;
+    const img = renderMap(L, S.ch, { row: S.row, picks: S.picks }, seed);
+    c.width = img.w;
+    c.height = img.h;
+    c.getContext('2d')!.putImageData(new ImageData(img.d as Uint8ClampedArray<ArrayBuffer>, img.w, img.h), 0, 0);
+  }, [L, S.row, picks]);
+  // where you stand: the stop you took last, or the start
+  const here = L ? (S.row > 0 ? L.stops[S.row - 1]![S.picks[S.row - 1] ?? 0] : null) ?? L.joins[0]! : null;
+  const [walk, setWalk] = useState<{ x: number; y: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!L || !here) return;
+    // scroll so the choices ahead sit a little above the middle, with you below them
+    const el = box.current!;
+    const ahead = (L.stops[Math.min(S.row, last)]![0]!.y + here.y) / 2;
+    el.scrollTop = ahead * f - el.clientHeight * 0.55;
+    // came back from a step on this chapter: walk there from where you stood
+    if (lastSpot && lastSpot.ch === S.ch && lastSpot.row === S.row - 1 && !reducedMotion()) {
+      setWalk({ x: lastSpot.x, y: lastSpot.y });
+      requestAnimationFrame(() => requestAnimationFrame(() => setWalk(null)));
+    }
+    lastSpot = { ch: S.ch, row: S.row, x: here.x, y: here.y };
+  }, [L, S.row]);
+  const at = (x: number, y: number) => ({ left: `${x * f}px`, top: `${y * f}px` });
+  const you = walk ?? here;
   return (
     <main class={`screen map-screen${HM ? ' hard' : ''}`} style={{ '--ch': C.col } as Record<string, string>}>
       <header class="maphead pad">
         <div class="row">
           <span class="mh-e" aria-hidden="true">
-            {C.e}
+            <ChapterIcon ch={S.ch} />
           </span>
           <div class="grow">
             <small class="ellipsis">
@@ -89,51 +115,68 @@ export function MapScreen() {
           </Inf>
         </div>
       </header>
-      <div class="maprows" ref={box}>
-        {S.rows.map((row, r) => {
-          if (!(r >= lo && r <= hi) && r !== last) return null;
-          const state = r < S.row ? 'done' : r === S.row ? 'now' : 'later';
-          return (
-            <Fragment key={r}>
-              {r === lo && doneLine && <div class="mgap">{lo} done ⋯</div>}
-              {r === last && hi < last - 1 && <div class="mgap">⋯ {last - 1 - hi} more ⋯</div>}
-              <div class={`mrow ${state}`}>
-                <div class="mstep">{r === last ? 'Boss' : `Step ${r + 1}`}</div>
-                <div class="mnodes">
-                  {row.map((t, i) => {
-                    const N = nodeOf(t as NodeKind);
-                    const e = t === 'boss' ? boss.e : N.e;
-                    const nem = t === 'nemesis' && NM;
-                    if (state === 'now')
-                      return (
-                        <button key={i} class={`mnode now t-${t}`} onClick={() => void enterNode(i)}>
-                          <span class="mn-e">{e}</span>
-                          <span class="mn-t">
-                            <b>{t === 'boss' ? boss.name : nem ? NM.f.name : N.n}</b>
-                            <small>{t === 'boss' ? boss.title : nem ? `Your nemesis. ${N.d}` : N.d}</small>
-                          </span>
-                        </button>
-                      );
-                    const cls = state === 'done' ? (S.picks[r] === i ? 'chosen' : 'skipped') : 'later';
-                    // any step can be tapped for a preview (upgrade 34); the boss shows its recommended level
-                    return (
-                      <button
-                        key={i}
-                        class={`mnode ${cls} t-${t}`}
-                        aria-label={`${t === 'boss' ? boss.name : nem ? `Nemesis: ${NM.f.name}` : N.n}: what's here`}
-                        onClick={() => previewNode(t as NodeKind)}
-                      >
-                        <span class="mn-e">{e}</span>
-                        {state === 'done' && S.picks[r] === i && <span class="mn-ok">✓</span>}
-                        {t === 'boss' && state === 'later' && <span class={`mn-lv${(G.F!.lvl || 1) < recLevel(G) ? ' low' : ''}`}>Lv {recLevel(G)}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
+      <div class="mapview" ref={box}>
+        {L && (
+          <div class="mapworld" style={{ height: `${L.H * f}px`, background: mapTheme(S.ch).g[1] }}>
+            <canvas ref={cv} class="mapart" aria-hidden="true" />
+            {S.rows.map((row, r) =>
+              row.map((t, i) => {
+                const n = L.stops[r]![i]!;
+                const state = r < S.row ? (S.picks[r] === i ? 'chosen' : 'skipped') : r === S.row ? 'now' : 'later';
+                const N = nodeOf(t as NodeKind);
+                const nem = t === 'nemesis' && NM;
+                const name = t === 'boss' ? boss.name : nem ? NM.f.name : N.n;
+                const go = () => (state === 'now' ? void enterNode(i) : previewNode(t as NodeKind));
+                if (t === 'boss')
+                  return (
+                    <button
+                      key={`${r}-${i}`}
+                      class={`mnode mboss ${state} t-boss`}
+                      style={at(n.x, n.y)}
+                      aria-label={state === 'now' ? undefined : `${boss.name}: what's here`}
+                      onClick={go}
+                    >
+                      <span class="mb-art">
+                        <FighterSprite look={bossLook(S.ch)} h={96} mirror />
+                      </span>
+                      <span class="mb-plate">
+                        <b>{boss.name}</b>
+                        <small>{boss.title}</small>
+                      </span>
+                      {state === 'later' && <span class={`mn-lv${(F.lvl || 1) < recLevel(G) ? ' low' : ''}`}>Lv {recLevel(G)}</span>}
+                    </button>
+                  );
+                return (
+                  <button
+                    key={`${r}-${i}`}
+                    class={`mnode ${state} t-${t}`}
+                    style={at(n.x, n.y)}
+                    aria-label={state === 'now' ? undefined : `${nem ? `Nemesis: ${NM.f.name}` : N.n}: what's here`}
+                    onClick={go}
+                  >
+                    <span class="mn-b">{nem ? <FighterFace f={NM.f} e={N.e} /> : KIND_ICON[t as NodeKind] ? <Icon name={KIND_ICON[t as NodeKind]!} /> : <span>{N.e}</span>}</span>
+                    {state === 'chosen' && (
+                      <span class="mn-ok" aria-hidden="true">
+                        <Icon name="check" />
+                      </span>
+                    )}
+                    {state === 'now' && (
+                      <span class="mn-t">
+                        <b>{name}</b>
+                        <small>{nem ? `Your nemesis. ${N.d}` : N.d}</small>
+                      </span>
+                    )}
+                  </button>
+                );
+              }),
+            )}
+            {you && (
+              <div class={`map-you${walk ? ' start' : ''}`} style={at(you.x, you.y)} aria-hidden="true">
+                <FighterSprite look={lookOf(F)} h={70} />
               </div>
-            </Fragment>
-          );
-        })}
+            )}
+          </div>
+        )}
       </div>
       <footer class="dock pad map-dock">
         <button class="btn ghost" onClick={() => openBag()}>

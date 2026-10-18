@@ -4,6 +4,7 @@ import { App } from './App';
 import { save } from './state/game';
 import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
+import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
 import { installNative } from './native';
 import { loadPx } from './pixi/usePixi';
@@ -21,6 +22,7 @@ import './styles/screens.css';
 import './styles/game.css';
 
 installErrorLog();
+installEmojiIcons();
 void installNative();
 installPressFeedback();
 render(<App />, document.getElementById('app')!);

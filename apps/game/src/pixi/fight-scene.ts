@@ -1,4 +1,5 @@
-import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Text, TextStyle } from 'pixi.js';
+import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Sprite, Text, TextStyle } from 'pixi.js';
+import { emojiCanvas } from '../art/emoji-px';
 import { COMBOS, WEAPONS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
 import { beep, finisherSound, hitSound, procSound, thud, type HitKind } from '../ui/sound';
@@ -6,7 +7,10 @@ import { buzz } from '../state/game';
 import { FighterView } from './fighter-view';
 import { Ambient, chapterSVG, drawFloor, sceneSVG } from './scenery';
 import { Tweens, ease } from './tween';
-import { WheelView } from './wheel';
+import { WheelView, texOf } from './wheel';
+
+/** Text drawn on the stage keeps its words; emojis only fly about as pixel icons. */
+const plain = (s: string) => s.replace(/(?:\p{Extended_Pictographic}|\uFE0F|\u200D)+/gu, '').replace(/\s{2,}/g, ' ').trim();
 
 import { fightDims, type FightDims } from './dims';
 
@@ -250,7 +254,7 @@ export class FightScene {
     const c = this.ctr(i);
     const st = FLOAT[cls] || FLOAT['']!;
     const t = new Text({
-      text,
+      text: plain(text),
       style: { fontFamily: FONT, fontWeight: '800', ...st, stroke: { color: 0x120e1f, width: 4 }, align: 'center' },
     });
     t.anchor.set(0.5, 1);
@@ -265,9 +269,14 @@ export class FightScene {
       }, ease.out)
       .then(() => t.destroy());
   }
+  /** An emoji flying about the fight, as its pixel icon. */
   private emoji(text: string, size: number) {
-    const t = new Text({ text, style: { fontSize: size } });
-    t.anchor.set(0.5);
+    const cv = emojiCanvas(text);
+    const t = new Container();
+    const pic: Sprite | Text = cv ? new Sprite(texOf(cv)) : new Text({ text, style: { fontSize: size } });
+    if (cv) pic.width = pic.height = size * 1.15;
+    pic.anchor.set(0.5);
+    t.addChild(pic);
     this.fx.addChild(t);
     return t;
   }
@@ -321,7 +330,7 @@ export class FightScene {
     this.bannerText?.destroy();
     const d = this.dims;
     const t = new Text({
-      text,
+      text: plain(text),
       style: { fontFamily: FONT, fontWeight: '800', fontSize: Math.round(clamp(d.stageW / 9, 30, 64)), fill: 0xfff3c4, stroke: { color: 0x1a1328, width: 6 }, align: 'center' },
     });
     t.anchor.set(0.5);
@@ -374,13 +383,13 @@ export class FightScene {
     const fill = p.kind === 'combo' ? (TINT_COL[COMBOS[p.k]?.tint ?? ''] ?? 0xffd166) : p.anti ? 0xc9c1dc : mine ? 0xffd166 : 0xff9db0;
     const box = new Container();
     const name = new Text({
-      text: `${p.n.toUpperCase()}!`,
+      text: `${plain(p.n).toUpperCase()}!`,
       style: { fontFamily: FONT, fontWeight: '800', fontSize: Math.round(clamp(d.stageW / 12, 24, 44)), fill, stroke: { color: 0x1a1328, width: 6 }, align: 'center' },
     });
     name.anchor.set(0.5, 1);
     const kind = p.kind === 'combo' ? 'Element combo' : `${mine ? 'Your' : 'Their'} synergy`;
     const sub = new Text({
-      text: `${kind} · ${p.sub}`,
+      text: `${kind} · ${plain(p.sub)}`,
       style: { fontFamily: FONT, fontWeight: '700', fontSize: Math.round(clamp(d.stageW / 30, 12, 17)), fill: 0xf3eeff, stroke: { color: 0x1a1328, width: 4 }, align: 'center' },
     });
     sub.anchor.set(0.5, 0);
