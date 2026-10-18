@@ -63,6 +63,56 @@ That closes "UI, clarity, navigation". Next up is "Art, animation, audio" (36 on
 
 - [x] 36. Real sound design and a music loop per arena
 - [x] 37. Unique scenery for every Act II chapter
+- [x] 38. Bosses with silhouettes of their own
+- [x] 39. Idle breathing and victory poses by class
+- [x] 40. A wheel-themed screen transition
+
+That closes "Art, animation, audio". Next up is "Technical" (41 onwards).
+
+### 40. A wheel-themed screen transition
+
+- **What changed (animation):** when the screen changes (title, fighter page, map, fight, bracket, collection…), a wheel of the game's colors (red, gold, teal, purple slices) spins open from the middle over the new screen and fades away, in under half a second.
+- It never takes a tap (taps go straight through to the new screen), and switching tabs on the fighter page doesn't trigger it. With Calm animations (or the phone's reduced-motion setting) it doesn't play at all.
+
+### 39. Idle breathing and victory poses by class
+
+- **Breathing:** fighters standing on the stage breathe: a slow rise and fall of the chest, scaled from the feet so they never leave their spot. The two fighters breathe out of step, quicker when below 30% HP, and not at all lying down or with Calm animations.
+- **Victory poses** by class, after a knockout or a decision:
+  - **Flex** (brawler, berserker, tank, wrestler, slayer, resilient): two pumps of the arm with a squash and a little screen shake.
+  - **Float** (mage, necro, alchemist, druid, chosen, monk): weapon held high, rising off the floor in a puff of sparkles.
+  - **Twirl** (assassin, trickster, ninja, gunslinger): a spin with a hop, arm up at the end.
+  - **Salute** (paladin, samurai, pirate, tamer): weapon raised to the brow and a small bow.
+  - **Dance** (bard, streamer, gambler, chef): side-steps and hops with the arm going up and down.
+  - Everyone else hops with an arm up, as before.
+- Everything returns to where it was (position, facing, tilt). With Calm animations, the winner just raises their arm.
+
+### 38. Bosses with silhouettes of their own
+
+- **What changed (art):** all 20 story bosses get something nobody else has, drawn on top of their race and class (the chef's toque, the pirate's tricorn and the samurai's kabuto were already there):
+  - Big Tony: spiked bouncer shoulders and a heavy gold chain.
+  - Mama Gnocchi: a giant wooden spoon on her back and pearls.
+  - Lady Venom: a towering collar and a tiara.
+  - Admiral Saltbeard: gold epaulettes.
+  - The Professor: tentacles reaching from behind, and a monocle.
+  - Count Crypt: bone spikes from the shoulders and a crown of bones.
+  - Titan Prime: boulder shoulders and peaks behind.
+  - Neon Ronin: a neon visor and two swords on his back.
+  - Queen Hivemind: a crown and a second pair of wings.
+  - The Wheelmaster: a golden wheel behind him and a crown.
+  - Captain Cumulus: a plume and clouds at his feet.
+  - Baron Brimstone: great horns and a crown of fire.
+  - The Clockmaker: a big gear behind him and goggles.
+  - Leviathan Rex: a crown and a great dorsal fin.
+  - Mister Giggles: a frilled ruff and a red balloon.
+  - The Frost Queen: a crown of ice spikes.
+  - The Sandman: a crescent moon behind his head and sand at his feet.
+  - Null: a dark ring with an eye, and reaching tendrils.
+  - Aurelion the Radiant: a golden halo and crest.
+  - The First Wheel: the pink wheel itself behind them, and a crown.
+- **Bigger:** bosses stand 15% taller than their size alone would make them, up to the tallest size the fight stage is laid out for, so the layout and the fighters' positions don't change.
+- Everything is placed from each sprite's own head and shoulders, so it fits any race's build. Things behind the body only fill pixels the body left empty, and the weapon arm is untouched (its swing animation still lines up).
+- Only fighters flagged as bosses get the layer, so every other sprite is still pixel-identical to the legacy art (the parity test still passes).
+- Tested: `tools/art/boss-sprites.test.ts` checks every boss gets extra pixels with the arm unchanged, and that only flagged bosses get it and are cached separately.
 
 ### 37. Unique scenery for every Act II chapter
 
