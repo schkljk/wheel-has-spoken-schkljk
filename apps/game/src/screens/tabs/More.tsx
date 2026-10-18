@@ -1,6 +1,5 @@
 import { go } from '../../state/game';
 import { RecordsSheet } from '../../sheets/Records';
-import { openTrophies } from '../../sheets/Trophies';
 import { pool, poolProgress } from '../../state/pool';
 import { openSheet } from '../../state/ui';
 import { SaveSheet } from '../../sheets/Save';
@@ -17,7 +16,7 @@ export function MoreTab() {
     ['save', 'Your save', 'Backups, export, import, bring over the old save', () => openSheet(<SaveSheet />)],
     ['cup', 'Records and legacy', 'Seasons, legacy perks, the hall of fame', () => openSheet(<RecordsSheet />)],
     ['card', 'Collection', 'Everything your fighters have found', () => go({ screen: 'codex' })],
-    ['cup', 'Trophy room', 'Belts, boss kills, rare titles and mastered classes', openTrophies],
+    ['cup', 'Trophy room', 'Belts, boss kills, rare titles and mastered classes', () => void import('../../sheets/Trophies').then((m) => m.openTrophies())],
     ['book', 'How to play', 'A quick tour of the game', startTutorial],
     ['people', 'Your fighters', 'Switch fighter', () => go({ screen: 'title' })],
   ];

@@ -3,7 +3,8 @@ import { commit, settings } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Segmented, Sheet, Toggle } from '../ui/kit';
 import { SaveSheet } from './Save';
-import { LabSheet } from './Lab';
+import { ErrorLogSheet } from './ErrorLog';
+import { errLog } from '../state/errlog';
 
 const taps = { n: 0 };
 import { startTutorial } from './Tutorial';
@@ -73,12 +74,19 @@ export function SettingsSheet() {
         onClick={() => {
           if (++taps.n >= 5) {
             taps.n = 0;
-            openSheet(<LabSheet />);
+            // the hidden lab loads on demand (upgrade 44)
+            void import('./Lab').then(({ LabSheet }) => openSheet(<LabSheet />));
           }
         }}
       >
         The Wheel Has Spoken · build {__BUILD__}
       </p>
+      {/* the hidden error log: only shows up when something went wrong (upgrade 45) */}
+      {errLog.value.length > 0 && (
+        <button class="btn ghost sm errbadge" onClick={() => openSheet(<ErrorLogSheet />)}>
+          ⚠ {errLog.value.length} {errLog.value.length === 1 ? 'error' : 'errors'} logged
+        </button>
+      )}
     </Sheet>
   );
 }

@@ -82,7 +82,8 @@ try {
       await new Promise((r) => setTimeout(r, 200));
     }
   }
-  const kv = careerSaveKV({ seed: 4, lvl: 12, ch: 3, auto: true });
+  // no first-time tips and a day with no seasonal arena, as in the e2e tests
+  const kv = { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, auto: true }), 'whs:notips': '1', 'whs:today': '2026-05-15' };
   await page.evaluate((s) => {
     localStorage.clear();
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);

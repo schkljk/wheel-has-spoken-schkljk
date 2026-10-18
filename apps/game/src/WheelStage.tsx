@@ -1,5 +1,6 @@
-import { Application, Container, Graphics } from 'pixi.js';
+import type { Application } from 'pixi.js';
 import { useEffect, useRef } from 'preact/hooks';
+import { loadPx } from './pixi/usePixi';
 
 // The idle title wheel: legacy wheel colors, a gold rim with pegs, slowly turning.
 const SLICES = [0x5b4bb7, 0x0e9f8e, 0xc62f35, 0xd99a2b, 0x7a5cc9, 0x2bb3a3, 0xe0504a, 0xf2b544];
@@ -10,14 +11,22 @@ export function WheelStage() {
 
   useEffect(() => {
     const el = host.current!;
-    const app = new Application();
+    let app: Application | null = null;
     let disposed = false;
 
-    void app
-      .init({ resizeTo: el, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: Math.min(devicePixelRatio, 2) })
-      .then(() => {
-        if (disposed) return app.destroy(true);
-        el.appendChild(app.canvas);
+    // Pixi comes in its own chunk, after the title screen is already up (upgrade 44)
+    void loadPx()
+      .then(async ({ Application, Container, Graphics }) => {
+        if (disposed) return null;
+        const a = (app = new Application());
+        await a.init({ resizeTo: el, backgroundAlpha: 0, antialias: true, autoDensity: true, resolution: Math.min(devicePixelRatio, 2) });
+        return { a, Container, Graphics };
+      })
+      .then((r) => {
+        if (!r) return;
+        const { a, Container, Graphics } = r;
+        if (disposed) return a.destroy(true);
+        el.appendChild(a.canvas);
         const wheel = new Container();
         const g = new Graphics();
         const step = (Math.PI * 2) / COUNT;
@@ -40,12 +49,12 @@ export function WheelStage() {
 
         // the pointer at the top
         const pointer = new Graphics().poly([-10, -112, 10, -112, 0, -92]).fill({ color: 0xc62f35 }).stroke({ width: 2, color: 0x8e1d22 });
-        app.stage.addChild(wheel, pointer);
+        a.stage.addChild(wheel, pointer);
 
         const reduced = () => document.documentElement.dataset.motion === 'reduced';
-        app.ticker.add((t) => {
-          const s = (Math.min(app.screen.width, app.screen.height) / 240) * 0.98;
-          wheel.position.set(app.screen.width / 2, app.screen.height / 2 + 6 * s);
+        a.ticker.add((t) => {
+          const s = (Math.min(a.screen.width, a.screen.height) / 240) * 0.98;
+          wheel.position.set(a.screen.width / 2, a.screen.height / 2 + 6 * s);
           wheel.scale.set(s);
           pointer.position.copyFrom(wheel.position);
           pointer.scale.set(s);
@@ -55,7 +64,7 @@ export function WheelStage() {
 
     return () => {
       disposed = true;
-      if (app.renderer) app.destroy(true);
+      if (app && app.renderer) app.destroy(true);
     };
   }, []);
 

@@ -1,4 +1,4 @@
-import { sceneSVG } from '../pixi/scenery';
+import { sceneSVG } from '../pixi/scenery-svg';
 import { spriteImages } from '../art/sprite-dom';
 import type { Look } from '../art/sprite';
 

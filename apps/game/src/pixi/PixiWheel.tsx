@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'preact/hooks';
 import { G, reducedMotion } from '../state/game';
 import { tick } from '../ui/sound';
 import { usePixi } from './usePixi';
-import { WheelView, type WheelEvents, type WheelSlice } from './wheel';
+import type { WheelEvents, WheelSlice, WheelView } from './wheel';
 
 export interface WheelHandle {
   view: WheelView;
@@ -22,14 +22,16 @@ export function PixiWheel(props: {
   onTap?: () => void;
   events: WheelEvents;
   handle?: { current: WheelHandle | null };
+  /** the wheel is drawn and can spin (Pixi loads on first use, so a tap can come before this) */
+  onReady?: () => void;
   label?: string;
 }) {
   const view = useRef<WheelView | null>(null);
   const p = useRef(props);
   p.current = props;
 
-  const { host } = usePixi((app, el) => {
-    const v = new WheelView();
+  const { host } = usePixi((app, el, px) => {
+    const v = new px.WheelView();
     v.rng = G.rng;
     view.current = v;
     if (props.handle) props.handle.current = { view: v };
@@ -119,6 +121,7 @@ export function PixiWheel(props: {
     el.addEventListener('pointermove', move);
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', cancel);
+    p.current.onReady?.();
     return () => {
       el.removeEventListener('pointerdown', down);
       el.removeEventListener('pointermove', move);
