@@ -1,7 +1,8 @@
-import { OL, PAURA, SIZE_H, type Look } from './sprite';
+import { OL, PAURA, SIZE_H, SPRITE_PH, type Look } from './sprite';
 import { spriteImages } from './sprite-dom';
 
-const PX = 'image-rendering:pixelated';
+// crisp pixels when each one gets at least 1.5 screen pixels, smooth below that (small fighters)
+const render = (hh: number) => ((hh * (globalThis.devicePixelRatio || 1)) / SPRITE_PH >= 1.5 ? 'image-rendering:pixelated' : 'image-rendering:auto');
 
 /** One limb of the old vector art: an outline stroke under a colored stroke (legacy art_build.js limb). */
 function Limb({ x1, y1, x2, y2, w, c }: { x1: number; y1: number; x2: number; y2: number; w: number; c: string }) {
@@ -56,6 +57,7 @@ export function FighterSprite({ look, h = 110, sized, mirror, class: cls }: Spri
   const hh = Math.round(h * sc),
     ww = Math.round((hh * 100) / 120);
   const img = spriteImages(look);
+  const PX = render(hh);
   const aura = img && look.power && look.power !== 'none' ? PAURA[look.power] : undefined;
   const inner = img ? (
     <>

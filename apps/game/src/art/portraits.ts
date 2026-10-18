@@ -7,7 +7,7 @@ import { POWER_ICON } from './icons';
 import { drawDeco } from './map-deco';
 import { mapTheme } from './map-themes';
 import { buf, outline, toRGBA } from './px';
-import { SPRITE_H, SPRITE_W, buildSprite, type Look } from './sprite';
+import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, type Look } from './sprite';
 import { weapon } from './sprite-weapons';
 
 const cache = new Map<string, HTMLCanvasElement | null>();
@@ -68,13 +68,13 @@ const url = (key: string, cv: () => HTMLCanvasElement | null) => {
 
 /** A face: the top of the sprite (the whole thing for pigeons and rubber ducks), in plain clothes unless a class is given. */
 export const faceCanvas = (look: Look, rows = 30) =>
-  cached(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => crop(buildSprite({ name: look.race || 'x', arch: 'npc', ...look, weapon: 'Bare fists' }).body, SPRITE_W, SPRITE_H, rows));
+  cached(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => crop(buildSprite({ name: look.race || 'x', arch: 'npc', ...look, weapon: 'Bare fists' }).body, SPRITE_PW, SPRITE_PH, rows * SPRITE_S));
 export const facePortrait = (look: Look, rows = 30) => url(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => faceCanvas(look, rows));
 /** A chapter's badge: the piece of its map's scenery that stands for it (a bin for the alley, a gear for the citadel). */
 export const chapterIcon = (ch: number) =>
   url(`chap|${ch}`, () =>
     cached(`chap|${ch}`, () => {
-      const d = drawDeco(mapTheme(ch).icon, () => 0.3);
+      const d = drawDeco(mapTheme(ch).icon, () => 0.3, SPRITE_S);
       return d ? crop(toRGBA(d.B), d.B.w, d.B.h) : null;
     }),
   );
@@ -82,24 +82,24 @@ export const chapterIcon = (ch: number) =>
 export const fighterFace = (look: Look) =>
   url(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
     cached(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
-      crop(buildSprite({ ...look, weapon: 'Bare fists' }).body, SPRITE_W, SPRITE_H, 30),
+      crop(buildSprite({ ...look, weapon: 'Bare fists' }).body, SPRITE_PW, SPRITE_PH, 30 * SPRITE_S),
     ),
   );
 
 /** A weapon on its own (with its enchant's glow), held at an angle. */
 export const weaponCanvas = (name: string, ench?: string) =>
   cached(`weapon|${name}|${ench ?? ''}`, () => {
-    const B = buf(40, 40);
+    const B = buf(40, 40, SPRITE_S);
     weapon(B, name, ench, 10, 31);
     outline(B);
-    return crop(toRGBA(B), 40, 40);
+    return crop(toRGBA(B), B.w, B.h);
   });
 export const weaponPortrait = (name: string, ench?: string) => url(`weapon|${name}|${ench ?? ''}`, () => weaponCanvas(name, ench));
 
-/** A pixel icon as a canvas (for Pixi). */
-export const iconCanvas = (name: string) =>
-  cached(`icon|${name}`, () => {
-    const p = iconPixels(name);
+/** A pixel icon as a canvas (for Pixi), `s` real pixels per art pixel. */
+export const iconCanvas = (name: string, s = 1) =>
+  cached(`icon|${name}|${s}`, () => {
+    const p = iconPixels(name, undefined, s);
     if (!p) return null;
     const cv = document.createElement('canvas');
     cv.width = cv.height = p.size;
@@ -117,7 +117,7 @@ export function contentCanvas(cat: string | undefined, it: { n: string; k?: stri
   if (cat === 'arch' && it.k) return faceCanvas({ race: 'Human', arch: it.k, name: 'Class ' + it.k });
   if (cat === 'weapon' && it.n !== 'Bare fists') return weaponCanvas(it.n);
   if (cat === 'ench' && it.k && it.k !== 'none') return weaponCanvas('Sword', it.k);
-  if (cat === 'power' && it.k && POWER_ICON[it.k]) return iconCanvas(POWER_ICON[it.k]!);
+  if (cat === 'power' && it.k && POWER_ICON[it.k]) return iconCanvas(POWER_ICON[it.k]!, 2);
   return null;
 }
 

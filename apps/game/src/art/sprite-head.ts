@@ -1,7 +1,7 @@
 // Heads: the skull shape of each race, a face with a mood, hair, race features (ears, horns, snouts, beaks...),
 // class face gear (masks, patches, goggles) and every hat. Faces look right, three-quarter view.
 
-import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, box, dot, dotOn, ell, h2r, has, ln, minus, or, poly, raw, shade, type Buf, type RGB, type Ramp, type Test } from './px';
+import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, box, dot, dotOn, ell, fine, h2r, has, ln, minus, or, poly, raw, shade, forPx, shadeAt, type Buf, type RGB, type Ramp, type Test } from './px';
 import { HIDES_HAIR, type Ctx, type Mood } from './sprite-data';
 
 const WHITE: RGB = [250, 250, 246];
@@ -183,6 +183,27 @@ function face(B: Buf, c: Ctx, cx: number, hc: number, r: number, hd: Test) {
   const eyeHex = race.eye || (race.head === 'wolf' ? '#FFD54F' : race.stars ? '#7FE3FF' : '#2A1E36');
   const EYE = RP(eyeHex);
   const iris = (x: number, y: number, R: Ramp, glint = true) => {
+    if (B.s >= 2) {
+      // at two pixels per art pixel: a rounded eye under a lid line, a pupil, a one-pixel glint, a lit rim below
+      const q = 1 / B.s;
+      const lid = race.eye || h === 'wolf' ? DEEP : OLN;
+      const X = x,
+        Y = y - 1;
+      for (let i = 0; i < 4; i++)
+        for (let j = 0; j < 6; j++) {
+          const px = X + i * q,
+            py = Y + j * q;
+          const edge = i === 0 || i === 3;
+          if ((j === 0 || j === 5) && edge) continue;
+          let t: number = j <= 1 ? lid : j === 5 ? (race.eye ? LIT : SHD) : BASE;
+          if (!race.eye && j >= 2 && j <= 4 && !edge) t = OLN;
+          if (race.eye && j >= 3 && j <= 4 && !edge) t = DEEP;
+          fine(B, px, py, R, t);
+        }
+      if (glint) fine(B, X + q, Y + 2 * q, WHITE);
+      if (glint) fine(B, X + 2 * q, Y + 4 * q, R, race.eye ? SHINE : LIT);
+      return;
+    }
     dot(B, x, y - 1, R, race.eye || h === 'wolf' ? DEEP : OLN);
     dot(B, x + 1, y - 1, R, race.eye || h === 'wolf' ? DEEP : OLN);
     if (glint) raw(B, x, y, WHITE);
@@ -252,7 +273,13 @@ function face(B: Buf, c: Ctx, cx: number, hc: number, r: number, hd: Test) {
   const BR = race.hair && !hidesHair(c) && !out.bald ? c.HAIR : SK;
   const bt = BR === SK ? OLN : DEEP;
   const by = ey - 3;
-  const brow = (x: number, ys: [number, number, number]) => ys.forEach((dy, i) => dotOn(B, x - 1 + i, by + dy, BR, bt));
+  // brows: one fine pixel thick on a fine layer (the lower half of each art pixel)
+  const brow = (x: number, ys: [number, number, number]) =>
+    ys.forEach((dy, i) => {
+      if (B.s < 2) return dotOn(B, x - 1 + i, by + dy, BR, bt);
+      if (!has(B, x - 1 + i, by + dy)) return;
+      for (let k = 0; k < B.s; k++) fine(B, x - 1 + i + k / B.s, by + dy + (B.s - 1) / B.s, BR, bt);
+    });
   if (!out.lucha && h !== 'raccoon') {
     const near: [number, number, number] =
       mood === 'angry' ? [-1, 0, 1] : mood === 'worried' ? [1, 0, -1] : mood === 'stern' ? [0, 0, 0] : mood === 'sly' ? [0, 0, 0] : [-1, -1, -1];
@@ -270,6 +297,11 @@ function face(B: Buf, c: Ctx, cx: number, hc: number, r: number, hd: Test) {
   const mx = Math.round(cx + 4),
     my = Math.round(hc + 6);
   const M = (x: number, y: number) => dot(B, x, y, SK, OLN);
+  // a mouth line through art pixels: one fine pixel thin on a fine layer, the same pixels as M on a 1x one
+  const ml = (...pts: [number, number][]) => {
+    if (pts.length === 1) return M(...pts[0]!);
+    for (let k = 1; k < pts.length; k++) ln(B, pts[k - 1]![0], pts[k - 1]![1], pts[k]![0], pts[k]![1], SK, OLN);
+  };
   const T = (x: number, y: number) => raw(B, x, y, WHITE);
   if (race.clown) {
     for (let k = -1; k <= 4; k++) dot(B, mx + k, my + (k === -1 || k === 4 ? -1 : 0), RP('#D62F45'), BASE);
@@ -294,31 +326,19 @@ function face(B: Buf, c: Ctx, cx: number, hc: number, r: number, hd: Test) {
       for (let k = 0; k <= 3; k++) T(mx + k, my);
       break;
     case 'happy':
-      M(mx - 1, my - 1);
-      M(mx, my);
-      M(mx + 1, my);
-      M(mx + 2, my);
-      M(mx + 3, my - 1);
+      ml([mx - 1, my - 1], [mx, my], [mx + 2, my], [mx + 3, my - 1]);
       break;
     case 'sly':
-      M(mx, my);
-      M(mx + 1, my);
-      M(mx + 2, my);
-      M(mx + 3, my - 1);
+      ml([mx, my], [mx + 2, my], [mx + 3, my - 1]);
       break;
     case 'worried':
-      M(mx, my + 1);
-      M(mx + 1, my);
-      M(mx + 2, my + 1);
+      ml([mx, my + 1], [mx + 1, my], [mx + 2, my + 1]);
       break;
     case 'stern':
-      M(mx, my);
-      M(mx + 1, my);
-      M(mx + 2, my);
+      ml([mx, my], [mx + 2, my]);
       break;
     default:
-      M(mx + 1, my);
-      M(mx + 2, my);
+      ml([mx + 1, my], [mx + 2, my]);
   }
   // a nose shadow and cheeks
   if (!h) dotOn(B, cx + 7, ey + 3, SK, SHD);
@@ -572,9 +592,9 @@ export function hat(B: Buf, c: Ctx, cx: number, hc: number, r: number, creature 
       const hole = ell(cx + 4.2, hc + 2, r - 2.4, r - 2.2);
       S(B, or(minus(outer, hole), poly([[cx - r - 2.5, hc + 2], [cx + 1, hc + 7], [cx + 3, hc + r + 5], [cx - r - 3, hc + r + 6]])), cx - r - 4, hc - r - 4, cx + r + 4, hc + r + 7, H, { ol: true, bv: 3 });
       // the hood's shadow on the face
-      for (let y = Math.round(hc - r); y < hc + r; y++)
-        for (let x = Math.round(cx - r); x < cx + r + 2; x++)
-          if (hole(x + 0.5, y + 0.5) && B.r[y * B.w + x] === c.S && (!hole(x + 0.5, y - 1.5) || !hole(x - 1.5, y + 0.5))) shade(B, x, y, 1);
+      forPx(B, Math.round(cx - r), Math.round(hc - r), cx + r + 2, hc + r, (i, x, y) => {
+        if (hole(x, y) && B.r[i] === c.S && (!hole(x, y - 2) || !hole(x - 2, y))) shadeAt(B, i, 1);
+      });
       break;
     }
     case 'helm': {

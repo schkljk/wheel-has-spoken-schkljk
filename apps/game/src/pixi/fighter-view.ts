@@ -1,23 +1,23 @@
-import { ColorMatrixFilter, Container, Graphics, Sprite, Text, Texture } from 'pixi.js';
+import { ColorMatrixFilter, Container, Graphics, Point, Sprite, Text, Texture } from 'pixi.js';
 import type { StatusChip } from '@whs/core';
 import { CHIP_ICON } from '../ui/status-icons';
 import { iconTexture } from './icon-tex';
-import { PAURA, SIZE_H, SPRITE_H, SPRITE_W, buildSprite, type Look } from '../art/sprite';
+import { PAURA, SIZE_H, SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_S, SPRITE_W, buildSprite, type Look } from '../art/sprite';
 
-const cache = new Map<string, { body: Texture; arm: Texture; sx: number; sy: number }>();
+const cache = new Map<string, { body: Texture; arm: Texture; sx: number; sy: number; hx: number; hy: number }>();
 function canvasOf(rgba: Uint8ClampedArray) {
   const cv = document.createElement('canvas');
-  cv.width = SPRITE_W;
-  cv.height = SPRITE_H;
+  cv.width = SPRITE_PW;
+  cv.height = SPRITE_PH;
   const ctx = cv.getContext('2d')!;
-  const id = ctx.createImageData(SPRITE_W, SPRITE_H);
+  const id = ctx.createImageData(SPRITE_PW, SPRITE_PH);
   id.data.set(rgba);
   ctx.putImageData(id, 0, 0);
   return cv;
 }
 /** Pixel textures for a look (body and weapon arm), crisp when scaled up. */
 export function spriteTextures(look: Look) {
-  const k = [look.name, look.race, look.rsub, look.arch, look.weapon, look.ench].join('|');
+  const k = [look.name, look.race, look.rsub, look.arch, look.weapon, look.ench, look.boss ?? ''].join('|');
   let c = cache.get(k);
   if (!c) {
     const s = buildSprite(look);
@@ -25,7 +25,7 @@ export function spriteTextures(look: Look) {
     const arm = Texture.from(canvasOf(s.arm));
     body.source.scaleMode = 'nearest';
     arm.source.scaleMode = 'nearest';
-    c = { body, arm, sx: s.sx, sy: s.sy };
+    c = { body, arm, sx: s.sx, sy: s.sy, hx: s.hx, hy: s.hy };
     cache.set(k, c);
     if (cache.size > 40) {
       const first = cache.keys().next().value!;
@@ -97,11 +97,16 @@ export class FighterView extends Container {
     const ww = Math.round((hh * 100) / 120);
     this.h = hh;
     this.w = ww;
+    // k: screen px per art pixel; the textures hold SPRITE_PH / SPRITE_H real pixels per art pixel
     const k = hh / SPRITE_H;
     const t = spriteTextures(this.look);
-    this.bodySprite.scale.set(k);
+    // crisp pixels when each one gets at least 1.5 screen pixels, smooth below that (small fighters)
+    const mode = (hh * Math.min(devicePixelRatio || 1, 2)) / SPRITE_PH >= 1.5 ? 'nearest' : 'linear';
+    t.body.source.scaleMode = mode;
+    t.arm.source.scaleMode = mode;
+    this.bodySprite.scale.set(hh / SPRITE_PH);
     this.bodySprite.position.set(-ww / 2, -hh * FOOT);
-    this.arm.scale.set(k);
+    this.arm.scale.set(hh / SPRITE_PH);
     this.armPivot.position.set(-ww / 2 + t.sx * k, -hh * FOOT + t.sy * k);
     // the body pivots at the feet, so squash and knock-downs happen from the floor
     this.body.pivot.set(0, 0);
@@ -122,6 +127,37 @@ export class FighterView extends Container {
   /** Middle of the body, in stage coordinates. */
   center() {
     return { x: this.x, y: this.y - this.h * 0.45, top: this.y - this.h * 0.95 };
+  }
+
+  /** The weapon hand (where thrown and shot things leave from), in the coordinates of `space`. */
+  hand(space: Container) {
+    const t = spriteTextures(this.look);
+    // sprite-local coordinates are relative to its anchor, the shoulder
+    return space.toLocal(this.arm.toGlobal(new Point((t.hx - t.sx) * SPRITE_S, (t.hy - t.sy) * SPRITE_S)));
+  }
+  /** A copy of the body and weapon arm as they stand now (clones, illusions): feet at the origin, facing the same way. */
+  cloneBody(): Container {
+    const t = spriteTextures(this.look);
+    const c = new Container();
+    const body = new Sprite(t.body);
+    body.scale.copyFrom(this.bodySprite.scale);
+    body.position.copyFrom(this.bodySprite.position);
+    const pv = new Container();
+    pv.position.copyFrom(this.armPivot.position);
+    pv.rotation = this.armPivot.rotation;
+    const a = new Sprite(this.arm.texture);
+    a.anchor.copyFrom(this.arm.anchor);
+    a.scale.copyFrom(this.arm.scale);
+    pv.addChild(a);
+    c.addChild(body, pv);
+    c.scale.x = this.flip.scale.x;
+    return c;
+  }
+  /** Whether the weapon shows in the hand (a thrown boomerang is not in it until it comes back). */
+  holdWeapon(on: boolean) {
+    const t = spriteTextures(on ? this.look : { ...this.look, weapon: 'Bare fists', ench: undefined });
+    t.arm.source.scaleMode = this.arm.texture.source.scaleMode;
+    this.arm.texture = t.arm;
   }
 
   /** Weapon arm angle in degrees (mirrored for the right-hand fighter by the flip). */

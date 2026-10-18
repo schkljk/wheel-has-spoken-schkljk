@@ -13,6 +13,91 @@
 
 ## After the upgrade list: owner requests
 
+### Finer pixel art, readable wheels, attacks that make sense
+
+- **Asked for:**
+  - "Some sprites are too coarse, I want finer, higher quality pixel art."
+  - "Wheel especially, many things are unreadable, especially with lots of slices."
+  - "Attack animations need an upgrade, makes no sense to smack someone with a crossbow."
+  - "Power attack animations need a contextual rework, not just throwing a random pixelated emoji."
+- **Finer pixel art:**
+  - The pixel engine (`art/px.ts`) can now draw at two real pixels per art pixel. Every drawing call keeps its coordinates. Shapes are sampled at the finer grid, so curves are smoother and outlines and creases are one fine pixel thick. Shading also gets twice the steps.
+  - Fighters, bosses, weapons and chapter badges are drawn this way (140×168 instead of 70×84).
+  - Faces got finer details: rounded eyes under a lid line, with a one-pixel glint and a lit rim. Brows and mouths are thin lines.
+  - Wheel slices and fight effects use 32-pixel versions of the icons. The page keeps the 16-pixel ones, which suit its small sizes.
+  - Fine art drawn smaller than 1.5 screen pixels per pixel scales smoothly instead of dropping outline rows: small fighters on the map, faces in lists. Big art stays crisp.
+  - At one pixel per art pixel the engine's output is byte-for-byte what it was (checked against the old sheets).
+  - Cost: about 13 ms per fighter sprite, built once and cached.
+- **Readable wheels:**
+  - Each wheel either names every slice in full or none of them. No more "Tac…", "Cou…".
+  - When a name doesn't fit and every slice has an icon, the slices show bigger icons only. A name plate under the pointer names whichever slice is passing it, and turns gold when the wheel stops.
+  - The race wheel (47 slices) always works this way.
+- **Attacks by weapon** (`pixi/weapon-style.ts`, `pixi/attacks.ts`). Each weapon has a way of being used:
+  - **Shoot:** bows and crossbows aim and loose a drawn arrow or bolt, which sticks for a moment.
+  - **Beam:** the laser rifle charges at the muzzle and fires a beam.
+  - **Throw:**
+    - Shuriken fly straight.
+    - Chakrams and boomerangs leave the hand and come back (the boomerang curves).
+    - A brick is lobbed and drops to the floor.
+    - The Uno card is flicked.
+  - **Slash:** katana and cursed blade, with a crescent trail in the weapon's enchant color.
+  - **Heavy slash:** greatsword and axe, with a crescent, a floor shockwave and dust.
+  - **Reap:** the scythe, with a double sweep.
+  - **Thrust:** spear, trident, harpoon, rapier and dagger drive forward with the point held level.
+  - **Smash:** hammers come down overhead, with a shockwave and dust. The guitar adds sound waves.
+  - **Bonk:** pans and the lollipop, with dizzy stars.
+  - **Swing:** the bat.
+  - **Flop:** the noodles.
+  - **Flurry:** nunchucks and bo staff land three quick hits.
+  - **Crack:** the whip cracks from a distance.
+  - **Hook:** the fishing rod casts, hooks and yanks.
+  - **Cast:** the magic staff charges an orb at its tip and casts it.
+  - **Grind:** the chainsaw throws sparks.
+  - **Fists:** a jab-jab.
+  - Counters and dodged attacks use the same moves. A dodged arrow flies past.
+  - The emoji "💥" on every hit is gone. Hits get a drawn burst.
+- **Powers by power** (`pixi/powers.ts`). Each of the 32 powers has its own effect, drawn with new effect sprites (`art/fx-art.ts`):
+  - **Fire:** a fireball trailing embers.
+  - **Ice:** a volley of shards.
+  - **Lightning:** strikes from the sky.
+  - **Water:** a jet of drops.
+  - **Shadow:** tendrils rise from a dark pool.
+  - **Summon:** a tentacle comes out of a portal.
+  - **Chains:** chains erupt from the floor.
+  - **Holy light:** a pillar of light falls.
+  - **Smite:** a mark, then a golden pillar and a shockwave.
+  - **Telekinesis:** lifts a rock and hurls it.
+  - **Earthquake:** splits the floor into spikes.
+  - **Mind control:** psychic rings.
+  - **Sonic scream:** sound waves.
+  - **Teleport:** blinks behind them, strikes, blinks home.
+  - **Gravity:** a growing singularity crushes them.
+  - **Shapeshift:** claws.
+  - **Reality warping:** glitches them.
+  - **Negation:** a no-entry sign.
+  - **Divine shield:** a shield bash.
+  - **Miracle:** golden rays.
+  - **Regeneration:** a leaf swirl.
+  - **Absurd luck:** drops an anvil on them.
+  - **Life drain:** pulls red life back to the caster.
+  - **Arcane missiles:** three curving missiles.
+  - **Wind:** gusts that push them back.
+  - **Vines:** grow and wrap them.
+  - **Explosions:** a lobbed bomb.
+  - **Magnetism:** field lines yank them.
+  - **Clones:** three clones run in.
+  - **Illusions:** ghost copies.
+  - **Poison:** a toxic glob and a cloud.
+  - **Time stop:** a clock face with spinning hands.
+- **Ultimates:**
+  - Ultimates play the fighter's best thing bigger, after the charge-up: their power when the blow is their power's element, otherwise their weapon, with a golden trail.
+  - Storm chains strike as lightning.
+- **Tests:**
+  - Every effect sprite draws.
+  - Every weapon has a style, and nothing ranged is swung.
+  - The 2× engine draws the same shapes at the same coordinates, with dots filling whole art pixels and lines one fine pixel thick.
+  - The sprite tests run at the new size.
+
 ### HP bars move when the blow lands
 
 - **Reported:** "HP goes down before the strike, ruining the immersion."

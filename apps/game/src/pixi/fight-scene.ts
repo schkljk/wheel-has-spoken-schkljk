@@ -1,6 +1,6 @@
 import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Sprite, Text, TextStyle } from 'pixi.js';
 import { emojiCanvas } from '../art/emoji-px';
-import { COMBOS, WEAPONS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
+import { COMBOS, POWER_ALL, WEAPONS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
 import { beep, finisherSound, hitSound, procSound, thud, type HitKind } from '../ui/sound';
 import { buzz } from '../state/game';
@@ -8,6 +8,9 @@ import { FighterView } from './fighter-view';
 import { Ambient, chapterSVG, drawFloor, sceneSVG } from './scenery';
 import { Tweens, ease } from './tween';
 import { WheelView, texOf } from './wheel';
+import { weaponAttack, type Blow } from './attacks';
+import { burst, fly, piece, weaponTex } from './fx-kit';
+import { powerAttack } from './powers';
 
 /** Text drawn on the stage keeps its words; emojis only fly about as pixel icons. */
 const plain = (s: string) => s.replace(/(?:\p{Extended_Pictographic}|\uFE0F|\u200D)+/gu, '').replace(/\s{2,}/g, ' ').trim();
@@ -55,7 +58,7 @@ export class FightScene {
   private floor = new Graphics();
   private ambient: Ambient;
   private fighters = new Container();
-  private fx = new Container();
+  readonly fx = new Container();
   private tint = new Graphics();
   private vignette = new Graphics();
   /** phase two: the boss's light over the backdrop (the fighters stay in their own colors) */
@@ -164,7 +167,7 @@ export class FightScene {
     this.F[1].position.set(d.fcx + d.span, d.groundY);
     this.homes = [d.fcx - d.span, d.fcx + d.span];
   }
-  private homes: [number, number] = [0, 0];
+  homes: [number, number] = [0, 0];
 
   /** Puts the combat wheel where the DOM left room for it (stage pixels). */
   placeWheel(cx: number, cy: number, size: number, items?: Parameters<WheelView['setItems']>[0]) {
@@ -207,8 +210,12 @@ export class FightScene {
   }
 
   // ---------------------------------------------------------------- effect helpers
-  private ctr(i: 0 | 1) {
+  ctr(i: 0 | 1) {
     return this.F[i].center();
+  }
+  /** A fighter's weapon hand, in the effects layer. */
+  hand(i: 0 | 1) {
+    return this.F[i].hand(this.fx);
   }
   particles(x: number, y: number, colors: number[], n0: number, spread0 = 40) {
     if (this.reduced) return;
@@ -271,7 +278,7 @@ export class FightScene {
   }
   /** An emoji flying about the fight, as its pixel icon. */
   private emoji(text: string, size: number) {
-    const cv = emojiCanvas(text);
+    const cv = emojiCanvas(text, true);
     const t = new Container();
     const pic: Sprite | Text = cv ? new Sprite(texOf(cv)) : new Text({ text, style: { fontSize: size } });
     if (cv) pic.width = pic.height = size * 1.15;
@@ -435,20 +442,20 @@ export class FightScene {
     const amp = amp0 * this.fxK;
     return this.tw.keys(dur, [0, -amp, amp, -amp * 0.6, amp * 0.4, 0], (v) => (this.world.pivot.x = v)).then(() => (this.world.pivot.x = 0));
   }
-  private hitStop(ms: number) {
+  hitStop(ms: number) {
     return this.reduced ? Promise.resolve() : this.tw.wait(ms);
   }
-  private windUp(i: 0 | 1) {
+  windUp(i: 0 | 1) {
     const b = this.F[i].body;
     return this.tw.keys(180 * this.sp, [0, 1, 0], (v) => b.scale.set(1 + 0.08 * v, 1 - 0.12 * v));
   }
-  private knockback(i: 0 | 1, amt: number) {
+  knockback(i: 0 | 1, amt: number) {
     const f = this.F[i];
     const dir = i === 0 ? -1 : 1;
     const home = this.homes[i];
     return this.tw.keys(360 * this.sp, [0, dir * amt, 0], (v) => (f.x = home + v), ease.out, [0, 0.35, 1]);
   }
-  private flash(i: 0 | 1, peak: number, dur: number, squash = false) {
+  flash(i: 0 | 1, peak: number, dur: number, squash = false) {
     const f = this.F[i];
     return this.tw
       .keys(dur, [0, 1, 0], (v) => {
@@ -488,14 +495,6 @@ export class FightScene {
     const col = TINT_COL[a.tint as string] ?? (a.kind === 'melee' ? 0xffe082 : 0xffffff);
     this.particles(c.x, c.y - 6, [col, 0xffffff], big ? 20 : 10, big ? 70 : 44);
     this.ring(c.x, c.y - 6, col, big ? 2.4 : 1.5);
-    const bt = this.emoji(a.kind === 'power' || a.kind === 'ult' ? ((a.fx as string) || '💥') : '💥', a.t === 'ult' ? 64 : 40);
-    bt.position.set(c.x + (a.by === 0 ? -8 : 8), c.y - 6);
-    void this.tw
-      .run(380 * sp, (k) => {
-        bt.scale.set(k < 0.5 ? 0.3 + 0.95 * (k / 0.5) : 1.25 + 0.35 * ((k - 0.5) / 0.5));
-        bt.alpha = k < 0.5 ? 1 : 1 - (k - 0.5) / 0.5;
-      })
-      .then(() => bt.destroy());
     let dy = 0;
     if (e.d != null) {
       this.floatAt(t, '−' + e.d, big ? 'crit' : '', dy);
@@ -662,14 +661,13 @@ export class FightScene {
     try {
       switch (a.t) {
         case 'hit':
-          if (a.kind === 'melee') await this.melee(e, a);
-          else await this.ranged(e, a);
+          await this.attack(e, a);
           break;
         case 'ult':
           await this.ult(e, a);
           break;
         case 'miss':
-          await this.miss(e, a);
+          await this.attack(e, a, true);
           break;
         case 'guard': {
           void this.armTo(a.on!, [0, -50, -50, 0], 760 * sp);
@@ -704,16 +702,18 @@ export class FightScene {
           break;
         }
         case 'uno': {
+          // the card flips in the air, and their own hit goes back at them
           const c = this.ctr(a.by!);
-          const card = this.emoji('🃏', 40);
-          card.position.set(c.x + (a.by === 0 ? 44 : -44), c.y);
+          const card = piece(this, weaponTex('Uno reverse card'), { x: c.x + (a.by === 0 ? 44 : -44), y: c.y }, 1.4);
+          const k0 = card.scale.y;
           await this.tw.run(460 * sp, (k) => {
-            card.scale.set((0.5 + 0.8 * k) * Math.cos(k * Math.PI * 2), 0.5 + 0.8 * k);
+            card.scale.set(k0 * (0.5 + 0.8 * k) * Math.cos(k * Math.PI * 2), k0 * (0.5 + 0.8 * k));
           });
-          card.destroy();
           this.floatAt(a.by!, 'Uno reverse!', 'info');
-          await this.projectile(a.by!, a.to!, '💥', 300 * sp, { size: 36 });
-          this.impact(e, { ...a, kind: 'power', fx: '🃏' });
+          await fly(this, card, card.position.clone(), this.ctr(a.to!), 260, { spin: 2, trail: 0xff4f8b });
+          card.destroy();
+          void burst(this, this.ctr(a.to!), '#FF4F8B', 1);
+          this.impact(e, { ...a, kind: 'power' });
           await this.tw.wait(360 * sp);
           break;
         }
@@ -743,7 +743,9 @@ export class FightScene {
           break;
         }
         case 'pet':
-          await this.projectile(a.by!, a.to!, a.fx as string, 520 * sp, { size: 38, arc: 14 });
+          // the pet leaps at them
+          await this.projectile(a.by!, a.to!, a.fx as string, 520 * sp, { size: 38, arc: 30 });
+          void burst(this, this.ctr(a.to!), '#FFE082', 0.8);
           this.impact(e, { ...a, kind: 'melee' });
           await this.tw.wait(300 * sp);
           break;
@@ -843,78 +845,54 @@ export class FightScene {
     }
   }
 
-  private async melee(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }) {
+  /** A hit (or a dodged one): the attacker's weapon, used the way it is used, or their power's own effect. */
+  private async attack(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }, miss = false) {
     const sp = this.sp;
     const by = a.by!;
-    const dir = by === 0 ? 1 : -1;
-    const A0 = this.ctr(by);
-    const B0 = this.ctr(a.to!);
-    const dist = Math.max(0, Math.abs(B0.x - A0.x) - 80);
-    await this.windUp(by);
-    const f = this.F[by];
-    const home = this.homes[by];
-    const lunge = this.tw.keys(600 * sp, [0, dir * dist, dir * dist, 0], (v) => (f.x = home + v), ease.inOut, [0, 0.45, 0.6, 1]);
-    void this.armTo(by, [0, -85, 60, 0], 600 * sp);
-    await this.tw.wait(300 * sp);
-    this.impact(e, a);
-    if (a.crit) await this.hitStop(110);
-    await lunge;
+    const look = this.F[by].look;
+    const blow: Blow = {
+      by,
+      to: a.to!,
+      look,
+      miss,
+      tint: a.tint ? TINT_COL[a.tint as string] : undefined,
+      hit: () => (miss ? this.dodged(e, a) : this.impact(e, a)),
+    };
+    const pk = a.fx === '⚡' ? 'lightning' : look.power;
+    if (a.kind === 'power' && a.fx !== '🔁' && pk) await powerAttack(this, pk, blow);
+    else await weaponAttack(this, blow);
+    if (!miss && a.crit) await this.hitStop(110);
     await this.tw.wait(150 * sp);
   }
-  private async ranged(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }) {
-    const sp = this.sp;
-    const pw = a.kind === 'power';
-    void this.armTo(a.by!, pw ? [0, -125, -125, 0] : [0, -25, -25, 0], (pw ? 640 : 440) * sp);
-    if (pw) void this.flash(a.by!, 1.7, 340 * sp);
-    await this.windUp(a.by!);
-    if (pw) {
-      const c = this.ctr(a.by!);
-      this.particles(c.x, c.y, [TINT_COL[a.tint as string] ?? 0xffffff], 8, 26);
-    }
-    await this.projectile(a.by!, a.to!, a.fx as string, (pw ? 460 : 340) * sp, {
-      size: pw ? 40 : 28,
-      arc: pw ? 26 : 10,
-      spin: !!a.spin,
-      trail: TINT_COL[a.tint as string] ?? 0xffffff,
-    });
-    this.impact(e, a);
-    if (a.crit) await this.hitStop(110);
-    await this.tw.wait(320 * sp);
-  }
+  /** An ultimate: the charge-up, then the fighter's best thing, bigger (their power when the blow is theirs, else their weapon). */
   private async ult(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }) {
     const sp = this.sp;
+    const by = a.by!;
     void this.banner(a.name as string, 1200 * sp);
-    void this.armTo(a.by!, [0, -150, -150, 70, 0], 1100 * sp);
-    const b = this.F[a.by!].body;
+    void this.armTo(by, [0, -150, -150, 0], 700 * sp);
+    const b = this.F[by].body;
     void this.tw.keys(720 * sp, [1, 1.25, 1], (v) => b.scale.set(v), ease.inOut, [0, 0.6, 1]);
     this.tintFlash('ult', 520 * sp);
     [392, 523, 659, 880].forEach((f, i) => beep(f, 0.14, 'sawtooth', 0.04, i * 0.06));
+    const c = this.ctr(by);
+    const col = TINT_COL[a.tint as string] ?? 0xffb627;
+    // a ring of light gathers on them
+    for (let i = 0; i < 2; i++) setTimeout(() => this.ring(c.x, c.y, col, 2.6 - i), i * 160 * sp);
     await this.tw.wait(640 * sp);
-    const c = this.ctr(a.by!);
-    this.particles(c.x, c.y, [0xffffff, TINT_COL[a.tint as string] ?? 0xffb627], 18, 60);
-    await this.projectile(a.by!, a.to!, a.fx as string, 380 * sp, { size: 64, arc: 34, trail: TINT_COL[a.tint as string] ?? 0xffb627 });
-    this.impact(e, a);
+    this.particles(c.x, c.y, [0xffffff, col], 18, 60);
+    const look = this.F[by].look;
+    const pk = look.power && look.power !== 'none' ? look.power : '';
+    const usePower = !!pk && !!a.tint && a.tint !== 'ult' && (a.tint === pk || powerTint(pk) === a.tint);
+    const blow: Blow = { by, to: a.to!, look, big: true, tint: col, hit: () => this.impact(e, a) };
+    if (usePower) await powerAttack(this, pk, blow);
+    else await weaponAttack(this, blow);
     await this.hitStop(160);
-    await this.tw.wait(480 * sp);
+    await this.tw.wait(380 * sp);
   }
-  private async miss(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }) {
+  /** They saw it coming: a hop back, and "Miss". */
+  private dodged(e: BattleEvent, a: Record<string, unknown> & { by?: 0 | 1; to?: 0 | 1 }) {
     const sp = this.sp;
-    const by = a.by!;
-    const dir = by === 0 ? 1 : -1;
-    if (a.kind === 'melee') {
-      const A0 = this.ctr(by);
-      const B0 = this.ctr(a.to!);
-      const dist = Math.max(0, Math.abs(B0.x - A0.x) - 100);
-      const f = this.F[by];
-      const home = this.homes[by];
-      void this.tw.keys(540 * sp, [0, dir * dist, 0], (v) => (f.x = home + v), ease.inOut, [0, 0.5, 1]);
-      void this.armTo(by, [0, -85, 60, 0], 540 * sp);
-      await this.tw.wait(230 * sp);
-    } else {
-      void this.armTo(by, [0, -60, 0], 440 * sp);
-      void this.projectile(by, a.to!, a.fx as string, 340 * sp, { size: a.kind === 'power' ? 40 : 28, arc: 20 });
-      await this.tw.wait(230 * sp);
-    }
+    const dir = a.by === 0 ? 1 : -1;
     const t = this.F[a.to!];
     const home = this.homes[a.to!];
     void this.tw.keys(440 * sp, [0, 1, 0], (v) => {
@@ -924,7 +902,6 @@ export class FightScene {
     this.applySnap(e);
     this.floatAt(a.to!, 'Miss', 'info');
     beep(700, 0.05, 'triangle', 0.02);
-    await this.tw.wait(520 * sp);
   }
 
   /** Skips whatever is animating (skip, forfeit). */
@@ -948,6 +925,10 @@ export class FightScene {
       f.body.y = 0;
       f.armAngle = 0;
       f.setBrightness(1);
+      // a teleport faces them the other way for a moment; a thrown boomerang leaves the hand empty
+      f.flip.scale.x = i === 1 ? -1 : 1;
+      if (!f.down) f.body.x = 0;
+      f.holdWeapon(true);
     }
   }
 
@@ -955,6 +936,12 @@ export class FightScene {
     this.tw.clear();
     for (const g of this.grads) g.destroy();
   }
+}
+
+/** The element a power's hits are tinted with (as the engine's tintOf picks it). */
+function powerTint(k: string) {
+  const p = POWER_ALL.find((x) => x.k === k);
+  return (p?.t ?? []).find((t) => t in TINT_COL) ?? '';
 }
 
 /** What a fighter hits with, from their weapon's kind (upgrade 36). */

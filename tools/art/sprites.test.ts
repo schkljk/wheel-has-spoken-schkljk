@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ARCHS, RACES, RSUB, WEAPONS, mulberry32, randName, randomFighter } from '../../packages/core/src';
-import { EGLOW, SPRITE_H, SPRITE_W, buildSprite, lookOf, type Look } from '../../apps/game/src/art/sprite';
+import { EGLOW, SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_S, SPRITE_W, buildSprite, lookOf, type Look } from '../../apps/game/src/art/sprite';
 
 // The Phase 4 sprites: every race, sub-race, class and weapon draws something sensible, the same way every time.
 const opaque = (a: ArrayLike<number>) => {
@@ -8,17 +8,17 @@ const opaque = (a: ArrayLike<number>) => {
   for (let i = 3; i < a.length; i += 4) if (a[i]) n++;
   return n;
 };
-/** lowest row with a pixel */
+/** lowest art row with a pixel */
 const bottom = (a: ArrayLike<number>) => {
-  for (let y = SPRITE_H - 1; y >= 0; y--) for (let x = 0; x < SPRITE_W; x++) if (a[(y * SPRITE_W + x) * 4 + 3]) return y;
+  for (let y = SPRITE_PH - 1; y >= 0; y--) for (let x = 0; x < SPRITE_PW; x++) if (a[(y * SPRITE_PW + x) * 4 + 3]) return Math.floor(y / SPRITE_S);
   return -1;
 };
 function sane(L: Look) {
   const s = buildSprite(L);
   const label = JSON.stringify(L);
-  expect(s.body.length, label).toBe(SPRITE_W * SPRITE_H * 4);
-  expect(opaque(s.body), `body ${label}`).toBeGreaterThan(500);
-  expect(opaque(s.arm), `arm ${label}`).toBeGreaterThan(8);
+  expect(s.body.length, label).toBe(SPRITE_PW * SPRITE_PH * 4);
+  expect(opaque(s.body), `body ${label}`).toBeGreaterThan(500 * SPRITE_S * SPRITE_S);
+  expect(opaque(s.arm), `arm ${label}`).toBeGreaterThan(8 * SPRITE_S * SPRITE_S);
   expect(s.sx, label).toBeGreaterThan(10);
   expect(s.sx, label).toBeLessThan(SPRITE_W - 10);
   expect(s.sy, label).toBeGreaterThan(10);

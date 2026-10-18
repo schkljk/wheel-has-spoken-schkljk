@@ -1,16 +1,17 @@
 // Contact sheets of the fighter sprites and icons, as PNGs, for looking at the art (npx tsx tools/art/sheet.ts).
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { RACES, ARCHS, WEAPONS, BOSSES } from '@whs/core';
-import { buildSprite, SPRITE_W, SPRITE_H, type Look } from '../../apps/game/src/art/sprite';
+import { buildSprite, SPRITE_PW, SPRITE_PH, SPRITE_S, type Look } from '../../apps/game/src/art/sprite';
 import { png } from './png';
 
 const OUT = process.argv[2] || 'tools/art/out';
 mkdirSync(OUT, { recursive: true });
 
-/** A grid of sprites, each scaled up by `k`, on a checker-free mid background. */
-function sheet(file: string, looks: Look[], cols: number, k = 3) {
-  const cw = SPRITE_W * k + 8,
-    ch = SPRITE_H * k + 8;
+/** A grid of sprites, each about `k` screen pixels per art pixel (whole real pixels), on a mid background. */
+function sheet(file: string, looks: Look[], cols: number, ka = 3) {
+  const k = Math.max(1, Math.round(ka / SPRITE_S));
+  const cw = SPRITE_PW * k + 8,
+    ch = SPRITE_PH * k + 8;
   const rows = Math.ceil(looks.length / cols);
   const W = cols * cw,
     H = rows * ch;
@@ -21,9 +22,9 @@ function sheet(file: string, looks: Look[], cols: number, k = 3) {
     const ox = (n % cols) * cw + 4,
       oy = Math.floor(n / cols) * ch + 4;
     for (const layer of [s.body, s.arm])
-      for (let y = 0; y < SPRITE_H; y++)
-        for (let x = 0; x < SPRITE_W; x++) {
-          const j = (y * SPRITE_W + x) * 4;
+      for (let y = 0; y < SPRITE_PH; y++)
+        for (let x = 0; x < SPRITE_PW; x++) {
+          const j = (y * SPRITE_PW + x) * 4;
           const a = layer[j + 3]! / 255;
           if (!a) continue;
           for (let dy = 0; dy < k; dy++)

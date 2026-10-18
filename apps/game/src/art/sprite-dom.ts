@@ -1,7 +1,7 @@
 // Browser side of the pixel sprites: turns the RGBA layers from sprite.ts into PNG data URLs (legacy toURL)
 // and keeps the recent ones (legacy charSVG kept 140 in insertion order; this one is least-recently-used).
 
-import { SPRITE_H, SPRITE_W, buildSprite, spriteKey, type Look } from './sprite';
+import { SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_W, buildSprite, spriteKey, type Look } from './sprite';
 
 /** A sprite ready for <image href>: both layers as PNG data URLs, arm pivot in viewBox units (100 x 120). */
 export interface SpriteImages {
@@ -17,11 +17,11 @@ const cache = new Map<string, SpriteImages>();
 /** RGBA bytes -> PNG data URL through a canvas (legacy toURL). */
 function toURL(rgba: Uint8ClampedArray): string {
   const cv = document.createElement('canvas');
-  cv.width = SPRITE_W;
-  cv.height = SPRITE_H;
+  cv.width = SPRITE_PW;
+  cv.height = SPRITE_PH;
   const ctx = cv.getContext('2d');
   if (!ctx) throw new Error('2d canvas unavailable');
-  const id = ctx.createImageData(SPRITE_W, SPRITE_H);
+  const id = ctx.createImageData(SPRITE_PW, SPRITE_PH);
   id.data.set(rgba);
   ctx.putImageData(id, 0, 0);
   return cv.toDataURL('image/png');

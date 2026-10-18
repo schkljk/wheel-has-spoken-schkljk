@@ -719,13 +719,16 @@ export const POWER_ICON: Record<string, string> = {
   magnet: 'pw_magnet', illusion: 'mv_feint', summon: 'pw_summon',
 };
 
-/** An icon drawn and outlined: 16x16 colors and alphas, or null if there is no such icon. */
-export function drawIcon(name: string, tintHex?: string): { px: (RGB | null)[]; a: Uint8Array } | null {
+/**
+ * An icon drawn and outlined: colors and alphas, or null if there is no such icon. `s` real pixels per art
+ * pixel: 16x16 for the page, finer (32x32) for big pictures like wheel slices and fight effects.
+ */
+export function drawIcon(name: string, tintHex?: string, s = 1): { px: (RGB | null)[]; a: Uint8Array; size: number } | null {
   const f = ICON_ART[name];
   if (!f) return null;
-  const B = buf(ICON_SIZE, ICON_SIZE);
+  const B = buf(ICON_SIZE, ICON_SIZE, s);
   f(B, RP(tintHex || '#9AA6B2'));
   outline(B);
-  return { px: B.c.map((c) => c ?? null), a: B.a };
+  return { px: B.c.map((c) => c ?? null), a: B.a, size: B.w };
 }
 void INK;

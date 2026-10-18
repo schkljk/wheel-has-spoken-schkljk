@@ -3,15 +3,26 @@ import { SLICE_COLORS, bulb, sliceMask, wheelFace, wheelHub, wheelPointer, wheel
 import { emojiCanvas } from '../art/emoji-px';
 
 const TEX = new WeakMap<HTMLCanvasElement, Texture>();
-/** A crisp texture for an icon canvas, made once. */
-export function texOf(c: HTMLCanvasElement) {
-  let t = TEX.get(c);
+const SMOOTH = new WeakMap<HTMLCanvasElement, Texture>();
+/** A texture for an icon canvas, made once: crisp, or `smooth` for drawing fine art smaller than 1.5x. */
+export function texOf(c: HTMLCanvasElement, smooth = false) {
+  const M = smooth ? SMOOTH : TEX;
+  let t = M.get(c);
   if (!t) {
-    t = Texture.from(c);
-    t.source.scaleMode = 'nearest';
-    TEX.set(c, t);
+    t = Texture.from(c, smooth);
+    t.source.scaleMode = smooth ? 'linear' : 'nearest';
+    M.set(c, t);
   }
   return t;
+}
+/**
+ * A picture `want` px wide: small pixel icons grow by whole pixels (crisp), fine art (sprite faces drawn at two
+ * pixels per art pixel) is scaled smoothly when it would not get at least 1.5 screen px per pixel.
+ */
+export function picFit(c: HTMLCanvasElement, want: number) {
+  const k0 = want / c.width;
+  const k = k0 >= 2 ? Math.floor(k0) : k0;
+  return { tex: texOf(c, k0 < 1.5), k };
 }
 
 /** A slice as the wheel draws it. Sizes come from `w`; colors from quality (0 cooked .. 3 goated). */
@@ -146,6 +157,16 @@ export class WheelView extends Container {
   private popT = -1;
   private suspenseOn = false;
   private sparkV: { g: Graphics; vx: number; vy: number; life: number }[] = [];
+  // the plate under the pointer that names the slice passing it (crowded wheels)
+  private readout = new Container();
+  private readBg = new Graphics();
+  private readText = new Text({ text: '', style: { fontFamily: PIXEL_FONT, fontSize: 18, fill: 0xffffff, stroke: { color: 0x120d28, width: 4 } } });
+  private readPic = new Sprite();
+  private readOn = false;
+  private readIdx = -1;
+  private readFs = 18;
+  private readY = 0;
+  private readWon = false;
   events: WheelEvents = {};
   reduced = false;
   rng: () => number = Math.random;
@@ -159,7 +180,11 @@ export class WheelView extends Container {
     this.hubText.anchor.set(0.5);
     this.hubPic.visible = false;
     this.pointer.addChild(this.pointerArt);
-    this.addChild(this.rim, this.disc, this.lights, this.hub, this.pointer, this.sparks);
+    this.readText.anchor.set(0, 0.5);
+    this.readPic.anchor.set(0, 0.5);
+    this.readout.addChild(this.readBg, this.readPic, this.readText);
+    this.readout.visible = false;
+    this.addChild(this.rim, this.disc, this.lights, this.hub, this.readout, this.pointer, this.sparks);
   }
 
   get spinning() {
@@ -179,9 +204,10 @@ export class WheelView extends Container {
     const old = this.owned;
     this.owned = [];
     if (old.length) setTimeout(() => old.forEach((t) => t.destroy(true)), 100);
-    const p = (this.px = Math.max(2, Math.round(size / 105)));
+    // about 170 art pixels across, whatever the size: fine enough to read, still pixel art
+    const p = (this.px = Math.max(1, Math.round(size / 170)));
     const N = Math.max(40, Math.round(size / p));
-    const rw = Math.max(4, Math.round(N * 0.07));
+    const rw = Math.max(4, Math.round(N * 0.06));
     const faceN = N - 2 * (rw - 1);
     const hubN = Math.max(9, Math.round(N * 0.22));
     const hole = hubN / faceN;
@@ -203,43 +229,75 @@ export class WheelView extends Container {
     const rIn = (faceN * p) / 2;
     const oldLabels = this.labels.removeChildren();
     if (oldLabels.length) setTimeout(() => oldLabels.forEach((c) => c.destroy({ children: true })), 100);
+    // a slice says its name when every name can be read whole at a decent size. Otherwise, when every slice
+    // has an icon, the slices show bigger icons only and the plate under the pointer names the one passing it.
+    const fsMax = Math.round(Math.max(13, Math.min(22, size / 17)));
+    const res = Math.min(devicePixelRatio || 1, 3);
+    const edge = rIn - 3 * p;
+    const iconW = (span: number, only: boolean) => (only ? Math.min(span * rIn * 0.78, rIn * 0.34, fsMax * 2.6) : Math.min(span * rIn * 0.8, fsMax * 1.9, rIn * 0.3));
+    const styleOf = (it: WheelSlice, fs: number) =>
+      new TextStyle({ fontFamily: PIXEL_FONT, fontSize: fs, fill: it.q === 3 ? 0x3a2200 : 0xffffff, stroke: it.q === 3 ? undefined : { color: 0x120d28, width: 4 } });
+    // the label each slice would get, at the largest size that fits (it ends in … when nothing fits)
+    const fits = items.map((it, i) => {
+      if (!it.n) return null;
+      const [a0, a1] = this.segs[i]!;
+      const span = a1 - a0;
+      const pic = it.img ? texOf(it.img) : null;
+      let fs = Math.min(fsMax, span * rIn * 0.58);
+      if (fs < 12) return null;
+      const mk = it.mark === 'up' ? '▲ ' : it.mark === 'down' ? '▼ ' : '';
+      let label = mk + (it.e && !pic ? it.e + ' ' : '') + it.n;
+      const iw = pic ? iconW(span, false) : 0;
+      const maxW = edge - (iw >= 8 ? pic!.width * picFit(it.img!, iw).k + 4 : 0) - rIn * 0.26;
+      const style = styleOf(it, fs);
+      const width = () => CanvasTextMetrics.measureText(label, style).width;
+      while (width() > maxW && fs > 12) style.fontSize = --fs;
+      while (width() > maxW && label.length > 3) label = label.slice(0, -2) + '…';
+      return { label, style };
+    });
+    const allPics = items.every((it) => !it.n || it.img);
+    const cut = fits.some((f, i) => (f ? f.label.endsWith('…') : !!items[i]!.n));
+    const iconsOnly = allPics && (items.length > 16 || cut);
     items.forEach((it, i) => {
       const [a0, a1] = this.segs[i]!;
       const span = a1 - a0;
       const mid = (a0 + a1) / 2;
-      const arc = span * rIn * 0.6;
-      if (arc < 9 || (!it.n && !it.img)) return;
-      let fs = Math.min(17, Math.max(10, size / 22), arc * 0.9);
-      const maxW = rIn * 0.66;
-      const mk = it.mark === 'up' ? '▲ ' : it.mark === 'down' ? '▼ ' : '';
+      if (!it.n && !it.img) return;
       const pic = it.img ? texOf(it.img) : null;
-      let label = mk + (it.e && !pic ? it.e + ' ' : '') + it.n;
-      if (arc < fs * 1.7 && (it.e || pic)) label = pic ? mk : mk + it.e;
-      const style = new TextStyle({ fontFamily: PIXEL_FONT, fontSize: fs, fill: it.q === 3 ? 0x3a2200 : 0xffffff, stroke: it.q === 3 ? undefined : { color: 0x120d28, width: 3 } });
-      const width = () => CanvasTextMetrics.measureText(label, style).width;
-      while (width() > maxW && fs > 10) {
-        fs -= 1;
-        style.fontSize = fs;
-      }
-      while (width() > maxW && label.length > 3) label = label.slice(0, -2) + '…';
-      const t = new Text({ text: label, style, resolution: Math.min(devicePixelRatio || 1, 2) });
-      t.anchor.set(1, 0.5);
       const holder = new Container();
       holder.rotation = mid - Math.PI / 2;
-      t.position.set(rIn - 3 * p, 0.5);
-      holder.addChild(t);
+      let x = edge;
       if (pic) {
-        // the icon sits just inside the label, upright along the slice, scaled by whole pixels when it can be
-        const sp = new Sprite(pic);
-        const want = Math.min(fs * 1.7, arc * 1.15);
-        const k = want >= pic.width ? Math.floor(want / pic.width) : want / pic.width;
-        sp.scale.set(k);
-        sp.anchor.set(1, 0.5);
-        sp.position.set(rIn - 3 * p - (label ? width() + 3 : 0), 0.5);
-        holder.addChild(sp);
+        // the icon sits at the rim, upright along the slice, scaled by whole pixels when it can be
+        const want = iconW(span, iconsOnly);
+        if (want >= 8) {
+          const { tex, k } = picFit(it.img!, want);
+          const sp = new Sprite(tex);
+          sp.scale.set(k);
+          sp.rotation = Math.PI / 2;
+          sp.anchor.set(0.5, 0.5);
+          sp.position.set(edge - (pic.width * k) / 2, 0.5);
+          holder.addChild(sp);
+          x = edge - pic.width * k - 4;
+        }
       }
-      this.labels.addChild(holder);
+      const f = fits[i];
+      if (!iconsOnly && f && (f.label.length > 3 || !pic)) {
+        const t = new Text({ text: f.label, style: f.style, resolution: res });
+        t.anchor.set(1, 0.5);
+        t.position.set(x, 0.5);
+        holder.addChild(t);
+      }
+      if (holder.children.length) this.labels.addChild(holder);
+      else holder.destroy();
     });
+    const crowded = iconsOnly || cut;
+    this.readOn = crowded && items.length > 1;
+    this.readout.visible = this.readOn;
+    this.readFs = Math.round(Math.max(15, Math.min(24, size / 14)));
+    this.readY = -rIn + this.readFs * 1.1 + 4 * p;
+    this.readIdx = -1;
+    this.updateReadout();
     this.highlight(hi);
     // the bulbs around the rim
     const bs = Math.max(2, Math.round(rw * 0.55));
@@ -281,10 +339,10 @@ export class WheelView extends Container {
       this.hiTex = null;
     }
     this.hilite.visible = false;
-    if (hi == null || !this.segs[hi]) return;
+    if (hi == null || !this.segs[hi]) return this.updateReadout();
     const p = this.px;
     const N = Math.max(40, Math.round(this.size / p));
-    const rw = Math.max(4, Math.round(N * 0.07));
+    const rw = Math.max(4, Math.round(N * 0.06));
     const faceN = N - 2 * (rw - 1);
     const hubN = Math.max(9, Math.round(N * 0.22));
     const [h0, h1] = this.segs[hi]!;
@@ -292,15 +350,16 @@ export class WheelView extends Container {
     this.hilite.texture = this.hiTex;
     this.hilite.scale.set(p);
     this.hilite.visible = true;
+    this.updateReadout();
   }
 
   /** The hub shows a word, or an emoji as its pixel icon. */
   setHub(text: string) {
-    const cv = /^[\p{Extended_Pictographic}\uFE0F\u200D]+$/u.test(text) ? emojiCanvas(text) : null;
+    const cv = /^[\p{Extended_Pictographic}\uFE0F\u200D]+$/u.test(text) ? emojiCanvas(text, true) : null;
     this.hubPic.visible = !!cv;
     this.hubText.visible = !cv;
     if (cv) {
-      this.hubPic.texture = texOf(cv);
+      this.hubPic.texture = picFit(cv, this.hubR * 1.15).tex;
       this.hubPic.width = this.hubPic.height = this.hubR * 1.15;
     } else this.hubText.text = text;
   }
@@ -320,6 +379,45 @@ export class WheelView extends Container {
   private setRot(r: number) {
     this.rot = r;
     this.disc.rotation = r;
+    if (this.readOn) this.updateReadout();
+  }
+
+  /** Names the slice under the pointer on the plate (only redrawn when the slice changes). */
+  private updateReadout() {
+    if (!this.readOn) return;
+    const i = this.segAt();
+    const won = this.hilite.visible;
+    if (i === this.readIdx && won === this.readWon) return;
+    this.readIdx = i;
+    this.readWon = won;
+    const it = this.items[i];
+    if (!it) return;
+    const fs = this.readFs;
+    this.readText.style.fontSize = fs;
+    this.readText.style.fill = won ? 0xffe27a : 0xffffff;
+    this.readText.resolution = Math.min(devicePixelRatio || 1, 3);
+    this.readText.text = it.n.length > 22 ? it.n.slice(0, 21) + '…' : it.n;
+    const pic = it.img ? texOf(it.img) : null;
+    this.readPic.visible = !!pic;
+    let pw = 0;
+    if (pic) {
+      const f = picFit(it.img!, fs * 1.3);
+      this.readPic.texture = f.tex;
+      const k = f.k;
+      this.readPic.scale.set(k);
+      pw = pic.width * k + 6;
+    }
+    const tw = this.readText.width;
+    const w = pw + tw + 22,
+      h = fs * 1.55;
+    this.readPic.position.set(-w / 2 + 11, 0);
+    this.readText.position.set(-w / 2 + 11 + pw, 0);
+    this.readBg
+      .clear()
+      .roundRect(-w / 2, -h / 2, w, h, 8)
+      .fill({ color: 0x0e091e, alpha: 0.9 })
+      .stroke({ color: won ? 0xffc12e : 0x4b3c8e, width: won ? 3 : 2 });
+    this.readout.position.set(0, this.readY);
   }
   /** Turns the wheel by hand (dragging), ticking past slice edges. */
   nudge(d: number) {

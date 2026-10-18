@@ -781,17 +781,17 @@ export const DECO: Record<string, Deco> = {
 };
 
 /** A scenery piece drawn and outlined, ready to place (feet at the bottom middle), or null if unknown. */
-export function drawDeco(name: string, rnd: () => number): { B: Buf; flat: boolean } | null {
+export function drawDeco(name: string, rnd: () => number, s = 1): { B: Buf; flat: boolean } | null {
   const D = DECO[name];
   if (!D) return null;
-  const B = buf(D.w + 2, D.h + 2);
+  const B = buf(D.w + 2, D.h + 2, s);
   // drawn one pixel in from every side, so the outline has room
-  const inner = buf(D.w, D.h);
+  const inner = buf(D.w, D.h, s);
   D.d(inner, rnd);
-  for (let y = 0; y < D.h; y++)
-    for (let x = 0; x < D.w; x++) {
-      const i = y * D.w + x,
-        j = (y + 1) * B.w + x + 1;
+  for (let y = 0; y < inner.h; y++)
+    for (let x = 0; x < inner.w; x++) {
+      const i = y * inner.w + x,
+        j = (y + s) * B.w + x + s;
       B.c[j] = inner.c[i]!;
       B.r[j] = inner.r[i]!;
       B.t[j] = inner.t[i]!;
