@@ -119,6 +119,54 @@
 - **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 
+### Review round 2: performance (J1–J11)
+
+- **Measured** on the production build at 4× CPU, 390×844, the median of 3 runs.
+- **What changed:**
+  - **J1:** the result panel under a wheel has one height, and the wheel's canvas only resizes when its box really changes. Small changes wait for the layout to settle.
+  - **J2:** Pixi's start-up check runs on CPU canvases, through a build plugin. node_modules is untouched.
+  - **J3:** the first Pixi app warms up while the game is idle. Pixi's ticker sleeps while no wheel or fight is on screen.
+  - **J4:** the emojis are baked into two images (`npm run bake:emoji`). Missing ones are drawn as before.
+  - **J5:** the card's rating runs in the worker. The scouting report's population is a generated table (`npm run bake`).
+  - **J6:** icons are cached images, drawn while idle.
+  - **J7:** each music loop is rendered once, in idle time, and played on repeat. The theme starts a moment after the first tap.
+  - **J8:** these load on first use: the wheel, card, fight, map, bracket and collection screens, the flows, the sprite drawing code and the sound table. The game fetches them in the background once it is up, and offline play still works.
+  - **J9:** the collection lays out only what is near the screen.
+  - **J10:**
+    - Dates are written by hand.
+    - Rewording skips most strings.
+    - Title faces are kept between launches.
+    - The title's two fonts are preloaded.
+  - **J11:** textures are freed after a minute unused, tab renders stop re-serializing the save, and save writes are batched once per task.
+
+  | Item | Measure | Before | After |
+  |---|---|---|---|
+  | J1 | Wheel canvas resizes per fighter build | 38 | 6 |
+  | J2 | Pixi start-up check | 492 ms | 3 ms |
+  | J3 | Tap to race wheel (after 15 s on the title) | 1,577 ms | 745 ms |
+  | J3 | Longest task before the first spin lands | 1,286 ms | 559 ms |
+  | J4 | Emoji drawing per fighter build | 2,462 ms | 0 ms |
+  | J5 | Rating and population at the card reveal | 1,827 ms | 0 ms (main thread) |
+  | J6 | Play tab elements | 2,256 | 206 |
+  | J6 | Title to hub, main thread | 904 ms | 454 ms |
+  | J7 | Idle hub with the theme, JavaScript | 27.9 ms/s | 0.4 ms/s |
+  | J7 | Audio nodes made per second | 72 | 0 |
+  | J8 | First chunk, gzipped | 288.7 KB | 223.8 KB |
+  | J8 | First screen, cold start on Fast 3G | 6,665 ms | 5,529 ms |
+  | J9 | Opening the collection | 895 ms | 407 ms |
+  | J10 | Relaunch to first screen | 985 ms | 432 ms |
+  | J10 | Date formatting / rewording at load | 83 / 69 ms | 1 / 48 ms |
+  | J11 | Profile writes per fighter build | 47 | 24 |
+  | J11 | Whole-save serializations, 6 tab switches | 22 | 2 |
+  | J11 | Live GL textures after 20 fights | +75 | +33 |
+
+- **Cost:** the offline precache is 292 KiB bigger (the emoji images). About 250 ms of warm-up moved into idle time on the title.
+- **Not done:**
+  - The core story text stays in the first chunk, because the rules read it directly.
+  - Build-time rewording was skipped: only about 30% was gained at load.
+- **Tests:** `e2e/perf.spec.ts` guards J1, J6 and J7. Unit tests cover the build plugins, the baked emojis, the population table, worker ratings, rewording and the hand-written date.
+- **When merging:** the population table is now baked from the whole core, so the balance retune is in it. The emoji images were baked again for the new relic, goal and remix emojis.
+
 ### Review round 2: balance and economy (K1–K10, G11, G13)
 
 - **How:**
