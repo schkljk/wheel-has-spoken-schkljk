@@ -2275,6 +2275,10 @@
   color: var(--muted);
   font-size: 0.72rem;
 }
+.tt-node small.tt-warn {
+  color: var(--danger);
+  font-weight: 700;
+}
 .tt-node.has {
   /* learned: gold, with the branch color as a strip (a red frame read as an error) */
   border-color: var(--gold);

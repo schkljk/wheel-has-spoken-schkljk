@@ -5,6 +5,7 @@ import {
   FLAVOR,
   GEARK,
   ITEMK,
+  BALANCE,
   PREMIUM,
   RARITY,
   SERVICES,
@@ -17,11 +18,13 @@ import {
   buyDeal,
   buyPremium,
   buyService,
+  carryPreview,
   coinsOf,
   dailyDeal,
   dealPrice,
   equippedGear,
   gemPrice,
+  premiumLock,
   sellGear,
   sellValue,
   serviceOk,
@@ -150,9 +153,17 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
   } else if (tab === 'vault')
     body = (
       <>
-        <p class="hint">Premium gear. Earn 💎 gems from elites, bosses, finals and other hard fights.</p>
+        <p class="hint">
+          Premium gear. Earn 💎 gems from elites, bosses, finals and other hard fights.{BALANCE.premiumGate ? ' One premium piece per fighter, from the end of Act I.' : ''}
+        </p>
+        {premiumLock(G) && (
+          <div class="lockbar">
+            <Icon name="lock" /> {premiumLock(G)}
+          </div>
+        )}
         {PREMIUM().map((g) => {
           const own = F.gear![g.slot] === g.k;
+          const lock = !own && premiumLock(G, g.k);
           const gp = gemPrice(g.k);
           const buy = async (cur: 'gem' | 'coin') => {
             if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${cur === 'gem' ? gp + ' 💎' : g.cost + ' 🪙'}. You have ${cur === 'gem' ? gems + ' 💎' : coins + ' 🪙'}. You wear it right away.`, extra: <GearCompareView k={g.k} />, yes: 'Buy it' })))
@@ -167,6 +178,12 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
               price={
                 own ? (
                   <span class="price">Equipped</span>
+                ) : (F.armory || []).includes(g.k) ? (
+                  <span class="price">In your armory</span>
+                ) : lock ? (
+                  <span class="price" title={lock}>
+                    <Icon name="lock" /> Locked
+                  </span>
                 ) : (
                   <div class="buy2">
                     <button class="buy gem" disabled={dis(gems >= gp)} onClick={() => void buy('gem')}>
@@ -236,7 +253,9 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
               class="buy"
               disabled={!open}
               onClick={async () => {
-                if (!(await confirm({ title: `Sell ${g.n}?`, body: `You get ${sellValue(g)} 🪙. It's gone for good, including from your armory.`, yes: 'Sell it' }))) return openBaseShop(tab);
+                const carry = carryPreview(G, g.k);
+                if (!(await confirm({ title: `Sell ${g.n}?`, body: `You get ${sellValue(g)} 🪙. It's gone for good, including from your armory.${carry ? ` ${carry}` : ''}`, yes: 'Sell it' })))
+                  return openBaseShop(tab);
                 if (act((x) => sellGear(x, g.k))) toast(`Sold ${g.n}`);
                 openBaseShop(tab);
               }}

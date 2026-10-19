@@ -19,6 +19,7 @@ import {
   champsOf,
   gainFame,
   gainXP,
+  healStoryInjuries,
   injText,
   invalidate,
   markSeen,
@@ -27,6 +28,8 @@ import {
   rivalsOf,
   rollSeason,
   setNemesis,
+  STORY_INJ_MAX,
+  storyInjuries,
   tickInjuries,
   track,
   trackMax,
@@ -182,6 +185,9 @@ export function shareWord(w: number): string {
   return 'almost no';
 }
 
+/** A new injury from a story loss (review K9): it also heals when the chapter starts over. */
+export const storyInjLine = (j: Injury) =>
+  `${j.e} Injured: ${j.n}, ${injText(j)}. Heals when a chapter starts over, after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or with a physio session or Patch up (campfire)`;
 /** A new injury, said out loud with how to get rid of it (it used to arrive with one terse line). */
 export const injLine = (j: Injury) =>
   `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
@@ -553,9 +559,13 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     S.grit--;
     S.hp = 60;
     lines.push(`💔 You lose a grit. ${pl(S.grit, 'grit', 'grit')} left`);
-    if (g.rng() < 0.3) {
-      const j = addInjury(g, F);
-      if (j) lines.push(injLine(j));
+    // with the review's cap (K9) story losses injure at most twice, and those heal when the chapter starts over
+    if (g.rng() < 0.3 && !(BALANCE.injuryCap && storyInjuries(F) >= STORY_INJ_MAX)) {
+      const j = addInjury(g, F, BALANCE.injuryCap);
+      if (j) {
+        lines.push(BALANCE.injuryCap ? storyInjLine(j) : injLine(j));
+        if (BALANCE.injuryCap) lines.push('🧰 A med kit cures this right away: merchants sell them, and they turn up in loot');
+      }
     }
   }
   if (me.st.dodges >= 3) keys.push('untouch');
@@ -608,6 +618,8 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     const lost = Math.floor(coinsOf(g) * 0.25);
     addCoins(g, -lost);
     lines.push(`☠️ Out of grit. Chapter ${ch} starts over on a new path${lost ? `, and you drop ${lost} 🪙` : ''}`);
+    const healed = BALANCE.injuryCap ? healStoryInjuries(F) : 0;
+    if (healed) lines.push(`🩹 A fresh start: ${healed === 1 ? 'your story injury heals' : `your ${healed} story injuries heal`}`);
   }
   gainXP(g, F, xp);
   addCoins(g, coins);

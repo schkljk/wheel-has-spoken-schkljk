@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { TIER_LVL, TIER_PTS, TNODE, TREE, branchPts, canRank, rankTalent, talRank, unrankTalent } from '@whs/core';
+import { BALANCE, TIER_LVL, TIER_PTS, TNODE, TREE, branchPts, canRank, rankTalent, reviveSources, talRank, unrankTalent } from '@whs/core';
 import { G, act, dropToast, toast } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
@@ -40,6 +40,8 @@ function Talents({ br: br0 }: { br: string }) {
         {nodes.map((n) => {
           const r = talRank(F, n.key);
           const ok = canRank(F, n);
+          // only one revive counts a fight (review K6): say so before a point goes on a second one
+          const others = BALANCE.reviveCap && !r && n.eff.fx?.revive ? reviveSources(F, n.key) : [];
           return (
             <button
               key={n.key}
@@ -70,6 +72,7 @@ function Talents({ br: br0 }: { br: string }) {
               <span class="tt-e">{n.e}</span>
               <b>{n.n}</b>
               <small>{n.d}</small>
+              {others.length > 0 && <small class="tt-warn">Won't stack: {others.join(', ')} already gets you back up</small>}
               <span class="tt-pips">
                 {Array.from({ length: n.max }, (_, i) => (
                   <i key={i} class={i < r ? 'on' : ''} />

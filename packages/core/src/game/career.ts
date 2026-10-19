@@ -70,17 +70,31 @@ export function gainXP(g: Game, f: CareerFighter, n: number): number {
   return ups;
 }
 
-export function addInjury(g: Game, f: Fighter): Injury | null {
+/** A new injury. `story`: it came from a story loss (review K9: those are capped and heal when the chapter starts over). */
+export function addInjury(g: Game, f: Fighter, story = false): Injury | null {
   const have = new Set((f.inj || []).map((j) => j.k));
   const opts = INJURIES.filter((j) => !have.has(j.k));
   if (!opts.length) return null;
   const j = pick(g.rng, opts);
-  (f.inj || (f.inj = [])).push({ k: j.k, left: j.dur } as never);
+  (f.inj || (f.inj = [])).push((story ? { k: j.k, left: j.dur, st: 1 } : { k: j.k, left: j.dur }) as never);
   invalidate(f);
   return j;
 }
+/** Injuries from story losses the fighter has right now (K9). */
+export const storyInjuries = (f: Fighter) => ((f.inj || []) as { st?: number }[]).filter((j) => j.st).length;
+/** The most a fighter carries from story losses (review K9). */
+export const STORY_INJ_MAX = 2;
+/** Story-loss injuries go away (a chapter starting over, K9). Returns how many healed. */
+export function healStoryInjuries(f: Fighter): number {
+  const n = storyInjuries(f);
+  if (n) {
+    f.inj = ((f.inj || []) as { st?: number }[]).filter((j) => !j.st) as never;
+    invalidate(f);
+  }
+  return n;
+}
 export function tickInjuries(f: Fighter) {
-  f.inj = ((f.inj || []) as { k: string; left: number }[]).map((j) => ({ k: j.k, left: j.left - 1 })).filter((j) => j.left > 0);
+  f.inj = ((f.inj || []) as { k: string; left: number }[]).map((j) => ({ ...j, left: j.left - 1 })).filter((j) => j.left > 0);
   invalidate(f);
 }
 export const injText = (j: Injury) =>

@@ -105,11 +105,15 @@ export interface ChapterLog {
   nem: number;
   nemWins: number;
   nemRetired: number;
+  /** the most injuries carried at once during the chapter, and at its clear (review K9) */
+  injMax?: number;
+  injEnd?: number;
 }
 export interface RunLog {
   chapters: ChapterLog[];
-  /** the chapter the run got stuck on, if it did */
+  /** the chapter the run got stuck on, if it did, and its log */
   stuck: number | null;
+  stuckLog?: ChapterLog;
   /** gear upgrade levels on the fighter at the end (upgrade 21), and unspent coins */
   upLevels?: number;
   coins?: number;
@@ -315,7 +319,8 @@ function visit(g: Game, kind: NodeKind) {
   storyOf(g).row++;
 }
 
-const upSum = (F: CareerFighter) => Object.values(F.gup || {}).reduce((a, b) => a + b, 0);
+// (keys starting with @ are upgrade worth waiting in a slot, review K8, not levels)
+const upSum = (F: CareerFighter) => Object.entries(F.gup || {}).reduce((a, [k, b]) => (k.startsWith('@') ? a : a + b), 0);
 /** Plays the story from where the fighter is until `toCh` is cleared or the run gets stuck. */
 export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsPerReset?: number } = {}): RunLog {
   const maxResets = o.maxResets ?? 4;
@@ -335,6 +340,7 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     const kind = row[i]!;
     const before = { cleared: (S.cleared || []).length, grit: S.grit, rec: { ...(F.rec || { w: 0, l: 0 }) } };
     visit(g, kind);
+    log.injMax = Math.max(log.injMax ?? 0, (F.inj || []).length);
     const rec = F.rec || { w: 0, l: 0 };
     log.fights += rec.w + rec.l - before.rec.w - before.rec.l;
     log.wins += rec.w - before.rec.w;
@@ -352,13 +358,14 @@ export function playStory(g: Game, toCh = LASTCH, o: { maxResets?: number; cupsP
     }
     if ((S2.cleared || []).length > before.cleared) {
       log.lvl = F.lvl || 1;
+      log.injEnd = (F.inj || []).length;
       out.push(log);
       log = null;
       continue;
     }
     if (S2.ch === log.ch && S2.row === 0 && S2 !== S) {
       log.resets++;
-      if (log.resets > maxResets) return { chapters: out, stuck: log.ch, upLevels: upSum(F), coins: coinsOf(g) };
+      if (log.resets > maxResets) return { chapters: out, stuck: log.ch, stuckLog: log, upLevels: upSum(F), coins: coinsOf(g) };
       // stuck players go and win some levels elsewhere
       for (let c = 0; c < cupsPerReset; c++) {
         playCup(g);

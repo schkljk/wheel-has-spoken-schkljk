@@ -392,7 +392,18 @@ export const RULES_R2: Record<string, [e: string, title: string, paragraphs: str
       'Call a hall of fame exhibition before the bell: a right call pays 5 coins.',
     ],
   ],
+  gems: [
+    '💎',
+    'Gems',
+    [
+      'A rare currency earned only from hard fights: elites, bosses, boss rush, tournament finals, legend challenges and the daily challenge.',
+      'Gems buy premium gear in the base shop: one piece per fighter, once Act I is cleared. Sell or salvage it to swap for another. The coin price is absurd on purpose.',
+      'They also buy looks in the Locker, on the More tab. Looks only: nothing there changes a fight.',
+    ],
+  ],
 };
+/** The switch each round-2 rule page follows. */
+export const RULES_R2_FLAG: Record<string, 'clubTight' | 'premiumGate'> = { club: 'clubTight', gems: 'premiumGate' };
 export const STAT_NOW: Record<string, [e: string, n: string, d: string]> = {
   spd: [
     '👟', 'Speed',
