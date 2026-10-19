@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import * as D from '../src/data';
 import { reword } from '../src/data/wording';
 import { clockAt, shortDate } from '../src/game/game';
+import { computePopulation } from '../src/game/summary';
+import { POPULATION } from '../src/game/population-table';
 
 // Startup costs taken out of the first second (review round 2, J10): the same results, less work.
 
@@ -43,5 +45,24 @@ describe('the clock', () => {
     expect(shortDate(new Date(2027, 0, 3, 12))).toBe('3 Jan 2027');
     const c = clockAt(new Date(2026, 9, 17, 12));
     expect(c).toEqual({ today: 'Sat Oct 17 2026', yesterday: 'Fri Oct 16 2026', date: '17 Oct 2026' });
+  });
+});
+
+describe("the scouting report's population", () => {
+  it('is the table worked out ahead of time (after a rules change: npm run bake)', () => {
+    expect(POPULATION, 'the population changed: run npm run bake').toEqual(computePopulation());
+  });
+});
+
+describe('ratings worked out in the worker', () => {
+  it('match the main thread for a fighter copied over (structured clone, as postMessage does)', async () => {
+    const { mulberry32, randomFighter, winRate } = await import('../src');
+    const r = mulberry32(77);
+    for (let i = 0; i < 24; i++) {
+      const f = randomFighter(`R${i}`, r);
+      (f as { lvl?: number }).lvl = 1 + (i % 9);
+      const copy = structuredClone(f);
+      expect(winRate(copy, {}, 40), f.name).toBe(winRate(f, {}, 40));
+    }
   });
 });

@@ -288,6 +288,13 @@
 .stamp.q0 {
   color: var(--muted);
 }
+/* the rating arrives from the worker a moment after the card */
+.stamp.rating {
+  opacity: 0.6;
+}
+.stamp.stamp-in {
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
 .stamp.q1 {
   color: var(--q1);
 }
@@ -3146,6 +3153,12 @@ img.pxi.chap {
 }
 .scout[open] h3::after {
   content: ' ▾';
+}
+.scout.wait h3::after {
+  content: none;
+}
+.scout.wait small {
+  color: var(--muted);
 }
 .sr-list {
   list-style: none;

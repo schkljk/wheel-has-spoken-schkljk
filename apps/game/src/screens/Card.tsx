@@ -2,7 +2,7 @@ import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, tak
 import { G, act, go } from '../state/game';
 import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
-import { FighterCard } from '../ui/FighterCard';
+import { FighterCard, useRating } from '../ui/FighterCard';
 import { Icon } from '../ui/Icon';
 import { choose, goHub } from '../flows/nav';
 
@@ -66,6 +66,17 @@ export function CardScreen({ f }: { f: CareerFighter }) {
 
 /** The build in plain words (upgrade 29): three strengths, the biggest weakness and the best synergy, with jokes. */
 function ScoutingReport({ f }: { f: CareerFighter }) {
+  // the sign-off follows the rating, which the worker works out first
+  if (useRating(f) == null)
+    return (
+      <div class="card scout wait" aria-label="Scouting report">
+        <h3>📋 Scouting report</h3>
+        <small>The scouts are still arguing…</small>
+      </div>
+    );
+  return <Report f={f} />;
+}
+function Report({ f }: { f: CareerFighter }) {
   const r = buildSummary(f, ctxOf(G));
   let n = 0;
   const line = (cls: string, l: SumLine, label?: string) => (

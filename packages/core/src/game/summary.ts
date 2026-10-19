@@ -8,6 +8,7 @@ import { hashStr } from '../save/fighter';
 import { activePower, eff, numStats, synOf, type GameContext } from '../stats';
 import type { Fighter } from '../types';
 import { winRate } from './rating';
+import { POPULATION } from './population-table';
 
 /**
  * The scouting report after the wheels (Phase 4, upgrade 29): three strengths, the biggest weakness and the best
@@ -48,25 +49,29 @@ function values(f: Fighter, ctx: GameContext): Record<SumKey, number | null> {
   const n = numStats(f, ctx);
   return { str: s.str, spd: s.spd, dur: s.dur, iq: s.iq, wm: s.wm, pm: activePower(f) ? s.pm : null, cha: s.cha ?? 5, crit: n.crit, dodge: n.dodge };
 }
-// what an ordinary fighter looks like: a fixed sample, so the report never changes for the same fighter
-let POP: Record<SumKey, [mean: number, sd: number]> | null = null;
-function population() {
-  if (POP) return POP;
+/** What an ordinary fighter looks like: each stat's mean and spread over a fixed sample of 600 random fighters. */
+export type Population = Record<SumKey, [mean: number, sd: number]>;
+/**
+ * Works the population out (about 1 s on a mid-range phone). It never changes for the same rules, so the game
+ * reads the table worked out ahead of time (population-table.ts, written by `npm run bake`); a test checks that
+ * the table still matches this.
+ */
+export function computePopulation(): Population {
   const r = mulberry32(20261018);
   const acc = Object.fromEntries(KEYS.map((k) => [k, [] as number[]])) as Record<SumKey, number[]>;
   for (let i = 0; i < 600; i++) {
     const v = values(randomFighter('X', r), {});
     for (const k of KEYS) if (v[k] != null) acc[k].push(v[k]!);
   }
-  POP = Object.fromEntries(
+  return Object.fromEntries(
     KEYS.map((k) => {
       const a = acc[k];
       const m = a.reduce((x, y) => x + y, 0) / a.length;
       return [k, [m, Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) || 1]];
     }),
-  ) as Record<SumKey, [number, number]>;
-  return POP;
+  ) as Population;
 }
+const population = (): Population => POPULATION;
 const high = (z: number) => (z >= 1.3 ? 'among the very best' : z >= 0.7 ? 'well above average' : z >= 0.2 ? 'above average' : z >= -0.2 ? 'about average' : 'their best of a modest set');
 const low = (z: number) => (z <= -1.3 ? 'among the very lowest' : z <= -0.7 ? 'well below average' : 'below average');
 const pickBy = <T,>(list: T[], seed: string) => list[hashStr(seed) % list.length]!;
