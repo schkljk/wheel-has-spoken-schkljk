@@ -36,6 +36,7 @@ import {
   gearArrives,
   gearChoose,
   healS,
+  levelSpinsPerLevel,
   levelUpLand,
   levelUpList,
   lootLand,
@@ -179,7 +180,10 @@ function loot(g: Game, table: LootTable) {
 function levelUps(g: Game) {
   const F = g.F!;
   while ((F.pendingLv || 0) > 0) {
-    const up = levelUpLand(g, spin(g.rng, levelUpList()));
+    // a second opinion (review F4): two spins, and the player keeps the rarer slice (stats first on a tie)
+    const spins = Array.from({ length: levelSpinsPerLevel() }, () => spin(g.rng, levelUpList()));
+    const keep = spins.reduce((a, b) => (b.q > a.q || (b.q === a.q && a.respin && !b.respin) ? b : a));
+    const up = levelUpLand(g, keep);
     if (!up) continue;
     const L = upgradeLists(g, up);
     if (!L.list.length) {

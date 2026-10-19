@@ -48,6 +48,8 @@ export interface Balance {
   healRules: boolean;
   /** every fight row has an elite, sure wins can be claimed, a boss that toughened up for you pays gems (E5) */
   storyPacing: boolean;
+  /** every level-up spins twice and you keep one (review F4) */
+  secondOpinion: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -73,6 +75,7 @@ export const LEGACY_BALANCE: Balance = {
   statRoles: false,
   healRules: false,
   storyPacing: false,
+  secondOpinion: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -123,6 +126,7 @@ export const BALANCE: Balance = {
   statRoles: true,
   healRules: true,
   storyPacing: true,
+  secondOpinion: true,
 };
 
 /**

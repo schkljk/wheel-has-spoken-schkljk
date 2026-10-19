@@ -16,6 +16,7 @@ import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
+import { clearLevelSpins } from './resume';
 
 export const LASTCH = CHAPTERS.length;
 export const maxGrit = (g: Game) => 3 + lgLvl(g.save.profile, 'grit');
@@ -638,9 +639,14 @@ export const prizeMoney = (g: Game) => 4 + storyOf(g).ch;
 
 // ---------------------------------------------------------------- level-ups
 export const levelUpList = () => LEVELUP.map((it) => ({ it, w: it.w, mult: 1 }));
+/** How many level-up spins a level gets: two with a second opinion (review F4), and you keep one. */
+export const levelSpinsPerLevel = () => (BALANCE.secondOpinion ? 2 : 1);
+export const levelUpItem = (k: string) => LEVELUP.find((x) => x.k === k);
 /** A level-up spin landed: stat bonuses apply at once; awaken and arsenal lead to an upgrade spin. */
 export function levelUpLand(g: Game, it: (typeof LEVELUP)[number]): 'power' | 'weapon' | null {
   const F = g.F!;
+  // the spins for this level are over: the next level starts from none (resume.ts)
+  clearLevelSpins(g);
   F.pendingLv = Math.max(0, (F.pendingLv || 0) - 1);
   if (it.k === 'awaken') return 'power';
   if (it.k === 'arsenal') return 'weapon';
