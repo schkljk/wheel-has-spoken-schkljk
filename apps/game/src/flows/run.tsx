@@ -1,4 +1,4 @@
-import { RUN_FIGHTS, boonOf, quitRun, runBest, runFighter, runSpecOf, runState, startRun, takeBoon } from '@whs/core';
+import { RUN_FIGHTS, boonOf, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, act } from '../state/game';
@@ -6,6 +6,9 @@ import { confirm } from '../state/ui';
 import { fight } from './fight';
 import { choose, goHub, runSteps, showCine } from './nav';
 import { bossIntro } from './story';
+
+/** Lower case in a sentence, except for a name in capitals (NPC). */
+const lc = (s: string) => (s === s.toUpperCase() ? s : s.toLowerCase());
 
 /**
  * Spin & Run (review F3): a throwaway fighter, eight fights and a boss. Between fights: pick a boon (after a
@@ -38,7 +41,7 @@ export async function runFlow() {
         <div class="boss-plate">
           <b>{f.name}</b>
           <span>
-            Level {f.lvl} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}, {f.weapon.n.toLowerCase()}, {f.power.n.toLowerCase()}
+            Level {f.lvl} {lc(f.race.n)} {lc(f.arch.n)}, {lc(f.weapon.n)}, {lc(f.power.n)}
           </span>
         </div>
         <div class="cine-meta">They exist for one run. Make it count, or at least make it funny.</div>
@@ -62,10 +65,17 @@ export async function runFlow() {
     }
     const f = runFighter(R);
     const boss = R.i === RUN_FIGHTS - 1;
+    // the same opponent the fight will bring (the run's own dice)
+    const o = act((g) => runOpponent(g, R));
     const c = await choose({
       emoji: boss ? '💀' : '🏃',
       title: boss ? 'Spin & Run: the boss' : `Spin & Run: fight ${R.i + 1} of ${RUN_FIGHTS}`,
       sub: `${f.name}, level ${f.lvl}, ${R.hp}% HP`,
+      body: (
+        <>
+          Next: <b>{o.name}</b>, {boss && o.bossTitle ? `${o.bossTitle}, level ${o.lvl}` : `level ${o.lvl} ${lc(o.race.n)} ${lc(o.arch.n)}`}.
+        </>
+      ),
       options: [
         { label: boss ? '💀 Face the boss' : '⚔️ Fight', sub: boss ? 'Up to 30 rounds, then sudden death' : `${RUN_FIGHTS - R.i - 1} more after this, then the boss` },
         { label: 'Walk away', sub: `Ends the run with ${R.i} ${R.i === 1 ? 'win' : 'wins'}, and keeps what it earned` },
