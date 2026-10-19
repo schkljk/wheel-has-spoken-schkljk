@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { ARCHS, BOUNTY_JOB_GEMS, BOUNTY_SWAP_GEMS, COL_STEP, GOALS, MASTERY, MASTERY_RW, WHEEL, bountyBoard, bountiesDone, bountyJob, codexCount, dropJob, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals, swapBounty, takeJob } from '@whs/core';
+import { ARCHS, BOUNTY_JOB_GEMS, BOUNTY_SWAP_GEMS, COL_STEP, ALL_GOALS as GOALS, MASTERY, MASTERY_RW, WHEEL, bountyBoard, bountiesDone, bountyJob, codexCount, dropJob, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals, swapBounty, takeJob } from '@whs/core';
 import { G, act, activeFighter, ensure, save, toast } from '../../state/game';
 import { confirm, openSheet } from '../../state/ui';
 import { Sheet, rise } from '../../ui/kit';

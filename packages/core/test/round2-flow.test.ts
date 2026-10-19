@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ALL_GOALS,
+  checkGoals,
+  goalCur,
   BOUNTIES,
   BOUNTY_JOB_GEMS,
   POWERS,
@@ -153,5 +156,21 @@ describe('H5 and L1: bounties you can steer', () => {
     jobUsed(g);
     expect(bountyJob(g)).toBe(null);
     expect(g.save.profile.gems).toBe(5 - BOUNTY_JOB_GEMS);
+  });
+});
+
+describe('L6: synergy hunt goals', () => {
+  it('count the synergies found, pay once, and sit with the rest of the goals', () => {
+    const g = game(9);
+    expect(ALL_GOALS.map((x) => x.k)).toEqual(expect.arrayContaining(['syn10', 'syn25', 'syn50']));
+    expect(goalCur(g, 'syn10')).toBe((g.save.profile.seen.syn || []).length);
+    g.save.profile.seen.syn = Array.from({ length: 12 }, (_, i) => `S${i}`);
+    const gems = g.save.profile.gems || 0;
+    checkGoals(g);
+    expect(g.save.profile.goalsDone).toContain('syn10');
+    expect(g.save.profile.goalsDone).not.toContain('syn25');
+    expect(g.save.profile.gems).toBeGreaterThanOrEqual(gems + 3);
+    checkGoals(g);
+    expect(g.save.profile.goalsDone.filter((k) => k === 'syn10')).toHaveLength(1);
   });
 });

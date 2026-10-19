@@ -1,4 +1,4 @@
-import { GOALS, LEGACY, MASTERY, MASTERY_RW, COL_STEP, RANKS } from '../data/content/progression';
+import { ALL_GOALS as GOALS, LEGACY, MASTERY, MASTERY_RW, COL_STEP, RANKS } from '../data/content/progression';
 import { TIERS_T } from '../data/content/economy';
 import { ARENAS } from '../data/arenas';
 import { GEAR_SLOTS } from '../data/gear';
@@ -346,9 +346,12 @@ for (const goal of GOALS) {
                                 : null;
   GOAL_CUR[k] = stat
     ? (g) => ST(g, stat)
-    : k === 'mall'
-      ? (g) => Object.keys(g.save.profile.mastery).filter((a) => g.save.profile.mastery[a]! > 0).length
-      : maxMastery;
+    : /^syn\d/.test(k)
+      ? // synergies found, hidden ones included (L6)
+        (g) => (g.save.profile.seen.syn || []).length
+      : k === 'mall'
+        ? (g) => Object.keys(g.save.profile.mastery).filter((a) => g.save.profile.mastery[a]! > 0).length
+        : maxMastery;
 }
 export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 
@@ -356,7 +359,7 @@ export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 // percent (a level takes far longer than a win, and "Reach level 50" should never sit above "Win 10 fights")
 const GOAL_RATE: [RegExp, number][] = [
   [/^w\d/, 1.4], [/^e\d/, 7], [/^b\d/, 14], [/^ch\d/, 14], [/^cup/, 6], [/^world/, 40], [/^g\d/, 2], [/^dc/, 15],
-  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8],
+  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8], [/^syn/, 8],
 ];
 /** About how many fights a goal still needs. */
 export function goalEta(g: Game, k: string): number {
