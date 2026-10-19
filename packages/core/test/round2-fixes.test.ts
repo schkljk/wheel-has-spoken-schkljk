@@ -48,3 +48,35 @@ describe('reads are words (G15)', () => {
     expect(coins).not.toContain('rerolls (2 each)');
   });
 });
+
+describe('the save safety net knows the new parts (G14)', () => {
+  it('repairs damaged bounty, locker, run, resume, tower and stats instead of failing every win', async () => {
+    const { repair, newSave, enterCareer, randomFighter, mulberry32, clockAt, track } = await import('../src');
+    const s = newSave(0);
+    Object.assign(s.profile.extra, {
+      bounty: { up: 'oops', done: null },
+      cos: { own: null, on: 3 },
+      run: { f: {} },
+      resume: { lv: {}, steps: 'x' },
+      tower: { floor: '9' },
+      duels: { '2026-05-15': { won: true, rounds: 4, hp: 50, sq: '' }, bad: 7 },
+    });
+    s.profile.stats.wins = '5' as unknown as number;
+    const { save, fixed } = repair(JSON.parse(JSON.stringify(s)));
+    expect(fixed.length).toBeGreaterThan(4);
+    const x = save.profile.extra as Record<string, unknown>;
+    expect(x.bounty).toEqual({ up: [], done: [], prog: {} });
+    expect(x.cos).toEqual({ own: [], on: {} });
+    expect(x.run).toBeNull();
+    expect((x.resume as { lv: unknown }).lv).toBeNull();
+    expect(x.tower).toEqual({ floor: 9, who: '' });
+    expect(Object.keys(x.duels as object)).toEqual(['2026-05-15']);
+    expect(save.profile.stats.wins).toBe(5);
+    // and the game plays on: a win counts (it used to throw in the bounty board)
+    const rng = mulberry32(1);
+    const g = { save, F: null, rng, clock: clockAt(), pool: null, notes: [] as string[] };
+    enterCareer(g, randomFighter('Fixed', rng) as never);
+    track(g, 'wins');
+    expect(g.save.profile.stats.wins).toBe(6);
+  });
+});

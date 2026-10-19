@@ -186,4 +186,39 @@ describe('save store', () => {
     store.backup(r.save, 'Automatic');
     expect(kv.m).toEqual(before);
   });
+  it('refuses a save too big to fit, whole: nothing changes and the undo backup stays (G14)', () => {
+    const cur = imported();
+    const kv0 = new MemKV();
+    new SaveStore(kv0, () => 1000).write(cur);
+    const used = [...kv0.m.values()].reduce((a, v) => a + v.length, 0);
+    // room for the current save and one backup of it, not for a huge one
+    const kv = new MemKV(used * 2.6);
+    const store = new SaveStore(kv, () => 1000);
+    store.write(cur);
+    const before = new Map([...kv.m].filter(([k]) => !k.startsWith('whs:backup:')));
+    const big = imported();
+    big.profile.extra.junk = 'x'.repeat(used * 3);
+    expect(() => store.replace(cur, big, 'Before loading a file')).toThrow(StorageFullError);
+    for (const [k, v] of before) expect(kv.getItem(k)).toBe(v);
+    expect(store.listBackups()[0]?.reason).toBe('Before loading a file');
+  });
+  it('writes all or nothing: a section that does not fit puts back the ones written before it (G14)', () => {
+    const cur = imported();
+    const kv0 = new MemKV();
+    new SaveStore(kv0, () => 1000).write(cur);
+    const used = [...kv0.m.values()].reduce((a, v) => a + v.length, 0);
+    const kv = new MemKV(used + 2000);
+    const store = new SaveStore(kv, () => 1000);
+    store.write(cur);
+    for (const k of [...kv.m.keys()]) if (k.startsWith('whs:backup:')) kv.removeItem(k);
+    const before = new Map(kv.m);
+    // the profile grows a little (fits), the active fighter a lot (doesn't)
+    const next = JSON.parse(JSON.stringify(cur)) as typeof cur;
+    next.profile.gems += 1;
+    const a = next.roster.active ?? 0;
+    next.roster.active = a;
+    if (next.roster.slots[a]) (next.roster.slots[a] as unknown as Record<string, unknown>).junk = 'x'.repeat(used);
+    expect(() => store.write(next)).toThrow(StorageFullError);
+    expect(new Map(kv.m)).toEqual(before);
+  });
 });

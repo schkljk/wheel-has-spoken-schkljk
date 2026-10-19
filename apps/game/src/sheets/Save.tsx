@@ -25,7 +25,7 @@ export async function offerImport(next: SaveData, from: string, repaired: string
     yes: `Load ${from}`,
   });
   if (!ok) return false;
-  replaceSave(next, `Before loading ${from}`);
+  if (!replaceSave(next, `Before loading ${from}`)) return false;
   closeSheet();
   go({ screen: 'title' });
   toast('Save loaded');

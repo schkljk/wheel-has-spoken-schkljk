@@ -107,8 +107,12 @@ export class SaveStore {
     return migrate({ ...meta, settings, roster: { ...roster, active: active.i, slots }, profile }, this.now(), notes);
   }
 
-  /** Writes the save, section by section (unchanged sections are skipped). */
-  write(save: SaveData): void {
+  /**
+   * Writes the save, section by section (unchanged sections are skipped). All or nothing (G14): a section that
+   * doesn't fit puts back the ones this write already changed, so a save is never half old and half new (the
+   * gem kept, the coins not). `protect` is a backup that must not be dropped to make room (an import's undo).
+   */
+  write(save: SaveData, protect?: number): void {
     if (this.locked) return;
     save.savedAt = this.now();
     const { active } = save.roster;
@@ -120,23 +124,41 @@ export class SaveStore {
       // meta last: a save only counts once all its sections are in
       [KEYS.meta, { game: save.game, version: save.version, savedAt: save.savedAt }],
     ];
-    for (const [k, v] of parts) {
-      const txt = JSON.stringify(v);
-      if (k !== KEYS.meta && this.written.get(k) === txt) continue;
-      this.set(k, txt);
+    const done: [string, string | null][] = [];
+    try {
+      for (const [k, v] of parts) {
+        const txt = JSON.stringify(v);
+        if (k !== KEYS.meta && this.written.get(k) === txt) continue;
+        done.push([k, this.written.get(k) ?? this.kv.getItem(k)]);
+        this.set(k, txt, protect);
+      }
+    } catch (e) {
+      for (const [k, old] of done.reverse()) {
+        try {
+          if (old == null) this.kv.removeItem(k);
+          else this.kv.setItem(k, old);
+        } catch {
+          // the old text fit before this write; if even that fails there is nothing better to do
+        }
+        if (old == null) this.written.delete(k);
+        else this.written.set(k, old);
+      }
+      throw e;
     }
     if (this.backupDue()) this.backup(save, 'Automatic');
   }
 
-  /** setItem that makes room by dropping old backups when storage is full. */
-  private set(k: string, v: string) {
+  /** setItem that makes room by dropping old backups when storage is full (never the `protect` one). */
+  private set(k: string, v: string, protect?: number) {
     for (;;) {
       try {
         this.kv.setItem(k, v);
         this.written.set(k, v);
         return;
       } catch (e) {
-        const oldest = this.listBackups().at(-1);
+        const oldest = this.listBackups()
+          .filter((b) => b.slot !== protect)
+          .at(-1);
         if (!oldest || k.startsWith('whs:backup:')) throw new StorageFullError(`Storage is full (${(e as Error).message})`);
         this.kv.removeItem(backupKey(oldest.slot));
         this.index = this.listBackups().filter((b) => b.slot !== oldest.slot);
@@ -197,11 +219,14 @@ export class SaveStore {
     return migrate((JSON.parse(v) as { save: unknown }).save, this.now());
   }
 
-  /** Replaces the whole save (import, restore), backing up the current one first. */
+  /**
+   * Replaces the whole save (import, restore), backing up the current one first. A save too big for the device's
+   * storage is refused whole (StorageFullError): the current save and its undo backup stay as they were (G14).
+   */
   replace(current: SaveData, next: SaveData, reason: string): void {
     this.backup(current, reason);
-    this.written.clear();
-    this.write(next);
+    const undo = this.listBackups()[0]?.slot;
+    this.write(next, undo);
   }
 
   /** Erases the save (backups stay, so it can be undone). */

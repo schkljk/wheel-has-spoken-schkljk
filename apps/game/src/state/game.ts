@@ -93,9 +93,16 @@ export function commit(change: (s: SaveData) => void): void {
 }
 
 /** Replaces the whole save (import, restore, erase), with a backup of the current one first. */
-export function replaceSave(next: SaveData, reason: string): void {
-  store.replace(G.save, next, reason);
+export function replaceSave(next: SaveData, reason: string): boolean {
+  try {
+    store.replace(G.save, next, reason);
+  } catch (e) {
+    // too big for this device: nothing changed, the current save is still the one in use (G14)
+    toast(e instanceof StorageFullError ? 'That save is too big for the storage left on this device. Nothing was changed' : 'Could not load that save. Nothing was changed');
+    return false;
+  }
   loadSave(next);
+  return true;
 }
 /** Starts over from a save that is already stored. */
 export function loadSave(next: SaveData): void {
