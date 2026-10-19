@@ -29,3 +29,4 @@ export * from './resume';
 export * from './bounty';
 export * from './duel';
 export * from './ghost';
+export * from './mentor';

@@ -136,7 +136,7 @@ export function nodeFoe(g: Game, kind: 'fight' | 'elite'): CareerFighter {
 /** The step's encounter: the one it drew before, or a new one (kept). */
 export function nodeEvent(g: Game): StoryEventView {
   const n = nodeOf(g);
-  const old = n?.ev ? eventOf(n.ev) : undefined;
+  const old = n?.ev ? eventOf(n.ev, g) : undefined;
   if (old) return old;
   const ev = storyEvent(g);
   if (n) n.ev = ev.k;

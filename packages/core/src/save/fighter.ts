@@ -1,6 +1,6 @@
 import { BACKS, CURED, QUIRKS, SKIPPED, STANCES, TITLES, WEAKS } from '../data/wheels';
 import { WHEELS, itemsOf, type PartialFighter } from '../fighter';
-import type { Fighter, TalentMap, WheelItem } from '../types';
+import type { Fighter, StatKey, TalentMap, WheelItem } from '../types';
 
 /** Anything JSON can hold; used for save parts whose rules are ported with their screens. */
 export type Json = null | boolean | number | string | Json[] | { [k: string]: Json };
@@ -57,6 +57,8 @@ export interface CareerFighter extends Fighter {
   isRival?: string;
   /** a fighter from someone else's ghost code (review F9) */
   isGhost?: boolean;
+  /** the retired fighter who mentors this one (review F10) */
+  mentor?: { n: string; e: string; k: StatKey } | null;
   /** pool opponents: where they rank (0 weakest, 1 strongest) */
   poolPct?: number;
   bossTitle?: string;
@@ -132,6 +134,7 @@ export function serFighter(f: CareerFighter): SerFighter {
   if (f.storyMain) o.storyMain = f.storyMain;
   if (f.reinc && !(f.reinc as { skip?: boolean }).skip) o.reinc = { n: f.reinc.n, e: f.reinc.e, q: f.reinc.q, m: f.reinc.m, d: f.reinc.d };
   if (f.weak && f.weak.k === 'cured') o.cured = 1;
+  if (f.mentor) o.mentor = { ...f.mentor };
   return o;
 }
 
@@ -199,5 +202,6 @@ export function deserFighter(o: SerFighter | null | undefined): CareerFighter | 
   f.story = o.story || null;
   f.bag = { ...(o.bag || {}) };
   f.lootBoost = !!o.lootBoost;
+  if (o.mentor && typeof o.mentor === 'object') f.mentor = { ...(o.mentor as NonNullable<CareerFighter['mentor']>) };
   return f;
 }

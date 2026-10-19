@@ -17,6 +17,7 @@ import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
 import { clearLevelSpins } from './resume';
+import { MENTOR_EVENT, withMentor } from './mentor';
 
 export const LASTCH = CHAPTERS.length;
 export const maxGrit = (g: Game) => 3 + lgLvl(g.save.profile, 'grit');
@@ -286,7 +287,7 @@ export interface StoryEventView {
 }
 
 // ---------------------------------------------------------------- chapter-themed encounters (upgrade 20)
-const CH_EVENTK: Record<string, ChapterEvent> = Object.fromEntries(CH_EVENTS.map((e) => [e.k, e]));
+const CH_EVENTK: Record<string, ChapterEvent> = Object.fromEntries([...CH_EVENTS, MENTOR_EVENT].map((e) => [e.k, e]));
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -328,8 +329,13 @@ const viewOf = (ev: ChapterEvent): StoryEventView => ({
   d: ev.d,
   o: ev.o.map((o) => ({ l: o.l, s: optText(o), cost: o.cost, fight: o.fight, wheel: o.wheel, loot: o.loot, risk: o.risk })),
 });
-/** An encounter by its key: one of the classic twelve or a chapter's own. */
-export const eventOf = (k: string): StoryEventView | undefined => SEVENTS.find((e) => e.k === k) ?? (CH_EVENTK[k] && viewOf(CH_EVENTK[k]));
+/** An encounter by its key: one of the classic twelve or a chapter's own (a mentor's cameo needs the game for its name). */
+export const eventOf = (k: string, g?: Pick<Game, 'F'>): StoryEventView | undefined =>
+  k === MENTOR_EVENT.k && g ? mentorView(g) : (SEVENTS.find((e) => e.k === k) ?? (CH_EVENTK[k] && viewOf(CH_EVENTK[k])));
+const mentorView = (g: Pick<Game, 'F'>): StoryEventView => {
+  const v = viewOf(MENTOR_EVENT);
+  return { ...v, t: withMentor(v.t, g), d: withMentor(v.d, g) };
+};
 
 /** Does what some effects say; returns the mechanics line of what happened. */
 function applyFx(g: Game, fx: EventFx = {}): string {
@@ -392,6 +398,11 @@ function chapterOption(g: Game, ev: ChapterEvent, i: number): EventOutcome {
 /** Picks the next unseen encounter of this chapter (more often one of the chapter's own, when it has any left). */
 export function storyEvent(g: Game): StoryEventView {
   const S = storyOf(g);
+  // a mentor (review F10) drops by, once a chapter at most
+  if (g.F?.mentor && !(S.used || []).includes(MENTOR_EVENT.k) && g.rng() < 0.3) {
+    S.used = (S.used || []).concat(MENTOR_EVENT.k);
+    return mentorView(g);
+  }
   if (BALANCE.themedEvents) {
     const mine = CH_EVENTS.filter((e) => e.ch === S.ch && !(S.used || []).includes(e.k));
     if (mine.length && g.rng() < 0.6) {
@@ -475,6 +486,7 @@ export function eventOption(g: Game, k: string, i: number): EventOutcome {
   if (CH_EVENTK[k]) {
     const r = chapterOption(g, CH_EVENTK[k], i);
     invalidate(g.F!);
+    if (k === MENTOR_EVENT.k && 'txt' in r && r.txt) r.txt = withMentor(r.txt, g);
     return r;
   }
   const ev = SEVENTS.find((e) => e.k === k)!;
