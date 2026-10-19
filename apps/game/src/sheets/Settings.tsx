@@ -1,7 +1,10 @@
 import type { FxLevel, MotionPref, TextSize } from '@whs/core';
 import { commit, settings } from '../state/game';
 import { openSheet } from '../state/ui';
-import { Segmented, Sheet, Toggle } from '../ui/kit';
+import { Segmented, Sheet, Slider, Toggle } from '../ui/kit';
+import { DEFAULT_MUSIC_VOL, DEFAULT_SFX_VOL, previewVolume } from '../audio/engine';
+import { sfx } from '../ui/sound';
+import { SoundTestSheet } from './SoundTest';
 import { SaveSheet } from './Save';
 import { ErrorLogSheet } from './ErrorLog';
 import { errLog } from '../state/errlog';
@@ -14,8 +17,22 @@ export function SettingsSheet() {
   const set = (change: (s: typeof st) => void) => commit((s) => change(s.settings));
   return (
     <Sheet icon="gear" title="Settings" sub="Saved on this device">
-      <Toggle label="Sound effects" sub="Wheel ticks, hits, taps and fanfares" on={st.sound} onToggle={() => set((s) => (s.sound = !s.sound))} />
-      <Toggle label="Music" sub="A light loop in every arena, and the bosses' own" on={st.music !== false} onToggle={() => set((s) => (s.music = s.music === false))} />
+      <Toggle label="Sound effects" sub="Wheel ticks, every weapon and power, taps and fanfares" on={st.sound} onToggle={() => set((s) => (s.sound = !s.sound))} />
+      {st.sound && (
+        <Slider
+          label="Effects"
+          value={st.sfxVol ?? DEFAULT_SFX_VOL}
+          onInput={(v) => previewVolume('sfx', v)}
+          onChange={(v) => {
+            set((s) => (s.sfxVol = v));
+            sfx('f.crit', { vary: 0 });
+          }}
+        />
+      )}
+      <Toggle label="Music" sub="The game's theme, a loop in every arena, and the bosses' own" on={st.music !== false} onToggle={() => set((s) => (s.music = s.music === false))} />
+      {st.music !== false && (
+        <Slider label="Music" value={st.musicVol ?? DEFAULT_MUSIC_VOL} onInput={(v) => previewVolume('music', v)} onChange={(v) => set((s) => (s.musicVol = v))} />
+      )}
       <Toggle label="Vibration" sub="Buzzes on presses, big hits and spins, on phones that support it" on={st.haptics} onToggle={() => set((s) => (s.haptics = !s.haptics))} />
       <Toggle label="Fast mode" sub="Quicker spins and fight animations" on={st.fast} onToggle={() => set((s) => (s.fast = !s.fast))} />
       <Toggle label="Auto-battle by default" sub="Fights play themselves unless you switch it off" on={st.autoBattle} onToggle={() => set((s) => (s.autoBattle = !s.autoBattle))} />
@@ -63,6 +80,9 @@ export function SettingsSheet() {
       <div class="stack" style={{ marginTop: '0.4rem' }}>
         <button class="btn ghost block" onClick={startTutorial}>
           How to play
+        </button>
+        <button class="btn ghost block" onClick={() => openSheet(<SoundTestSheet back={() => openSheet(<SettingsSheet />)} />)}>
+          Sound test
         </button>
         <button class="btn ghost block" onClick={() => openSheet(<SaveSheet />)}>
           Your save and backups

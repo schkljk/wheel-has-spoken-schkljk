@@ -13,6 +13,85 @@
 
 ## After the upgrade list: owner requests
 
+### Full sound pass and a looping theme
+
+- **Asked for:** "do the full sound pass, and add a looping game theme music."
+- **The engine** (`apps/game/src/audio/`):
+  - Every sound is synthesized in code, so it works offline and in the APK.
+  - A sound is a list of voices. Each voice is a tone (four wave types plus 12.5% and 25% pulse waves, the chiptune leads) or filtered noise. Each has an envelope, a pitch glide, vibrato, chorus, flutter, drive and pan.
+  - There is one bus for effects and one for music, both through a limiter. Music dips under big moments: knockouts, fanfares, ultimates, boss intros.
+  - Sound starts with the first tap, as browsers require, and pauses while the game is in the background.
+  - Repeated sounds vary their pitch slightly so they never sound identical.
+- **167 named sounds** (`audio/sfx-data.ts`), as data:
+  - **Weapons:** each style has its own sounds, timed to the frame of the new animations.
+    - Bow: draw, twang and arrow thunk.
+    - Crossbow: mechanical clack.
+    - Laser rifle: charge, zap and sizzle.
+    - Thrown weapons: the whir of shuriken, chakrams and boomerangs (on the way out and back), a brick thud, a card flick.
+    - Blades: swish and shing. Greatsword: heavy clang.
+    - Hammers: boom.
+    - Frying pan: a bonk with ringing metal and dizzy tweets.
+    - Bat: wooden crack. Noodles: a boing and a wet slap.
+    - Fists: punches. Nunchucks: a flurry of whaps.
+    - Whip: crack. Fishing rod: reel ratchet.
+    - Magic staff: charge sparkle, cast and impact.
+    - Chainsaw: a motor that revs. Electric guitar: a power chord.
+  - **Powers:** each of the 32 has a cast and an impact, plus sounds in the air where something flies. Examples:
+    - Fire: an ignition roar and an explosion with crackle.
+    - Ice: shards, then a shatter.
+    - Lightning: a thunder crack and rumble.
+    - Holy light: a choir chord and a bell.
+    - Absurd luck: a falling whistle and an anvil clang.
+    - Power negation: a game-show "wrong answer" buzzer.
+    - Clones: footsteps.
+    - Time stop: tick-tock.
+  - **Fight:**
+    - A bell at the start.
+    - Crit ting, dodge whoosh, shield clank, heal chime.
+    - Status sting, poison bubbles, revive arpeggio.
+    - Knockout boom with a bell, slow-motion finisher.
+    - Ultimate charge (a rising power chord) and boss phase-two roar.
+    - A win fanfare and a sad trombone for a loss.
+    - Calm animations still play the hit sounds.
+  - **Wheels:**
+    - Ticks get lower and louder as the wheel slows. The speed is read from how close together the ticks come.
+    - A spin whoosh scaled by flick strength.
+    - Drum roll, reroll dice rattle.
+    - Landing stingers: cooked (wah-wah), mid, good, goated (fanfare with sparkles).
+  - **Menus:**
+    - Taps, panels opening and closing, "are you sure?", yes and no, notices.
+    - Buy (register and coins), equip (clank), forge upgrade (two anvil strikes), salvage.
+    - Locked tiles (a dull buzz), level up, stats changed, goal done.
+  - **Story:**
+    - Footsteps while walking the map.
+    - Encounter, merchant door bell, campfire crackle, treasure chest creak.
+    - Boss and nemesis intros, chapter fanfare, deal or no deal.
+- **The theme** (`audio/songs.ts`, `audio/music.ts`):
+  - "The Wheel Has Spoken": A minor, 112 bpm, 24 bars (53 seconds), looping.
+  - Written like a tracker: per bar a chord, the melody, a drum line and a bass groove.
+  - **A section:** the hook over Am F C G | Am F E Am. Lead, bass, light drums and a soft pad.
+  - **B section:** a game-show lift into the relative major (F G Em Am | F G E E7). Driving drums and arpeggios.
+  - **A' section:** the hook again with a harmony line, arpeggios, full drums and a pickup back into bar 1.
+  - The lead is a 25% pulse with delayed vibrato and a dotted-eighth echo. The bass doubles a square over a triangle so phone speakers can play it.
+  - It plays on every screen except fights. Fights crossfade into their arena loop, and a boss's phase two into its own. After a fight, the fanfare or trombone plays, then the theme returns.
+- **Settings:**
+  - Effects and Music volume sliders. Dragging previews live; letting go saves the value.
+  - Saves from before this keep the defaults: effects 80%, music 55%. No migration was needed.
+  - A **Sound test** page plays every sound by its in-game name ("Frying pan: hit", "Absurd luck: hit") and every music track, so feedback is easy to give.
+- **Checked without ears:**
+  - `tools/audio/levels.mjs` renders every sound offline in Chromium with the game's own synth and prints its peak and RMS.
+    - Hits sit around -20 to -26 dB RMS, swings and casts around -30 to -37, menu sounds around -37 to -41.
+    - Thirteen outliers were trimmed.
+    - Nothing peaks above 0.9 before the limiter.
+  - `tools/audio/music.mjs` renders the music and can save previews as WAV.
+    - The tracks are balanced to within 3 dB of each other: theme -25.5, arena -28.5, phase two -26.8 dB RMS.
+    - Pitch-tracking the rendered theme reads back the written melody note for note.
+- **Tests:**
+  - Every sound is sane: positive lengths, levels at most 0.6 per voice, under 3 seconds.
+  - Every sound name used anywhere in the game exists, and every power has its own impact.
+  - The theme is well formed bar by bar: notes parse, the melody stays between E4 and A5, and over 70% of its notes are chord tones.
+  - E2E: the theme starts with the first tap; the volumes stick across a reload; the sound test page fits 320×568 and 844×390, plays sounds and switches tracks; leaving it brings the theme back.
+
 ### Finer pixel art, readable wheels, attacks that make sense
 
 - **Asked for:**

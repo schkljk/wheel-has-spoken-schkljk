@@ -1,68 +1,51 @@
-import { settings } from '../state/game';
+// The game's sound calls (legacy cp_soundwheel.js and upgrade 36), now played by the audio engine in audio/:
+// named effects (audio/sfx-data.ts), the hit and combo tables below, and the music tracks.
 
-// Little synthesized sounds (legacy cp_soundwheel.js): wheel ticks, landing fanfares, hits.
-let actx: AudioContext | null = null;
+import { settings } from '../state/game';
+import { audioCtx, duck, play, sfx } from '../audio/engine';
+import { arenaTrack, musicWanted, phaseTrack, playMusic } from '../audio/music';
+import type { Spec as SynthSpec } from '../audio/synth';
+
+export { sfx, duck };
 let lastTick = 0;
 
-/** The audio context, resumed (browsers only allow sound after a tap). */
-export function ac(): AudioContext | null {
-  if (!actx) {
-    try {
-      actx = new AudioContext();
-    } catch {
-      actx = null;
-    }
-  }
-  if (actx && actx.state === 'suspended') void actx.resume().catch(() => {});
-  return actx;
-}
+/** The audio context once sound is allowed (after the first tap), or null. */
+export const ac = () => audioCtx();
 
+/** One plain tone (the older calls). */
 export function beep(freq: number, dur: number, type: OscillatorType = 'square', vol = 0.04, when = 0) {
-  if (!settings.value.sound) return;
-  const a = ac();
-  if (!a) return;
-  try {
-    const t = a.currentTime + when;
-    const o = a.createOscillator();
-    const g = a.createGain();
-    o.type = type;
-    o.frequency.setValueAtTime(freq, t);
-    g.gain.setValueAtTime(vol, t);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g);
-    g.connect(a.destination);
-    o.start(t);
-    o.stop(t + dur + 0.02);
-  } catch {
-    // audio is optional
-  }
+  play([{ w: type, f: freq, d: dur, v: vol * 1.4, at: when, lp: type === 'square' || type === 'sawtooth' ? 4000 : undefined }], { vary: 0 });
 }
 
-/** A slice edge passing the pointer. */
+/**
+ * A slice edge passing the pointer: a click, higher and lighter while the wheel flies, lower and louder as it
+ * crawls (the speed comes from how soon this click follows the last one).
+ */
 export function tick(heavy = false) {
   const n = performance.now();
-  if (n - lastTick < 28) return;
+  const dt = n - lastTick;
+  if (dt < 28) return;
   lastTick = n;
-  beep(heavy ? 700 : 1500, heavy ? 0.06 : 0.025, 'square', heavy ? 0.05 : 0.025);
+  const speed = Math.max(0, Math.min(1, 1 - (dt - 28) / 260));
+  sfx(heavy ? 'wh.tick2' : 'wh.tick', { pitch: 0.8 + 0.45 * speed, gain: 0.75 + 0.45 * (1 - speed), vary: 0.04 });
 }
-/** The sound of a result: goated, cooked or in between. */
+/** The sound of a result: goated, good, mid or cooked. */
 export function landSound(q: number) {
-  if (q >= 3) [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.18, 'triangle', 0.06, i * 0.08));
-  else if (q === 0) [392, 330, 262].forEach((f, i) => beep(f, 0.22, 'sawtooth', 0.035, i * 0.14));
-  else [660, 880].forEach((f, i) => beep(f, 0.12, 'triangle', 0.05, i * 0.07));
+  sfx(q >= 3 ? 'wh.land3' : q === 2 ? 'wh.land2' : q === 0 ? 'wh.land0' : 'wh.land1', { vary: 0 });
+  if (q >= 3) duck(0.5, 0.8, 0.8);
 }
-export const thud = (big: boolean) => beep(big ? 90 : 140, big ? 0.22 : 0.12, 'square', 0.06);
+export const thud = (big: boolean) => sfx(big ? 'f.ko' : 'f.self', { vary: 0.02 });
 /** The drum roll while a wheel crawls to a stop. */
 export function drumRoll(): () => void {
   if (!settings.value.sound) return () => {};
   let i = 0;
-  const t = setInterval(() => beep(i++ % 2 ? 190 : 160, 0.05, 'square', 0.022), 95);
+  const t = setInterval(() => sfx('wh.roll', { pitch: i++ % 2 ? 1.06 : 1, gain: 0.6 + Math.min(0.5, i * 0.02) }), 95);
   return () => clearInterval(t);
 }
 
 /**
- * One voice of a sound: a tone (optionally sliding to `to` Hz) or a burst of filtered noise. Missing
- * length, wave and volume carry over from the voice before, so recipes stay short.
+ * One voice of the older sound tables: a tone (optionally sliding to `to` Hz) or a burst of filtered noise.
+ * Missing length, wave and volume carry over from the voice before, so recipes stay short.
  */
 interface Voice {
   f: number;
@@ -73,56 +56,20 @@ interface Voice {
   at?: number;
   noise?: BiquadFilterType;
 }
-let noiseBuf: AudioBuffer | null = null;
-function voice(a: AudioContext, x: Required<Omit<Voice, 'to' | 'noise'>> & Pick<Voice, 'to' | 'noise'>, out: AudioNode = a.destination, t0 = a.currentTime) {
-  const t = t0 + x.at;
-  const g = a.createGain();
-  g.gain.setValueAtTime(x.v, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + x.d);
-  g.connect(out);
-  if (x.noise) {
-    if (!noiseBuf) {
-      noiseBuf = a.createBuffer(1, a.sampleRate, a.sampleRate);
-      const ch = noiseBuf.getChannelData(0);
-      for (let i = 0; i < ch.length; i++) ch[i] = Math.random() * 2 - 1;
-    }
-    const src = a.createBufferSource();
-    src.buffer = noiseBuf;
-    const fl = a.createBiquadFilter();
-    fl.type = x.noise;
-    fl.frequency.setValueAtTime(x.f, t);
-    if (x.to) fl.frequency.exponentialRampToValueAtTime(x.to, t + x.d);
-    src.connect(fl);
-    fl.connect(g);
-    src.start(t);
-    src.stop(t + x.d + 0.02);
-  } else {
-    const o = a.createOscillator();
-    o.type = x.w;
-    o.frequency.setValueAtTime(x.f, t);
-    if (x.to) o.frequency.exponentialRampToValueAtTime(x.to, t + x.d);
-    o.connect(g);
-    o.start(t);
-    o.stop(t + x.d + 0.02);
-  }
-}
-function play(rec: Voice[]) {
-  if (!settings.value.sound) return;
-  const a = ac();
-  if (!a) return;
+const NF: Partial<Record<BiquadFilterType, 'lp' | 'hp' | 'bp'>> = { lowpass: 'lp', highpass: 'hp', bandpass: 'bp' };
+/** The older tables, played by the engine (1.4x: the engine's buses sit a little lower than the old direct output). */
+function playOld(rec: Voice[]) {
   let d = 0.1;
   let w: OscillatorType = 'triangle';
   let v = 0.04;
-  try {
-    for (const x of rec) {
-      d = x.d ?? d;
-      w = x.w ?? w;
-      v = x.v ?? v;
-      voice(a, { f: x.f, to: x.to, d, w, v, at: x.at ?? 0, noise: x.noise });
-    }
-  } catch {
-    // audio is optional
+  const out: SynthSpec[] = [];
+  for (const x of rec) {
+    d = x.d ?? d;
+    w = x.w ?? w;
+    v = x.v ?? v;
+    out.push(x.noise ? { w: 'n', ft: NF[x.noise] ?? 'bp', f: x.f, to: x.to, d, v: v * 1.4, at: x.at } : { w, f: x.f, to: x.to, d, v: v * 1.4, at: x.at, lp: w === 'square' || w === 'sawtooth' ? 5000 : undefined });
   }
+  play(out);
 }
 
 /** A sound for each element combo and each synergy that can kick in mid-fight. */
@@ -153,113 +100,27 @@ const SECRET: Voice[] = [523, 659, 784, 1047, 1319].map((f, i) => ({ f, d: 0.22,
 for (const k of ['h_bgchar', 'h_underdog', 'h_irony', 'h_comic', 'h_dumpster', 'h_trashking']) PROC_SOUND[k] = SECRET;
 
 /** The sound of a combo (by name) or a synergy (by key) going off. */
-export const procSound = (k: string) => play(PROC_SOUND[k] ?? PROC_DEFAULT);
+export const procSound = (k: string) => playOld(PROC_SOUND[k] ?? PROC_DEFAULT);
 export const hasProcSound = (k: string) => k in PROC_SOUND;
 
-const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12);
-/** Root movement per bar of the phase-two loop (minor: i, i, III, VII). */
-const PHASE_BARS = [0, 0, 3, -2];
 
-/**
- * A music loop (upgrade 36): calls `step` for every sixteenth note just ahead of time, on its own gain that
- * follows the Music switch, until the returned stop is called.
- */
-function musicLoop(bpm: number, level: number, step: (a: AudioContext, out: GainNode, s: number, bar: number, t: number, len: number) => void): () => void {
-  const a = ac();
-  if (!a) return () => {};
-  const master = a.createGain();
-  master.gain.value = 0;
-  master.connect(a.destination);
-  const len = 60 / bpm / 4;
-  let next = a.currentTime + 0.1;
-  let n = 0;
-  let on = false;
-  const tick = () => {
-    const want = settings.value.music !== false;
-    if (want !== on) {
-      on = want;
-      master.gain.cancelScheduledValues(a.currentTime);
-      master.gain.setTargetAtTime(on ? level : 0, a.currentTime, 0.3);
-    }
-    while (next < a.currentTime + 0.12) {
-      try {
-        step(a, master, n % 16, Math.floor(n / 16), next, len);
-      } catch {
-        // audio is optional
-      }
-      next += len;
-      n++;
-    }
-  };
-  tick();
-  const timer = setInterval(tick, 40);
-  let stopped = false;
-  return () => {
-    if (stopped) return;
-    stopped = true;
-    clearInterval(timer);
-    try {
-      master.gain.cancelScheduledValues(a.currentTime);
-      master.gain.setTargetAtTime(0, a.currentTime, 0.25);
-      setTimeout(() => master.disconnect(), 1500);
-    } catch {
-      // already gone
-    }
-  };
-}
-const v0 = { at: 0 };
-
-/**
- * The phase-two music: a driving minor-key loop (bass, kick, hats and a stab every other bar) around the
- * boss's root note and tempo, until the returned stop is called.
- */
-export function phaseMusic(tune: { root: number; bpm: number }): () => void {
-  return musicLoop(tune.bpm, 0.7, (a, out, s, bar, t, len) => {
-    const root = tune.root + PHASE_BARS[bar % PHASE_BARS.length]!;
-    if (s % 2 === 0) voice(a, { f: hz(root + (s === 6 || s === 14 ? 12 : 0)), d: len * 1.6, w: 'sawtooth', v: 0.05, ...v0 }, out, t);
-    if (s === 0 || s === 8 || (s === 10 && bar % 2 === 1)) voice(a, { f: 120, to: 42, d: 0.16, w: 'sine', v: 0.22, ...v0 }, out, t);
-    if (s % 4 === 2) voice(a, { f: 7500, d: 0.035, w: 'square', v: 0.05, noise: 'highpass', ...v0 }, out, t);
-    if (s === 0 && bar % 2 === 0) for (const iv of [24, 27, 31]) voice(a, { f: hz(root + iv), d: len * 3, w: 'square', v: 0.014, ...v0 }, out, t);
-  });
-}
-
-/** Each arena's mood: root note, tempo, major or minor, and the lead's wave (upgrade 36). */
-// prettier-ignore
-const ARENA_TUNES: Record<string, { root: number; bpm: number; minor?: boolean; w: OscillatorType }> = {
-  colosseum: { root: 50, bpm: 104, w: 'triangle' }, lava: { root: 45, bpm: 112, minor: true, w: 'sawtooth' },
-  flood: { root: 48, bpm: 92, minor: true, w: 'sine' }, tundra: { root: 52, bpm: 84, minor: true, w: 'triangle' },
-  graveyard: { root: 43, bpm: 76, minor: true, w: 'sine' }, cathedral: { root: 53, bpm: 72, w: 'sine' },
-  thunder: { root: 44, bpm: 120, minor: true, w: 'square' }, forest: { root: 47, bpm: 88, minor: true, w: 'triangle' },
-  space: { root: 49, bpm: 80, w: 'sine' }, kitchen: { root: 55, bpm: 116, w: 'square' },
-  rooftop: { root: 46, bpm: 96, minor: true, w: 'triangle' }, mirror: { root: 51, bpm: 86, w: 'sine' },
-  beach: { root: 53, bpm: 100, w: 'triangle' }, ballpit: { root: 57, bpm: 126, w: 'square' },
-  void: { root: 41, bpm: 70, minor: true, w: 'sine' },
-  snowglobe: { root: 57, bpm: 90, w: 'triangle' }, newyear: { root: 53, bpm: 118, w: 'square' },
-  valentine: { root: 55, bpm: 84, w: 'sine' }, clover: { root: 55, bpm: 112, w: 'triangle' },
-  egghunt: { root: 57, bpm: 104, w: 'triangle' }, bonfire: { root: 50, bpm: 96, w: 'triangle' },
-  poolparty: { root: 53, bpm: 108, w: 'sine' }, pumpkin: { root: 45, bpm: 92, minor: true, w: 'square' },
-  leafpile: { root: 52, bpm: 88, minor: true, w: 'triangle' },
-};
-/** Chord roots per bar: I V vi IV in major, i VI III VII in minor. */
-const MAJOR_BARS = [0, 7, 9, 5];
-const MINOR_BARS = [0, 8, 3, 10];
-/** A light loop for the arena while the fight is on: soft bass, a pad, a few notes on top and a quiet hat. */
+/** The arena's loop for a fight (upgrade 36). Returns its stop. */
 export function arenaMusic(k: string | undefined): () => void {
-  const T = ARENA_TUNES[k || ''] ?? ARENA_TUNES.colosseum!;
-  const third = T.minor ? 3 : 4;
-  return musicLoop(T.bpm, 0.45, (a, out, s, bar, t, len) => {
-    const r = T.root + (T.minor ? MINOR_BARS : MAJOR_BARS)[bar % 4]!;
-    // in minor, VI and III are major chords and VII is too; the rest follow the key
-    const th = T.minor ? ([8, 3, 10].includes(r - T.root) ? 4 : 3) : [9].includes(r - T.root) ? 3 : third;
-    if (s % 4 === 0) voice(a, { f: hz(r - 12), d: len * 3, w: 'sine', v: 0.07, ...v0 }, out, t);
-    if (s === 0) for (const iv of [0, th, 7]) voice(a, { f: hz(r + 12 + iv), d: len * 15, w: 'sine', v: 0.012, ...v0 }, out, t);
-    if ([2, 6, 10, 13].includes(s)) {
-      const iv = [12, 12 + th, 19, 24][(s + bar) % 4]!;
-      voice(a, { f: hz(r + iv), d: len * 1.5, w: T.w, v: T.w === 'square' || T.w === 'sawtooth' ? 0.008 : 0.016, ...v0 }, out, t);
-    }
-    if (s % 4 === 2) voice(a, { f: 8000, d: 0.025, w: 'square', v: 0.012, noise: 'highpass', ...v0 }, out, t);
-  });
+  const t = arenaTrack(k);
+  playMusic(t);
+  return () => stopIf(t.id);
 }
+/** A boss's phase-two loop. Returns its stop. */
+export function phaseMusic(tune: { root: number; bpm: number }): () => void {
+  const t = phaseTrack(tune);
+  playMusic(t);
+  return () => stopIf(t.id);
+}
+// a fight stops its own loop when it ends, unless something else is playing by then
+const stopIf = (id: string) => {
+  if (musicWanted() === id) playMusic(null);
+};
+export { playMusic };
 
 // ---------------------------------------------------------------- hits (upgrade 36)
 export type HitKind = 'blade' | 'blunt' | 'ranged' | 'fist' | 'magic';
@@ -301,15 +162,14 @@ export function hitSound(kind: HitKind, element: string | undefined, strength: n
   const deep = 1.15 - 0.3 * Math.max(0, Math.min(1, strength));
   const base = HIT[kind].map((x) => ({ ...x, v: x.v * k, f: x.noise ? x.f : x.f * deep, to: x.to && !x.noise ? x.to * deep : x.to }));
   const el = (element && ELEMENT[element]) || [];
-  play([...base, ...el.map((x) => ({ ...x, v: x.v * (0.6 + 0.4 * k) })), ...(crit ? CRIT : [])]);
+  playOld([...base, ...el.map((x) => ({ ...x, v: x.v * (0.6 + 0.4 * k) })), ...(crit ? CRIT : [])]);
+  if (strength > 0.7 || crit) duck(0.6, 0.15, 0.4);
 }
 /** A soft click for a button press. */
-export const uiTap = () => play([{ f: 1700, to: 1100, d: 0.022, w: 'triangle', v: 0.012 }]);
+export const uiTap = () => sfx('ui.tap', { vary: 0.05 });
 
 /** The knockout blow in slow motion: a deep boom with a falling shimmer. */
-export const finisherSound = () =>
-  play([
-    { noise: 'lowpass', f: 900, to: 120, d: 0.9, v: 0.25 },
-    { f: 90, to: 30, d: 0.9, w: 'sine', v: 0.22 },
-    { f: 1400, to: 300, d: 0.55, w: 'triangle', v: 0.03, at: 0.05 },
-  ]);
+export const finisherSound = () => {
+  sfx('f.finisher', { vary: 0 });
+  duck(0.35, 0.8, 1);
+};

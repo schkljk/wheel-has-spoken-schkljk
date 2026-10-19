@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
 import { buzz, dropToast, toasts } from '../state/game';
-import { uiTap } from './sound';
+import { sfx, uiTap } from './sound';
 import { cine, closeSheet, confirmReq, sheet, sheetLocked } from '../state/ui';
 import { Icon, type IconName } from './Icon';
 
@@ -64,6 +64,13 @@ export function Sheet(props: { icon?: IconName; emoji?: string; title: string; s
 
 export function SheetHost() {
   const content = sheet.value;
+  // a soft whoosh up when a sheet opens, down when it closes
+  const was = useRef(false);
+  useEffect(() => {
+    const open = !!content;
+    if (open !== was.current) sfx(open ? 'ui.open' : 'ui.close', { vary: 0.02 });
+    was.current = open;
+  }, [content]);
   useEffect(() => {
     if (!content) return;
     const esc = (e: KeyboardEvent) => e.key === 'Escape' && !sheetLocked.value && closeSheet();
@@ -83,9 +90,13 @@ export function SheetHost() {
 export function ConfirmHost() {
   const c = confirmReq.value;
   const yes = useRef<HTMLButtonElement>(null);
-  useEffect(() => yes.current?.focus(), [c]);
+  useEffect(() => {
+    yes.current?.focus();
+    if (c) sfx('ui.confirm', { vary: 0 });
+  }, [c]);
   if (!c) return null;
   const done = (ok: boolean) => {
+    sfx(ok ? 'ui.yes' : 'ui.no', { vary: 0 });
     confirmReq.value = null;
     c.resolve(ok);
   };
@@ -107,6 +118,12 @@ export function ConfirmHost() {
 }
 
 export function ToastHost() {
+  const n = toasts.value.length;
+  const last = useRef(0);
+  useEffect(() => {
+    if (n > last.current) sfx('ui.toast');
+    last.current = n;
+  }, [n]);
   return (
     <div class="toasts" aria-live="polite">
       {toasts.value.map((t) => (
@@ -142,6 +159,30 @@ export function Toggle(props: { label: string; sub: string; on: boolean; onToggl
       </span>
       <i class={`switch${props.on ? ' on' : ''}`} />
     </button>
+  );
+}
+
+/**
+ * A level from 0 to 1: `onInput` follows the finger (for hearing it live), `onChange` once it is let go (to
+ * save it).
+ */
+export function Slider(props: { label: string; value: number; onInput?: (v: number) => void; onChange: (v: number) => void }) {
+  const pct = Math.round(props.value * 100);
+  return (
+    <label class="slider">
+      <span>{props.label}</span>
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        value={pct}
+        style={{ '--p': `${pct}%` }}
+        onInput={(e) => props.onInput?.(+e.currentTarget.value / 100)}
+        onChange={(e) => props.onChange(+e.currentTarget.value / 100)}
+      />
+      <b>{pct}%</b>
+    </label>
   );
 }
 

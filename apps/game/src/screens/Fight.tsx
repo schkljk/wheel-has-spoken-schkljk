@@ -51,7 +51,7 @@ import { FighterCard } from '../ui/FighterCard';
 import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
-import { ac, arenaMusic, landSound, phaseMusic, tick } from '../ui/sound';
+import { ac, arenaMusic, landSound, phaseMusic, sfx, tick } from '../ui/sound';
 import { CHIP_ICON } from '../ui/status-icons';
 import { tip } from '../state/tips';
 
@@ -491,7 +491,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     }
     setPhase('over');
     setResult(r);
-    landSound(r.q);
+    // a fanfare for a win, a sad trombone for a loss
+    sfx(r.won ? 'f.win' : 'f.lose', { vary: 0 });
     buzz(r.q === 3 ? [40, 60, 40, 60, 120] : r.won ? 40 : 80);
     if (r.confetti) setTimeout(() => burst(innerWidth / 2, dims.groundY + 40), 300);
   }

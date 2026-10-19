@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, Text, TextStyle, Texture, CanvasTextMetrics } from 'pixi.js';
 import { SLICE_COLORS, bulb, sliceMask, wheelFace, wheelHub, wheelPointer, wheelRim, type Rgba } from '../art/wheel-art';
 import { emojiCanvas } from '../art/emoji-px';
+import { sfx } from '../audio/engine';
 
 const TEX = new WeakMap<HTMLCanvasElement, Texture>();
 const SMOOTH = new WeakMap<HTMLCanvasElement, Texture>();
@@ -464,6 +465,8 @@ export class WheelView extends Container {
       while (predictTravel(w, fr) < want && w < 90) w *= 1.08;
     }
     const valid = predictTravel(w, fr) >= MIN_TURNS * TAU;
+    // the wheel leaves the hand: a whoosh, bigger for a harder spin
+    sfx('wh.spin', { gain: Math.min(1.3, 0.6 + w / 40), pitch: Math.min(1.3, 0.8 + w / 80) });
     this.highlight(null);
     this.suspenseOn = false;
     this.phys = { w, fr, valid, kind, seg: this.segAt(), bounces: 0, suspense: false, travel: 0 };
@@ -480,6 +483,7 @@ export class WheelView extends Container {
     if (dir > 0) while (end < this.rot + TAU * turns) end += TAU;
     else while (end > this.rot - TAU * turns) end -= TAU;
     this.highlight(null);
+    sfx('wh.spin', { gain: 0.8 });
     this.tween = { from: this.rot, to: end, t0: performance.now(), dur: Math.max(1, opts.dur), idx, seg: this.segAt(), dir };
   }
 

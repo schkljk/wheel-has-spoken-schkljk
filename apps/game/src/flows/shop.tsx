@@ -33,7 +33,7 @@ import { G, act, ensure, toast } from '../state/game';
 import { closeSheet, confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
-import { beep } from '../ui/sound';
+import { sfx } from '../ui/sound';
 import { gearChoice } from './nav';
 import { GearCompareView } from '../ui/GearCompare';
 import { haggleFlow } from './story';
@@ -101,7 +101,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
             disabled={dis(coins >= p)}
             onClick={() => {
               if (act((g) => buyBasic(g, k))) {
-                beep(880, 0.1, 'triangle', 0.05);
+                sfx('ui.buy', { vary: 0 });
                 toast(`${i.e} ${i.n} added to your bag`);
                 re();
               }

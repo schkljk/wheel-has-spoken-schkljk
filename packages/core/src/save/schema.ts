@@ -13,8 +13,11 @@ export type FxLevel = 'soft' | 'normal' | 'big';
 export interface Settings {
   /** sound effects */
   sound: boolean;
-  /** the arena and boss music loops (upgrade 36) */
+  /** the game's theme, the arena and boss music loops (upgrade 36) */
   music: boolean;
+  /** volumes, 0 to 1 (saves from before the sound pass have none: the game's defaults apply) */
+  sfxVol?: number;
+  musicVol?: number;
   haptics: boolean;
   /** quicker spins and fight animations */
   fast: boolean;

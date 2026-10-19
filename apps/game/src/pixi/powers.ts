@@ -7,6 +7,8 @@ import { Container, Graphics } from 'pixi.js';
 import { type Blow, ghostOf } from './attacks';
 import { beam, burst, dirOf, dust, fade, fly, fxTex, gfx, iconTex, mix, piece, pillar, popIn, shock, wait, zap, type Pt, type Stage } from './fx-kit';
 import { ease } from './tween';
+import { sfx } from '../audio/engine';
+import { SFX } from '../audio/sfx-data';
 
 const WHITE = 0xffffff;
 
@@ -48,6 +50,14 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
   const end = () => (miss ? dodge() : tgt());
   const T = S.ctr(to);
   const G = S.dims.groundY;
+  // its sounds: the cast now, things in flight as they go, the impact when it lands (an ultimate's bigger)
+  const snd = (name: string, delay = 0, gain = 1) => sfx(name, { pitch: b.big ? 0.85 : 1, gain: (b.big ? 1.25 : 1) * gain, delay: (Math.max(0, delay) * S.sp) / 1000 });
+  const hitName = SFX[`p.${key}.hit`] ? `p.${key}.hit` : 'w.cast.hit';
+  const landed = () => {
+    if (!miss) snd(hitName);
+    b.hit();
+  };
+  snd(SFX[`p.${key}.cast`] ? `p.${key}.cast` : 'w.cast.charge');
   switch (key) {
     case 'fire': {
       await gather(S, b, col, false);
@@ -56,7 +66,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       f.scale.x *= dir;
       await fly(S, f, h, end(), 300, { arc: 14, embers: [0xff7a2f, 0xffd166, 0xffe27a] });
       f.destroy();
-      b.hit();
+      landed();
       if (!miss) {
         void burst(S, tgt(), '#FF7A2F', 1.3 * k);
         for (let i = 0; i < 3; i++) {
@@ -72,6 +82,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const h = S.hand(by);
       for (let i = 0; i < 3; i++) {
         const s = piece(S, fxTex('shard'), h, k);
+        snd('p.ice.fly');
         const e = { x: end().x, y: end().y + (i - 1) * 12 };
         void fly(S, s, h, e, 220, { face: true, trail: 0xbff4ff }).then(() => {
           s.destroy();
@@ -80,7 +91,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         await wait(S, 80);
       }
       await wait(S, 140);
-      b.hit();
+      landed();
       if (!miss) void shock(S, tgt(), 0xbff4ff, S.dims.chH * 0.35, 380);
       return;
     }
@@ -92,7 +103,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const yEnd = miss ? G - 4 : T.y - 6;
       void zap(S, { x: x + (Math.random() - 0.5) * 40, y: 0 }, { x, y: yEnd }, 0xffe14d, 12 * k, 360, 22);
       await wait(S, 40);
-      b.hit();
+      landed();
       if (!miss) {
         S.particles(x, yEnd, [0xffe14d, WHITE], 12, 40);
         void zap(S, { x, y: yEnd }, { x: x + 30, y: G }, 0xffe14d, 4, 220, 10);
@@ -106,12 +117,13 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const h = S.hand(by);
       for (let i = 0; i < 6; i++) {
         const d = piece(S, fxTex('drop', '#3D8BFF'), h, 0.9 * k);
+        snd('p.water.fly', 0, 0.6);
         const e = { x: end().x, y: end().y + (Math.random() - 0.5) * 10 };
         void fly(S, d, h, e, 230, { arc: 10, face: true }).then(() => {
           d.destroy();
           if (!miss) S.particles(e.x, e.y, [0x3d8bff, 0x9fd0ff, WHITE], 3, 26);
         });
-        if (i === 1) void wait(S, 230).then(() => b.hit());
+        if (i === 1) void wait(S, 230).then(() => landed());
         await wait(S, 45);
       }
       await wait(S, 260);
@@ -145,7 +157,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
           }
         }
         await wait(S, 240);
-        b.hit();
+        landed();
         await wait(S, 260);
         for (const l of links) {
           const y0 = l.y;
@@ -174,7 +186,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
               .stroke({ width: w * 0.35, color: n === 1 ? 0xb388ff : 0x8e24aa, cap: 'round' });
           });
         });
-        b.hit();
+        landed();
         if (!miss) void burst(S, tgt(), hex(key === 'summon' ? 0xb388ff : 0x8e24aa), 0.9 * k);
         await wait(S, 180);
         for (const g of gs) void fade(S, g, 260);
@@ -199,7 +211,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       }
       void pillar(S, x, miss ? G : T.y + (key === 'smite' ? 30 : 10), key === 'smite' ? 0xffc93a : 0xfff3b0, (key === 'smite' ? 16 : 26) * k, 520);
       await wait(S, 110);
-      b.hit();
+      landed();
       S.particles(x, T.y, [0xfff3b0, WHITE, 0xffd54f], 10, 36);
       for (let i = 0; i < 4; i++) {
         const t = piece(S, fxTex('twinkle', '#FFF3B0'), { x: x + (Math.random() - 0.5) * 50, y: T.top + Math.random() * (T.y - T.top) }, 1.2);
@@ -225,13 +237,14 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         for (let i = 0; i < 3; i++) {
           const x = x0 + (x1 - x0) * ((i + 1) / 3);
           const s = piece(S, fxTex('spike'), { x, y: G + 4 }, (1.5 + i * 0.45) * k);
+          snd('p.earth.fly', 0, 0.7 + i * 0.2);
           s.anchor.set(0.5, 1);
           const sy = s.scale.y;
           s.scale.y = 0;
           void S.tw.run(130 * S.sp, (u) => (s.scale.y = sy * ease.back(u)));
           dust(S, x, 2);
           void wait(S, 420).then(() => fade(S, s, 200));
-          if (i === 2) b.hit();
+          if (i === 2) landed();
           await wait(S, 110);
         }
         await wait(S, 240);
@@ -247,8 +260,9 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         r.y = at.y + (up.y - at.y) * ease.out(u);
         r.rotation = Math.sin(u * 12) * 0.08;
       });
+      snd('p.tk.fly');
       await fly(S, r, up, end(), 260, { spin: 0.8 * dir, arc: 8 });
-      b.hit();
+      landed();
       if (!miss) S.particles(r.x, r.y, [0x8c7a6b, 0xb8a898], 12, 40);
       void fade(S, r, 160);
       await wait(S, 200);
@@ -268,6 +282,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       for (let i = 0; i < 4; i++) {
         const g = gfx(S);
         const c = key === 'mind' ? 0xff4fd8 : 0xffd180;
+        if (key === 'mind') snd('p.mind.fly', 0, 0.8);
         void S.tw.run(320 * S.sp, (u) => {
           const p = mix(from, e, u);
           const r = (8 + 22 * u) * k;
@@ -279,7 +294,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         await wait(S, 70);
       }
       await wait(S, 200);
-      b.hit();
+      landed();
       if (!miss) {
         const bd = S.F[to].body;
         if (key === 'mind') void S.tw.keys(420 * S.sp, [0, 0.1, -0.1, 0], (v) => (bd.rotation = v));
@@ -303,11 +318,12 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       // behind them, facing them
       const fx0 = f.flip.scale.x;
       f.flip.scale.x = -fx0;
+      snd('p.tele.fly');
       S.particles(f.x, A.y, [0xb388ff, WHITE], 10, 30);
       await S.tw.run(120 * S.sp, (u) => (f.alpha = u));
       void arm(S, by, [0, -150, 50, 0], 360, [0, 0.35, 0.6, 1]);
       await wait(S, 200);
-      b.hit();
+      landed();
       if (!miss) void burst(S, { x: T.x + dir * 10, y: T.y - 6 }, '#B388FF', 0.9 * k);
       await wait(S, 200);
       await S.tw.run(120 * S.sp, (u) => (f.alpha = 1 - u));
@@ -326,7 +342,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       await S.tw.run(300 * S.sp, (u) => o.scale.set(k0 * (1 + 7 * ease.out(u)) * k));
       void shock(S, { x, y: T.y }, 0x9c6bff, S.dims.chH * 0.5, 300);
       await S.tw.run(160 * S.sp, (u) => (o.y = T.top - 20 + (T.y - T.top) * 0.7 * ease.in(u)));
-      b.hit();
+      landed();
       if (!miss) {
         const bd = S.F[to].body;
         void S.tw.keys(420 * S.sp, [1, 0.78, 1], (v) => bd.scale.set(2 - v, v), ease.out, [0, 0.3, 1]);
@@ -349,7 +365,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const c = piece(S, fxTex('claws', '#FFFFFF'), tgt(), 1.4 * k);
       c.scale.x *= dir;
       void fade(S, c, 300, 0.2);
-      b.hit();
+      landed();
       if (!miss) S.particles(tgt().x, tgt().y, [0x26a69a, WHITE], 8, 30);
       await go;
       f.body.scale.set(1);
@@ -371,7 +387,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       });
       f.x = home;
       g.destroy();
-      b.hit();
+      landed();
       if (!miss) S.particles(T.x, T.y, [0xff4f8b, 0x2de2e6, WHITE], 12, 44);
       await wait(S, 180);
       return;
@@ -385,7 +401,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         const h = S.hand(by);
         const s = piece(S, iconTex('shield'), h, 1.6 * k);
         await fly(S, s, h, end(), 260, { trail: 0xfff3b0 });
-        b.hit();
+        landed();
         if (!miss) {
           void shock(S, tgt(), 0xfff3b0, S.dims.chH * 0.4, 320);
           void S.knockback(to, 18);
@@ -397,7 +413,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         const r = S.dims.chH * 0.24 * k;
         m.circle(0, 0, r).stroke({ width: 5, color: 0xe53935 }).moveTo(-r * 0.7, -r * 0.7).lineTo(r * 0.7, r * 0.7).stroke({ width: 5, color: 0xe53935 });
         await popIn(S, m, 160);
-        b.hit();
+        landed();
         if (!miss) S.particles(T.x, T.y, [0xe53935, 0x9e9e9e], 10, 36);
         await wait(S, 200);
         void fade(S, m, 200, 0.3);
@@ -419,7 +435,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
           sh.clear().ellipse(0, 0, 26 * u, 5 * u).fill({ color: 0x000000, alpha: 0.35 * u });
         });
         sh.destroy();
-        b.hit();
+        landed();
         dust(S, x, 3);
         void S.shake(8 * k, 280);
         if (!miss) void dizzy4(S, to);
@@ -455,7 +471,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         });
         leaves.forEach((l) => l.destroy());
       }
-      b.hit();
+      landed();
       if (!miss) void burst(S, c, key === 'miracle' ? '#FFF3B0' : '#4CD964', k);
       await wait(S, 200);
       return;
@@ -466,7 +482,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const h = S.hand(by);
       void beam(S, h, end(), 0xd50000, 4 * k, 300);
       await wait(S, 60);
-      b.hit();
+      landed();
       if (!miss) {
         // their life, flowing back
         for (let i = 0; i < 6; i++) {
@@ -485,12 +501,13 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const h = S.hand(by);
       for (let i = 0; i < 3; i++) {
         const o = piece(S, fxTex('orb', '#B388FF'), h, 0.7 * k);
+        snd('p.arcane.fly');
         const e = { x: end().x, y: end().y + (i - 1) * 8 };
         void fly(S, o, h, e, 300, { bend: (i - 1) * 50 * dir + 20, embers: [0xb388ff, WHITE] }).then(() => {
           o.destroy();
           if (!miss) void burst(S, e, '#B388FF', 0.5);
         });
-        if (i === 0) void wait(S, 300).then(() => b.hit());
+        if (i === 0) void wait(S, 300).then(() => landed());
         await wait(S, 90);
       }
       await wait(S, 320);
@@ -510,7 +527,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         await wait(S, 40);
       }
       await wait(S, 160);
-      b.hit();
+      landed();
       if (!miss) {
         void S.knockback(to, 30 * k);
         for (let i = 0; i < 3; i++) {
@@ -540,7 +557,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
           tips[i]!.position.set(p2.x, p2.y);
         });
       });
-      b.hit();
+      landed();
       if (!miss) S.particles(T.x, T.y, [0x66bb6a, 0xa5d6a7], 8, 30);
       await wait(S, 220);
       for (const g of gs) void fade(S, g, 240);
@@ -555,7 +572,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const bomb = piece(S, fxTex('bomb'), h, 1.1 * k);
       await fly(S, bomb, h, miss ? { x: T.x + dir * 50, y: G - 10 } : tgt(), 380, { arc: 56, spin: dir });
       bomb.destroy();
-      b.hit();
+      landed();
       const p = miss ? { x: T.x + dir * 50, y: G - 16 } : tgt();
       void burst(S, p, '#FF7043', 1.6 * k);
       for (let i = 0; i < 4; i++) {
@@ -587,7 +604,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         await S.tw.keys(260 * S.sp, [0, -dir * 36, 0], (v) => (f.x = home + v), ease.inOut, [0, 0.6, 1]);
         S.particles(T.x, T.y, [0xb0bec5, 0x78909c], 8, 30);
       }
-      b.hit();
+      landed();
       await wait(S, 160);
       return;
     }
@@ -608,7 +625,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
           ),
         ),
       );
-      b.hit();
+      landed();
       if (!miss) void burst(S, tgt(), '#E1E6EA', 0.9 * k);
       for (const g of ghosts) void fade(S, g, 240, 0.1);
       await wait(S, 260);
@@ -621,7 +638,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const d = piece(S, fxTex('drop', '#9BE22D'), h, 1.8 * k);
       await fly(S, d, h, end(), 320, { arc: 40, face: true });
       d.destroy();
-      b.hit();
+      landed();
       if (!miss) {
         for (let i = 0; i < 4; i++) {
           const p = piece(S, fxTex('puff', '#9BE22D'), { x: T.x + (i - 1.5) * 14, y: T.y - 6 + (i % 2) * 8 }, 0.9);
@@ -653,7 +670,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
         g.moveTo(0, 0).lineTo(Math.cos(a) * R * 0.8, Math.sin(a) * R * 0.8).stroke({ width: 3, color: WHITE });
         g.moveTo(0, 0).lineTo(Math.cos(a / 12) * R * 0.5, Math.sin(a / 12) * R * 0.5).stroke({ width: 3, color: WHITE });
       });
-      b.hit();
+      landed();
       void fade(S, g, 260, 0.3);
       if (!miss) void burst(S, c, '#CFD8DC', 0.8);
       await wait(S, 180);
@@ -666,7 +683,7 @@ export async function powerAttack(S: Stage, key: string, b: Blow): Promise<void>
       const o = piece(S, fxTex('orb', hex(col)), h, 0.8 * k);
       await fly(S, o, h, end(), 300, { arc: 18, embers: [col, WHITE] });
       o.destroy();
-      b.hit();
+      landed();
       if (!miss) void burst(S, tgt(), hex(col), k);
       await wait(S, 200);
     }

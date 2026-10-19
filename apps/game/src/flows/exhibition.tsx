@@ -5,7 +5,7 @@ import { lookOf } from '../art/sprite';
 import { G, reducedMotion, settings } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
-import { beep, tick } from '../ui/sound';
+import { sfx, tick } from '../ui/sound';
 
 /** Hall of fame exhibitions (upgrade 24): pick two legends, then watch them fight with commentary. */
 export function openExhibition(pair?: [number, number]) {
@@ -109,7 +109,7 @@ function ExhibitionLive({ ex, pair }: { ex: Exhibition; pair: [number, number] }
       if (i < beats.length) timer = window.setTimeout(next, settings.value.fast ? 450 : 1100);
       else {
         setDone(true);
-        [523, 659, 784].forEach((f, n) => beep(f, 0.18, 'triangle', 0.05, n * 0.12));
+        sfx('ui.goal', { vary: 0 });
       }
     };
     timer = window.setTimeout(next, 300);

@@ -2,7 +2,7 @@ import { Application, ColorMatrixFilter, Container, FillGradient, Graphics, Spri
 import { emojiCanvas } from '../art/emoji-px';
 import { COMBOS, POWER_ALL, WEAPONS, type Arena, type BattleEvent, type Proc, type Snap } from '@whs/core';
 import type { Look } from '../art/sprite';
-import { beep, finisherSound, hitSound, procSound, thud, type HitKind } from '../ui/sound';
+import { duck, finisherSound, hitSound, procSound, sfx, thud, type HitKind } from '../ui/sound';
 import { buzz } from '../state/game';
 import { FighterView } from './fighter-view';
 import { Ambient, chapterSVG, drawFloor, sceneSVG } from './scenery';
@@ -181,6 +181,8 @@ export class FightScene {
     const [a, b] = this.F;
     // the hit flash's shader compiles on first use: do it now, not on the first hit
     a.setBrightness(1.001);
+    // ding ding
+    sfx('f.round', { vary: 0, delay: this.reduced ? 0 : 0.35 });
     if (this.reduced) {
       await this.tw.run(1, () => {});
       a.setBrightness(1);
@@ -652,6 +654,11 @@ export class FightScene {
       else this.pendingProc = p;
     }
     if (!a || this.reduced) {
+      // calm animations still sound like what happened
+      if (a && (a.t === 'hit' || a.t === 'ult')) hitSound(a.kind === 'power' || a.kind === 'ult' ? 'magic' : this.hitKinds[a.by ?? 0], a.tint as string | undefined, a.t === 'ult' ? 1 : Math.min(1, (e.d || 0) / 30), !!a.crit);
+      else if (a?.t === 'miss') sfx('f.miss');
+      else if (a?.t === 'ko') thud(true);
+      else if (a?.t === 'heal') sfx('f.heal');
       this.applySnap(e);
       if (a && a.t === 'ko') this.F[a.on!].setDown(true);
       if (a && a.t === 'revive') this.F[a.on!].setDown(false);
@@ -674,7 +681,7 @@ export class FightScene {
           void this.popEmoji(a.on!, '🛡️', 0, 760 * sp, a.on === 0 ? 44 : -44);
           this.applySnap(e);
           this.floatAt(a.on!, 'Guard', 'info');
-          beep(520, 0.1, 'triangle', 0.04);
+          sfx('f.guard');
           await this.tw.wait(640 * sp);
           break;
         }
@@ -683,7 +690,7 @@ export class FightScene {
           const b = this.F[a.on!].body;
           void this.tw.keys(600 * sp, [0, -8, 8, 0], (v) => (b.rotation = (v * Math.PI) / 180));
           this.applySnap(e);
-          beep(300, 0.12, 'triangle', 0.03);
+          sfx('f.skip');
           await this.tw.wait(760 * sp);
           break;
         }
@@ -697,7 +704,7 @@ export class FightScene {
           void this.flash(a.on!, 2.2, 260 * sp);
           if (a.tint) this.tintFlash(a.tint as string, 420 * sp);
           if (e.d != null) this.floatAt(a.on!, '−' + e.d);
-          thud(false);
+          sfx('f.self');
           await this.tw.wait(560 * sp);
           break;
         }
@@ -706,6 +713,7 @@ export class FightScene {
           const c = this.ctr(a.by!);
           const card = piece(this, weaponTex('Uno reverse card'), { x: c.x + (a.by === 0 ? 44 : -44), y: c.y }, 1.4);
           const k0 = card.scale.y;
+          sfx('f.uno', { vary: 0 });
           await this.tw.run(460 * sp, (k) => {
             card.scale.set(k0 * (0.5 + 0.8 * k) * Math.cos(k * Math.PI * 2), k0 * (0.5 + 0.8 * k));
           });
@@ -721,14 +729,14 @@ export class FightScene {
           this.applySnap(e);
           void this.flash(a.on!, 1.4, 620 * sp);
           if (e.d != null) this.floatAt(a.on!, '+' + e.d, 'heal');
-          beep(660, 0.1, 'triangle', 0.04);
-          beep(990, 0.12, 'triangle', 0.04, 0.08);
+          sfx('f.heal');
           await this.tw.wait(580 * sp);
           break;
         }
         case 'dot': {
           void this.popEmoji(a.on!, '🫧', 30, 640 * sp);
           this.applySnap(e);
+          sfx('f.dot');
           this.tintFlash('poison', 360 * sp);
           if (e.d != null) this.floatAt(a.on!, '−' + e.d);
           await this.tw.wait(560 * sp);
@@ -738,12 +746,13 @@ export class FightScene {
           void this.popEmoji(a.on!, a.fx as string, 'top', 900 * sp);
           if (a.tint) this.tintFlash(a.tint as string, 460 * sp);
           this.applySnap(e);
-          beep(440, 0.12, 'triangle', 0.04);
+          sfx('f.status');
           await this.tw.wait(760 * sp);
           break;
         }
         case 'pet':
           // the pet leaps at them
+          sfx('f.pet');
           await this.projectile(a.by!, a.to!, a.fx as string, 520 * sp, { size: 38, arc: 30 });
           void burst(this, this.ctr(a.to!), '#FFE082', 0.8);
           this.impact(e, { ...a, kind: 'melee' });
@@ -761,7 +770,7 @@ export class FightScene {
           void this.tw.keys(1000 * sp, [0, 1, 1, 0], (v) => this.gray.greyscale(v, false), ease.linear, [0, 0.2, 0.85, 1]).then(() => (this.world.filters = null));
           void this.armTo(a.by!, [0, -140, -140, 0], 900 * sp);
           this.applySnap(e);
-          beep(1200, 0.3, 'sine', 0.04);
+          sfx('f.timestop', { vary: 0 });
           await this.tw.wait(820 * sp);
           break;
         }
@@ -775,7 +784,7 @@ export class FightScene {
           });
           this.applySnap(e);
           this.floatAt(a.on!, 'Back up!', 'info');
-          [330, 440, 660].forEach((fq, i) => beep(fq, 0.12, 'triangle', 0.04, i * 0.07));
+          sfx('f.revive');
           await this.tw.wait(760 * sp);
           break;
         }
@@ -806,8 +815,7 @@ export class FightScene {
           this.applySnap(e);
           void this.popEmoji(a.on!, '🎯', 'top', 700 * sp);
           this.floatAt(a.on!, 'Read it!', 'weak');
-          beep(880, 0.08, 'triangle', 0.04);
-          beep(1320, 0.1, 'triangle', 0.04, 0.07);
+          sfx('f.read', { vary: 0 });
           await this.tw.wait(560 * sp);
           break;
         }
@@ -825,7 +833,8 @@ export class FightScene {
           const b = this.F[a.on!].body;
           void this.tw.keys(600 * sp, [1, 1.15, 1], (v) => b.scale.set(v));
           this.tintFlash('fire', 800 * sp);
-          beep(110, 0.5, 'sawtooth', 0.07);
+          sfx('f.phase', { vary: 0 });
+          duck(0.3, 0.9, 1);
           buzz([80, 60, 120]);
           void this.banner((a.text as string) || 'Phase two', 1500 * sp, true);
           await this.tw.wait(1300 * sp);
@@ -873,7 +882,8 @@ export class FightScene {
     const b = this.F[by].body;
     void this.tw.keys(720 * sp, [1, 1.25, 1], (v) => b.scale.set(v), ease.inOut, [0, 0.6, 1]);
     this.tintFlash('ult', 520 * sp);
-    [392, 523, 659, 880].forEach((f, i) => beep(f, 0.14, 'sawtooth', 0.04, i * 0.06));
+    sfx('f.ult', { vary: 0 });
+    duck(0.5, 1.2, 0.8);
     const c = this.ctr(by);
     const col = TINT_COL[a.tint as string] ?? 0xffb627;
     // a ring of light gathers on them
@@ -901,7 +911,7 @@ export class FightScene {
     }, ease.out, [0, 0.4, 1]);
     this.applySnap(e);
     this.floatAt(a.to!, 'Miss', 'info');
-    beep(700, 0.05, 'triangle', 0.02);
+    sfx('f.miss');
   }
 
   /** Skips whatever is animating (skip, forfeit). */
