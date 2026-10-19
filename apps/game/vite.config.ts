@@ -2,6 +2,7 @@ import preact from '@preact/preset-vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { pixiCpuProbe } from '../../tools/build/pixi-probe';
+import { preloadTitleFonts } from '../../tools/build/font-preload';
 
 // GitHub Pages serves the site under /<repo>/; the deploy workflow sets BASE_PATH.
 const base = process.env.BASE_PATH ?? '/';
@@ -19,6 +20,7 @@ export default defineConfig({
   plugins: [
     preact(),
     pixiCpuProbe(),
+    preloadTitleFonts(),
     VitePWA({
       disable: app,
       registerType: 'autoUpdate',

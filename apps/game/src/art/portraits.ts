@@ -8,7 +8,8 @@ import { drawDeco } from './map-deco';
 import { mapTheme } from './map-themes';
 import { toRGBA } from './px';
 import { cpuCanvas } from './canvas';
-import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, type Look } from './sprite';
+import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, spriteKey, type Look } from './sprite';
+import { kv } from '../state/storage';
 import { archLook, cropRGBA, faceKey, faceRGBA, raceLook, weaponKey, weaponRGBA } from './content-art';
 import type { Rgba } from './wheel-art';
 // the baked race, class, weapon and enchant icons (tools/art/bake.ts): the image and where each one is in it
@@ -95,12 +96,53 @@ export const chapterIcon = (ch: number) =>
     }),
   );
 /** One fighter's own face: their skin, hair and class outfit (the name picks the first two), for avatars. */
-export const fighterFace = (look: Look) =>
-  url(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
-    cached(`fface|${look.name}|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${look.boss ?? ''}`, () =>
-      crop(buildSprite({ ...look, weapon: 'Bare fists' }).body, SPRITE_PW, SPRITE_PH, 30 * SPRITE_S),
-    ),
-  );
+export function fighterFace(look: Look): string | null {
+  const L = { ...look, weapon: 'Bare fists' };
+  const key = 'fface|' + spriteKey(L);
+  if (urls.has(key)) return urls.get(key)!;
+  const kept = keptFaces()[key];
+  if (kept) {
+    capped(urls, key, kept);
+    return kept;
+  }
+  const u = url(key, () => cached(key, () => crop(buildSprite(L).body, SPRITE_PW, SPRITE_PH, 30 * SPRITE_S)));
+  if (u) keepFace(key, u);
+  return u;
+}
+
+// The title screen shows every fighter's face, and drawing one builds their whole sprite: about 440 ms for a
+// roster on a mid-range phone, on every launch. The last few faces are kept in storage until the next version of
+// the game (new art draws new faces).
+const FACES = 'whs:faces';
+const KEEP = 12;
+let faces: Record<string, string> | null = null;
+function keptFaces(): Record<string, string> {
+  if (faces) return faces;
+  try {
+    const o = JSON.parse(kv.getItem(FACES) || 'null') as { v: string; at: Record<string, string> } | null;
+    faces = o && o.v === __BUILD__ && o.at && typeof o.at === 'object' ? o.at : {};
+  } catch {
+    faces = {};
+  }
+  return faces;
+}
+let keepTimer = 0;
+function keepFace(key: string, u: string) {
+  const m = keptFaces();
+  delete m[key];
+  m[key] = u;
+  const ks = Object.keys(m);
+  for (const k of ks.slice(0, Math.max(0, ks.length - KEEP))) delete m[k];
+  // written a moment later, once, for a whole screen of faces
+  clearTimeout(keepTimer);
+  keepTimer = window.setTimeout(() => {
+    try {
+      kv.setItem(FACES, JSON.stringify({ v: __BUILD__, at: m }));
+    } catch {
+      // only a cache
+    }
+  }, 2000);
+}
 
 /** A weapon on its own (with its enchant's glow), held at an angle. */
 export const weaponCanvas = (name: string, ench?: string) => cached(weaponKey(name, ench), () => rgbaCanvas(weaponRGBA(name, ench)));

@@ -31,8 +31,12 @@ const EXACT: [from: string, to: string][] = [
  * "heals 25" heals a quarter of a normal bar. A level 12 fighter has about 220 HP, so the old wording read as a
  * tiny amount. Write them as percentages.
  */
+// both patterns below need one of these: most strings have neither, and skip the regexes (rewording every table
+// at load took 66 to 77 ms on a mid-range phone, nearly all of it in them)
+const MAYBE = /HP|eal/;
 export function reword(s: string): string {
   for (const [a, b] of EXACT) if (s.includes(a)) s = s.split(a).join(b);
+  if (!MAYBE.test(s)) return s;
   return s
     .replace(/(?<![\d%.])(\d+) ?HP\b/g, '$1% HP')
     .replace(/\b([Hh]eal(?:s|ing)?) (\d+)(?![\d%.])(?! ?HP)/g, '$1 $2% HP');
