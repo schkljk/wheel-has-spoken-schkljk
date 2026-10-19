@@ -133,21 +133,27 @@ export function peekSlice(bt: Battle, it: CwSlice): SlicePeek {
   return { dmg: p ? [p.lo, p.hi] : null, counter: c ? [c.lo, c.hi] : null, weak: !!p?.weak, beats: MATCHUP[it.c] ?? '' };
 }
 
-/** A boss's phase-two kit, found by name so it works in every mode bosses fight in. */
+/** A boss's phase-two kit, found by name so it works in every mode bosses fight in (a remix: its first kit). */
 export function phaseKitOf(f: Fighter): BossPhaseKit | null {
-  if (!f.isBoss) return null;
+  return phaseKits(f)[0] ?? null;
+}
+/** Every phase-two kit a boss brings: one, or two for a Wheelborn remix (review F12). */
+export function phaseKits(f: Fighter): BossPhaseKit[] {
+  if (!f.isBoss) return [];
+  if (f.remix) return f.remix.map((i) => BOSS_PHASE[i]).filter((k): k is BossPhaseKit => !!k);
   const i = BOSSES.findIndex((b) => b.name === f.name);
-  return i >= 0 ? (BOSS_PHASE[i] ?? null) : null;
+  return i >= 0 && BOSS_PHASE[i] ? [BOSS_PHASE[i]] : [];
 }
 
 /**
  * The slice a boss's phase two adds to the player's wheel of that focus: only while the boss (side 1) is in
- * phase two, and only until the player has landed it once.
+ * phase two, and only until the player has landed it once (`used`: true, or the names of the slices landed).
  */
-export function phaseSlice(bt: Battle, focus: Focus, used: boolean): CwSlice | null {
+export function phaseSlice(bt: Battle, focus: Focus, used: boolean | readonly string[]): CwSlice | null {
   const boss = bt.P[1];
-  const kit = phaseKitOf(boss.f);
-  if (!kit || used || !boss.phased || focus !== kit.slice.fam) return null;
+  if (used === true || !boss.phased) return null;
+  const kit = phaseKits(boss.f).find((k) => k.slice.fam === focus && !(Array.isArray(used) && used.includes(k.slice.n)));
+  if (!kit) return null;
   const s = kit.slice;
   return { k: `phase_${s.n}`, n: s.n, e: s.e, c: s.c, q: 3, w: 1.3, d: s.d, m: { ...s.rm, label: s.n, e: s.e }, src: 'phase', flavor: s.flavor };
 }

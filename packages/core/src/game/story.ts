@@ -196,9 +196,9 @@ export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
 }
 
 /** The chapter boss, built from its table and tuned to stay a real fight. */
-export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && storyOf(g).hard)): CareerFighter {
+/** A boss's body from its table: every wheel picked or spun, stat tiers moved by `shift` (or all set to `tier`). */
+export function bossBody(g: Game, ch: number, shift: number, tier?: number): CareerFighter {
   const def = BOSSES[ch - 1]!;
-  const ng = storyOf(g).ng || 0;
   const f = { name: def.name, bonus: {}, boons: [] } as unknown as CareerFighter;
   const set = f as unknown as Record<string, unknown>;
   const ctx = ctxOf(g);
@@ -210,11 +210,18 @@ export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && stor
     }
     const list = itemsOf(W, f, ctx) as Slice[];
     let it: Slice | undefined;
-    if (W.tier) it = list.find((x) => x.v === clamp((def.stats[W.k] || 5) + BALANCE.bossStatShift(ch), 1, 14));
+    if (W.tier) it = list.find((x) => x.v === clamp(tier ?? (def.stats[W.k] || 5) + shift, 1, 14));
     else if (def.picks[W.k] != null) it = list.find((x) => x.n === def.picks[W.k] || x.k === def.picks[W.k]);
     if (!it) it = W.k === 'title' ? list[0] : list[pickW(g.rng, list)];
     set[W.k] = it;
   }
+  return f;
+}
+
+export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && storyOf(g).hard)): CareerFighter {
+  const def = BOSSES[ch - 1]!;
+  const ng = storyOf(g).ng || 0;
+  const f = bossBody(g, ch, BALANCE.bossStatShift(ch));
   Object.assign(f, {
     title: TITLES[0],
     maxHp: BALANCE.bossHp(ch, ng),

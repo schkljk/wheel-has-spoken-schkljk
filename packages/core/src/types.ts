@@ -313,4 +313,6 @@ export interface Fighter {
   aiSkill?: number;
   /** levels a boss put on after sizing up the player (review E5 and F7) */
   tuned?: number;
+  /** a Wheelborn remix (review F12): the bosses whose phase-two kits it brings */
+  remix?: number[];
 }

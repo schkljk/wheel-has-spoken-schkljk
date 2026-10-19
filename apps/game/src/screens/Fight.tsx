@@ -18,6 +18,7 @@ import {
   numStats,
   peekSlice,
   phaseKitOf,
+  phaseKits,
   phaseSlice,
   personalityOf,
   pickW,
@@ -282,8 +283,8 @@ export function FightScreen({
   const [last, setLast] = useState<{ m: Move[]; n: number }>({ m: [], n: 0 });
   /** the slice being held for a preview */
   const [peek, setPeek] = useState<number | null>(null);
-  /** the boss's phase-two slice has been landed (it's once a fight) */
-  const [phaseUsed, setPhaseUsed] = useState(false);
+  /** the boss's phase-two slices landed so far (each once a fight; a remix brings two) */
+  const [phaseUsed, setPhaseUsed] = useState<string[]>([]);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
   /** the round's matchup while it plays out (C1) */
   const [matchup, setMatchup] = useState<string | null>(null);
@@ -309,7 +310,7 @@ export function FightScreen({
     return ps ? [{ it: ps, w: ps.w, mult: 1 }, ...l] : l;
   }, [focus, phase, snap, phaseUsed]);
   /** the focus whose wheel has the boss's phase-two slice right now */
-  const phaseFam = btRef.current && !phaseUsed && btRef.current.P[1].phased ? phaseKitOf(btRef.current.P[1].f)?.slice : undefined;
+  const phaseFam = btRef.current && btRef.current.P[1].phased ? phaseKits(btRef.current.P[1].f).find((k) => !phaseUsed.includes(k.slice.n))?.slice : undefined;
   const items = useMemo(() => toSlices(list), [list]);
 
   // the wheel follows the slot the DOM leaves for it
@@ -630,7 +631,7 @@ export function FightScreen({
       () => {
         setNudgeTo(null);
         const bt = btRef.current!;
-        if (it.src === 'phase') setPhaseUsed(true);
+        if (it.src === 'phase') setPhaseUsed((u) => [...u, it.n]);
         if (it.c === 'ult') {
           if (it.ultIdx != null) bt.P[0].ultSpin = ULT_WHEEL[it.ultIdx]!;
           void doRound('ult', { ...(it.m || {}) });

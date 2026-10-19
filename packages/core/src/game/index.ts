@@ -31,3 +31,4 @@ export * from './duel';
 export * from './ghost';
 export * from './mentor';
 export * from './cosmetics';
+export * from './trials';

@@ -1,4 +1,11 @@
 import {
+  TRIAL_COUNT,
+  TRIAL_FROM,
+  trialBoss,
+  trialInfo,
+  trialTier,
+  trialsCleared,
+  trialsOpen,
   DUEL_TIER,
   DUEL_WIN_COINS,
   duelBest,
@@ -79,6 +86,7 @@ import { landSound, tick } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { evText } from '../screens/Fight';
 import { fight } from './fight';
+import { bossIntro } from './story';
 import { choose, goHub, goMap, runSteps, showCine } from './nav';
 import { tip } from '../state/tips';
 import { copyText } from '../ui/copy';
@@ -239,6 +247,59 @@ export function openDuel() {
 }
 async function duelFight(d: Duel) {
   const r = await fight({ kind: 'duel', tier: DUEL_TIER, opp: d.opp, me: d.me, seed: d.seed, wheelSeed: d.wheelSeed }, { arena: d.arena, duel: d });
+  await runSteps(r.next);
+}
+
+// ---------------------------------------------------------------- the Wheelborn trials (F12)
+function TrialsSheet() {
+  const done = trialsCleared(G);
+  return (
+    <Sheet emoji="🌀" title="Wheelborn trials" sub="Ten remixed bosses for levels 34 to 50. Losing costs nothing">
+      <div class="stack">
+        {Array.from({ length: TRIAL_COUNT }, (_, i) => {
+          const t = trialInfo(i);
+          const open = i <= done;
+          return (
+            <div key={i} class={`goal trial${i < done ? ' done' : ''}`}>
+              <span class="g-e" aria-hidden="true">
+                {i < done ? '✅' : open ? t.body.e || '🌀' : '🔒'}
+              </span>
+              <div class="g-t">
+                <b>
+                  {i + 1}. {t.body.name}, remixed
+                </b>
+                <small>
+                  Level {t.lvl}. Fights with the tricks of {t.kits[0]!.name} and {t.kits[1]!.name}
+                </small>
+              </div>
+              <span class="g-r">
+                <button class="btn sm" disabled={!open} onClick={() => (closeSheet(), void trialFight(i))}>
+                  {i < done ? 'Rematch' : 'Fight'}
+                </button>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+}
+export function openTrials() {
+  if (!trialsOpen(G)) return toast(`Reach level ${TRIAL_FROM}, or clear the whole story, to face the trials`);
+  openSheet(<TrialsSheet />);
+}
+async function trialFight(i: number) {
+  const t = trialInfo(i);
+  const ok = await confirm({
+    title: `Face ${t.body.name}, remixed?`,
+    body: `Level ${t.lvl}, with the phase-two tricks of ${t.kits[0]!.name} and ${t.kits[1]!.name}. 30 rounds, then sudden death. Your HP starts full.`,
+    yes: 'Fight the remix',
+    no: 'Not yet',
+  });
+  if (!ok) return;
+  const b = act((g) => trialBoss(g, i));
+  await bossIntro(b, pick(G.rng, t.body.lines), `Wheelborn trial ${i + 1} of ${TRIAL_COUNT}`);
+  const r = await fight({ kind: 'trial', tier: trialTier(i), opp: b }, { trial: i });
   await runSteps(r.next);
 }
 
