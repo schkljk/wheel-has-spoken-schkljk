@@ -166,8 +166,8 @@ export function drawFloor(g: Graphics, w: number, top: number, h: number, color:
     colorStops: [
       { offset: 0, color: 'rgba(255,255,255,0.10)' },
       { offset: 0.14, color: 'rgba(255,255,255,0)' },
-      { offset: 0.45, color: 'rgba(0,0,0,0.18)' },
-      { offset: 1, color: 'rgba(0,0,0,0.5)' },
+      { offset: 0.45, color: 'rgba(0,0,0,0.08)' },
+      { offset: 1, color: 'rgba(0,0,0,0.3)' },
     ],
     textureSpace: 'local',
   });

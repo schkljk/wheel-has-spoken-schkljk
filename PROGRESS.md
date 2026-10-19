@@ -24,6 +24,268 @@
 - **Result:** 51 open suggestions with evidence, effort and a suggested order, in `docs/SUGGESTIONS.md` (round 2, IDs G–L). Round 1 is kept below it.
 - **Fixed right away (G1):** the fight result piled its lines on top of each other. A chapter-cleared result was unreadable at every size, and nothing scrolled: the scroll box and the list inside it shared a class, so the box's rows could shrink to nothing. The box has its own class now. A new e2e check (`textOverlaps`) runs at 390×844, 320×568 and 844×390; it fails on the old style and passes now.
 
+### Round 2 fixes, part 1: nothing lost, nothing re-rolled
+
+- **Asked for:** "Do G2–G16, H1–H5, H7–H9, J1–J11, K1–K10, L1, L2, L4–L6" (H6 and L3 not picked). This part covers the bug fixes. The performance (J) and balance (K, G11, G13) work runs alongside on its own branches and lands next. Then come flow (H) and features (L).
+- **The owner's report, "fights are a tad too dark":**
+  - Night skies are lifted toward white, more the darker they are (up to 14%).
+  - A soft light lies over the backdrop.
+  - The vignette starts further out and is lighter (24% at the edge, was darker and closer in).
+  - The floor's shading is lighter.
+  - Measured on six seeded fights: average brightness 24–32 went to 50–64 (of 255). A daylight arena went from 108 to 154.
+- **The owner's report, "the Victory screen has overlapping text":** that was G1, fixed in APK build 13 and on the site. I checked the current build at 320×568, 360×800, 390×844, 412×915 and 844×390, at every text size: story, boss, duel and run wins have no overlaps.
+- **G2, no free retries:**
+  - *Wheels:* every wheel's landing is rolled before it spins, from a die the save keeps (the fighter's spin count, which moves on with every landing). The physics push is adjusted by a hair so the wheel coasts onto that slice, with the same number of turns and no peg bounce. Slice sizes are their weights, so the odds are unchanged. Closing the app mid-spin and spinning again lands on the same slice. An e2e test closes the app during the second build wheel: without the fix it landed Daywalker instead of Cherub, and with it the result matches.
+  - *Fights:* a fight's dice (battle, combat wheel, arena wheel) are kept in the save as it opens. Its starting tweaks are kept too, since next-fight buffs are used up by then. Every round is kept as it is played, and so is a spin that landed but hasn't played yet.
+  - *Coming back:* opening the same fight again (same mode, same opponent) replays the rounds in an instant, from the same dice and in the same order. The opponent plans before each round, as it does live, so it is the same fight. A toast says "Back in the fight: round 3 of 12". Continue goes straight back into a story, cup, gauntlet, daily, rush, tower or Spin & Run fight, skipping the question before it. The record is cleared in the same change that pays the result.
+  - *Tests:* a core test plays 12 seeded fights, closes and reopens each with other launch dice, and checks the same state mid-fight and the same end. It fails if the replay skips the opponent's planning. An e2e test closes the app after two rounds and gets the same HP and round back.
+- **G3, updates:** a new version shows "A new version is ready" with an Update button on the title screen and the fighter page. A screen whose files were replaced under it reloads once by itself instead of doing nothing.
+- **G4:** starting a new fighter asks "Scrap {name}?" before it throws away a build in progress.
+- **G5:** an Awakening or New weapon won by a level-up is kept in the save until its spin is done.
+- **G6:** a boss rush or tower climb is kept between fights. The Play tab shows "Rush on: 3 of 10 down" or "Climb on: floor 7", and Continue picks it up.
+- **G7:** a save from a newer version is never written over. The title screen says "Update the game to open this save", and every write waits.
+- **G8:** saves carry a generation number. A tab that is behind shows "Open somewhere else" with Reload instead of writing over the newer save.
+- **G9:** the collection filters' style no longer leaks into the fight HUD, duel days, bet chips and shop tabs. The ☰ and 1×/2× buttons have 44 px tap areas that don't overlap.
+- **G10:** new gear on a loot spin waits for a tap. Reduced motion keeps the reading time (it only removes animation).
+- **G12:** the game's day never goes back. Setting the phone's date backward no longer refreshes the dailies or pays past duels again.
+- **G14, save safety net:**
+  - Repair knows the newer parts (bounty board, locker, duel scores, Spin & Run, what you were in the middle of, tower, trials).
+  - Career counts stored as text are fixed.
+  - A save too big for storage changes nothing and keeps every backup.
+  - A save writes all of its parts or none.
+- **G15, rule breaks:**
+  - Reads are said in steps on the clue scale, using the engine's true values: "reads a step and a half clearer". Several old texts understated these by a third.
+  - Spin & Run shows real HP numbers.
+  - The runner's and the mentor's stat changes pop up old → new.
+  - "About average" replaces "−0%".
+  - The help text has the right coin numbers.
+- **G16:** "Prize money" pays once however fast it is tapped. A half-spun level-up stays with its fighter. Ghost codes clamp level (1–50), bonuses and gear. Spin & Run's arena wheel leans toward the runner.
+- **H1, modes say when they open:**
+  - A fight's result lists what it opened ("🔓 Unlocked: Endless tower"), and so does the chapter card after it.
+  - A newly opened mode or cup gets a gold "New" ribbon until it is first opened, and the Play tab gets a dot. The Locker and Ghost codes count as new on the More tab until first looked at, and the More tab gets a dot too.
+  - On a save from before the ribbons, whatever is already open counts as seen.
+  - The gem counter can be tapped: it says what gems buy and where they come from.
+  - The lock texts are right now: "Clear chapter 2, or reach level 10" (it said "Chapter 2 or level 10"), and the same for the tower and the trials.
+- **H3:** the boss's intro card is the question. Level, HP, the "sized you up" bonus, the 30-round rule and a heal hint are all on it, with Fight and Not yet. That saves a tap, and it is still the confirmation the owner's rules ask for.
+- **H4:** "Keep one" shows each option's real numbers old → new ("Attack 41 → 44"). With two level-ups waiting, each says which level it is for ("reached level 5, level-up 1 of 2").
+- **H5, steering bounties:**
+  - Each bounty says who on your roster fits it ("Fits Fiona"), and those come first.
+  - While nothing on the board fits anyone, a bounty one of your fighters fits goes up first, if there is one.
+  - The collection has a 🧩 Riddles button that jumps straight to them.
+  - A fighter card with an unfound hidden synergy says "🧩 Solves a riddle".
+- **H7:** tapping a Locker price shows it on first: a small wheel wearing the rim or the charm, the confetti thrown in its colors, or your name on the plate. You can look at it even when you can't afford it yet.
+- **H8:** ghost codes are about 80 characters (were about 700).
+  - Every wheel result is its place on its wheel, one character each, plus level, bonuses, gear, upgrade levels and talents, then the name.
+  - A content stamp means a code from a version with other wheels says so ("ask for a fresh one") instead of reading wrong.
+  - There is a Share button where the phone has a share sheet. The old long codes still read.
+- **H9, polish:**
+  - The Fighter tab shows the mentor ("Mentored by Old Gus: +1 IQ"), and IQ keeps its capitals in the mentor pick.
+  - The pinned goal says what it needs ("Silverware: win a cup").
+  - A story win names its +10 HP ("+10 HP after the win: you go on with 93/100 HP"). So do the boss rush's +25 and Spin & Run's +10, with real numbers.
+  - A loss no longer shows "+0 🪙".
+  - A paid option you can't afford says how many coins you have.
+  - The first fight shows one tip before the first spin; the reads and speed tips wait for the first round.
+  - Sideways, the Play tab puts the story card beside the rest.
+- **L1, take the job:** a bounty's "Job" button (2 💎, with a confirmation) fixes its slice on your next new fighter's wheel. The wheel says "📌 The job: this wheel lands on Pigeon" and lands there. The rest of the wheels spin as usual. Dropping an unused job gives the gems back, and so does winning the bounty before the job is used. One job at a time.
+- **H2, Spin & Run joins the game:**
+  - The runner's picks tick in one after another on their intro, with the whole card folded underneath.
+  - Between fights, "📇 {runner}'s card" shows it again.
+  - Walking away shows a payout card: wins, gems, new collection entries, a new best.
+  - A run's win counts as a win for goals and for bounties the runner fits ("Win 10 fights as a Slime" can be done with a runner).
+  - "Patch up" isn't offered at full HP.
+- **L2, claim or wager:** next to "Claim the win", the fight menu offers "Wager it" (with a confirmation). The same fight starts over from the same dice, at no more than 60% HP. A win pays elite loot and a 💎 on top; a loss is a normal loss. The wager is kept with the fight record, so closing the app doesn't undo it.
+- **L5, Spin & Run relics:** every third pick (after wins 3 and 6) offers two relics, tradeoffs tagged as such, next to one plain boon. A tradeoff is never forced.
+  - **Glass cannon:** +40% damage, 25% less max HP.
+  - **Borrowed time:** a full heal, but the run ends after three more fights.
+  - **Blood pact:** every fight starts with full energy, but a win heals nothing.
+  - **Cursed crown:** +3 to everything, every opponent +2 levels.
+  - Each is taken once a run. They are a switch (`runRelics`).
+  - 400 paired runs per cell on auto-battle (`npx tsx tools/sim/spin-run.ts --only relics`):
+
+    | Boon picks | Wins, no relics | With relics | Whole run won, no relics | With relics |
+    |---|---|---|---|---|
+    | Random | 5.21 | 5.06 | 24% | 19% |
+    | Relics whenever offered | 5.21 | 5.00 | 24% | 17% |
+    | Smart | 5.95 | 5.77 | 35% | 32% |
+    | Smart, taking the crown or the cannon | 5.95 | 5.88 | 35% | 37% |
+
+  - Relics reward a good read of the run and punish a greedy one. Borrowed time is the trap: runs pile up at six wins.
+- **L4, the remix workshop:** the trials sheet has a "🧪 Remix workshop" button.
+  - **Building:** pick a body (any boss this fighter has beaten, or Act I's) and two tricks (other bosses' phase-two slices, named on the chips).
+  - **Cost:** building costs 3 💎, with a confirmation. A built remix stays built until it is fought, so closing the app never charges twice.
+  - **Tuning:** it is set to your level with the tuning of the trial nearest that level, which K5's simulations measured.
+  - **Reward:** a win pays the trial XP and 15 🪙.
+  - **Goals:** two new ones, "Mad scientist" (beat a remix, 3 💎) and "It lives, and it lost" (beat 10, 10 💎 and a legacy point). It's a gem sink that is also content.
+- **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
+- **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
+
+### Review round 2: performance (J1–J11)
+
+- **Measured** on the production build at 4× CPU, 390×844, the median of 3 runs.
+- **What changed:**
+  - **J1:** the result panel under a wheel has one height, and the wheel's canvas only resizes when its box really changes. Small changes wait for the layout to settle.
+  - **J2:** Pixi's start-up check runs on CPU canvases, through a build plugin. node_modules is untouched.
+  - **J3:** the first Pixi app warms up while the game is idle. Pixi's ticker sleeps while no wheel or fight is on screen.
+  - **J4:** the emojis are baked into two images (`npm run bake:emoji`). Missing ones are drawn as before.
+  - **J5:** the card's rating runs in the worker. The scouting report's population is a generated table (`npm run bake`).
+  - **J6:** icons are cached images, drawn while idle.
+  - **J7:** each music loop is rendered once, in idle time, and played on repeat. The theme starts a moment after the first tap.
+  - **J8:** these load on first use: the wheel, card, fight, map, bracket and collection screens, the flows, the sprite drawing code and the sound table. The game fetches them in the background once it is up, and offline play still works.
+  - **J9:** the collection lays out only what is near the screen.
+  - **J10:**
+    - Dates are written by hand.
+    - Rewording skips most strings.
+    - Title faces are kept between launches.
+    - The title's two fonts are preloaded.
+  - **J11:** textures are freed after a minute unused, tab renders stop re-serializing the save, and save writes are batched once per task.
+
+  | Item | Measure | Before | After |
+  |---|---|---|---|
+  | J1 | Wheel canvas resizes per fighter build | 38 | 6 |
+  | J2 | Pixi start-up check | 492 ms | 3 ms |
+  | J3 | Tap to race wheel (after 15 s on the title) | 1,577 ms | 745 ms |
+  | J3 | Longest task before the first spin lands | 1,286 ms | 559 ms |
+  | J4 | Emoji drawing per fighter build | 2,462 ms | 0 ms |
+  | J5 | Rating and population at the card reveal | 1,827 ms | 0 ms (main thread) |
+  | J6 | Play tab elements | 2,256 | 206 |
+  | J6 | Title to hub, main thread | 904 ms | 454 ms |
+  | J7 | Idle hub with the theme, JavaScript | 27.9 ms/s | 0.4 ms/s |
+  | J7 | Audio nodes made per second | 72 | 0 |
+  | J8 | First chunk, gzipped | 288.7 KB | 223.8 KB |
+  | J8 | First screen, cold start on Fast 3G | 6,665 ms | 5,529 ms |
+  | J9 | Opening the collection | 895 ms | 407 ms |
+  | J10 | Relaunch to first screen | 985 ms | 432 ms |
+  | J10 | Date formatting / rewording at load | 83 / 69 ms | 1 / 48 ms |
+  | J11 | Profile writes per fighter build | 47 | 24 |
+  | J11 | Whole-save serializations, 6 tab switches | 22 | 2 |
+  | J11 | Live GL textures after 20 fights | +75 | +33 |
+
+- **Cost:** the offline precache is 292 KiB bigger (the emoji images). About 250 ms of warm-up moved into idle time on the title.
+- **Not done:**
+  - The core story text stays in the first chunk, because the rules read it directly.
+  - Build-time rewording was skipped: only about 30% was gained at load.
+- **Tests:** `e2e/perf.spec.ts` guards J1, J6 and J7. Unit tests cover the build plugins, the baked emojis, the population table, worker ratings, rewording and the hand-written date.
+- **When merging:** the population table is now baked from the whole core, so the balance retune is in it. The emoji images were baked again for the new relic, goal and remix emojis.
+
+### Review round 2: balance and economy (K1–K10, G11, G13)
+
+- **How:**
+  - Every rule is a switch in `data/balance.ts`, off in the old game's tuning.
+  - Changed rows (gear, talents, titles, set bonuses, a sidekick) are laid over the ported tables by `data/retune.ts` while their switch is on. They come off again when the tuning switches back, so the parity tests still play the legacy rules exactly.
+  - Measured with paired fights: the same pairs and dice for each variant. "Points" are win-rate points.
+  - The tools are `tools/sim/values.ts`, `spin-run.ts`, `club.ts`, `duel.ts` and `trials.ts`, plus story runs for injuries.
+- **K1, premium gear:**
+  - One premium piece per fighter, worn or kept, once Act I is cleared. The vault says so with a lock line and a Locked badge.
+  - Selling or salvaging the piece frees the spot. Pieces bought before stay.
+  - The Coat loses its revive.
+  - The Crown of rizz distracts: opponents lose 12% of their turns.
+  - The halo boots get +1 speed, and the signature wheel lands Jackpot 4× as often and Whiff a quarter as often.
+  - The full kit (88–92% against random fighters) can't be bought any more. 1,500 paired fights:
+
+    | Piece | Before | After |
+    |---|---|---|
+    | Coat of a thousand stars | +20.9 | +9.1 |
+    | Crown of rizz | +0.1 | +4.0 |
+    | Gambler's halo boots | −0.3 | +4.9 |
+    | Heart of the arena | +11.0 | +11.3 |
+
+- **K2, fight club:**
+  - The line is within 10 points of the real odds (20 before). Payouts are 0.88/p (0.92/p).
+  - The insider tells the real odds in words, with no dirt naming a side.
+  - A matchup stays on the board until you bet on it. 300 matchups × 400 lines, return per coin:
+
+    | Strategy | Before | After |
+    |---|---|---|
+    | The insider's tip | +28.0% (46% of matchups) | +3.1% (31%) |
+    | Card reader | +1.9% | −13.5% |
+    | Back the line favorite | −3.3% | −5.2% |
+
+- **K3, Spin & Run:**
+  - Opponents level by fight number, not by you, so +2 levels now puts you ahead.
+  - The first loss is a second wind: back up with 60% HP for a rematch. The run's sheet says when it's ready or used.
+  - 500 paired runs per cell:
+
+    | Boon picks | Wins, before | After | Whole run won, before | After |
+    |---|---|---|---|---|
+    | Random | 3.98 | 5.32 | 11% | 24% |
+    | Prefer +2 levels | 3.88 | 5.60 | 10% | 30% |
+    | Smart | 4.26 | 5.97 | 15% | 37% |
+
+  - Runs with no wins: 8.6% → 4.4%. Smart beats random by 0.65 wins (0.28 before).
+- **G11:** a run's picks join the collection when it pays out, and only after a win. 60 instant walk-aways: 359 entries and 12 gems before, nothing now.
+- **K4, daily duel:**
+  - The day's matchup is re-rolled from the date's seed until the stand-in has 25% to 75%, the same for everyone. 200 days:
+
+    | Odds | Before | After |
+    |---|---|---|
+    | 25% to 75% | 36% of days | 81% |
+    | Under 15% | 23% | 1% |
+    | Over 85% | 19% | 1% |
+
+  - 2.7 rolls a day on average.
+- **G13:**
+  - A loss ranks by the opponent's HP left (lower is better). Old records still count.
+  - Scores say real HP: "won in 5 rounds with 84/131 HP left".
+- **K5, Wheelborn trials:**
+  - Levels 32 to 41, a level a trial. From level 32 the last trial needs 4,905 XP instead of 11,025.
+  - HP is retuned on the mean of hundreds of fighters. The old median of 24 moved by ten points from one sample to the next.
+  - An average build at the trial's level, 600 fighters the tune wasn't made on:
+
+    | Trial | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | Before (levels 34–50) | 44% | 47% | 59% | 49% | 47% | 30% | 43% | 55% | 46% | 59% |
+    | After (levels 32–41) | 57% | 53% | 47% | 48% | 43% | 40% | 38% | 39% | 34% | 31% |
+    | Aim | 55% | 52% | 49% | 47% | 44% | 41% | 38% | 36% | 33% | 30% |
+
+- **K6, revives:**
+  - One revive in the talent tree: Stubborn, which says one revive counts a fight.
+  - Second wind heals 2% HP and gives 4 energy a round. Lucky break gives +8% crit and dodge.
+  - The talent sheet warns when a revive won't stack with a title, class, power or gear.
+  - Second wind + Stubborn: +11.4 before (the same as Stubborn alone), +15.4 now.
+- **K7, crit and dodge:**
+  - A dodge grazes a signature for half damage, and a crit ignores half a guard.
+  - The Shadow 4-piece's first strike of a fight can't be dodged or guarded.
+  - Knight is trimmed and Clown is reworked.
+  - +10% dodge: 1.5 → 2.0 points. +10% crit: 1.5 → 1.7.
+
+    | Set | Before | After |
+    |---|---|---|
+    | Royal | +10.0 | +9.0 |
+    | Cosmic | +7.2 | +6.9 |
+    | Knight | +9.7 | +6.6 |
+    | Shadow | −0.4 | +3.4 |
+    | Arcane | +5.3 | +3.4 |
+    | Clown | −4.9 | +1.1 |
+
+- **K8, gems and upgrades:**
+  - 23 more Locker looks: 43 looks for 281 gems, up from 20 for 111.
+  - A sold or salvaged piece's upgrades go to the piece that replaced it in its slot, worth what they cost: a rare +3 becomes an epic +2. The confirmation says so.
+- **K9, injuries:**
+  - Story losses injure at most twice, and those injuries heal when a chapter starts over. The defeat says a med kit cures it.
+  - 60 weak fighters, chapter 1: most injuries at once 2.5 → 1.05. Runs with 3 or more: 52% → 0%. Cleared: 50% → 58%.
+- **K10:**
+  - **Quick jab:** 90% damage, up from 75%.
+  - **Lifesteal now heals.** Life drain and the vampire gear did nothing before.
+  - **Dead talents buffed:** Life drain +0.9 → +4.1, Evasion +0.5 → +3.9, Iron guard +0.3 → +1.7.
+  - **Outliers,** win rate in random fights:
+
+    | Pick | Before | After |
+    |---|---|---|
+    | the Undisputed GOAT | 64.2% | 61.1% |
+    | Fraud Watch | 37.0% | 39.8% |
+    | Uno reverse card | 59.3% | 52.6% |
+    | Regeneration | 60.4% | 52.5% |
+    | Tiny dragon | 58.2% | 56.5% |
+
+- **Left as is:**
+  - Heart of the arena (+11) is now the best single premium piece.
+  - The Plot Twist and Plot Armor titles (revive) are still around 59%.
+  - Counterweight is still weak on auto-battle.
+- **Existing saves:**
+  - Owned premium pieces stay, but every Coat loses its revive.
+  - On a re-rolled duel day, an old record no longer counts.
+  - Injuries from before the update aren't tagged, so they don't count toward the cap.
+
 ### Review follow-up: the owner's picks
 
 - **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.

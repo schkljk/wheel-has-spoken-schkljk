@@ -1,8 +1,8 @@
-import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, takeMentor, type CareerFighter, type Mentor, type SumLine } from '@whs/core';
-import { G, act, go } from '../state/game';
+import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, numStats, takeMentor, type CareerFighter, type Mentor, type SumLine } from '@whs/core';
+import { G, act, go, popStats } from '../state/game';
 import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
-import { FighterCard } from '../ui/FighterCard';
+import { FighterCard, useRating } from '../ui/FighterCard';
 import { Icon } from '../ui/Icon';
 import { choose, goHub } from '../flows/nav';
 
@@ -16,17 +16,20 @@ async function start(f: CareerFighter) {
       title: 'Pick a mentor?',
       sub: `A retired fighter shows ${f.name} the ropes, and drops by now and then`,
       options: [
-        ...ms.map((x) => ({ label: `${x.e} ${x.n}`, sub: `+1 ${STATN[x.k]!.toLowerCase()} to start. ${x.s}` })),
+        ...ms.map((x) => ({ label: `${x.e} ${x.n}`, sub: `+1 ${STATN[x.k] === 'IQ' ? 'IQ' : STATN[x.k]!.toLowerCase()} to start. ${x.s}` })),
         { label: 'No mentor', sub: 'Figure it all out alone. Very brave. Very slow' },
       ],
     });
     m = ms[c] ?? null;
   }
+  const before = numStats(f, ctxOf(G));
   act((g) => {
     enterCareer(g, f);
     if (m) takeMentor(f, m);
     clearBuild(g);
   });
+  // the mentor's +1, as numbers (G15)
+  if (m) popStats(before, numStats(f, ctxOf(G)));
   void goHub();
 }
 
@@ -66,6 +69,17 @@ export function CardScreen({ f }: { f: CareerFighter }) {
 
 /** The build in plain words (upgrade 29): three strengths, the biggest weakness and the best synergy, with jokes. */
 function ScoutingReport({ f }: { f: CareerFighter }) {
+  // the sign-off follows the rating, which the worker works out first
+  if (useRating(f) == null)
+    return (
+      <div class="card scout wait" aria-label="Scouting report">
+        <h3>📋 Scouting report</h3>
+        <small>The scouts are still arguing…</small>
+      </div>
+    );
+  return <Report f={f} />;
+}
+function Report({ f }: { f: CareerFighter }) {
   const r = buildSummary(f, ctxOf(G));
   let n = 0;
   const line = (cls: string, l: SumLine, label?: string) => (

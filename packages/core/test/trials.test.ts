@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BALANCE,
+  useBalance,
   TRIAL_COUNT,
   clockAt,
   endTrialFight,
@@ -19,7 +21,7 @@ import {
   type Game,
 } from '../src';
 
-// Review F12: an endgame of remixed bosses for levels 34 to 50.
+// Review F12: an endgame of remixed bosses, levels 32 to 41 since review K5 (34 to 50 before).
 function game(lvl = 34): Game {
   const rng = mulberry32(3);
   const g: Game = { save: newSave(0), F: null, rng, clock: clockAt(), pool: null, notes: [] };
@@ -31,11 +33,24 @@ function game(lvl = 34): Game {
 }
 
 describe('the Wheelborn trials', () => {
-  it('open at level 34, from 34 to 50', () => {
-    expect(trialsOpen(game(33))).toBe(false);
-    expect(trialsOpen(game(34))).toBe(true);
-    expect(trialLevel(0)).toBe(34);
-    expect(trialLevel(TRIAL_COUNT - 1)).toBe(50);
+  it('open at level 32, a level a trial from 32 to 41 (K5)', () => {
+    expect(trialsOpen(game(31))).toBe(false);
+    expect(trialsOpen(game(32))).toBe(true);
+    expect(trialLevel(0)).toBe(32);
+    expect(trialLevel(TRIAL_COUNT - 1)).toBe(41);
+    expect(Array.from({ length: TRIAL_COUNT }, (_, i) => trialLevel(i))).toEqual([32, 33, 34, 35, 36, 37, 38, 39, 40, 41]);
+  });
+  it('kept the old ladder, 34 to 50, with the switch off', () => {
+    const keep = { ...BALANCE };
+    useBalance({ trialLadder: false });
+    try {
+      expect(trialsOpen(game(33))).toBe(false);
+      expect(trialsOpen(game(34))).toBe(true);
+      expect(trialLevel(0)).toBe(34);
+      expect(trialLevel(TRIAL_COUNT - 1)).toBe(50);
+    } finally {
+      useBalance(keep);
+    }
   });
   it("remix a boss with two other bosses' phase kits, both on the wheel in phase two", () => {
     const g = game();

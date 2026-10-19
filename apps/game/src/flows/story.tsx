@@ -121,11 +121,16 @@ function TypeLine({ text }: { text: string }) {
   );
 }
 
-export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, kicker: string) {
+/**
+ * The boss steps out: who they are and what you go in with. With `ask`, it is also the question (review H3):
+ * "Fight" or "Not yet", with everything you need to decide on the card. Resolves false for Not yet.
+ */
+export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, kicker: string, ask = false): Promise<boolean> {
   sfx('s.boss', { vary: 0 });
   duck(0.3, 1.6, 1);
   buzz([60, 80, 60]);
-  await showCine(
+  const hp = G.F?.story ? storyOf(G).hp : 100;
+  return showCine(
     <>
       <div class="cine-kicker">{kicker}</div>
       <div class="boss-art">
@@ -137,7 +142,8 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
       </div>
       <TypeLine text={line} />
       <div class="cine-meta">
-        Level {b.lvl}. {Math.round(b.maxHp! * LS(b))} HP, you have {hpTxt(G, G.F?.story ? storyOf(G).hp : 100)}. Power scale: {powerScale(b, ctxOf(G)).n}. Has a second phase.
+        Level {b.lvl}. {Math.round(b.maxHp! * LS(b))} HP, you have {hpTxt(G, hp)}. Power scale: {powerScale(b, ctxOf(G)).n}. Has a second phase.
+        {ask && ` Up to 30 rounds, then sudden death.${hp < 70 ? ' You might want to heal first.' : ''}`}
       </div>
       {tunedBossGems(b) > 0 && (
         // the boss sized you up (review E5 and F7): it says so, and it pays for it
@@ -150,6 +156,7 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
       )}
     </>,
     'Fight',
+    ask ? 'Not yet' : undefined,
   );
 }
 
@@ -195,16 +202,9 @@ async function storyFight(kind: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: Re
 export async function enterNode(i: number, resume = false) {
   const S = storyOf(G);
   const t = S.rows[S.row]![i]! as NodeKind;
-  if (t === 'boss' && !resume) {
-    const B = BOSSES[S.ch - 1]!;
-    const ok = await confirm({
-      title: `Face ${B.name}?`,
-      body: `You go in with ${hpTxt(G, S.hp)} HP. Boss fights last up to 30 rounds and end in sudden death.${S.hp < 70 ? ' You might want to heal first.' : ''}`,
-      yes: 'Fight the boss',
-      no: 'Not yet',
-    });
-    if (!ok) return;
-  }
+  // the boss's card is the question: level, HP and the bonus are on it before you decide (H3)
+  const boss = t === 'boss' ? act((g) => makeBoss(g, storyOf(g).ch)) : null;
+  if (boss && !resume && !(await bossIntro(boss, pick(G.rng, BOSSES[S.ch - 1]!.lines), `Chapter ${S.ch} boss`, true))) return;
   act((g) => {
     const st = storyOf(g);
     st.picks[st.row] = i;
@@ -219,11 +219,7 @@ export async function enterNode(i: number, resume = false) {
     if (!resume) await nemesisIntro(o, act((g) => nemesisTaunt(g)));
     return storyFight('nemesis', o);
   }
-  if (t === 'boss') {
-    const b = act((g) => makeBoss(g, storyOf(g).ch));
-    if (!resume) await bossIntro(b, pick(G.rng, BOSSES[storyOf(G).ch - 1]!.lines), `Chapter ${storyOf(G).ch} boss`);
-    return storyFight('boss', b);
-  }
+  if (boss) return storyFight('boss', boss);
   if (t === 'event') {
     sfx('s.event');
     return encounter();
@@ -269,7 +265,8 @@ async function encounter() {
     title: ev.t,
     body: ev.d,
     options: [
-      ...ev.o.map((o) => ({ label: o.l, sub: o.s, disabled: !eventOptionOk(G, o) })),
+      // an option you can't pay for says so (H9)
+      ...ev.o.map((o) => ({ label: o.l, sub: eventOptionOk(G, o) ? o.s : `${o.s}. You have ${coinsOf(G)} 🪙`, disabled: !eventOptionOk(G, o) })),
       ...(t
         ? [
             {

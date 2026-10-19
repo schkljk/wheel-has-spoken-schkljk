@@ -7,14 +7,14 @@ export function setConfetti(colors: string[] | null) {
   COLORS = colors && colors.length ? colors : DEFAULT;
 }
 
-/** Confetti anywhere on the page (legacy burstAt). Defaults to the upper middle of the screen. */
-export function burst(x = innerWidth / 2, y = innerHeight * 0.4, n = 22) {
+/** Confetti anywhere on the page (legacy burstAt). Defaults to the upper middle of the screen; `cols` tries other colors. */
+export function burst(x = innerWidth / 2, y = innerHeight * 0.4, n = 22, cols = COLORS) {
   if (reducedMotion()) return;
   for (let i = 0; i < n; i++) {
     const p = document.createElement('i');
     p.className = 'confetti';
     const sz = 4 + Math.random() * 5;
-    p.style.cssText = `left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;background:${COLORS[i % COLORS.length]}`;
+    p.style.cssText = `left:${x}px;top:${y}px;width:${sz}px;height:${sz}px;background:${cols[i % cols.length]}`;
     document.body.appendChild(p);
     const ang = Math.random() * Math.PI * 2;
     const d = 50 + Math.random() * 80;

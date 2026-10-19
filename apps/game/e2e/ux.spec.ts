@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
-import { layoutProblems, open, watchErrors } from './helpers';
+import { layoutProblems, open, smallTargets, watchErrors } from './helpers';
 
 // Upgrades 32, 34 and 35: tab dots, story map previews, and undo for gear swaps.
 test('a gear swap can be undone for three seconds', async ({ page }) => {
@@ -50,5 +50,24 @@ test('tabs get a dot when something new waits there', async ({ page }) => {
   // the daily wheel is ready, so Play has a dot while you're elsewhere
   await expect(page.getByRole('tab', { name: /^Play\b.*something new/ })).toBeVisible();
   await expect(page.getByRole('tab', { name: /^Goals\b.*something new/ })).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test('G9: every fight button and chip takes a full thumb', async ({ page }) => {
+  test.setTimeout(150_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, { ...careerSaveKV({ seed: 3, lvl: 30, ch: 1, row: 0 }), 'whs:seed': 'thumbs' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  const begin = page.getByRole('button', { name: 'Begin' });
+  if (await begin.isVisible().catch(() => false)) await begin.click();
+  await page.locator('.mnode.now.t-fight').first().click();
+  await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
+  for (const [width, height] of [[390, 844], [320, 568], [844, 390]] as const) {
+    await page.setViewportSize({ width, height });
+    await page.waitForTimeout(300);
+    expect(await smallTargets(page, '.cw-chips .fchip, .fhit'), `${width}x${height}`).toEqual([]);
+  }
   expect(errors).toEqual([]);
 });

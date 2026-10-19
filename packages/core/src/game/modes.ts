@@ -14,6 +14,7 @@ import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addMasteryWin, award, awardGems, challengeFighter, gainFame, gainXP, invalidate, randomGear, recordMatch, track } from './career';
 import { hpTxt, makeBoss, storyEnsure, storyOf } from './story';
 import type { FightOutcome, FightResult, FightTier, Step } from './fight';
+import { keepRun } from './resume';
 
 const commonAfter = (g: Game, won: boolean, O: CareerFighter) => {
   const F = g.F!;
@@ -117,7 +118,7 @@ export function endDailyFight(g: Game, O: CareerFighter, o: FightOutcome): Fight
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   lines.push(...gainFame(g, fame));
   const next: Step[] = won ? [{ t: 'loot', table: 'elite' }] : [];
   next.push({ t: 'levelups' }, { t: 'hub' });
@@ -178,6 +179,7 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
     track(g, 'bosses');
     R.i++;
     R.hp = Math.min(100, Math.max(1, Math.ceil(o.me.hp)) + 25);
+    if (BALANCE.clearResults) lines.push(`❤️ +25 HP between bosses: ${hpTxt(g, R.hp)} HP for the next one`);
     xp = 10 + R.i * 3;
     coins = 5 * R.i;
     fame = 3 * R.i;
@@ -204,10 +206,12 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   lines.push(...gainFame(g, fame));
   const done = R.i >= total;
   if (!won || done) next.push({ t: 'levelups' }, { t: 'hub' });
+  // the run goes on from here after closing the app, or it's over (G6)
+  keepRun(g, 'rush', won && !done ? R : null);
   return {
     won,
     big: won ? (done ? 'Rush cleared' : 'Boss down') : 'Rush over',
@@ -321,8 +325,9 @@ export function endTowerFight(g: Game, T: TowerState, O: CareerFighter, o: Fight
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   if (over) next.push({ t: 'levelups' }, { t: 'hub' });
+  keepRun(g, 'tower', over ? null : T);
   return {
     won,
     big: won ? `Floor ${T.floor - 1} cleared` : over ? 'The tower wins' : 'Knocked down a floor',
@@ -349,12 +354,34 @@ export interface Club {
   bet: number;
 }
 export const CLUB_BETS = [5, 10, 25, 50];
+/**
+ * The bookie's cut and line (review K2): with `clubTight` the payout is 0.88/p (0.92/p before) and the line is the
+ * real odds plus up to 10 points of noise either way (20 before), so the insider's edge is a small one.
+ */
+export const CLUB_TUNE = { vig: [0.92, 0.88] as [number, number], noise: [0.4, 0.2] as [number, number] };
 /** Payout multiplier for backing a side with chance p: underdogs pay more. */
-export const clubMult = (p: number) => Math.round(clamp(0.92 / p, 1.1, 8) * 10) / 10;
+export const clubMult = (p: number) => Math.round(clamp(CLUB_TUNE.vig[BALANCE.clubTight ? 1 : 0] / p, 1.1, 8) * 10) / 10;
+/** The matchup on the board, kept until a bet is placed (K2: a new card was free and endless, so juicy lines could be farmed). */
+interface ClubCard {
+  A: SerFighter;
+  B: SerFighter;
+  pA: number;
+  line?: number;
+  tipped?: boolean;
+}
+const clubCard = (g: Game) => (g.save.profile.extra.club ?? null) as unknown as ClubCard | null;
+/** A matchup is waiting on the board for a bet (K2). */
+export const clubWaiting = (g: Game) => BALANCE.clubTight && !!clubCard(g);
 /** The odds the payouts are set by: the bookie's line once it exists (F8), the real odds before that. */
 export const clubLine = (c: Club) => c.line ?? c.pA;
-/** A new matchup of two pool fighters around your level. */
+/** The matchup on the board: the one waiting for a bet (K2), or a new one of two pool fighters around your level. */
 export function clubMatchup(g: Game): Club {
+  const card = BALANCE.clubTight ? clubCard(g) : null;
+  if (card) {
+    const A = deserFighter(card.A);
+    const B = deserFighter(card.B);
+    if (A && B) return { A, B, pA: card.pA, line: card.line, tipped: card.tipped, bet: Math.min(10, coinsOf(g)) };
+  }
   const F = g.F!;
   const lv = Math.max(1, F.lvl || 1);
   const ctx = ctxOf(g);
@@ -369,25 +396,41 @@ export function clubMatchup(g: Game): Club {
   const pA = clamp(headToHead(A, B, g.rng, 100, { ctx }), 0.05, 0.95);
   // the bookie only reads the cards (F8): the line is the real odds plus a good amount of noise, so value
   // bets exist for whoever knows better
-  const line = BALANCE.clubInsider ? clamp(pA + (g.rng() - 0.5) * 0.4, 0.06, 0.94) : undefined;
+  const line = BALANCE.clubInsider ? clamp(pA + (g.rng() - 0.5) * CLUB_TUNE.noise[BALANCE.clubTight ? 1 : 0], 0.06, 0.94) : undefined;
+  if (BALANCE.clubTight) g.save.profile.extra.club = { A: serFighter(A), B: serFighter(B), pA, line } as unknown as Json;
   return { A, B, pA, line, bet: Math.min(10, coinsOf(g)) };
 }
 /** The charisma that gets the insider talking for free (a gem otherwise). */
 export const CLUB_TIP_CHA = 9;
 export const clubTipFree = (g: Game) => (eff(g.F!, ctxOf(g)).cha || 5) >= CLUB_TIP_CHA;
-/** What the insider says (F8): who is really the favorite, and the dirt on whoever the line has wrong. */
+/**
+ * What the insider says (F8): who is really the favorite, and the dirt on whoever the line has wrong. With the
+ * review's tighter club (K2) the insider only gives the real odds in words: no dirt pointing at a side.
+ */
 export function clubTip(c: Club): { lines: string[] } {
   const line = clubLine(c);
   const off = c.pA - line;
   const who = off >= 0 ? c.A : c.B;
   const real = (p: number) => oddsWord(p).t.toLowerCase();
   const lines = [`${c.A.name} is really ${aOrAn(real(c.pA))}. ${c.B.name} is really ${aOrAn(real(1 - c.pA))}.`];
+  if (BALANCE.clubTight) {
+    lines.push(nth((c.pA * 7919 + line * 104729) % 1000, SHRUGS));
+    return { lines };
+  }
   if (Math.abs(off) >= 0.08) lines.push(nth(Math.abs(off) * 997, UNDERRATED).replace('{n}', who.name));
   else lines.push('The line is about right. The insider looks disappointed in both of you.');
   return { lines };
 }
 const aOrAn = (w: string) => `${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w}`;
 const nth = (x: number, l: readonly string[]) => l[Math.floor(x) % l.length]!;
+/** What the insider says instead of dirt (K2): the words above are all you get. */
+const SHRUGS = [
+  'That is all you get. The insider has a family to feed and a bookie to fear.',
+  'The insider taps their nose and is gone before you can ask which side.',
+  'Compare that to the board yourself. The insider is not doing your homework.',
+  "No names, no dirt. The last insider who named names now sells hot dogs at ringside.",
+  'The insider shrugs. Odds are odds. Feelings are extra.',
+];
 /** Dirt on a fighter the bookie underrates. */
 const UNDERRATED = [
   '{n} has been training in secret. In a walk-in freezer. Nobody asked why.',
@@ -405,11 +448,15 @@ export function buyClubTip(g: Game, c: Club): boolean {
     p.gems -= 1;
   }
   c.tipped = true;
+  const card = BALANCE.clubTight ? clubCard(g) : null;
+  if (card) card.tipped = true;
   return true;
 }
 /** Places the bet and starts the fight (narrated, so it can be watched). */
 export function clubFight(g: Game, c: Club): Battle | null {
   if (c.bet <= 0 || !spend(g, c.bet)) return null;
+  // the bet is down: the board gets a new card next time (K2)
+  if (BALANCE.clubTight) delete g.save.profile.extra.club;
   return newBattle(c.A, c.B, g.rng, { ctx: ctxOf(g) });
 }
 /** Pays out a won bet, at the line's multiplier. */

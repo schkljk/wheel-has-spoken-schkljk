@@ -1,5 +1,6 @@
 import { MOVE_N, type Battle, type BattleEvent } from '../battle';
 import type { Move } from '../types';
+import { BALANCE } from '../data/balance';
 
 /**
  * The fight recap (review item C1): why a fight went the way it did, from its events. Damage is in real HP,
@@ -47,7 +48,10 @@ export function recapTip(r: Omit<Recap, 'tip'>, won: boolean): string {
   const [myReads, theirReads] = r.reads;
   if (!won && theirReads >= myReads + 2) return `They won ${theirReads} matchups to your ${myReads}. The teal ring on a focus button counters the read: follow it when the read is sure.`;
   if (!won && r.lost[0] > 0 && r.dots[0] >= r.lost[0] * 0.3) return 'Burns and poison did a big share of the damage. Cures in your bag, or ending fights sooner, take the sting out.';
-  if (!won && r.dodges[1] >= 3) return `They dodged ${r.dodges[1]} times. Your signature move can't be dodged: build energy and save it for them.`;
+  if (!won && r.dodges[1] >= 3)
+    return BALANCE.critDodge
+      ? `They dodged ${r.dodges[1]} times. A dodge only grazes your signature move, and a crit finds the gap in a guard: build energy and save it for them.`
+      : `They dodged ${r.dodges[1]} times. ${BALANCE.critDodge ? 'A dodge only grazes your signature move' : "Your signature move can't be dodged"}: build energy and save it for them.`;
   if (!won && r.biggest[1] >= r.lost[0] * 0.4) return 'One huge hit decided it. Defending when the read says Strike or Signature takes the worst of it.';
   if (!won) return 'Close enough to blame the wheel. Levels, gear and talents all move the odds; so does following the read.';
   if (myReads >= theirReads + 2) return `You won ${myReads} matchups to their ${theirReads}. Reading them is how fights like this are won.`;

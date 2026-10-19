@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { buzz, dropToast, toasts } from '../state/game';
+import { buzz, dropToast, route, staleTab, toasts } from '../state/game';
+import { updateNow, updateReady } from '../state/update';
 import { sfx, uiTap } from './sound';
 import { cine, closeSheet, confirmReq, sheet, sheetLocked } from '../state/ui';
 import { Icon, type IconName } from './Icon';
@@ -10,8 +11,10 @@ export function installPressFeedback() {
   document.addEventListener(
     'pointerdown',
     (e) => {
-      const b = (e.target as Element | null)?.closest<HTMLElement>('.btn,.iconbtn,.card.tap,.tabbar button,.setrow,.seg button');
-      if (!b || (b as HTMLButtonElement).disabled) return;
+      const hit = (e.target as Element | null)?.closest<HTMLElement>('.btn,.iconbtn,.card.tap,.tabbar button,.setrow,.seg button,.fhit');
+      if (!hit || (hit as HTMLButtonElement).disabled) return;
+      // a tap area around a smaller button (the fight HUD's): the ripple goes on the button you see
+      const b = hit.classList.contains('fhit') ? ((hit.firstElementChild as HTMLElement | null) ?? hit) : hit;
       if (document.documentElement.dataset.motion !== 'reduced') {
         const r = b.getBoundingClientRect();
         const s = Math.max(r.width, r.height) * 2.2;
@@ -87,6 +90,25 @@ export function SheetHost() {
   );
 }
 
+/** The game was saved in another tab or window (G8): this copy is behind, so it reloads before anything else. */
+export function StaleHost() {
+  if (!staleTab.value) return null;
+  return (
+    <div class="scrim" style={{ alignItems: 'center', zIndex: 70 }}>
+      <section class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="stale-title">
+        <h2 id="stale-title">Open somewhere else</h2>
+        <p style={{ margin: 0, color: 'var(--muted)' }}>The game was saved from another tab or window. Reload to pick up from there: nothing played there is lost.</p>
+        <p style={{ margin: 0 }}>
+          <em>Two of you, one save. The wheel only answers to one.</em>
+        </p>
+        <button class="btn block" onClick={() => location.reload()}>
+          Reload
+        </button>
+      </section>
+    </div>
+  );
+}
+
 export function ConfirmHost() {
   const c = confirmReq.value;
   const yes = useRef<HTMLButtonElement>(null);
@@ -142,6 +164,15 @@ export function ToastHost() {
           )}
         </div>
       ))}
+      {/* a new version waits for a tap, offered where nothing is in progress (review G3) */}
+      {updateReady.value && ['title', 'hub'].includes((route.value as { screen: string }).screen) && (
+        <div class="toast act">
+          A new version is ready
+          <button class="toast-btn" onClick={updateNow}>
+            Update
+          </button>
+        </div>
+      )}
     </div>
   );
 }

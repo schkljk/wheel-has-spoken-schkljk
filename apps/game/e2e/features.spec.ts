@@ -46,7 +46,8 @@ test('F2: the daily duel, played, scored and kept', async ({ page }) => {
 test('F4: a level-up spins twice and you keep one', async ({ page }) => {
   test.setTimeout(120_000);
   const errors = watchErrors(page);
-  await open(page, careerSaveKV({ seed: 5, lvl: 4, fast: true, pendingLv: 1 }));
+  // its own dice: the level-up wheels land on slices rolled from them (G2), the same on every machine
+  await open(page, { ...careerSaveKV({ seed: 5, lvl: 4, fast: true, pendingLv: 1 }), 'whs:seed': 'second opinion' });
   // going to the fighter page spins waiting level-ups first
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('button', { name: 'Spin the level-up wheel' }).click();
@@ -55,7 +56,9 @@ test('F4: a level-up spins twice and you keep one', async ({ page }) => {
   await page.getByRole('button', { name: 'Spin for a second opinion' }).click();
   // two different slices: pick one; the same twice: it says so and moves on
   const keep = page.getByRole('heading', { name: 'Keep one' });
-  await expect(keep.or(page.locator('.tabbar'))).toBeVisible({ timeout: 30_000 });
+  // the same twice on Awakening or New weapon goes straight to its upgrade spin
+  const upgrade = page.getByRole('heading', { name: /^(Awakening|New weapon)$/ });
+  await expect(keep.or(page.locator('.tabbar')).or(upgrade)).toBeVisible({ timeout: 30_000 });
   if (await keep.count()) {
     await fits(page, 'keep one');
     await page.locator('.ch-opt').first().click();
@@ -111,7 +114,9 @@ test('F9: a ghost code copies out, pastes back in, and fights', async ({ page })
   await page.getByRole('tab', { name: 'More' }).click();
   await page.getByRole('button', { name: /Ghost codes/ }).click();
   const code = (await page.locator('.ghost-code').textContent())!.trim();
-  expect(code).toMatch(/^WHS1\./);
+  // the short code (H8)
+  expect(code).toMatch(/^WHS2\./);
+  expect(code.length).toBeLessThan(130);
   await fits(page, 'ghost codes');
   await page.getByLabel("A friend's ghost code").fill(`  ${code.slice(0, 30)}\n${code.slice(30)}  `);
   await expect(page.locator('.ghost-prev')).toBeVisible();
@@ -137,10 +142,10 @@ test('F11: the locker sells looks for gems, and they go on', async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
-test('F12: the Wheelborn trials open at level 34 and fight a remix', async ({ page }) => {
+test('F12: the Wheelborn trials open at level 32 and fight a remix', async ({ page }) => {
   test.setTimeout(180_000);
   const errors = watchErrors(page);
-  await open(page, careerSaveKV({ seed: 13, lvl: 34, fast: true }));
+  await open(page, careerSaveKV({ seed: 13, lvl: 32, fast: true }));
   await play(page);
   await page.getByRole('button', { name: /Wheelborn trials/ }).click();
   await expect(page.locator('.goal.trial')).toHaveCount(10);
@@ -164,6 +169,8 @@ test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', asy
   await expect(page.getByRole('heading', { name: 'Spin & Run' })).toBeVisible();
   await fits(page, 'run intro');
   await page.locator('.ch-opt').first().click();
+  // the runner's picks tick in, and the whole card folds out (H2)
+  await expect(page.locator('.run-pick').first()).toBeVisible();
   await page.locator('.cine-btn').click();
   await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
   await fits(page, 'run fight pick');
@@ -174,16 +181,27 @@ test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', asy
   expect(me).not.toBe('Test Hero');
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await page.getByRole('button', { name: /^Skip/ }).click();
-  await expect(page.locator('.fresult .big')).toHaveText(/Fight 1 of 9 won|Run over/, { timeout: 60_000 });
+  // a first loss is the run's second wind (review K3), not the end
+  await expect(page.locator('.fresult .big')).toHaveText(/Fight 1 of 9 won|Down, not out/, { timeout: 60_000 });
   const won = /won/.test((await page.locator('.fresult .big').textContent()) || '');
   await page.locator('.fresult > .btn').first().click();
+  if (!won) {
+    await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
+    await expect(page.getByText(/second wind used/)).toBeVisible();
+    await page.locator('.ch-opt').filter({ hasText: 'Walk away' }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+    // what the run paid, on a card of its own (H2)
+    await page.locator('.cine-btn').click();
+  }
   if (won) {
     await expect(page.getByRole('heading', { name: 'Pick a boon' })).toBeVisible();
     await fits(page, 'boons');
     await page.locator('.ch-opt').first().click();
     await expect(page.getByRole('heading', { name: /fight 2 of 9/ })).toBeVisible();
-    await page.locator('.ch-opt').nth(1).click();
+    await page.locator('.ch-opt').filter({ hasText: 'Walk away' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+    // what the run paid, on a card of its own (H2)
+    await page.locator('.cine-btn').click();
   }
   await page.locator('.tabbar').waitFor();
   await expect(page.getByRole('button', { name: /Spin & Run/ })).toContainText(won ? 'Best: 1 of 9' : 'Best: 0 of 9');

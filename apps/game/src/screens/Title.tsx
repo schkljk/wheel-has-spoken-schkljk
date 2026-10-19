@@ -2,7 +2,7 @@ import { fullName, deserFighter, randName, savedBuild } from '@whs/core';
 import { useState } from 'preact/hooks';
 import { continueGame, continueText, goHub } from '../flows/nav';
 import { G, enterSlot, go, loadProblems, save, store } from '../state/game';
-import { closeSheet, openSheet } from '../state/ui';
+import { closeSheet, confirm, openSheet } from '../state/ui';
 import { offerImport, describeSave } from '../sheets/Save';
 import { SettingsSheet } from '../sheets/Settings';
 import { RecordsSheet } from '../sheets/Records';
@@ -12,6 +12,7 @@ import { Icon } from '../ui/Icon';
 import { Sheet, rise } from '../ui/kit';
 import { careerLine, raceEmoji } from '../ui/fighter';
 import { WheelStage } from '../WheelStage';
+import { updateNow } from '../state/update';
 
 /** Name a new fighter (or roll a silly name), then spin every wheel. */
 function NewFighterSheet() {
@@ -52,6 +53,49 @@ function NewFighterSheet() {
 }
 
 export function Title() {
+  return (
+    <main class="screen title-screen">
+      <div class="title-hero" aria-hidden="true">
+        <WheelStage />
+      </div>
+      <h1 class="title-name">The Wheel Has Spoken</h1>
+      <div class="title-body scroll pad stack">
+        {store.locked ? (
+          // a save from a newer version: nothing to play until the game catches up, and nothing is written (G7)
+          <div class="card" role="alert" {...rise(0)}>
+            <b>Your save is from a newer version</b>
+            <p style={{ margin: '0.25rem 0 0.6rem' }}>
+              <small>This copy of the game is older than your save. Update it to keep playing: your save was not touched.</small>
+            </p>
+            <button class="btn block" onClick={updateNow}>
+              <Icon name="download" /> Update the game
+            </button>
+          </div>
+        ) : (
+          <TitleBody />
+        )}
+      </div>
+      {!store.locked && (
+        <div class="title-foot pad row">
+          <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
+            <Icon name="cup" /> <span class="ellipsis">Records</span>
+          </button>
+          <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex', from: 'title' })}>
+            <Icon name="card" /> <span class="ellipsis">Collection</span>
+          </button>
+          <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
+            <Icon name="book" />
+          </button>
+          <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
+            <Icon name="gear" />
+          </button>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function TitleBody() {
   const s = save.value;
   const slots = s.roster.slots;
   const hasFighters = slots.some(Boolean);
@@ -64,13 +108,25 @@ export function Title() {
   const build = savedBuild(G) as { f: { name: string }; idx: number; done: boolean } | null;
   const cur = s.roster.active != null && slots[s.roster.active] ? s.roster.active : null;
   const curName = cur != null ? (deserFighter(slots[cur]!.career)?.name ?? null) : null;
+  // only one build is kept at a time: a new one would throw the waiting one away, so ask first (review G4)
+  const spinNew = async () => {
+    if (
+      build &&
+      !(await confirm({
+        title: `Scrap ${build.f.name}?`,
+        body: build.done
+          ? `${build.f.name} is fully spun and waiting to start a career. A new fighter takes their place.`
+          : `${build.f.name}'s spins so far are kept for you. A new fighter throws them away.`,
+        yes: 'Scrap and spin new',
+        no: `Keep ${build.f.name}`,
+        danger: true,
+      }))
+    )
+      return;
+    openSheet(<NewFighterSheet />);
+  };
   return (
-    <main class="screen title-screen">
-      <div class="title-hero" aria-hidden="true">
-        <WheelStage />
-      </div>
-      <h1 class="title-name">The Wheel Has Spoken</h1>
-      <div class="title-body scroll pad stack">
+    <>
         {loadProblems.value.length > 0 && (
           <div class="card" role="status" {...rise(n++)}>
             <b>About your save</b>
@@ -119,7 +175,7 @@ export function Title() {
                   <b>Empty slot</b>
                   <small>Room for one more fighter</small>
                 </span>
-                <button class="btn ghost sm" onClick={() => openSheet(<NewFighterSheet />)}>
+                <button class="btn ghost sm" onClick={() => void spinNew()}>
                   Spin one
                 </button>
               </div>
@@ -142,21 +198,6 @@ export function Title() {
             </div>
           );
         })}
-      </div>
-      <div class="title-foot pad row">
-        <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
-          <Icon name="cup" /> <span class="ellipsis">Records</span>
-        </button>
-        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex', from: 'title' })}>
-          <Icon name="card" /> <span class="ellipsis">Collection</span>
-        </button>
-        <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
-          <Icon name="book" />
-        </button>
-        <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
-          <Icon name="gear" />
-        </button>
-      </div>
-    </main>
+    </>
   );
 }

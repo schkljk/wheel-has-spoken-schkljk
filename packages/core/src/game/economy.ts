@@ -13,7 +13,7 @@ import { addInjury, gainXP, injText, invalidate, markSeen, priceOf, syncArmory, 
 import { GEARK } from '../stats';
 import { ITEMK } from './lookups';
 import { storyEnsure, type Story } from './story';
-import { addCopy, bonusCopy, forgetPiece } from './forge';
+import { addCopy, bonusCopy, forgetPiece, settleCarry } from './forge';
 import { BALANCE } from '../data/balance';
 
 export interface WheelEntry<T> {
@@ -111,6 +111,7 @@ export function lootLand(g: Game, it: LootSlice): LootResult | null {
     }
     if (!F.gear![gear.slot]) {
       F.gear![gear.slot] = gear.k;
+      settleCarry(F, gear.k);
       invalidate(F);
       return { kind: 'gear', gear, then: 'equipped', bonus: bonusCopy(g) };
     }
@@ -138,6 +139,7 @@ export function gearChoose(g: Game, x: Gear, c: GearPick) {
   const F = g.F!;
   if (c === 'wear') {
     F.gear![x.slot] = x.k;
+    settleCarry(F, x.k);
     invalidate(F);
   } else if (c === 'salvage') {
     F.armory = F.armory!.filter((k) => k !== x.k);
@@ -149,6 +151,8 @@ export function wear(g: Game, k: string) {
   const F = g.F!;
   const x = GEARK[k]!;
   F.gear![x.slot] = x.k;
+  // upgrades waiting in the slot from a piece that was sold or salvaged land here (review K8)
+  settleCarry(F, x.k);
   invalidate(F);
 }
 export function takeOff(g: Game, k: string) {
@@ -249,8 +253,32 @@ export function buyDeal(g: Game, k: string): boolean {
 }
 export const PREMIUM = () => gearPool().filter((x) => x.r === 'premium');
 export const gemPrice = (k: string) => GEM_PRICE[k]!;
+/** The chapter whose clear opens the premium vault (review K1): the end of Act I. */
+export const PREMIUM_FROM_CH = 10;
+/** The premium piece a fighter owns, worn or in the armory (one at a time with the review's rule, K1). */
+export function premiumOwned(F: CareerFighter): Gear | null {
+  for (const k of [...Object.values(F.gear || {}), ...(F.armory || [])]) {
+    const x = k ? GEARK[k] : undefined;
+    if (x && x.r === 'premium') return x;
+  }
+  return null;
+}
+/**
+ * Why a premium piece can't be bought right now, in words, or null (review K1): the vault opens after Act I, and
+ * a fighter owns one premium piece at a time (selling it frees the spot).
+ */
+export function premiumLock(g: Game, k?: string): string | null {
+  if (!BALANCE.premiumGate) return null;
+  const F = g.F!;
+  const st = (F.storyMain ?? F.story) as Story | null | undefined;
+  if (!(st?.cleared || []).includes(PREMIUM_FROM_CH)) return `Opens after Act I: clear chapter ${PREMIUM_FROM_CH}`;
+  const own = premiumOwned(F);
+  if (own && own.k === k) return 'Already yours: wear it from the armory';
+  if (own) return `One premium piece per fighter: ${F.name} has the ${own.n}. Sell or salvage it to swap`;
+  return null;
+}
 export function buyPremium(g: Game, k: string, cur: 'gem' | 'coin'): boolean {
-  if (!baseOpen(g)) return false;
+  if (!baseOpen(g) || premiumLock(g, k)) return false;
   const x = GEARK[k]!;
   const p = g.save.profile;
   if (cur === 'gem') {
@@ -297,6 +325,7 @@ export function buyService(g: Game, k: Service): { gear?: Gear; choose?: boolean
   }
   if (!F.gear![x.slot]) {
     F.gear![x.slot] = x.k;
+    settleCarry(F, x.k);
     invalidate(F);
     return { gear: x };
   }
@@ -370,7 +399,7 @@ export function dailyLand(g: Game, it: (typeof DAILY)[number]): string {
       break;
     case 'scout':
       nx({ readB: 0.2 });
-      out = 'Reads 20% better next fight';
+      out = 'Reads two steps clearer next fight';
       break;
     default:
       out = 'Better luck tomorrow';
@@ -421,7 +450,7 @@ export function applyEvent(g: Game, it: (typeof EVENTS)[number]): string {
       break;
     case 'scout':
       nx({ readB: 0.2 });
-      out = 'Reads 20% better next fight';
+      out = 'Reads two steps clearer next fight';
       break;
     case 'relic':
       applyBonus(F, { k: 'relic', n: 'Cursed relic', e: '🗿' });

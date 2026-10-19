@@ -1,4 +1,4 @@
-import { GOALS, LEGACY, MASTERY, MASTERY_RW, COL_STEP, RANKS } from '../data/content/progression';
+import { ALL_GOALS as GOALS, LEGACY, MASTERY, MASTERY_RW, COL_STEP, RANKS } from '../data/content/progression';
 import { TIERS_T } from '../data/content/economy';
 import { ARENAS } from '../data/arenas';
 import { GEAR_SLOTS } from '../data/gear';
@@ -70,17 +70,31 @@ export function gainXP(g: Game, f: CareerFighter, n: number): number {
   return ups;
 }
 
-export function addInjury(g: Game, f: Fighter): Injury | null {
+/** A new injury. `story`: it came from a story loss (review K9: those are capped and heal when the chapter starts over). */
+export function addInjury(g: Game, f: Fighter, story = false): Injury | null {
   const have = new Set((f.inj || []).map((j) => j.k));
   const opts = INJURIES.filter((j) => !have.has(j.k));
   if (!opts.length) return null;
   const j = pick(g.rng, opts);
-  (f.inj || (f.inj = [])).push({ k: j.k, left: j.dur } as never);
+  (f.inj || (f.inj = [])).push((story ? { k: j.k, left: j.dur, st: 1 } : { k: j.k, left: j.dur }) as never);
   invalidate(f);
   return j;
 }
+/** Injuries from story losses the fighter has right now (K9). */
+export const storyInjuries = (f: Fighter) => ((f.inj || []) as { st?: number }[]).filter((j) => j.st).length;
+/** The most a fighter carries from story losses (review K9). */
+export const STORY_INJ_MAX = 2;
+/** Story-loss injuries go away (a chapter starting over, K9). Returns how many healed. */
+export function healStoryInjuries(f: Fighter): number {
+  const n = storyInjuries(f);
+  if (n) {
+    f.inj = ((f.inj || []) as { st?: number }[]).filter((j) => !j.st) as never;
+    invalidate(f);
+  }
+  return n;
+}
 export function tickInjuries(f: Fighter) {
-  f.inj = ((f.inj || []) as { k: string; left: number }[]).map((j) => ({ k: j.k, left: j.left - 1 })).filter((j) => j.left > 0);
+  f.inj = ((f.inj || []) as { k: string; left: number }[]).map((j) => ({ ...j, left: j.left - 1 })).filter((j) => j.left > 0);
   invalidate(f);
 }
 export const injText = (j: Injury) =>
@@ -286,12 +300,12 @@ export function codexCount(g: Game): { f: number; t: number } {
 }
 
 const ST = (g: Game, k: string) => g.save.profile.stats[k] || 0;
-export function track(g: Game, k: string, n = 1) {
+export function track(g: Game, k: string, n = 1, who?: Fighter) {
   const s = g.save.profile.stats;
   s[k] = (s[k] || 0) + n;
   checkGoals(g);
-  // the bounty board counts the same steps (review F5)
-  for (let i = 0; i < n; i++) bountyStep(g, k);
+  // the bounty board counts the same steps (review F5), for whoever fought
+  for (let i = 0; i < n; i++) bountyStep(g, k, who ?? g.F);
 }
 export function trackMax(g: Game, k: string, v: number) {
   const s = g.save.profile.stats;
@@ -343,12 +357,17 @@ for (const goal of GOALS) {
                               ? 'topLevel'
                               : /^build/.test(k)
                                 ? 'built'
-                                : null;
+                                : /^remix\d/.test(k)
+                                  ? 'remixes'
+                                  : null;
   GOAL_CUR[k] = stat
     ? (g) => ST(g, stat)
-    : k === 'mall'
-      ? (g) => Object.keys(g.save.profile.mastery).filter((a) => g.save.profile.mastery[a]! > 0).length
-      : maxMastery;
+    : /^syn\d/.test(k)
+      ? // synergies found, hidden ones included (L6)
+        (g) => (g.save.profile.seen.syn || []).length
+      : k === 'mall'
+        ? (g) => Object.keys(g.save.profile.mastery).filter((a) => g.save.profile.mastery[a]! > 0).length
+        : maxMastery;
 }
 export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 
@@ -356,7 +375,7 @@ export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 // percent (a level takes far longer than a win, and "Reach level 50" should never sit above "Win 10 fights")
 const GOAL_RATE: [RegExp, number][] = [
   [/^w\d/, 1.4], [/^e\d/, 7], [/^b\d/, 14], [/^ch\d/, 14], [/^cup/, 6], [/^world/, 40], [/^g\d/, 2], [/^dc/, 15],
-  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8],
+  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8], [/^syn/, 8], [/^remix/, 6],
 ];
 /** About how many fights a goal still needs. */
 export function goalEta(g: Game, k: string): number {

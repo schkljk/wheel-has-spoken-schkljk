@@ -3,10 +3,10 @@
 
 import { h, options, type VNode } from 'preact';
 import { emojiUrl } from '../art/emoji-px';
+import { EMOJI_RE } from '../art/emoji-draw';
 
-// an emoji: one that shows as a picture by default, or any pictograph asked to (U+FE0F), with skin tones and
-// zero-width-joined sequences (👨‍🍳, 🏴‍☠️). Plain symbols like ★ → ✓ stay text.
-const EMO = /(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\uFE0F)\p{Emoji_Modifier}?(?:\u200D(?:\p{Emoji_Presentation}|\p{Extended_Pictographic})\uFE0F?\p{Emoji_Modifier}?)*\uFE0F?/gu;
+// an emoji (art/emoji-draw.ts: pictographs, skin tones, joined sequences; plain symbols like ★ → ✓ stay text)
+const EMO = new RegExp(EMOJI_RE.source, 'gu');
 // a cheap first look: surrogate pairs and the symbol blocks
 const MAYBE = /[\u2190-\u2BFF\ud83c-\ud83e]/;
 // elements that only hold plain text

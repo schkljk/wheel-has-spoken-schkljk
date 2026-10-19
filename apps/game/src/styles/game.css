@@ -101,8 +101,10 @@
 }
 .landed {
   grid-area: landed;
-  min-height: 5.2rem;
-  max-height: 30dvh;
+  /* one height whatever landed, so the wheel above never changes size between spins (each change resized its
+     canvas: 36 times per fighter). Tall enough for a result with two notes (150 px, 170 at 320 px wide, over
+     three builds); anything longer scrolls inside */
+  height: min(10.5rem, 30dvh);
   overflow-y: auto;
   padding: 0 var(--gutter);
   text-align: center;
@@ -223,7 +225,7 @@
     grid-template-areas: 'wheel head' 'wheel landed' 'wheel foot';
   }
   .landed {
-    max-height: none;
+    height: auto;
   }
   .cat {
     font-size: 1.35rem;
@@ -286,6 +288,13 @@
 }
 .stamp.q0 {
   color: var(--muted);
+}
+/* the rating arrives from the worker a moment after the card */
+.stamp.rating {
+  opacity: 0.6;
+}
+.stamp.stamp-in {
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 .stamp.q1 {
   color: var(--q1);
@@ -856,14 +865,17 @@
 }
 .hv {
   display: flex;
+  /* on a narrow phone the energy goes under the HP instead of under the round panel (H9) */
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.3rem;
+  column-gap: 0.3rem;
   /* never below 13 px: these are the numbers the fight is about */
   font-size: clamp(0.8125rem, 2.8vw, 0.9rem);
   font-weight: 700;
   white-space: nowrap;
 }
 .hv .env {
+  margin-left: auto;
   pointer-events: auto;
 }
 /* the opponent's last moves, newest last */
@@ -956,6 +968,38 @@
   background: rgba(10, 7, 20, 0.55);
   align-self: start;
 }
+/* the menu and speed buttons look small but take a full thumb: the button is a 44 px tap area around the
+   visible part, with negative margins so the HUD's layout stays as it was */
+.fhit {
+  pointer-events: auto;
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  /* the menu's area grows upward and the speed button's downward, so the two never overlap */
+  place-items: end center;
+  margin: calc(2.3rem - 44px) calc((2.5rem - 44px) / 2) 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fhit.sp {
+  place-items: start center;
+  margin-top: 0;
+  margin-bottom: calc(1.9rem - 44px);
+}
+.fhit:focus-visible {
+  outline: none;
+}
+.fhit:focus-visible > * {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+.fhit:active > .fmenu {
+  transform: translateY(2px);
+}
 .fmenu {
   pointer-events: auto;
   width: 2.5rem;
@@ -966,6 +1010,8 @@
 }
 .fspeed {
   pointer-events: auto;
+  display: inline-grid;
+  place-items: center;
   min-width: 2.5rem;
   min-height: 1.9rem;
   padding: 0 0.4rem;
@@ -2275,6 +2321,10 @@
   color: var(--muted);
   font-size: 0.72rem;
 }
+.tt-node small.tt-warn {
+  color: var(--danger);
+  font-weight: 700;
+}
 .tt-node.has {
   /* learned: gold, with the branch color as a strip (a red frame read as an error) */
   border-color: var(--gold);
@@ -2501,6 +2551,12 @@
 .codex-body {
   padding-top: 0.6rem;
   padding-bottom: 1rem;
+}
+/* only the categories near the screen are laid out and painted (3,944 elements at once otherwise); each keeps
+   its real height once it has been shown, and starts from an estimate (set per category in Codex.tsx) */
+.cx-cat {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
 }
 .cx-cat h3 {
   display: flex;
@@ -3146,6 +3202,12 @@ img.pxi.chap {
 .scout[open] h3::after {
   content: ' ▾';
 }
+.scout.wait h3::after {
+  content: none;
+}
+.scout.wait small {
+  color: var(--muted);
+}
 .sr-list {
   list-style: none;
   margin: 0;
@@ -3253,14 +3315,16 @@ img.pxi.chap {
 .fchips::-webkit-scrollbar {
   display: none;
 }
-.fchip {
+/* the collection and armory filters only: a bare .fchip here used to shrink every chip in the game, the
+   fight's focus chips included, back to 34 px (review G9) */
+.fchips .fchip {
   flex: none;
   white-space: nowrap;
   cursor: pointer;
   min-height: 2.1rem;
   font-size: 0.82rem;
 }
-.fchip[aria-pressed='true'] {
+.fchips .fchip[aria-pressed='true'] {
   background: var(--ink);
   color: var(--bg);
   border-color: var(--ink);
@@ -3697,4 +3761,152 @@ html[data-plate='pl_wanted'] .hn.mine {
   height: 0.8rem;
   border-radius: 3px;
   border: 1px solid var(--edge);
+}
+
+/* ---------- a mode or feature that just opened (review H1) ---------- */
+.has-ribbon {
+  position: relative;
+  overflow: hidden;
+}
+.ribbon {
+  position: absolute;
+  top: 0.5rem;
+  right: -1.85rem;
+  z-index: 1;
+  padding: 0.12rem 2rem;
+  transform: rotate(35deg);
+  font: 800 0.62rem/1.2 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1a1426;
+  background: var(--gold);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  animation: ribbon-in 0.5s 0.25s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes ribbon-in {
+  from {
+    transform: rotate(35deg) translateY(-1.5rem);
+    opacity: 0;
+  }
+}
+
+/* ---------- the Play tab on a phone held sideways (review H9): the story card beside everything else ---------- */
+.play-rest {
+  display: contents;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .play-stack {
+    max-width: 60rem;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+  .play-stack > .story-card {
+    position: sticky;
+    top: 0;
+  }
+  .play-rest {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    align-content: start;
+  }
+}
+.ng-d {
+  font-weight: 600;
+  color: var(--muted);
+}
+.mentor-line {
+  color: var(--gold);
+}
+/* the bounty board (H5, L1): who fits it, and a job taken */
+.bounty .fits {
+  color: var(--good, #7be38b);
+  font-weight: 700;
+}
+.bounty .jobline {
+  color: var(--gold);
+}
+.b-acts {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: end;
+}
+
+/* ---------- the Locker's preview (review H7): a wheel wearing it, its confetti, your name on its plate ---------- */
+.lk-prev {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 3rem;
+}
+.lk-prev .tw-small {
+  position: relative;
+  width: min(9.5rem, 40vw);
+  height: min(9.5rem, 40vw);
+}
+.tw-charm {
+  position: absolute;
+  left: 55%;
+  top: 12%;
+  font-size: 11cqmin;
+  line-height: 1;
+  transform-origin: 30% 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  animation: tw-sway 2.6s ease-in-out infinite alternate;
+}
+@keyframes tw-sway {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+.lk-plate {
+  font: 800 1.15rem/1.3 var(--display);
+  background: var(--plate-bg);
+  color: var(--plate-ink);
+  border-radius: 6px;
+  padding: 0 0.35rem;
+  box-shadow: 0 2px 0 var(--edge);
+  width: fit-content;
+  max-width: 100%;
+}
+.lk-plate[data-plate='pl_wanted'] {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+
+/* Spin & Run's runner (review H2): the picks tick in, the whole card folds out */
+.run-picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 3.6rem;
+  max-width: 24rem;
+}
+.run-pick {
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.run-card {
+  width: 100%;
+  text-align: left;
+}
+.run-card > summary {
+  cursor: pointer;
+  text-align: center;
+  font-weight: 700;
+  color: var(--gold);
+  min-height: 2.75rem;
+  display: grid;
+  place-items: center;
+}
+.cine-card .gains {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
 }

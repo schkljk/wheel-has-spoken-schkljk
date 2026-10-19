@@ -1,4 +1,5 @@
-import { Texture } from 'pixi.js';
+import type { Texture } from 'pixi.js';
+import { canvasTexture } from './tex';
 import { iconPixels } from '../ui/icon-pixels';
 
 const cache = new Map<string, Texture>();
@@ -21,8 +22,7 @@ export function iconTexture(name: string): Texture {
     });
     x.putImageData(id, 0, 0);
   }
-  t = Texture.from(c);
-  t.source.scaleMode = 'nearest';
+  t = canvasTexture(c);
   cache.set(name, t);
   return t;
 }

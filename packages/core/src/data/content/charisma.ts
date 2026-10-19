@@ -19,7 +19,7 @@ export const EVENT_TALK: Record<string, TalkOption> = {
   trainer: { need: 50, l: 'Ask for the secret technique', s: '+1 strength and +1 speed for good, lose 30% HP', done: 'He teaches you the move. You will never stop feeling it in your knees.' },
   gambler: { need: 40, l: 'Stare them down, then bet 10', s: '10 coins: a 70% chance to win 20', cost: 10, done: '' },
   shrine: { need: 30, l: 'Pray, but charmingly', s: 'Heal 40% HP', done: 'The shrine glows a little brighter for you. Flattery works on deities too.' },
-  spy: { need: 45, l: 'Get the intel for free', s: 'Read your next opponent 25% better, no charge', done: 'They tell you everything. They also tell you about their divorce.' },
+  spy: { need: 45, l: 'Get the intel for free', s: 'Read your next opponent two and a half steps clearer, no charge', done: 'They tell you everything. They also tell you about their divorce.' },
   fans: { need: 30, l: 'Work the crowd', s: '+12 coins and +5 fame, no HP lost', done: 'You wave, you pose, you leave. They will talk about this for weeks.' },
   ambush: { need: 60, l: 'Talk your way out', s: '+2 fame and no fight', done: 'They came for a fight. They leave with your autograph.' },
   smith: { need: 40, l: 'Haggle', s: '6 coins: +1 weapon mastery for good', cost: 6, done: 'Half price, full sharpness. The smith is still not sure how that happened.' },

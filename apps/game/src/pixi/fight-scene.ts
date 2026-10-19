@@ -61,6 +61,8 @@ export class FightScene {
   readonly fx = new Container();
   private tint = new Graphics();
   private vignette = new Graphics();
+  /** a soft light added over the backdrop and floor (not the fighters): night arenas were too dark on a phone */
+  private light = new Graphics();
   /** phase two: the boss's light over the backdrop (the fighters stay in their own colors) */
   private phaseGlow = new Graphics();
   /** set when the opponent is a boss: its phase-two light and music tempo */
@@ -100,7 +102,8 @@ export class FightScene {
     this.archs = [looks[0].arch || '', looks[1].arch || ''];
     this.F = [new FighterView(looks[0], 0, { mythic: opts.mythic }), new FighterView(looks[1], 1)];
     this.fighters.addChild(this.F[0], this.F[1]);
-    this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.phaseGlow, this.fighters, this.fx, this.tint, this.vignette);
+    this.world.addChild(this.sky, this.scenery, this.ambient, this.floor, this.light, this.phaseGlow, this.fighters, this.fx, this.tint, this.vignette);
+    this.light.blendMode = 'add';
     this.phaseGlow.blendMode = 'multiply';
     this.phaseGlow.alpha = 0;
     this.wheel.visible = false;
@@ -122,9 +125,15 @@ export class FightScene {
   /** Lays the scene out for the current screen size. Fighters only move when the screen size changes. */
   layout(W: number, H: number) {
     const d = (this.dims = fightDims(W, H));
-    const sky = this.arena?.sky || '#2A2342';
-    const floorCol = this.arena?.floor || '#2A2342';
+    const sky = lift(this.arena?.sky || '#2A2342');
+    const floorCol = lift(this.arena?.floor || '#2A2342');
     this.sky.clear().rect(0, 0, W, d.groundY).fill({ color: sky });
+    this.light
+      .clear()
+      .rect(0, 0, W, d.groundY)
+      .fill({ color: 0xffffff, alpha: 0.05 })
+      .rect(0, d.groundY, W, H - d.groundY)
+      .fill({ color: 0xffffff, alpha: 0.03 });
     // scenery above the horizon: the legacy 400 x 240 backdrop, bottom-centered, covering the width
     for (const c of this.scenery.removeChildren()) c.destroy();
     const far = chapterSVG(this.chapter);
@@ -150,12 +159,12 @@ export class FightScene {
     const vg = new FillGradient({
       type: 'radial',
       center: { x: 0.5, y: 0.45 },
-      innerRadius: 0.33,
+      innerRadius: 0.42,
       outerCenter: { x: 0.5, y: 0.45 },
-      outerRadius: 0.75,
+      outerRadius: 0.8,
       colorStops: [
         { offset: 0, color: 'rgba(0,0,0,0)' },
-        { offset: 1, color: 'rgba(0,0,0,0.42)' },
+        { offset: 1, color: 'rgba(0,0,0,0.24)' },
       ],
       textureSpace: 'local',
     });
@@ -179,7 +188,7 @@ export class FightScene {
     old.destroy({ children: true });
     if (this.dims) this.layout(this.dims.W, this.dims.H);
     if (this.reduced) return;
-    const layers = [this.sky, this.scenery, this.ambient, this.floor];
+    const layers = [this.sky, this.scenery, this.ambient, this.floor, this.light];
     for (const l of layers) l.alpha = 0;
     void this.tw.run(420 * this.sp, (k) => layers.forEach((l) => (l.alpha = k)), ease.out);
   }
@@ -400,9 +409,12 @@ export class FightScene {
    * A combo or synergy going off: its name and what it did, over the fighter it belongs to, with its own
    * sound. Shown at the moment of impact for hits.
    */
+  /** where the HUD really ends, measured from the page (taller when a narrow phone wraps its numbers: H9) */
+  hudBottom = 0;
   showProc(p: Proc) {
     this.procBox?.destroy({ children: true });
     const d = this.dims;
+    const hud = Math.max(d.hud, this.hudBottom);
     const mine = p.side === 0;
     const fill = p.kind === 'combo' ? (TINT_COL[COMBOS[p.k]?.tint ?? ''] ?? 0xffd166) : p.anti ? 0xc9c1dc : mine ? 0xffd166 : 0xff9db0;
     const box = new Container();
@@ -428,7 +440,7 @@ export class FightScene {
     const half = Math.max(name.width, sub.width) / 2 + 8;
     const x = d.fcx + (mine ? -1 : 1) * d.span * 0.55;
     const heads = d.groundY - d.chH;
-    box.position.set(clamp(x, half, Math.max(half, d.stageW - half)), Math.max(d.hud + name.height + 4, d.hud + (heads - d.hud) * 0.55));
+    box.position.set(clamp(x, half, Math.max(half, d.stageW - half)), Math.max(hud + name.height + 4, hud + (heads - hud) * 0.55));
     this.top.addChild(box);
     this.procBox = box;
     procSound(p.k);
@@ -961,6 +973,18 @@ export class FightScene {
     this.tw.clear();
     for (const g of this.grads) g.destroy();
   }
+}
+
+/**
+ * A dark arena color, lifted toward white: the darker it is, the more (a night sky at about 10% brightness comes
+ * up to about 20%, a daytime sky barely moves). The arena tables stay as they are.
+ */
+function lift(hex: string): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const c = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const l = (0.2126 * c[0]! + 0.7152 * c[1]! + 0.0722 * c[2]!) / 255;
+  const k = 0.14 * Math.max(0, 1 - l / 0.6);
+  return '#' + c.map((v) => Math.round(v + (255 - v) * k).toString(16).padStart(2, '0')).join('');
 }
 
 /** The element a power's hits are tinted with (as the engine's tintOf picks it). */

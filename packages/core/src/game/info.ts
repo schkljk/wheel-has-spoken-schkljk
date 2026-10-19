@@ -3,16 +3,18 @@ import { ARENAS } from '../data/arenas';
 import { SEASONAL_ARENAS } from '../data/content/seasonal';
 import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc';
 import { RARITY } from '../data/gear';
+import { readSteps } from '../data/wording';
 import { SYN_SETS } from '../data/content/gear-sets';
 import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, PILL_NOW, QN, RULES, RULES_MORE, RULES_NOW, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, STAT_NOW, TAGN, WHEELN } from '../data/content/text';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, PILL_NOW, QN, RULES, RULES_MORE, RULES_NOW, RULES_R2, RULES_R2_FLAG, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, STAT_NOW, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { BALANCE } from '../data/balance';
 import { riddleOf } from '../data/content/riddles';
 import { findMove } from '../kits';
+import { R2_TUNE } from '../battle';
 import { GEAR_ALL, STATLBL } from '../stats';
 import type { StatMods, TraitFx } from '../types';
 import { TIERK } from './lookups';
@@ -62,7 +64,7 @@ export function fxLines(fx?: (TraitFx & Record<string, unknown>) | null): string
   if (n('guardX')) L.push(`Guard blocks ${Math.round((1 - n('guardX')) * 100)}% instead of 60%`);
   if (n('guardAdd')) L.push(`Guard blocks ${pctS(n('guardAdd'))} less`);
   if (n('guardEn')) L.push(`Guarding gives +${n('guardEn')} extra energy`);
-  if (n('readB')) L.push(`Reads opponents ${pctS(n('readB'))} better`);
+  if (n('readB')) L.push(`Reads opponents ${readSteps(n('readB'))} clearer`);
   if (n('counterB')) L.push(`+${pctS(n('counterB'))} counter chance when guarding`);
   if (n('revive')) L.push(`Gets back up once with ${n('revive')} HP`);
   const pet = fx.pet as { e: string; n: string } | undefined;
@@ -195,7 +197,8 @@ export function infoFor(key: string): Info | null {
   if (kind === 'rule') {
     // the review's rules (E1-E4) have pages of their own while they are on
     const off = (a === 'moves' && !BALANCE.pureFocus) || (a === 'energy' && !BALANCE.statRoles) || (a === 'club' && !BALANCE.clubInsider);
-    const r = (!off && RULES_NOW[a]) || RULES[a] || RULES_MORE[a];
+    const r2 = RULES_R2_FLAG[a];
+    const r = (r2 && BALANCE[r2] && RULES_R2[a]) || (!off && RULES_NOW[a]) || RULES[a] || RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }
   if (kind === 'stat') {
@@ -272,7 +275,7 @@ export function infoFor(key: string): Info | null {
     lines.push(`Weapon level ${l > 0 ? '+' : ''}${l}`);
     if ((it.t as string[] | undefined)?.length) lines.push(`Counts as ${tagList(it.t as string[]).join(' and ')}`);
     if (it.ranged) lines.push('Ranged: 10% harder to dodge');
-    if (it.uno) lines.push('Once per fight, reflects a big hit back at the attacker');
+    if (it.uno) lines.push(BALANCE.pickTune ? `Once per fight, sends ${Math.round(R2_TUNE.uno * 100)}% of a big hit back at the attacker` : 'Once per fight, reflects a big hit back at the attacker');
   }
   if (a === 'power')
     lines.push(

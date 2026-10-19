@@ -14,6 +14,26 @@ import type { Arena, BuffKey, Fighter, Move, Pet, RoundMod, Stats, StatusKey } f
 // engine HP x the level scale LS, and damage between fighters is scaled by LS(att)/LS(def).
 
 export const POW_COST = 25;
+/**
+ * Review round 2's fight tuning, read while its switches are on (`critDodge` K7, `pickTune` K10). Kept as numbers
+ * so the balance sims can try others.
+ */
+export const R2_TUNE = {
+  /** a dodge can't escape a signature, but it grazes it: the hit lands at this share (K7) */
+  graze: 0.5,
+  /** a crit that lands on a guard ignores this share of what the guard would block (K7) */
+  critGuard: 0.5,
+  /** the quick jab's damage, on every wheel and in the AI's hands (K10; 0.75 before) */
+  jab: 0.9,
+  /** what the Uno reverse card sends back, in shares of the hit (K10; all of it before) */
+  uno: 0.6,
+  /** Gambler's halo boots: the signature wheel's Whiff and Jackpot weights are multiplied by these (K1) */
+  halo: [0.25, 4] as [number, number],
+  /** the set bonus whose first strike of a fight can't be dodged or guarded (K7) */
+  ambush: 'set_shadow4',
+  /** Regeneration with the heal rules: a share of the HP you're missing each round, base and per power mastery (K10) */
+  regen: [0.07, 0.007] as [number, number],
+};
 const TINTS = ['fire', 'ice', 'lightning', 'water', 'shadow', 'light', 'poison', 'gravity', 'mind', 'wind', 'plant', 'sonic'];
 const tintOf = (tags: readonly string[]) => tags.find((t) => TINTS.includes(t)) || '';
 const DODGE = ['{b} dodges', '{b} sidesteps it', '{a} whiffs completely', '{b} is just not there anymore'];
@@ -68,6 +88,8 @@ export interface Side {
   salt?: number;
   /** revives used this fight (one at most with the review's heal rules) */
   revs?: number;
+  /** the Shadow set's ambush is used (review K7) */
+  amb?: number;
   snacked: number;
   weakShown: number;
   phased?: number;
@@ -240,7 +262,7 @@ export function aiFlavor(rng: Rng, me: Side, c: Move): [Move, RoundMod] {
     const h = 0.15 + me.s.str * 0.012 + (P?.heavy || 0);
     const j = 0.12 + me.s.spd * 0.012;
     if (r < h) return ['strike', { dmgX: 1.45, slow: 1, label: 'Heavy blow' }];
-    if (r < h + j) return ['strike', { dmgX: 0.75, first: 1, label: 'Quick jab' }];
+    if (r < h + j) return ['strike', { dmgX: BALANCE.pickTune ? R2_TUNE.jab : 0.75, first: 1, label: 'Quick jab' }];
   }
   if (c === 'guard') {
     if (r < 0.12 + me.s.iq * 0.012 + (P?.counter || 0)) return ['guard', { counterX: 1.7, label: 'Counter' }];
@@ -261,7 +283,13 @@ export function beatsMove(a: Move, b: Move): boolean {
 /** Signature wheel weights: mastery tilts it toward the big slices. */
 export function ultWeights(x: Side): number[] {
   const pm = Math.max(x.s.pm, x.s.wm);
-  return [Math.max(0.35, 2 - pm * 0.12), 3, 2.4 + pm * 0.1, 1 + pm * 0.08, 0.3 + pm * 0.04];
+  const w = [Math.max(0.35, 2 - pm * 0.12), 3, 2.4 + pm * 0.1, 1 + pm * 0.08, 0.3 + pm * 0.04];
+  // Gambler's halo boots (review K1): the wheel leans toward the jackpot, and away from the whiff
+  if (BALANCE.premiumGate && x.f.gear?.boots === 'haloboots') {
+    w[0]! *= R2_TUNE.halo[0];
+    w[4]! *= R2_TUNE.halo[1];
+  }
+  return w;
 }
 export function ultRoll(rng: Rng, x: Side) {
   const w = ultWeights(x);
@@ -418,7 +446,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
 
   type Kind = 'strike' | 'power' | 'ult' | Move;
   /** One hit's damage. `fix` (a base roll, 0.8 to 1.2) makes it a preview: no draws, no crit, nothing used up. */
-  function calc(att: Side, def: Side, off: number, tags: readonly string[], kind: Kind, fix?: number) {
+  function calc(att: Side, def: Side, off: number, tags: readonly string[], kind: Kind, fix?: number, amb = false) {
     // a signature is defended like the attack it is made of (the review's stat roles, E3)
     const ultK = kind === 'ult' && BALANCE.statRoles ? (powOff(att) > physOff(att) ? 'power' : 'strike') : kind;
     let defL = ultK === 'strike' ? strikeDef(def) : ultK === 'power' ? powerDef(def) : def.s.dur;
@@ -525,8 +553,10 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     if (dc === 'cooked') mult *= 1.1;
     mult *= clamp(1 - soft(def.tr.dr, ...SOFT_CAP.dr), 0.3, 1.5);
     if (def.powOn && def.f.power.k === 'ward') mult *= 0.8;
-    if (def.guard && !(att.rm && att.rm.pierce)) {
-      mult *= kind === 'strike' ? gxOf(def) * 0.5 : gxOf(def);
+    if (def.guard && !(att.rm && att.rm.pierce) && !amb) {
+      const gx = kind === 'strike' ? gxOf(def) * 0.5 : gxOf(def);
+      // a crit finds the gap in a guard (review K7): it ignores part of what the guard blocks
+      mult *= BALANCE.critDodge && note.includes('crit') ? 1 - (1 - gx) * (1 - R2_TUNE.critGuard) : gx;
       note.push('guard');
     }
     return { d: d * mult, note, combo };
@@ -579,20 +609,31 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
         return;
       }
     }
-    if (!ult) {
-      const ill = def.powOn && def.f.power.k === 'illusion';
+    const ill = def.powOn && def.f.power.k === 'illusion';
+    const dodgeP = () => {
       const dgBase =
         clamp(0.04 + (def.s.spd - att.s.spd) * 0.05, 0, 0.35) + (def.f.arch.k === 'trickster' ? 0.15 : 0) + (def.powOn && def.f.power.k === 'tele' ? 0.12 : 0) +
         (def.powOn && def.f.power.k === 'luck' ? 0.08 : 0) + (ill ? 0.15 : 0) + def.tr.dodgeB + (AR.dodgeB || 0) - (ak === 'ranged' ? 0.1 : 0);
       // a chosen sidestep is a decision, not stacking: it adds on top of the taper
       const dg = soft(dgBase, ...SOFT_CAP.dodge) + (def.sidestep || 0);
-      if (!(att.rm && att.rm.nododge) && rng() < clamp(dg, 0, def.sidestep ? 0.85 : 0.6)) {
+      return clamp(dg, 0, def.sidestep ? 0.85 : 0.6);
+    };
+    // the Shadow set's ambush (review K7): the first strike of the fight can't be dodged or guarded
+    const amb = BALANCE.critDodge && kind === 'strike' && !extra && att.syn.has(R2_TUNE.ambush) && !att.amb;
+    if (amb) att.amb = 1;
+    let graze = false;
+    if (!ult) {
+      if (!(att.rm && att.rm.nododge) && !amb && rng() < dodgeP()) {
         def.st.dodges++;
         // the narration line is picked even when nobody reads it: it draws from the RNG
         const line = ill && rng() < 0.6 ? `🪞 ${N(att)} attacks an illusion of ${N(def)}` : fill(pick(rng, DODGE), att, def);
         log(line, 'miss', null, [], { t: 'miss', by: att.i, to: def.i, fx, kind: ak });
         return;
       }
+    } else if (BALANCE.critDodge && !(att.rm && att.rm.nododge) && rng() < dodgeP()) {
+      // a signature can't be dodged, but a dodge grazes it (review K7)
+      graze = true;
+      def.st.dodges++;
     }
     let breaking = false;
     if (pw && def.guard) {
@@ -600,8 +641,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       def.guard = 0;
       def.en = Math.max(0, def.en - 25);
     }
-    const r = calc(att, def, off, tags, kind);
-    let d = r.d;
+    const r = calc(att, def, off, tags, kind, undefined, amb);
+    let d = r.d * (graze ? R2_TUNE.graze : 1);
     const note = r.note;
     if (!ult) {
       if (kind === 'strike' && def.move === 'power') {
@@ -620,18 +661,31 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     }
     if (!ult && def.f.weapon.uno && !def.uno && d >= 8) {
       def.uno = 1;
-      hurt(att, d);
-      log(`🃏 ${N(def)} plays the Uno reverse card. ${N(att)} eats their own attack`, 'special', d, [], { t: 'uno', by: def.i, to: att.i, fx: '🃏' });
+      // with the review's retune (K10) the card sends most of it back, and the rest still lands
+      const back = BALANCE.pickTune ? d * R2_TUNE.uno : d;
+      hurt(att, back);
+      log(`🃏 ${N(def)} plays the Uno reverse card. ${N(att)} eats their own attack`, 'special', back, [], { t: 'uno', by: def.i, to: att.i, fx: '🃏' });
       checkDown(att);
-      return;
+      if (!BALANCE.pickTune || !both()) return;
+      d -= back;
     }
     hurt(def, d);
     gain(def, 8);
+    // lifesteal (review K10): a drain under 1 is a share of the damage (Life drain, vampire gear); legacy read it as energy
+    if (BALANCE.pickTune && att.tr.drain > 0 && att.tr.drain < 1 && alive(att)) {
+      const h = Math.min(att.maxHp - att.hp, d * att.tr.drain);
+      if (h > 0) {
+        att.hp += h;
+        if (h >= 3) log(`🩸 ${N(att)} drinks ${real(att, h)} HP back`, 'heal', h, [], { t: 'heal', on: att.i });
+      }
+    }
     if (r.combo) att.st.combos++;
     const pills: string[] = [];
     for (const p of ['crit', 'weak', 'guard', 'broke', 'interrupted', 'caught']) if (note.includes(p) && !(p === 'guard' && breaking)) pills.push(p);
     if (r.combo) pills.push('combo:' + r.combo);
     let line = ult ? `💥 ${N(att)} unleashes ${ULTS[att.f.arch.k]} on ${N(def)}` : fill(tpl, att, def) + (extra ? ' again' : '');
+    if (amb) line = `🥷 ${N(att)} strikes from the shadows. ` + line;
+    if (graze) line += `. ${N(def)} rolls with it: half damage`;
     if (note.includes('reality')) line += '. Reality bends';
     if (note.includes('comedy')) line += '. The bit kills';
     if (note.includes('fizzle')) line += '. The water puts it out';
@@ -733,7 +787,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       }
       const vn = att.tr.venom + (e === 'venom' ? 3 : 0);
       if (vn && !isImmune(def)) def.poison = Math.min(20, def.poison + vn);
-      if (att.tr.drain) {
+      if (att.tr.drain && !(BALANCE.pickTune && att.tr.drain < 1)) {
         const s = Math.min(def.en, att.tr.drain);
         def.en -= s;
         gain(att, s / 2);
@@ -1204,7 +1258,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
             if (!both()) break;
           }
           // with the review's heal rules (E4) Regeneration heals a share of what's missing, and every heal fades after round 6
-          const rgPow = me.powOn && me.f.power.k === 'regen' ? (BALANCE.healRules ? (me.maxHp - me.hp) * (0.1 + me.s.pm * 0.01) : 3 + me.s.pm * 0.7) : 0;
+          const [rg0, rgPm] = BALANCE.pickTune ? R2_TUNE.regen : [0.1, 0.01];
+          const rgPow = me.powOn && me.f.power.k === 'regen' ? (BALANCE.healRules ? (me.maxHp - me.hp) * (rg0 + me.s.pm * rgPm) : 3 + me.s.pm * 0.7) : 0;
           const rg = (rgPow + me.tr.regen + (me.f.chaos.k === 'crowd' ? 3 : 0)) * healFade(bt.round);
           if (me.tr.enRegen) gain(me, me.tr.enRegen);
           if (me.tr.snack && !me.snacked && me.hp / me.maxHp < 0.3) {

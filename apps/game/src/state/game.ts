@@ -1,8 +1,10 @@
 import { computed, effect, signal } from '@preact/signals';
 import {
   SaveStore,
+  StaleSaveError,
   StorageFullError,
   clockAt,
+  forwardDay,
   ctxOf,
   hashStr,
   loadCareer,
@@ -19,6 +21,11 @@ import { keepSave, kv, persistent } from './storage';
 
 export const store = new SaveStore(kv);
 const first = store.load();
+/** Another tab or window has saved since this one loaded (G8): this one reloads before it plays on. */
+export const staleTab = signal(false);
+addEventListener('storage', (e) => {
+  if (e.key === 'whs:meta' && store.stale()) staleTab.value = true;
+});
 
 /** The save as screens see it (a fresh snapshot after every change). */
 export const save = signal<SaveData>(first.save);
@@ -44,17 +51,34 @@ const pinned = (() => {
 })();
 const today = () => (pinned ? new Date(pinned) : new Date());
 export const G: Game = { save: structuredClone(first.save), F: null, rng: mulberry32(seed()), clock: clockAt(today()), pool: null, notes: [] };
+// the game's day never goes back (G12)
+const now = () => clockAt(forwardDay(G, today()));
+G.clock = now();
 /** Bumps whenever the live fighter changes, so screens that show it update. */
 export const fver = signal(0);
 
-/** Writes the game and publishes a new snapshot. */
-export function sync(): void {
-  persistFighter(G);
-  if (G.save.roster.slots.some(Boolean)) keepSave();
+/** Bumps with every change the app makes to the game (see ensure). */
+let ver = 0;
+let writing = false;
+function write() {
+  writing = false;
   try {
     store.write(G.save);
   } catch (e) {
-    toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
+    if (e instanceof StaleSaveError) staleTab.value = true;
+    else toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
+  }
+}
+/** Writes the game and publishes a new snapshot. */
+export function sync(): void {
+  ver++;
+  persistFighter(G);
+  if (G.save.roster.slots.some(Boolean)) keepSave();
+  // the changes of one task are written once, at its end, before anything else can run (a fighter build wrote
+  // the profile twice per wheel): nothing is left unwritten that writing every change would have kept
+  if (!writing) {
+    writing = true;
+    queueMicrotask(write);
   }
   save.value = structuredClone(G.save);
   fver.value++;
@@ -62,9 +86,22 @@ export function sync(): void {
   flushNotes();
 }
 
+/**
+ * Records something only the save needs to know, and writes it at the end of the task like any change, without
+ * a new snapshot for the screens: a fight keeps its record every round (G2), and nothing on screen shows it.
+ */
+export function record(fn: (g: Game) => void): void {
+  fn(G);
+  ver++;
+  if (!writing) {
+    writing = true;
+    queueMicrotask(write);
+  }
+}
+
 /** Runs a rule against the live game, then saves. */
 export function act<T>(fn: (g: Game) => T): T {
-  G.clock = clockAt(today());
+  G.clock = now();
   const r = fn(G);
   sync();
   return r;
@@ -72,13 +109,19 @@ export function act<T>(fn: (g: Game) => T): T {
 
 /**
  * Runs a rule while a screen renders (e.g. today's offers or deal get rolled the first time they are shown).
- * Saves afterwards only if something changed, so rendering never loops.
+ * Saves afterwards only if something changed, so rendering never loops. Finding out means serializing the whole
+ * save before and after, so a rule given a `key` that changed nothing is trusted to change nothing again until
+ * the game changes (the Play, Goals and Fighter tabs did it on every render).
  */
-export function ensure<T>(fn: (g: Game) => T): T {
+const clean = new Map<string, { ver: number; save: SaveData; F: Game['F'] }>();
+export function ensure<T>(fn: (g: Game) => T, key?: string): T {
+  const c = key ? clean.get(key) : undefined;
+  if (c && c.ver === ver && c.save === G.save && c.F === G.F) return fn(G);
   const snap = () => JSON.stringify(G.save) + JSON.stringify(G.F ? serFighter(G.F) : null);
   const before = snap();
   const r = fn(G);
   if (snap() !== before) queueMicrotask(sync);
+  else if (key) clean.set(key, { ver, save: G.save, F: G.F });
   return r;
 }
 
@@ -89,12 +132,20 @@ export function commit(change: (s: SaveData) => void): void {
 }
 
 /** Replaces the whole save (import, restore, erase), with a backup of the current one first. */
-export function replaceSave(next: SaveData, reason: string): void {
-  store.replace(G.save, next, reason);
+export function replaceSave(next: SaveData, reason: string): boolean {
+  try {
+    store.replace(G.save, next, reason);
+  } catch (e) {
+    // too big for this device: nothing changed, the current save is still the one in use (G14)
+    toast(e instanceof StorageFullError ? 'That save is too big for the storage left on this device. Nothing was changed' : 'Could not load that save. Nothing was changed');
+    return false;
+  }
   loadSave(next);
+  return true;
 }
 /** Starts over from a save that is already stored. */
 export function loadSave(next: SaveData): void {
+  ver++;
   G.save = structuredClone(next);
   G.F = null;
   save.value = next;
@@ -184,7 +235,11 @@ function watchStats() {
   const prev = lastNs;
   lastNs = { cid: F.cid, n };
   if (!prev || prev.cid !== F.cid) return;
-  const rows = WATCH.filter((k) => n[k] != null && prev.n[k] != null && n[k] !== prev.n[k]).map((k) => ({ k, a: prev.n[k] as number, b: n[k] as number }));
+  popStats(prev.n, n);
+}
+/** The old → new popup for any fighter's numbers (a Spin & Run runner, a mentor's lesson: G15). */
+export function popStats(a: NumStats, b: NumStats) {
+  const rows = WATCH.filter((k) => b[k] != null && a[k] != null && b[k] !== a[k]).map((k) => ({ k, a: a[k] as number, b: b[k] as number }));
   if (rows.length) statPop.value = { id: Date.now(), rows };
 }
 

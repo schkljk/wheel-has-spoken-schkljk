@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { AUTO_BACKUP_EVERY, KEYS, LEGACY_STORE_KEY, SaveStore, StorageFullError, exportFileName, exportText, migrate, newSave, type KV } from '../src';
+import { AUTO_BACKUP_EVERY, KEYS, LEGACY_STORE_KEY, SaveStore, StaleSaveError, StorageFullError, exportFileName, exportText, migrate, newSave, type KV } from '../src';
 
 /** In-memory localStorage with an optional size limit, counting writes per key. */
 class MemKV implements KV {
@@ -167,5 +167,81 @@ describe('save store', () => {
     const s = imported();
     expect(migrate(exportText(s), 1000)).toEqual(s);
     expect(exportFileName(new Date(2026, 9, 6))).toBe('wheel-has-spoken-2026-10-06.json');
+  });
+  it('never writes over a save from a newer version (G7)', () => {
+    const kv = new MemKV();
+    const old = new SaveStore(kv, () => 1000);
+    old.write(imported());
+    // a newer version of the game wrote this save
+    const meta = JSON.parse(kv.getItem(KEYS.meta)!) as { version: number };
+    kv.setItem(KEYS.meta, JSON.stringify({ ...meta, version: meta.version + 1 }));
+    const before = new Map(kv.m);
+    const store = new SaveStore(kv, () => 9e12);
+    const r = store.load();
+    expect(r.source).toBe('newer');
+    expect(store.locked).toBe(true);
+    expect(r.problems.join(' ')).toMatch(/newer version/);
+    // playing on, or a backup coming due, changes nothing
+    store.write(r.save);
+    store.backup(r.save, 'Automatic');
+    expect(kv.m).toEqual(before);
+  });
+  it('refuses a save too big to fit, whole: nothing changes and the undo backup stays (G14)', () => {
+    const cur = imported();
+    const kv0 = new MemKV();
+    new SaveStore(kv0, () => 1000).write(cur);
+    const used = [...kv0.m.values()].reduce((a, v) => a + v.length, 0);
+    // room for the current save and one backup of it, not for a huge one
+    const kv = new MemKV(used * 2.6);
+    const store = new SaveStore(kv, () => 1000);
+    store.write(cur);
+    const before = new Map([...kv.m].filter(([k]) => !k.startsWith('whs:backup:')));
+    const big = imported();
+    big.profile.extra.junk = 'x'.repeat(used * 3);
+    expect(() => store.replace(cur, big, 'Before loading a file')).toThrow(StorageFullError);
+    for (const [k, v] of before) expect(kv.getItem(k)).toBe(v);
+    expect(store.listBackups()[0]?.reason).toBe('Before loading a file');
+  });
+  it('writes all or nothing: a section that does not fit puts back the ones written before it (G14)', () => {
+    const cur = imported();
+    const kv0 = new MemKV();
+    new SaveStore(kv0, () => 1000).write(cur);
+    const used = [...kv0.m.values()].reduce((a, v) => a + v.length, 0);
+    const kv = new MemKV(used + 2000);
+    const store = new SaveStore(kv, () => 1000);
+    store.write(cur);
+    for (const k of [...kv.m.keys()]) if (k.startsWith('whs:backup:')) kv.removeItem(k);
+    const before = new Map(kv.m);
+    // the profile grows a little (fits), the active fighter a lot (doesn't)
+    const next = JSON.parse(JSON.stringify(cur)) as typeof cur;
+    next.profile.gems += 1;
+    const a = next.roster.active ?? 0;
+    next.roster.active = a;
+    if (next.roster.slots[a]) (next.roster.slots[a] as unknown as Record<string, unknown>).junk = 'x'.repeat(used);
+    expect(() => store.write(next)).toThrow(StorageFullError);
+    expect(new Map(kv.m)).toEqual(before);
+  });
+  it('a tab that is behind never writes its stale copy over another tab\'s save (G8)', () => {
+    const kv = new MemKV();
+    new SaveStore(kv, () => 1000).write(imported());
+    const a = new SaveStore(kv, () => 2000);
+    const b = new SaveStore(kv, () => 2000);
+    const sa = a.load().save;
+    const sb = b.load().save;
+    // tab A plays on (say, retires a fighter for legacy points)
+    sa.profile.legacy.pts += 15;
+    a.write(sa);
+    const after = new Map(kv.m);
+    // tab B, still on the old copy, taps something
+    expect(b.stale()).toBe(true);
+    expect(() => b.write(sb)).toThrow(StaleSaveError);
+    b.backup(sb, 'Automatic');
+    expect(new Map(kv.m)).toEqual(after);
+    // reloading picks up A's save, and then it can write
+    const b2 = new SaveStore(kv, () => 3000);
+    const fresh = b2.load().save;
+    expect(fresh.profile.legacy.pts).toBe(sa.profile.legacy.pts);
+    b2.write(fresh);
+    expect(a.stale()).toBe(true);
   });
 });

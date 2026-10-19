@@ -8,6 +8,7 @@ import {
   coinsOf,
   copiesOf,
   copyValue,
+  carryPreview,
   salvageCopy,
   salvageStored,
   syncArmory,
@@ -373,7 +374,8 @@ export function openForge(k: string) {
             class="btn ghost block"
             onClick={async () => {
               const extra = cp ? ` Its ${cp === 1 ? 'copy goes' : `${cp} copies go`} too, for coins.` : '';
-              const lost = L ? ` Its +${L} is lost.` : '';
+              // with the review's carry (K8) the upgrades go to the piece that replaced it
+              const lost = L ? ` ${carryPreview(G, k) ?? `Its +${L} is lost.`}` : '';
               if (await confirm({ title: `Salvage ${g.n}?`, body: `You get a few coins. It is gone for good.${lost}${extra}`, yes: 'Salvage it' })) {
                 const before = coinsOf(G);
                 act((x) => salvageStored(x, k));

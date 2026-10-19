@@ -5,12 +5,12 @@ import type { Gear, Synergy } from '../../types';
 // prettier-ignore
 export const GEAR_MORE: Gear[] = [
   // ---- pirate (rare): extra swings, reads and getting ahead when behind
-  { k: 'tricorn', slot: 'helm', r: 'rare', n: 'Tricorn hat', e: '🏴‍☠️', cost: 14, q: 2, m: { str: 1 }, fx: { readB: 0.04 }, set: 'pirate', d: '+1 strength, reads 4% better. Pirate set' },
+  { k: 'tricorn', slot: 'helm', r: 'rare', n: 'Tricorn hat', e: '🏴‍☠️', cost: 14, q: 2, m: { str: 1 }, fx: { readB: 0.04 }, set: 'pirate', d: '+1 strength, reads half a step clearer. Pirate set' },
   { k: 'hookhand', slot: 'gloves', r: 'rare', n: 'Hook hand', e: '🪝', cost: 14, q: 2, m: { wm: 1 }, fx: { extra: 0.04 }, set: 'pirate', d: '+1 weapon mastery, +4% extra hit chance. Pirate set' },
   { k: 'piratecoat', slot: 'cape', r: 'rare', n: 'Captain’s coat', e: '🧥', cost: 14, q: 2, m: { cha: 1 }, fx: { dodgeB: 0.03 }, set: 'pirate', d: '+1 charisma, +3% dodge. Pirate set' },
   { k: 'piratevest', slot: 'armor', r: 'rare', n: 'Salt-stained vest', e: '🦺', cost: 15, q: 2, m: { dur: 2 }, set: 'pirate', d: '+2 durability. Smells like adventure and fish. Pirate set' },
   { k: 'seaboots', slot: 'boots', r: 'rare', n: 'Sea boots', e: '🥾', cost: 13, q: 2, m: { spd: 1, dur: 1 }, set: 'pirate', d: '+1 speed, +1 durability. Pirate set' },
-  { k: 'parrot', slot: 'trinket', r: 'rare', n: 'Loud parrot', e: '🦜', cost: 12, q: 2, fx: { readB: 0.06 }, set: 'pirate', d: 'Reads 6% better. It squawks the move before they make it. Pirate set' },
+  { k: 'parrot', slot: 'trinket', r: 'rare', n: 'Loud parrot', e: '🦜', cost: 12, q: 2, fx: { readB: 0.06 }, set: 'pirate', d: 'Reads half a step clearer. It squawks the move before they make it. Pirate set' },
   // ---- chef (common): the snack set
   { k: 'toque', slot: 'helm', r: 'common', n: 'Chef’s toque', e: '👨‍🍳', cost: 5, q: 1, m: { iq: 1 }, set: 'chef', d: '+1 IQ. Tall hat, tall ideas. Chef set' },
   { k: 'chefmitts', slot: 'gloves', r: 'common', n: 'Kitchen mitts', e: '🧤', cost: 5, q: 1, m: { str: 1 }, set: 'chef', d: '+1 strength. Rated for 260 degrees. Chef set' },

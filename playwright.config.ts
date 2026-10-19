@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4173;
+// PW_PORT lets two copies of the repo run their e2e suites side by side
+const PORT = Number(process.env.PW_PORT) || 4173;
 
 export default defineConfig({
   testDir: 'apps/game/e2e',

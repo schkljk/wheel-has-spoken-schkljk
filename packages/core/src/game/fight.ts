@@ -19,6 +19,7 @@ import {
   champsOf,
   gainFame,
   gainXP,
+  healStoryInjuries,
   injText,
   invalidate,
   markSeen,
@@ -27,6 +28,8 @@ import {
   rivalsOf,
   rollSeason,
   setNemesis,
+  STORY_INJ_MAX,
+  storyInjuries,
   tickInjuries,
   track,
   trackMax,
@@ -39,11 +42,12 @@ import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
 import { endHard } from './hard';
 import { seasonalNow } from './seasonal';
+import { noteFight } from './resume';
 import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial' | 'run';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial' | 'run' | 'remix';
 export interface FightTier {
   k: string;
   n: string;
@@ -72,6 +76,10 @@ export interface FightSpec {
   seed?: number;
   /** and the combat wheel's */
   wheelSeed?: number;
+  /** the starting tweaks, as they were when the fight began (a fight picked up after the app closed: G2) */
+  mods?: [FightMod, FightMod];
+  /** a sure win wagered instead of claimed (L2): fought at no more than WAGER_HP, for elite loot and a gem */
+  wager?: boolean;
 }
 
 /** The header label of a fight. */
@@ -151,7 +159,7 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
 
 /** Round limits: bosses get 30 rounds and sudden death; elites, legends and cup finals get 20. */
 export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run' | 'tier'>): Pick<BattleOpts, 'maxRounds' | 'suddenDeath'> {
-  if (spec.kind === 'rush' || spec.kind === 'trial' || (spec.kind === 'run' && spec.opp?.isBoss) || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
+  if (spec.kind === 'rush' || spec.kind === 'trial' || spec.kind === 'remix' || (spec.kind === 'run' && spec.opp?.isBoss) || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
   if (spec.kind === 'story' && (spec.node === 'elite' || spec.node === 'nemesis')) return { maxRounds: 20 };
   if (spec.kind === 'challenge' && spec.opp && spec.opp.isRival === 'legend') return { maxRounds: 20 };
   if (spec.kind === 'cup') {
@@ -182,6 +190,9 @@ export function shareWord(w: number): string {
   return 'almost no';
 }
 
+/** A new injury from a story loss (review K9): it also heals when the chapter starts over. */
+export const storyInjLine = (j: Injury) =>
+  `${j.e} Injured: ${j.n}, ${injText(j)}. Heals when a chapter starts over, after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or with a physio session or Patch up (campfire)`;
 /** A new injury, said out loud with how to get rid of it (it used to arrive with one terse line). */
 export const injLine = (j: Injury) =>
   `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
@@ -190,7 +201,9 @@ export const injLine = (j: Injury) =>
 export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(spec.me ?? g.F!, spec.opp, g.rng, 120, { arena: spec.arena, ...setupOf(g, spec) });
 /** Mods and context: a stand-in fighter (the daily duel) gets none of the career's. */
 const setupOf = (g: Game, spec: Omit<FightSpec, 'odds'>) =>
-  spec.me
+  spec.mods
+    ? { mods: spec.mods, ctx: spec.me ? {} : ctxOf(g) }
+    : spec.me
     ? // a stand-in (the daily duel, a Spin & Run fighter): only carried HP and a boss's HP, none of the career's
       { mods: [spec.rushHp != null ? { hp: spec.rushHp } : {}, spec.opp?.maxHp ? { maxHp: spec.opp.maxHp } : {}] as [FightMod, FightMod], ctx: {} }
     : // a ghost fight (F9) is for pride: next-fight buffs stay for a fight that counts
@@ -204,6 +217,8 @@ export const fightOddsJob = (g: Game, spec: Omit<FightSpec, 'odds'>) => ({
   opts: { arena: spec.arena, ...setupOf(g, spec) },
 });
 
+/** The fight's starting tweaks (kept with a fight under way before its next-fight buffs are used up: G2). */
+export const startMods = (g: Game, spec: Omit<FightSpec, 'odds'>): [FightMod, FightMod] => JSON.parse(JSON.stringify(setupOf(g, spec).mods)) as [FightMod, FightMod];
 /** Starts the battle; next-fight buffs are used up. */
 export function startBattle(g: Game, spec: FightSpec): Battle {
   const F = g.F!;
@@ -218,7 +233,23 @@ export function startBattle(g: Game, spec: FightSpec): Battle {
 export const CLAIM_ODDS = 0.85;
 /** A regular or elite story fight the player is all but sure to win, not yet under way: it can be claimed. */
 export const canClaim = (spec: FightSpec, bt: Battle | null) =>
-  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !!bt && bt.round === 0 && !bt.over;
+  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !spec.wager && !!bt && bt.round === 0 && !bt.over;
+/** The HP a wagered fight starts with, at most (L2). */
+export const WAGER_HP = 60;
+/**
+ * Wagers a sure win instead of claiming it (review L2): the fight starts over from the same dice, the fighter at
+ * no more than 60% HP, and a win pays elite loot and a gem on top. Only before the first round, like a claim.
+ */
+export function wagerFight(g: Game, spec: FightSpec, bt: Battle): Battle | null {
+  if (!canClaim(spec, bt)) return null;
+  const mods = (spec.mods ?? [bt.P[0].mod, bt.P[1].mod]).map((m) => ({ ...m })) as [FightMod, FightMod];
+  mods[0].hp = Math.min(mods[0].hp ?? 100, WAGER_HP);
+  spec.mods = mods;
+  spec.wager = true;
+  noteFight(g, { mods: mods as unknown as Json, wager: true });
+  return startBattle(g, spec);
+}
+
 /**
  * Claims a sure win (review E5): the fight is played out on auto-battle, from the same start, until a win
  * comes up, so the rewards are full and the HP it costs is what a real win costs. Null if no win comes up
@@ -432,7 +463,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
   lines.push(...gainFame(g, fame));
   if (fame) lines.push(`⭐ +${fame} fame`);
   if (F.pendingLv) lines.push(`⬆️ Level ${F.lvl} reached`);
-  lines.unshift(`+${xp} XP, +${coins} 🪙${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
   invalidate(F);
   let big: string;
   let desc: string;
@@ -545,6 +576,8 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   let fame = won ? pay.fame : 0;
   if (won) {
     S.hp = Math.min(100, Math.max(1, Math.ceil(me.hp)) + 10);
+    // the +10 after a win is named, so the map's HP isn't a mystery after the fight's (H9)
+    if (BALANCE.clearResults) lines.push(`❤️ +10 HP after the win: you go on with ${hpTxt(g, S.hp)} HP`);
     if (spec.odds < 0.35) keys.push('giant');
     if (me.hp < 10) keys.push('comeback');
     if (me.st.taken < 0.5) keys.push('flawless');
@@ -553,9 +586,13 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     S.grit--;
     S.hp = 60;
     lines.push(`💔 You lose a grit. ${pl(S.grit, 'grit', 'grit')} left`);
-    if (g.rng() < 0.3) {
-      const j = addInjury(g, F);
-      if (j) lines.push(injLine(j));
+    // with the review's cap (K9) story losses injure at most twice, and those heal when the chapter starts over
+    if (g.rng() < 0.3 && !(BALANCE.injuryCap && storyInjuries(F) >= STORY_INJ_MAX)) {
+      const j = addInjury(g, F, BALANCE.injuryCap);
+      if (j) {
+        lines.push(BALANCE.injuryCap ? storyInjLine(j) : injLine(j));
+        if (BALANCE.injuryCap) lines.push('🧰 A med kit cures this right away: merchants sell them, and they turn up in loot');
+      }
     }
   }
   if (me.st.dodges >= 3) keys.push('untouch');
@@ -608,12 +645,19 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     const lost = Math.floor(coinsOf(g) * 0.25);
     addCoins(g, -lost);
     lines.push(`☠️ Out of grit. Chapter ${ch} starts over on a new path${lost ? `, and you drop ${lost} 🪙` : ''}`);
+    const healed = BALANCE.injuryCap ? healStoryInjuries(F) : 0;
+    if (healed) lines.push(`🩹 A fresh start: ${healed === 1 ? 'your story injury heals' : `your ${healed} story injuries heal`}`);
   }
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  // a sure win wagered (L2): won at 60% HP, it pays elite loot and a gem
+  if (spec.wager) {
+    if (won) awardGems(g, 1, lines);
+    lines.push(won ? '🎲 Wager won: elite loot and a gem on top' : '🎲 The wager went the other way. A free win, traded for a lesson');
+  }
   // a boss that toughened up for you pays for it (review E5 and F7)
   if (won && node === 'boss' && tunedBossGems(O)) {
     lines.push(`💪 ${O.name} put on ${pl(O.tuned!, 'level', 'levels')} for you and lost anyway`);
@@ -645,7 +689,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   if (won) {
     if (node === 'boss') next.push({ t: 'loot', table: 'boss' }, ...(hardDone ? [{ t: 'loot', table: 'treasure' } as Step] : []));
     else {
-      if (node === 'elite' || node === 'nemesis') next.push({ t: 'loot', table: hard ? 'boss' : 'elite' });
+      if (node === 'elite' || node === 'nemesis' || spec.wager) next.push({ t: 'loot', table: hard ? 'boss' : 'elite' });
       next.push({ t: 'reward' });
     }
   }

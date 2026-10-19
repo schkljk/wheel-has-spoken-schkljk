@@ -63,13 +63,70 @@ export function salvageCopy(g: Game, k: string): number {
   addCoins(g, c);
   return c;
 }
-/** A piece leaves for good (sold or salvaged): its level goes, its copies are salvaged too. Returns their coins. */
+// ---------------------------------------------------------------- upgrades carry over (review K8)
+/** The coins a piece's upgrade levels cost, all told. */
+export const upgradeWorth = (x: Gear, L: number) => clamp(x.cost, 6, 100) * ((L * (L + 1)) / 2);
+/**
+ * The level those coins buy on another piece, at most +5. A carry is worth what was paid, so upgrading cheap
+ * junk and moving it onto a legendary doesn't skip the legendary's price.
+ */
+export const levelForWorth = (x: Gear, coins: number) => {
+  let L = 0;
+  while (L < UPGRADE_MAX && upgradeWorth(x, L + 1) <= coins + 1e-9) L++;
+  return L;
+};
+/** Where a slot's waiting carry is kept, in the upgrade map (coins, not a level: the next piece decides). */
+const carryKey = (slot: string) => `@${slot}`;
+/**
+ * What happens to a piece's upgrades if it leaves now (sold or salvaged), in words, or null: they go to the piece
+ * worn in its slot (the one that replaced it), or wait for the next piece worn there.
+ */
+export function carryPreview(g: Game, k: string): string | null {
+  const F = g.F!;
+  const L = upgradeLevel(F, k);
+  if (!BALANCE.upgradeCarry || !L) return null;
+  const x = GEARK[k]!;
+  const worn = F.gear?.[x.slot];
+  if (worn && worn !== k) {
+    const y = GEARK[worn]!;
+    const L2 = Math.max(upgradeLevel(F, worn), levelForWorth(y, upgradeWorth(x, L)));
+    return L2 > upgradeLevel(F, worn) ? `Its +${L} carries over: your ${y.n} becomes +${L2}.` : `Its +${L} carries over, but your ${y.n} is already +${upgradeLevel(F, worn)}.`;
+  }
+  return `Its +${L} waits for the next ${x.slot} you wear (worth what you paid for it).`;
+}
+/** Moves a leaving piece's upgrades on (K8). */
+function carryUpgrade(F: Fighter, k: string, L: number) {
+  const x = GEARK[k]!;
+  const worth = upgradeWorth(x, L);
+  const worn = F.gear?.[x.slot];
+  F.gup = { ...(F.gup || {}) };
+  if (worn && worn !== k) F.gup[worn] = Math.max(F.gup[worn] || 0, levelForWorth(GEARK[worn]!, worth));
+  else F.gup[carryKey(x.slot)] = Math.max(F.gup[carryKey(x.slot)] || 0, worth);
+}
+/** A piece goes on: a carry waiting in its slot lands on it (K8). Call after the piece is worn. */
+export function settleCarry(F: Fighter, k: string) {
+  const x = GEARK[k];
+  const key = x && carryKey(x.slot);
+  const worth = key ? F.gup?.[key] : 0;
+  if (!x || !worth) return;
+  F.gup = { ...(F.gup || {}) };
+  delete F.gup[key!];
+  F.gup[k] = Math.max(F.gup[k] || 0, levelForWorth(x, worth));
+  invalidate(F);
+}
+
+/**
+ * A piece leaves for good (sold or salvaged): its copies are salvaged too, and its level goes, or with the
+ * review's carry (K8) moves to the piece that replaces it in its slot. Returns the copies' coins.
+ */
 export function forgetPiece(g: Game, k: string): number {
   const F = g.F!;
   let c = 0;
   while (copiesOf(F, k)) c += salvageCopy(g, k);
   if (F.gup && F.gup[k]) {
+    const L = F.gup[k]!;
     delete F.gup[k];
+    if (BALANCE.upgradeCarry) carryUpgrade(F, k, L);
     invalidate(F);
   }
   return c;

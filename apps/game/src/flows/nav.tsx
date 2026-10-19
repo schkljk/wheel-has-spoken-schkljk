@@ -16,8 +16,10 @@ import {
   labelOf,
   addLevelSpin,
   levelSpins,
+  pendingUpgrade,
   levelSpinsPerLevel,
   levelUpItem,
+  levelUpPreview,
   levelUpLand,
   levelUpList,
   lootLand,
@@ -33,6 +35,7 @@ import {
   upgradeLists,
   upgradeNone,
   pendingSteps,
+  fightRec,
   pendingNode,
   lastPlace,
   pushStep,
@@ -49,10 +52,11 @@ import { cine, closeSheet, confirm, openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { duck, sfx } from '../ui/sound';
-import { spinWheel } from '../screens/Spin';
+import { spinWheel } from '../screens/spin-route';
 import { GearIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
-import { swapped } from './armory';
+import { swapped } from './lazy';
+import { NS_META } from '../ui/stat-meta';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {
@@ -101,21 +105,24 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
 }
 
 /** A full-screen card with one button (intros, celebrations). */
-export function showCine(content: ComponentChildren, button: string): Promise<void> {
+/** A full-screen card with one button, or two (`alt` answers no): resolves true for the main one. */
+export function showCine(content: ComponentChildren, button: string, alt?: string): Promise<boolean> {
   return new Promise((resolve) => {
+    const answer = (yes: boolean) => {
+      cine.value = null;
+      resolve(yes);
+    };
     cine.value = (
       <div class="cine-card">
         {content}
-        <button
-          class="btn block cine-btn"
-          ref={(b) => b?.focus()}
-          onClick={() => {
-            cine.value = null;
-            resolve();
-          }}
-        >
+        <button class="btn block cine-btn" ref={(b) => b?.focus()} onClick={() => answer(true)}>
           {button}
         </button>
+        {alt && (
+          <button class="btn ghost block cine-alt" onClick={() => answer(false)}>
+            {alt}
+          </button>
+        )}
       </div>
     );
   });
@@ -140,7 +147,6 @@ export async function celebrate(icon: string, title: string, sub: string) {
 const note = (t: string, cls = 'sub') => (t ? <div class={`note ${cls}`}>{t}</div> : null);
 
 // ---------------------------------------------------------------- level-ups
-/** Spins the level-up wheel for every level waiting. Awakening and Arsenal lead to an upgrade spin. */
 /** What keeping a level-up slice does, for the pick between two spins. */
 const LV_SUB: Record<string, string> = {
   awaken: 'A power spin with only equal or better slices. You can keep your current power',
@@ -149,9 +155,26 @@ const LV_SUB: Record<string, string> = {
   all1: '+1 strength, speed, durability, IQ and both masteries',
 };
 
+/** What a level-up slice does to the real numbers, old → new (review H4), or what it does in words. */
+function lvChange(x: NonNullable<ReturnType<typeof levelUpItem>>): string | undefined {
+  const p = levelUpPreview(G, x);
+  if (!p) return LV_SUB[x.k];
+  const rows = NS_META.filter(([k]) => p.a[k] != null && p.b[k] != null && p.a[k] !== p.b[k]);
+  if (!rows.length) return LV_SUB[x.k] ?? 'No change to the numbers yet';
+  return rows.map(([k, , n, u = '']) => `${n} ${p.a[k]}${u} → ${p.b[k]}${u}`).join(', ');
+}
+
+/** Spins the level-up wheel for every level waiting. Awakening and Arsenal lead to an upgrade spin. */
 export async function levelUps() {
+  // an upgrade spin the app closed on comes first (G5)
+  const up0 = pendingUpgrade(G);
+  if (up0) await upgradeSpin(up0);
+  // with several waiting, each says which level it is for (H4)
+  const total = G.F?.pendingLv || 0;
   while (G.F && (G.F.pendingLv || 0) > 0) {
     const F = G.F;
+    const at = (F.lvl || 1) - (F.pendingLv || 1) + 1;
+    const of = total > 1 ? `, level-up ${total - (F.pendingLv || 1) + 1} of ${total}` : '';
     // a second opinion (F4): two spins a level, keep one. Spins landed before the app closed still count (A4)
     const per = levelSpinsPerLevel();
     const got = levelSpins(G)
@@ -163,7 +186,7 @@ export async function levelUps() {
       const it = await spinWheel({
         cat: 'lvl',
         title: second ? 'Second opinion' : 'Level up',
-        who: second ? `Then keep the one you like. ${F.name}, level ${F.lvl}` : `${F.name} reached level ${F.lvl}`,
+        who: second ? `Then keep the one you like. ${F.name}, level ${at}${of}` : `${F.name} reached level ${at}${of}`,
         list: levelUpList(),
         spinLabel: second ? 'Spin for a second opinion' : 'Spin the level-up wheel',
         preview: true,
@@ -183,8 +206,8 @@ export async function levelUps() {
       const c = await choose({
         emoji: '⚖️',
         title: 'Keep one',
-        sub: `Level ${F.lvl}: two spins, one pick. The other goes back in the wheel`,
-        options: got.map((x) => ({ label: `${x.e} ${x.n}`, sub: LV_SUB[x.k] })),
+        sub: `Level ${at}${of}: two spins, one pick. The other goes back in the wheel`,
+        options: got.map((x) => ({ label: `${x.e} ${x.n}`, sub: lvChange(x) })),
       });
       it = got[c]!;
     } else if (got.length > 1) toast(`Both spins agree: ${it.e} ${it.n}`);
@@ -242,6 +265,8 @@ export async function lootFlow(table: LootTable, o: { step?: boolean; landed?: (
   const list = lootList(G, table);
   const reasons = act((g) => lootStart(g, table));
   let pending: Gear | null = null;
+  // a piece of gear is worth reading: its reveal waits for a tap (G10)
+  let gear = false;
   await spinWheel({
     cat: 'loot',
     title: 'Loot',
@@ -253,8 +278,10 @@ export async function lootFlow(table: LootTable, o: { step?: boolean; landed?: (
     // spoils spin and move on by themselves (B3); a gear choice still waits for you
     autoSpin: true,
     autoNext: 1700,
+    hold: () => gear,
     onLand: (it) => {
       const r = lootLand(G, it);
+      gear = !!r && r.kind === 'gear';
       if (o.step) stepDone(G);
       if (r && r.kind === 'gear' && r.then === 'choose') pushStep(G, { t: 'gear', k: r.gear.k });
       o.landed?.(G);
@@ -386,7 +413,7 @@ export async function eventFlow(step = false) {
 export async function goHub(tab: 'play' | 'fighter' | 'goals' | 'more' = 'play') {
   if (!G.F) return go({ screen: 'title' });
   if (pendingSteps(G).length) return resumeSteps();
-  if ((G.F.pendingLv || 0) > 0) await levelUps();
+  if ((G.F.pendingLv || 0) > 0 || pendingUpgrade(G)) await levelUps();
   act((g) => setPlace(g, 'hub'));
   go({ screen: 'hub', tab });
 }
@@ -450,12 +477,13 @@ export async function runSteps(steps: Step[], places: Places = {}) {
       case 'gauntlet':
         leave();
         return places.gauntlet?.();
+      // back in after closing the app, the run picks up from the save (G6)
       case 'rush':
         leave();
-        return places.rush?.();
+        return places.rush ? places.rush() : void import('./modes').then((m) => m.rushFlow());
       case 'tower':
         leave();
-        return places.tower?.();
+        return places.tower ? places.tower() : void import('./modes').then((m) => m.towerFlow());
       case 'run':
         leave();
         return void import('./run').then((m) => m.runFlow());
@@ -473,14 +501,20 @@ export async function runSteps(steps: Step[], places: Places = {}) {
 export async function continueGame(i: number) {
   if (!enterSlot(i)) return;
   if (pendingSteps(G).length) return resumeSteps();
+  // a fight the app closed on comes back first, where it was (G2); a story fight comes back through the map
+  const f = fightRec(G);
+  if (f && f.kind !== 'story' && (await (await import('./modes')).resumeFight(f.kind))) return;
   const p = lastPlace(G);
   if (p === 'map' && G.F!.story) return goMap();
   if (p === 'bracket') return (await import('./modes')).resumeRun();
   return goHub();
 }
+/** The fights Continue goes straight back into (the others pick up when they are opened again). */
+const BACK_IN = new Set(['story', 'cup', 'gauntlet', 'daily', 'rush', 'tower', 'run']);
 /** Where Continue goes, in words (for its button). */
 export function continueText(): string {
   if (pendingSteps(G).length) return 'Your spoils are waiting';
+  if (BACK_IN.has(fightRec(G)?.kind ?? '')) return 'Back into the fight';
   const p = lastPlace(G);
   return p === 'map' ? 'Back to the story map' : p === 'bracket' ? 'Back to the bracket' : 'Back to the fighter page';
 }

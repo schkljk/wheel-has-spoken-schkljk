@@ -4,6 +4,7 @@ import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
 import { NODE_MORE } from '../data/content/nemesis';
 import { CH_EVENTS, type ChapterEvent, type ChapterOpt, type EventFx } from '../data/content/chapter-events';
 import { LEVELUP } from '../data/misc';
+import { readSteps } from '../data/wording';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
 import { headToHead } from '../battle';
@@ -11,12 +12,12 @@ import { poolPick } from '../pool';
 import { clamp, pick, pickW, shuffle } from '../random';
 import { GEARK, gearPool, numStats, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
-import type { CareerFighter, Json, StoryState } from '../save/fighter';
+import { deserFighter, serFighter, type CareerFighter, type Json, type StoryState } from '../save/fighter';
 import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
-import { clearLevelSpins } from './resume';
+import { clearLevelSpins, setUpgrade } from './resume';
 import { MENTOR_EVENT, withMentor } from './mentor';
 
 export const LASTCH = CHAPTERS.length;
@@ -306,7 +307,7 @@ export function fxText(fx: EventFx = {}): string {
   if (fx.heal) (fx.heal > 0 ? gain : cost).push(fx.heal > 0 ? `heal ${fx.heal}% HP` : `lose ${-fx.heal}% HP`);
   if (fx.fame) (fx.fame > 0 ? gain : cost).push(fx.fame > 0 ? `+${fx.fame} fame` : `lose ${-fx.fame} fame`);
   if (fx.stat) gain.push(`+1 ${STATN[fx.stat]!.toLowerCase()} for good`);
-  if (fx.readB) gain.push(`read your next opponent ${pct(fx.readB)} better`);
+  if (fx.readB) gain.push(`read your next opponent ${readSteps(fx.readB)} clearer`);
   if (fx.en) gain.push('full energy in your next fight');
   if (fx.dmgX) gain.push(`+${pct(fx.dmgX - 1)} damage in your next fight`);
   if (fx.revive) gain.push(`get back up once in your next fight, with ${fx.revive}% HP`);
@@ -667,11 +668,28 @@ export function levelUpLand(g: Game, it: (typeof LEVELUP)[number]): 'power' | 'w
   // the spins for this level are over: the next level starts from none (resume.ts)
   clearLevelSpins(g);
   F.pendingLv = Math.max(0, (F.pendingLv || 0) - 1);
-  if (it.k === 'awaken') return 'power';
-  if (it.k === 'arsenal') return 'weapon';
+  // the level is used up in the same change that keeps its upgrade spin waiting (G5)
+  if (it.k === 'awaken' || it.k === 'arsenal') {
+    const kind = it.k === 'awaken' ? 'power' : 'weapon';
+    setUpgrade(g, kind);
+    return kind;
+  }
   applyBonus(F, it);
   invalidate(F);
   return null;
+}
+
+/**
+ * What a level-up slice would do to the fighter's real numbers (review H4): now and with it. Null for the
+ * slices that start an upgrade spin instead (Awakening, New weapon).
+ */
+export function levelUpPreview(g: Game, it: (typeof LEVELUP)[number]) {
+  if (it.k === 'awaken' || it.k === 'arsenal') return null;
+  const C = deserFighter(serFighter(g.F!));
+  if (!C) return null;
+  applyBonus(C, it);
+  invalidate(C);
+  return { a: numStats(g.F!, ctxOf(g)), b: numStats(C, ctxOf(g)) };
 }
 
 /** The slices of an upgrade spin: only equal or better than what the fighter has. Null if nothing is better. */
@@ -690,12 +708,14 @@ export function upgradeLists(g: Game, kind: 'power' | 'weapon') {
 }
 /** Nothing better exists: +1 mastery instead. */
 export function upgradeNone(g: Game, kind: 'power' | 'weapon') {
+  setUpgrade(g, null);
   const MK = kind === 'power' ? 'pm' : 'wm';
   applyBonus(g.F!, { k: MK, n: '+1 ' + STATN[MK], e: '⬆️' });
   return `Nothing better exists. +1 ${STATN[MK]!.toLowerCase()} instead`;
 }
 /** Swap to the new pick, or keep the old one for +1 mastery. */
 export function upgradeChoose(g: Game, kind: 'power' | 'weapon', take: { it: Slice; m: Slice } | null) {
+  setUpgrade(g, null);
   const F = g.F!;
   const MK = kind === 'power' ? 'pm' : 'wm';
   const set = F as unknown as Record<string, unknown>;

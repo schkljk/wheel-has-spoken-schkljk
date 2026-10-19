@@ -1,14 +1,31 @@
 import {
+  BALANCE,
+  BOSS_PHASE,
+  BOSSES,
+  REMIX_GEMS,
+  buildRemix,
+  builtRemix,
+  remixBodies,
+  remixBoss,
+  remixTier,
+  type RemixMix,
   TRIAL_COUNT,
+  fightUnder,
+  keepRun,
+  keptRush,
+  keptTower,
   TRIAL_FROM,
   trialBoss,
   trialInfo,
+  trialLevel,
   trialTier,
   trialsCleared,
   trialsOpen,
   DUEL_TIER,
   DUEL_WIN_COINS,
   duelBest,
+  duelBestFor,
+  duelScoreText,
   duelDays,
   duelOf,
   duelShare,
@@ -80,6 +97,7 @@ import { lookOf } from '../art/sprite';
 import { G, act, go, settings, toast } from '../state/game';
 import { closeSheet, confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
+import { Chips } from '../ui/Filters';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { landSound, tick } from '../ui/sound';
@@ -105,6 +123,22 @@ export function resumeRun() {
   const T = act((g) => loadRun(g));
   if (T) showRun(T);
   else void goHub();
+}
+/**
+ * Back into a fight the app closed on (G2), through its own mode so what follows it is the same, skipping
+ * the questions before it. False if the mode has nothing to go back to.
+ */
+export async function resumeFight(kind: string): Promise<boolean> {
+  if (kind === 'cup' || kind === 'gauntlet') {
+    const T = act((g) => loadRun(g));
+    if (!T) return false;
+    await runFight(T);
+    return true;
+  }
+  const go = kind === 'daily' ? dailyFlow : kind === 'rush' && keptRush(G) ? rushFlow : kind === 'tower' && keptTower(G) ? towerFlow : kind === 'run' ? (await import('./run')).runFlow : null;
+  if (!go) return false;
+  await go();
+  return true;
 }
 export async function abandon() {
   if (!(await confirm({ title: 'Abandon this tournament?', body: 'Your progress in it is lost.', yes: 'Abandon it', danger: true }))) return;
@@ -168,7 +202,8 @@ export async function dailyFlow() {
     act((g) => (g.save.profile.dc = null as never));
     return goHub();
   }
-  const c = await choose({
+  // a fight the app closed on goes straight back in (G2)
+  const c = fightUnder(G, 'daily', o.name) ? 0 : await choose({
     emoji: '📆',
     title: 'Daily challenge',
     sub: dc.streak ? `Streak: ${dc.streak} ${dc.streak === 1 ? 'win' : 'wins'} in a row` : 'Win to start a streak. Skipping a day never breaks it',
@@ -195,7 +230,8 @@ export async function dailyFlow() {
 function DuelSheet({ days }: { days: string[] }) {
   const [day, setDay] = useState(days[0]!);
   const d = useMemo(() => duelOf(day), [day]);
-  const best = duelBest(G, day);
+  // the score as it ranks: a win by rounds and HP, a loss by the HP they had left (G13)
+  const best = duelBestFor(G, d);
   const side = (f: CareerFighter, i: 0 | 1) => (
     <div class="fc-side">
       <FighterSprite look={lookOf(f)} h={84} mirror={i === 1} />
@@ -227,7 +263,7 @@ function DuelSheet({ days }: { days: string[] }) {
         </p>
         {best && (
           <div class="duel-best">
-            <b>Your best: {best.won ? `won in ${best.rounds} rounds, ${best.hp}% HP left` : `lost in ${best.rounds} rounds`}</b>
+            <b>Your best: {duelScoreText(d, best)}</b>
             <span>{best.sq}</span>
             <button class="btn ghost sm" onClick={() => void copyText(duelShare(d, best))}>
               Copy the score
@@ -254,7 +290,7 @@ async function duelFight(d: Duel) {
 function TrialsSheet() {
   const done = trialsCleared(G);
   return (
-    <Sheet emoji="🌀" title="Wheelborn trials" sub="Ten remixed bosses for levels 34 to 50. Losing costs nothing">
+    <Sheet emoji="🌀" title="Wheelborn trials" sub={`Ten remixed bosses for levels ${trialLevel(0)} to ${trialLevel(TRIAL_COUNT - 1)}. Losing costs nothing`}>
       <div class="stack">
         {Array.from({ length: TRIAL_COUNT }, (_, i) => {
           const t = trialInfo(i);
@@ -280,6 +316,69 @@ function TrialsSheet() {
             </div>
           );
         })}
+        {/* your own remix, for gems (L4) */}
+        <button class="btn ghost block" onClick={() => openSheet(<RemixSheet />)}>
+          🧪 Remix workshop: build your own
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * The remix workshop (review L4): a boss your fighter has beaten lends the body, two others lend their phase-two
+ * tricks, and it is tuned to your level. Gems to build it, XP and coins to beat it.
+ */
+function RemixSheet() {
+  const bodies = remixBodies(G);
+  const built = builtRemix(G);
+  const [mix, setMix] = useState<RemixMix>(() => built ?? [bodies[0]!, (bodies[0]! + 1) % BOSSES.length, (bodies[0]! + 2) % BOSSES.length]);
+  const gems = G.save.profile.gems || 0;
+  const name = (i: number) => `${BOSSES[i]!.e || ''} ${BOSSES[i]!.name}`.trim();
+  const kit = (i: number) => BOSS_PHASE[i]?.slice;
+  const set = (at: 0 | 1 | 2, v: number | null) => {
+    if (v == null || built) return;
+    const m = [...mix] as RemixMix;
+    // a boss can't be in a remix twice: whoever had that spot swaps with it
+    const was = m.indexOf(v);
+    if (was >= 0) m[was] = m[at];
+    m[at] = v;
+    setMix(m);
+  };
+  const go = async () => {
+    if (!built) {
+      const ok = await confirm({
+        title: `Build this remix for ${REMIX_GEMS} 💎?`,
+        body: `${name(mix[0])}'s body with the tricks of ${BOSSES[mix[1]]!.name} and ${BOSSES[mix[2]]!.name}, at your level. 30 rounds, then sudden death. It is used up when the fight ends, win or lose.`,
+        yes: `Build it, ${REMIX_GEMS} 💎`,
+        no: 'Keep tinkering',
+      });
+      if (!ok) return;
+      if (!act((g) => buildRemix(g, mix))) return toast('Not enough gems');
+    }
+    closeSheet();
+    const m = builtRemix(G)!;
+    const b = act((g) => remixBoss(g, m));
+    await bossIntro(b, 'Stitched together from spare bosses. It has questions about its purpose.', 'Your remix');
+    const r = await fight({ kind: 'remix', tier: remixTier, opp: b });
+    await runSteps(r.next);
+  };
+  const trick = (i: number) => [i, `${kit(i)?.e ?? ''} ${kit(i)?.n ?? BOSSES[i]!.name}`.trim()] as [number, string];
+  const others = BOSSES.map((_, i) => i).filter((i) => i !== mix[0]);
+  return (
+    <Sheet emoji="🧪" title="Remix workshop" sub="Bosses, rearranged. The wheel did not ask for this. Neither did they.">
+      <div class="stack">
+        <span class="sec-label">The body: a boss you've beaten</span>
+        <Chips label="Body" value={mix[0]} options={bodies.map((i) => [i, name(i)] as [number, string])} onChange={(v) => set(0, v)} />
+        <span class="sec-label">Two tricks: their phase-two slices land on your wheel once each</span>
+        <Chips label="First trick" value={mix[1]} options={others.map(trick)} onChange={(v) => set(1, v)} />
+        <Chips label="Second trick" value={mix[2]} options={others.map(trick)} onChange={(v) => set(2, v)} />
+        <p class="hint">
+          {name(mix[0])}, with {BOSSES[mix[1]]!.name}'s {kit(mix[1])?.n ?? 'trick'} ({kit(mix[1])?.d}) and {BOSSES[mix[2]]!.name}'s {kit(mix[2])?.n ?? 'trick'} ({kit(mix[2])?.d}). Tuned to your level like the trial of that level. A win: XP and 15 🪙.
+        </p>
+        <button class="btn block" disabled={!built && gems < REMIX_GEMS} onClick={() => void go()}>
+          {built ? '⚔️ Fight your remix' : `🧪 Build it for ${REMIX_GEMS} 💎 (you have ${gems})`}
+        </button>
       </div>
     </Sheet>
   );
@@ -306,6 +405,9 @@ async function trialFight(i: number) {
 // ---------------------------------------------------------------- the endless tower (upgrade 25)
 export async function towerFlow() {
   if (!towerOpen(G)) return toast(`Reach level ${TOWER_FROM} or clear chapter 1 to unlock the tower`);
+  // a climb the app closed on goes on where it was (G6)
+  const kept = keptTower(G);
+  if (kept) return towerNext(kept);
   tip('tower');
   await towerNext({ floor: 1, hp: 100, seed: Date.now() & 0xffffff });
 }
@@ -314,7 +416,8 @@ async function towerNext(T: TowerState) {
   const m = towerMutator(T);
   const best = towerBest(G);
   const fresh = T.floor === 1 && (T.lives ?? TOWER_LIVES) === TOWER_LIVES;
-  const c = await choose({
+  // a fight the app closed on goes straight back in (G2)
+  const c = fightUnder(G, 'tower', o.name) ? 0 : await choose({
     emoji: '🗼',
     title: `Tower, floor ${T.floor}`,
     sub: `HP ${hpTxt(G, T.hp)} ${'❤️'.repeat(T.lives ?? TOWER_LIVES)}${'🖤'.repeat(TOWER_LIVES - (T.lives ?? TOWER_LIVES))}. Record: ${best.floor ? `floor ${best.floor} (${best.who})` : 'nobody yet'}`,
@@ -342,9 +445,12 @@ async function towerNext(T: TowerState) {
     ],
   });
   if (c !== 0) {
+    act((g) => keepRun(g, 'tower', null));
     if (T.floor > 1) toast(`🗼 You cleared ${T.floor - 1} floors`);
     return goHub();
   }
+  // the climb is on once you climb (a win keeps it between floors: G6)
+  act((g) => keepRun(g, 'tower', T));
   const r = await fight(
     { kind: 'tower', tier: towerTier(T), opp: o, rushHp: T.hp, mut: m ? { mods: m.mods, arena: m.arena } : undefined },
     { tower: T, ...(m && m.arena ? { arena: dailyArena(m.arena) } : {}) },
@@ -416,6 +522,9 @@ export async function leaveHard() {
 // ---------------------------------------------------------------- boss rush
 export async function rushFlow() {
   if (!rushOpen(G)) return toast('Beat chapter 2 or reach level 10 to unlock');
+  // a rush the app closed on goes on where it was (G6)
+  const kept = keptRush(G);
+  if (kept) return rushNext(kept);
   // boss fights ask first: the rush is a run, not a single fight
   const n = rushBosses(G).length;
   const best = G.save.profile.rushBest || 0;
@@ -434,10 +543,13 @@ export async function rushFlow() {
   await rushNext({ i: 0, hp: 100 });
 }
 async function rushNext(R: RushState) {
+  act((g) => keepRun(g, 'rush', R));
   const n = rushBosses(G).length;
   const { boss, def } = act((g) => rushBoss(g, R));
+  // a fight the app closed on goes straight back in (G2)
+  const under = !!fightUnder(G, 'rush', boss.name);
   // between bosses: keep going, or walk away with the best so far on record
-  if (R.i > 0) {
+  if (R.i > 0 && !under) {
     const c = await choose({
       emoji: '💀',
       title: `Boss rush: ${R.i} of ${n} down`,
@@ -448,11 +560,14 @@ async function rushNext(R: RushState) {
       ],
     });
     if (c !== 0) {
-      act((g) => (g.save.profile.rushBest = Math.max(g.save.profile.rushBest || 0, R.i)));
+      act((g) => {
+        g.save.profile.rushBest = Math.max(g.save.profile.rushBest || 0, R.i);
+        keepRun(g, 'rush', null);
+      });
       return void goHub();
     }
   }
-  await rushIntro(boss, pick(G.rng, def.lines), `Boss rush, ${R.i + 1} of ${n}`, R);
+  if (!under) await rushIntro(boss, pick(G.rng, def.lines), `Boss rush, ${R.i + 1} of ${n}`, R);
   const r = await fight({ kind: 'rush', tier: rushTier(G, R), opp: boss, node: 'boss', rushHp: R.hp }, { rush: R });
   await runSteps(r.next, { rush: () => void rushNext(R) });
 }
@@ -613,10 +728,13 @@ function ClubSheet({ c }: { c: Club }) {
               🕵️ {free ? 'Charm the insider (your charisma: free)' : 'Ask the insider · 1 💎'}
             </button>
           ))}
+        {BALANCE.clubTight && <p class="hint center">This card stays up until you bet on it. The bookie does not reshuffle for browsers.</p>}
         <div class="row">
-          <button class="btn ghost grow" onClick={() => openClub()}>
-            New matchup
-          </button>
+          {!BALANCE.clubTight && (
+            <button class="btn ghost grow" onClick={() => openClub()}>
+              New matchup
+            </button>
+          )}
           <button class="btn ghost grow" onClick={closeSheet}>
             Leave
           </button>

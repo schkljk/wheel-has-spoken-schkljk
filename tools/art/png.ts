@@ -23,7 +23,9 @@ function chunk(type: string, data: Buffer) {
   c.writeUInt32BE(crc(td));
   return Buffer.concat([len, td, c]);
 }
-export function png(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array) {
+/** An RGBA PNG; `small` compresses harder (slower to write, same pixels). */
+export function png(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array, small = false) {
+  // no row filters: on this pixel art (flat colors, clear gaps) every PNG filter made the file bigger
   const raw = Buffer.alloc((w * 4 + 1) * h);
   for (let y = 0; y < h; y++) {
     raw[y * (w * 4 + 1)] = 0;
@@ -34,6 +36,6 @@ export function png(w: number, h: number, rgba: Uint8ClampedArray | Uint8Array) 
   ihdr.writeUInt32BE(h, 4);
   ihdr[8] = 8;
   ihdr[9] = 6;
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0))]);
+  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw, small ? { level: 9, memLevel: 9 } : {})), chunk('IEND', Buffer.alloc(0))]);
 }
 

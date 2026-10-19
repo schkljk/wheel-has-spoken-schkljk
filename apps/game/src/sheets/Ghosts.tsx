@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { GHOST_TIER, ctxOf, ghostCode, powerScale, readGhost } from '@whs/core';
+import { GHOST_TIER, ctxOf, ghostCode, ghostOf, powerScale } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { fight } from '../flows/fight';
@@ -17,7 +17,17 @@ export function GhostSheet() {
   const F = G.F!;
   const mine = useMemo(() => ghostCode(F), []);
   const [text, setText] = useState('');
-  const ghost = useMemo(() => (text.trim() ? readGhost(text) : null), [text]);
+  const read = useMemo(() => (text.trim() ? ghostOf(text) : null), [text]);
+  const ghost = read === 'version' ? null : read;
+  // the phone's own share sheet where there is one (H8); copying works everywhere
+  const canShare = typeof navigator.share === 'function';
+  const share = async () => {
+    try {
+      await navigator.share({ title: `${F.name}, as a ghost`, text: `Fight my fighter in The Wheel Has Spoken. Paste this in More, Ghost codes:\n${mine}` });
+    } catch {
+      // closed without sharing: nothing to say
+    }
+  };
   const ctx = ctxOf(G);
   const go = async () => {
     if (!ghost) return;
@@ -32,12 +42,20 @@ export function GhostSheet() {
         <code class="ghost-code" aria-label={`${F.name}'s ghost code`}>
           {mine}
         </code>
-        <button class="btn block" onClick={() => void copyText(mine)}>
-          Copy the code
-        </button>
+        <div class="row">
+          <button class="btn grow" onClick={() => void copyText(mine)}>
+            Copy the code
+          </button>
+          {canShare && (
+            <button class="btn ghost grow" onClick={() => void share()}>
+              Share it
+            </button>
+          )}
+        </div>
         <span class="sec-label">Fight a friend's ghost</span>
-        <textarea class="ghost-in" rows={3} placeholder="Paste a code that starts with WHS1." value={text} onInput={(e) => setText((e.target as HTMLTextAreaElement).value)} aria-label="A friend's ghost code" />
-        {text.trim() && !ghost && <p class="hint">That code doesn't read. It may have lost a character on the way: copy it again.</p>}
+        <textarea class="ghost-in" rows={3} placeholder="Paste a code that starts with WHS" value={text} onInput={(e) => setText((e.target as HTMLTextAreaElement).value)} aria-label="A friend's ghost code" />
+        {read === 'version' && <p class="hint">That code comes from another version of the game, with other wheels. Ask for a fresh one.</p>}
+        {text.trim() && read == null && <p class="hint">That code doesn't read. It may have lost a character on the way: copy it again.</p>}
         {ghost && (
           <div class="ghost-prev">
             <FighterSprite look={lookOf(ghost)} h={72} />
