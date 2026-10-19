@@ -60,6 +60,34 @@
   - "About average" replaces "−0%".
   - The help text has the right coin numbers.
 - **G16:** "Prize money" pays once however fast it is tapped. A half-spun level-up stays with its fighter. Ghost codes clamp level (1–50), bonuses and gear. Spin & Run's arena wheel leans toward the runner.
+- **H1, modes say when they open:**
+  - A fight's result lists what it opened ("🔓 Unlocked: Endless tower"), and so does the chapter card after it.
+  - A newly opened mode or cup gets a gold "New" ribbon until it is first opened, and the Play tab gets a dot. The Locker and Ghost codes count as new on the More tab until first looked at, and the More tab gets a dot too.
+  - On a save from before the ribbons, whatever is already open counts as seen.
+  - The gem counter can be tapped: it says what gems buy and where they come from.
+  - The lock texts are right now: "Clear chapter 2, or reach level 10" (it said "Chapter 2 or level 10"), and the same for the tower and the trials.
+- **H3:** the boss's intro card is the question. Level, HP, the "sized you up" bonus, the 30-round rule and a heal hint are all on it, with Fight and Not yet. That saves a tap, and it is still the confirmation the owner's rules ask for.
+- **H4:** "Keep one" shows each option's real numbers old → new ("Attack 41 → 44"). With two level-ups waiting, each says which level it is for ("reached level 5, level-up 1 of 2").
+- **H5, steering bounties:**
+  - Each bounty says who on your roster fits it ("Fits Fiona"), and those come first.
+  - While nothing on the board fits anyone, a bounty one of your fighters fits goes up first, if there is one.
+  - The collection has a 🧩 Riddles button that jumps straight to them.
+  - A fighter card with an unfound hidden synergy says "🧩 Solves a riddle".
+- **H7:** tapping a Locker price shows it on first: a small wheel wearing the rim or the charm, the confetti thrown in its colors, or your name on the plate. You can look at it even when you can't afford it yet.
+- **H8:** ghost codes are about 80 characters (were about 700).
+  - Every wheel result is its place on its wheel, one character each, plus level, bonuses, gear, upgrade levels and talents, then the name.
+  - A content stamp means a code from a version with other wheels says so ("ask for a fresh one") instead of reading wrong.
+  - There is a Share button where the phone has a share sheet. The old long codes still read.
+- **H9, polish:**
+  - The Fighter tab shows the mentor ("Mentored by Old Gus: +1 IQ"), and IQ keeps its capitals in the mentor pick.
+  - The pinned goal says what it needs ("Silverware: win a cup").
+  - A story win names its +10 HP ("+10 HP after the win: you go on with 93/100 HP"). So do the boss rush's +25 and Spin & Run's +10, with real numbers.
+  - A loss no longer shows "+0 🪙".
+  - A paid option you can't afford says how many coins you have.
+  - The first fight shows one tip before the first spin; the reads and speed tips wait for the first round.
+  - Sideways, the Play tab puts the story card beside the rest.
+- **L1, take the job:** a bounty's "Job" button (2 💎, with a confirmation) fixes its slice on your next new fighter's wheel. The wheel says "📌 The job: this wheel lands on Pigeon" and lands there. The rest of the wheels spin as usual. Dropping an unused job gives the gems back, and so does winning the bounty before the job is used. One job at a time.
+- **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 
 ### Review follow-up: the owner's picks
