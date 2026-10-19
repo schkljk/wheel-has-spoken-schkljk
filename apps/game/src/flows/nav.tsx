@@ -14,6 +14,10 @@ import {
   gearVerdict,
   healS,
   labelOf,
+  addLevelSpin,
+  levelSpins,
+  levelSpinsPerLevel,
+  levelUpItem,
   levelUpLand,
   levelUpList,
   lootLand,
@@ -137,27 +141,54 @@ const note = (t: string, cls = 'sub') => (t ? <div class={`note ${cls}`}>{t}</di
 
 // ---------------------------------------------------------------- level-ups
 /** Spins the level-up wheel for every level waiting. Awakening and Arsenal lead to an upgrade spin. */
+/** What keeping a level-up slice does, for the pick between two spins. */
+const LV_SUB: Record<string, string> = {
+  awaken: 'A power spin with only equal or better slices. You can keep your current power',
+  arsenal: 'A weapon spin with only equal or better slices. You can keep your current weapon',
+  cure: 'Your weakness is gone for good',
+  all1: '+1 strength, speed, durability, IQ and both masteries',
+};
+
 export async function levelUps() {
   while (G.F && (G.F.pendingLv || 0) > 0) {
-    let up: 'power' | 'weapon' | null = null;
     const F = G.F;
-    await spinWheel({
-      cat: 'lvl',
-      title: 'Level up',
-      who: `${F.name} reached level ${F.lvl}`,
-      list: levelUpList(),
-      spinLabel: 'Spin the level-up wheel',
-      preview: true,
-      nextLabel: 'Continue',
-      // you spin it; it moves on by itself (B3)
-      autoNext: 2000,
-      onLand: (it) => {
-        up = levelUpLand(G, it);
-        if (up === 'power') return <div class="ds">Next: a power spin with only equal or better slices. You can keep your current power if you like it more</div>;
-        if (up === 'weapon') return <div class="ds">Next: a weapon spin with only equal or better slices. You can keep your current weapon</div>;
-        return null;
-      },
-    });
+    // a second opinion (F4): two spins a level, keep one. Spins landed before the app closed still count (A4)
+    const per = levelSpinsPerLevel();
+    const got = levelSpins(G)
+      .map(levelUpItem)
+      .filter((x): x is NonNullable<typeof x> => !!x);
+    while (got.length < per) {
+      const second = got.length > 0;
+      const more = got.length + 1 < per;
+      const it = await spinWheel({
+        cat: 'lvl',
+        title: second ? 'Second opinion' : 'Level up',
+        who: second ? `Then keep the one you like. ${F.name}, level ${F.lvl}` : `${F.name} reached level ${F.lvl}`,
+        list: levelUpList(),
+        spinLabel: second ? 'Spin for a second opinion' : 'Spin the level-up wheel',
+        preview: true,
+        nextLabel: more ? 'Spin again' : 'Continue',
+        // you spin it; it moves on by itself (B3)
+        autoNext: 2000,
+        onLand: (x) => {
+          act((g) => addLevelSpin(g, x.k));
+          if (more) return <div class="ds">One more spin, then you keep the one you like</div>;
+          return LV_SUB[x.k] ? <div class="ds">{LV_SUB[x.k]}</div> : null;
+        },
+      });
+      got.push(it);
+    }
+    let it = got[0]!;
+    if (got.length > 1 && got[1]!.k !== it.k) {
+      const c = await choose({
+        emoji: '⚖️',
+        title: 'Keep one',
+        sub: `Level ${F.lvl}: two spins, one pick. The other goes back in the wheel`,
+        options: got.map((x) => ({ label: `${x.e} ${x.n}`, sub: LV_SUB[x.k] })),
+      });
+      it = got[c]!;
+    } else if (got.length > 1) toast(`Both spins agree: ${it.e} ${it.n}`);
+    const up = act((g) => levelUpLand(g, it));
     if (up) await upgradeSpin(up);
   }
 }

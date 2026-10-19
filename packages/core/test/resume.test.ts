@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addLevelSpin,
+  levelSpins,
+  levelSpinsPerLevel,
+  levelUpItem,
+  levelUpLand,
   clockAt,
   clearBuild,
   clearNode,
@@ -105,5 +110,22 @@ describe('a fighter being built', () => {
     expect(savedBuild(g)).toMatchObject({ idx: 3, done: false, f: { name: 'Half' } });
     clearBuild(g);
     expect(savedBuild(g)).toBeNull();
+  });
+});
+
+describe('a level-up being picked (F4, a second opinion)', () => {
+  it('keeps the spins landed so far until one is kept', () => {
+    const g = game();
+    g.F!.pendingLv = 1;
+    expect(levelSpinsPerLevel()).toBe(2);
+    addLevelSpin(g, 'str');
+    // closing the app here keeps the first spin
+    const h = { ...g, save: JSON.parse(JSON.stringify(g.save)) };
+    expect(levelSpins(h)).toEqual(['str']);
+    addLevelSpin(g, 'awaken');
+    expect(levelSpins(g)).toEqual(['str', 'awaken']);
+    levelUpLand(g, levelUpItem('str')!);
+    expect(levelSpins(g)).toEqual([]);
+    expect(g.F!.pendingLv).toBe(0);
   });
 });
