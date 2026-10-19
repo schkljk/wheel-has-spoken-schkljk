@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  WAGER_HP,
+  canClaim,
+  endStoryFight,
+  wagerFight,
   autoChoice,
   clockAt,
   deserFighter,
@@ -135,5 +139,35 @@ describe('a fight under way (G2)', () => {
     expect(r.fight).toBe(null);
     expect(r.place).toBe('map');
     expect(fixed.join()).toMatch(/middle of/);
+  });
+});
+
+// Review L2: a sure win can be claimed free, or wagered: fought at 60% HP for elite loot and a gem.
+describe('claim or wager', () => {
+  it('the wager starts the same fight over at 60% HP, is kept with the fight, and pays elite loot and a gem', () => {
+    const g = game(7);
+    g.F!.lvl = 30;
+    const opp = storyOpponent(g, 'fight');
+    const rec = openFight(g, 'story', opp.name);
+    const spec = { kind: 'story', node: 'fight', tier: TIER, opp, arena: null, odds: 0.95, seed: rec.seed, wheelSeed: rec.wheel } as FightSpec;
+    spec.mods = startMods(g, spec);
+    const bt = startBattle(g, spec);
+    bt.start();
+    expect(canClaim(spec, bt)).toBe(true);
+    const nb = wagerFight(g, spec, bt)!;
+    expect(nb.P[0].hp).toBeLessThanOrEqual(Math.ceil(nb.P[0].maxHp * (WAGER_HP / 100)) + 1);
+    expect(nb.P[0].hp).toBeLessThan(bt.P[0].hp);
+    expect(fightRec(g)!.wager).toBe(true);
+    // no claiming or wagering twice
+    expect(canClaim(spec, nb)).toBe(false);
+    nb.start();
+    while (!nb.over) nb.step();
+    const gems = g.save.profile.gems || 0;
+    const r = endStoryFight(g, spec, { w: nb.w!, me: nb.P[0], them: nb.P[1], round: nb.round, sd: !!nb.sd, hist: nb.hist });
+    if (nb.w === 0) {
+      expect(r.next).toContainEqual({ t: 'loot', table: 'elite' });
+      expect(g.save.profile.gems).toBe(gems + 1);
+      expect(r.lines.join(' ')).toMatch(/Wager won/);
+    } else expect(r.lines.join(' ')).toMatch(/wager went the other way/);
   });
 });

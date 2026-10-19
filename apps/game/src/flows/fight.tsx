@@ -50,6 +50,7 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
     seed: spec0.seed ?? rec.seed,
     wheelSeed: spec0.wheelSeed ?? rec.wheel,
     ...(rec.mods ? { mods: rec.mods } : {}),
+    ...(rec.wager ? { wager: true } : {}),
     arena: opts.arena !== undefined ? opts.arena : landed,
     odds: NaN,
   } as FightSpec;

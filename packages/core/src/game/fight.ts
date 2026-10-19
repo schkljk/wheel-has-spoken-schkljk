@@ -42,6 +42,7 @@ import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
 import { endHard } from './hard';
 import { seasonalNow } from './seasonal';
+import { noteFight } from './resume';
 import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
@@ -77,6 +78,8 @@ export interface FightSpec {
   wheelSeed?: number;
   /** the starting tweaks, as they were when the fight began (a fight picked up after the app closed: G2) */
   mods?: [FightMod, FightMod];
+  /** a sure win wagered instead of claimed (L2): fought at no more than WAGER_HP, for elite loot and a gem */
+  wager?: boolean;
 }
 
 /** The header label of a fight. */
@@ -230,7 +233,23 @@ export function startBattle(g: Game, spec: FightSpec): Battle {
 export const CLAIM_ODDS = 0.85;
 /** A regular or elite story fight the player is all but sure to win, not yet under way: it can be claimed. */
 export const canClaim = (spec: FightSpec, bt: Battle | null) =>
-  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !!bt && bt.round === 0 && !bt.over;
+  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !spec.wager && !!bt && bt.round === 0 && !bt.over;
+/** The HP a wagered fight starts with, at most (L2). */
+export const WAGER_HP = 60;
+/**
+ * Wagers a sure win instead of claiming it (review L2): the fight starts over from the same dice, the fighter at
+ * no more than 60% HP, and a win pays elite loot and a gem on top. Only before the first round, like a claim.
+ */
+export function wagerFight(g: Game, spec: FightSpec, bt: Battle): Battle | null {
+  if (!canClaim(spec, bt)) return null;
+  const mods = (spec.mods ?? [bt.P[0].mod, bt.P[1].mod]).map((m) => ({ ...m })) as [FightMod, FightMod];
+  mods[0].hp = Math.min(mods[0].hp ?? 100, WAGER_HP);
+  spec.mods = mods;
+  spec.wager = true;
+  noteFight(g, { mods: mods as unknown as Json, wager: true });
+  return startBattle(g, spec);
+}
+
 /**
  * Claims a sure win (review E5): the fight is played out on auto-battle, from the same start, until a win
  * comes up, so the rewards are full and the HP it costs is what a real win costs. Null if no win comes up
@@ -634,6 +653,11 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   award(g, keys, got);
   lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  // a sure win wagered (L2): won at 60% HP, it pays elite loot and a gem
+  if (spec.wager) {
+    if (won) awardGems(g, 1, lines);
+    lines.push(won ? '🎲 Wager won: elite loot and a gem on top' : '🎲 The wager went the other way. A free win, traded for a lesson');
+  }
   // a boss that toughened up for you pays for it (review E5 and F7)
   if (won && node === 'boss' && tunedBossGems(O)) {
     lines.push(`💪 ${O.name} put on ${pl(O.tuned!, 'level', 'levels')} for you and lost anyway`);
@@ -665,7 +689,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   if (won) {
     if (node === 'boss') next.push({ t: 'loot', table: 'boss' }, ...(hardDone ? [{ t: 'loot', table: 'treasure' } as Step] : []));
     else {
-      if (node === 'elite' || node === 'nemesis') next.push({ t: 'loot', table: hard ? 'boss' : 'elite' });
+      if (node === 'elite' || node === 'nemesis' || spec.wager) next.push({ t: 'loot', table: hard ? 'boss' : 'elite' });
       next.push({ t: 'reward' });
     }
   }

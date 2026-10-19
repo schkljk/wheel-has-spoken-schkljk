@@ -4,6 +4,8 @@ import {
   CW_FOCUS,
   canClaim,
   claimWin,
+  wagerFight,
+  WAGER_HP,
   mulberry32,
   CW_REC,
   ULTS,
@@ -855,6 +857,29 @@ export function FightScreen({
     }
     finish();
   };
+  /** Or wager it (review L2): the same fight from the same dice at no more than 60% HP, for elite loot and a gem. */
+  const wager = async () => {
+    const bt = btRef.current;
+    if (!bt || S.ended || S.playing || !canClaim(spec, bt)) return;
+    const ok = await confirm({
+      title: 'Wager the sure win?',
+      body: `Fight it with at most ${WAGER_HP}% HP instead of taking it free. Win: elite loot and a 💎 on top. Lose: a normal loss, grit and all.`,
+      yes: 'Wager it',
+      no: 'Keep it safe',
+    });
+    if (!ok) return openMenu();
+    const nb = act((g) => wagerFight(g, spec, bt));
+    if (!nb) return;
+    btRef.current = nb;
+    if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = nb;
+    S.log = [...nb.start()];
+    const sc = sceneRef.current!;
+    sc.settle();
+    sc.applySnap(nb.snap());
+    setSnap(nb.snap());
+    toast(`🎲 Wagered: win it from ${WAGER_HP}% HP`);
+    nextTurn();
+  };
   const toggleAuto = () => {
     const on = !autoRef.current;
     setAuto(on);
@@ -929,6 +954,13 @@ export function FightScreen({
               <Icon name="cup" />
               <b>Claim the win</b>
               <small>A sure thing: full rewards, no fight</small>
+            </button>
+          )}
+          {!over && canClaim(spec, bt) && (
+            <button class="menu-i" onClick={() => (closeSheet(), void wager())}>
+              <Icon name="dice" />
+              <b>Wager it</b>
+              <small>Fight at {WAGER_HP}% HP: elite loot and a 💎</small>
             </button>
           )}
           {!over && (

@@ -129,6 +129,8 @@ export interface FightRec {
   /** a spin that landed and isn't played yet: it is the next round */
   pend?: RecMove | null;
   nudged?: boolean;
+  /** the sure win was wagered (L2) */
+  wager?: boolean;
 }
 /** The fight under way for the active fighter, if any. */
 export const fightRec = (g: Game): FightRec | null => mine(g)?.fight ?? null;
@@ -147,7 +149,7 @@ export function openFight(g: Game, kind: string, opp: string): FightRec {
   return rec;
 }
 /** Keeps the fight's arena or starting tweaks once they are known. */
-export function noteFight(g: Game, patch: Pick<FightRec, 'arenaK'> | Pick<FightRec, 'mods'>) {
+export function noteFight(g: Game, patch: Partial<Pick<FightRec, 'arenaK' | 'mods' | 'wager'>>) {
   const r = fightRec(g);
   if (r) Object.assign(r, JSON.parse(JSON.stringify(patch)));
 }
