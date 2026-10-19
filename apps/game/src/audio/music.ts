@@ -141,7 +141,7 @@ function loopOf(t: Track): Promise<AudioBuffer | null> {
   if (others.length > KEEP) loops.delete(others[0]!);
   return p;
 }
-const idle = () => new Promise<void>((r) => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 250 }) : setTimeout(r, 16)));
+const idle = () => new Promise<void>((r) => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 1000 }) : setTimeout(r, 16)));
 /**
  * Renders one pass of a track into a buffer that loops without a seam: the end of the pass before is rendered
  * first, so the start carries its tails exactly as the second time round does live. The notes are made a bar at a
@@ -178,10 +178,15 @@ export async function renderLoop(t: Track, rate = RATE): Promise<AudioBuffer> {
         continue;
       }
       last = q;
-      void oc.suspend((q * 128) / rate).then(() => {
-        notes(k);
-        void oc.resume();
-      });
+      // and only when the page has a moment: loops are rendered when sound starts, the first tap, which is
+      // when the player is busiest
+      void oc
+        .suspend((q * 128) / rate)
+        .then(idle)
+        .then(() => {
+          notes(k);
+          void oc.resume();
+        });
     }
   } else for (let k = BAR; k < total; k += BAR) notes(k);
   const all = await oc.startRendering();

@@ -5,6 +5,7 @@ import { prefetchFlows } from './flows/lazy';
 import { route, save } from './state/game';
 import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
+import { warmIcons } from './ui/Icon';
 import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
 import { installCosmetics } from './state/cosmetics';
@@ -59,6 +60,7 @@ ensurePool({
 // shaders compiled), so the first spin and the first fight don't wait for either; the wheels' bigger emojis too
 // ... and the screens and flows the menus load on first use (the first chunk carries only the title and the hub)
 const warm = () => {
+  warmIcons();
   prefetchScreens();
   prefetchFlows();
   void warmPixi();
