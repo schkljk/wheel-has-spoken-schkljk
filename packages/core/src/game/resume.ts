@@ -28,15 +28,20 @@ const mine = (g: Game) => {
   const r = state(g);
   return r.slot != null && r.slot === g.save.roster.active ? r : null;
 };
+/** The state for the active fighter: another fighter's steps, place and half-picked level-up go (G16). */
+const own = (g: Game) => {
+  const r = state(g);
+  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null, lv: null });
+  r.slot = g.save.roster.active;
+  return r;
+};
 
 // ---------------------------------------------------------------- after a fight
 /** The steps after a fight still to come for the active fighter (the first is the one being played). */
 export const pendingSteps = (g: Game): Step[] => (mine(g)?.steps ?? []).slice();
 /** Remembers the steps still to come (none: clears them). */
 export function setPendingSteps(g: Game, steps: readonly Step[] | null) {
-  const r = state(g);
-  r.slot = g.save.roster.active;
-  r.steps = steps && steps.length ? [...steps] : null;
+  own(g).steps = steps && steps.length ? [...steps] : null;
 }
 /** A step that must happen before the rest (a gear choice from a loot spin). */
 export function pushStep(g: Game, s: Step) {
@@ -49,10 +54,7 @@ export function stepDone(g: Game) {
 
 // ---------------------------------------------------------------- where they were
 export function setPlace(g: Game, place: Place | null) {
-  const r = state(g);
-  if (r.slot !== g.save.roster.active) r.steps = null;
-  r.slot = g.save.roster.active;
-  r.place = place;
+  own(g).place = place;
 }
 export const lastPlace = (g: Game): Place | null => mine(g)?.place ?? null;
 
@@ -60,10 +62,8 @@ export const lastPlace = (g: Game): Place | null => mine(g)?.place ?? null;
 /** The level-up slices landed so far for the level being picked (two to choose from with a second opinion). */
 export const levelSpins = (g: Game): string[] => (mine(g)?.lv ?? []).slice();
 export function addLevelSpin(g: Game, k: string) {
-  const r = state(g);
-  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null });
-  r.slot = g.save.roster.active;
-  r.lv = [...levelSpins(g), k];
+  const prev = levelSpins(g);
+  own(g).lv = [...prev, k];
 }
 export function clearLevelSpins(g: Game) {
   state(g).lv = null;

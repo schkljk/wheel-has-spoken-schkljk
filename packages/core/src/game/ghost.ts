@@ -1,4 +1,6 @@
+import { TREE } from '../data/talents';
 import { deserFighter, hashStr, serFighter, type CareerFighter, type SerFighter } from '../save/fighter';
+import { GEARK } from '../stats';
 import { invalidate, track } from './career';
 import type { FightOutcome, FightResult, FightTier } from './fight';
 import type { Game } from './game';
@@ -54,6 +56,34 @@ export function ghostCode(f: CareerFighter): string {
   return `${PREFIX}${body}.${check(body)}`;
 }
 
+const TAL_MAX = new Map(TREE.flatMap((t) => t.t.map((r) => [r[0], r[3]] as const)));
+const STATS = new Set(['str', 'spd', 'dur', 'iq', 'wm', 'pm', 'cha']);
+const int = (v: unknown, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
+/**
+ * A code is text anyone can edit, and its checksum only catches typos: keep what it claims inside the game's
+ * bounds (review G16). Level 1 to 50, bonuses as big as play can make them, real gear in its own slot, real
+ * talents up to their ranks.
+ */
+function sane(b: Build): Build {
+  const bonus: Record<string, number> = {};
+  for (const [k, v] of Object.entries(b.bonus || {})) if (STATS.has(k)) bonus[k] = int(v, -12, 12);
+  const gear: Record<string, string> = {};
+  for (const [slot, k] of Object.entries(b.gear || {})) if (typeof k === 'string' && GEARK[k]?.slot === slot) gear[slot] = k;
+  const gup: Record<string, number> = {};
+  for (const [k, v] of Object.entries(b.gup || {})) if (Object.values(gear).includes(k)) gup[k] = int(v, 0, 5);
+  let talents: Build['talents'];
+  if (Array.isArray(b.talents)) talents = b.talents.filter((k): k is string => typeof k === 'string' && TAL_MAX.has(k));
+  else {
+    const t: Record<string, number> = {};
+    for (const [k, v] of Object.entries(b.talents || {})) if (TAL_MAX.has(k)) t[k] = int(v, 0, TAL_MAX.get(k)!);
+    talents = t;
+  }
+  const rm: Record<string, number> = {};
+  for (const [k, v] of Object.entries(b.reinc?.m || {})) if (STATS.has(k)) rm[k] = int(v, -3, 3);
+  const reinc = b.reinc && typeof b.reinc.n === 'string' ? { ...b.reinc, q: int(b.reinc.q, 0, 3), m: rm } : undefined;
+  return { ...b, lvl: int(b.lvl, 1, 50), bonus, gear: gear as Build['gear'], gup, talents, reinc };
+}
+
 /** Reads a ghost code (spaces and line breaks from a chat app are fine). Null if it isn't one, or got damaged. */
 export function readGhost(code: string): CareerFighter | null {
   const c = code.replace(/\s+/g, '');
@@ -66,7 +96,8 @@ export function readGhost(code: string): CareerFighter | null {
   } catch {
     return null;
   }
-  if (!b || typeof b.name !== 'string' || !b.picks) return null;
+  if (!b || typeof b !== 'object' || typeof b.name !== 'string' || !b.picks || typeof b.picks !== 'object') return null;
+  b = sane(b);
   const f = deserFighter({ ...b, boons: [], rec: { w: 0, l: 0 }, armory: [] } as unknown as SerFighter);
   if (!f) return null;
   f.name = b.name.slice(0, 40);

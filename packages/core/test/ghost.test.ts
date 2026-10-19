@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ghostCode, headToHead, labFighter, mulberry32, numStats, readGhost, type CareerFighter } from '../src';
+import { ghostCode, hashStr, headToHead, labFighter, mulberry32, numStats, readGhost, type CareerFighter } from '../src';
 
 // Review F9: a fighter as a line of text, fought by a friend.
 describe('ghost codes', () => {
@@ -32,5 +32,35 @@ describe('ghost codes', () => {
     expect(readGhost(broken)).toBeNull();
     expect(readGhost('hello')).toBeNull();
     expect(readGhost('WHS1.e30.000')).toBeNull();
+  });
+});
+
+// Review G16: the checksum is public, so a code is clamped to what the game can make.
+describe('a forged ghost code', () => {
+  const b64 = (s: string) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const forge = (edit: (b: Record<string, unknown>) => void) => {
+    const code = ghostCode(labFighter(mulberry32(8), 12) as CareerFighter);
+    const body = code.slice(5, code.lastIndexOf('.'));
+    const json = JSON.parse(decodeURIComponent(escape(atob(body.replace(/-/g, '+').replace(/_/g, '/'))))) as Record<string, unknown>;
+    edit(json);
+    const nb = b64(JSON.stringify(json));
+    return `WHS1.${nb}.${(hashStr(nb) % 46656).toString(36).padStart(3, '0')}`;
+  };
+  it('keeps the level from 1 to 50', () => {
+    expect(readGhost(forge((b) => (b.lvl = 100000)))!.lvl).toBe(50);
+    expect(readGhost(forge((b) => (b.lvl = 'abc')))!.lvl).toBe(1);
+  });
+  it('keeps bonuses, gear and talents real', () => {
+    const g = readGhost(
+      forge((b) => {
+        b.bonus = { str: 999, hp: 500 };
+        b.gear = { armor: 'not-a-thing', helm: 'not-either' };
+        b.talents = { nope: 9 };
+      }),
+    )!;
+    expect(g.bonus.str).toBe(12);
+    expect((g.bonus as Record<string, number>).hp).toBeUndefined();
+    expect(Object.values(g.gear || {}).filter(Boolean)).toEqual([]);
+    expect(numStats(g).hp).toBeLessThan(5000);
   });
 });

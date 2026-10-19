@@ -128,4 +128,13 @@ describe('a level-up being picked (F4, a second opinion)', () => {
     expect(levelSpins(g)).toEqual([]);
     expect(g.F!.pendingLv).toBe(0);
   });
+  it("stays with its fighter: another fighter's map or steps don't inherit it (G16)", () => {
+    const g = game();
+    addLevelSpin(g, 'str');
+    g.save.roster.active = 1;
+    setPlace(g, 'map');
+    expect(levelSpins(g)).toEqual([]);
+    setPendingSteps(g, [{ t: 'levelups' }]);
+    expect(levelSpins(g)).toEqual([]);
+  });
 });

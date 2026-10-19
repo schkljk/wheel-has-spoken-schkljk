@@ -935,8 +935,11 @@ export function FightScreen({
     tick();
   };
   /** A story win's reward, picked on the result: the loot spin comes next; heal or money are paid now. */
+  const rewardPicked = useRef(false);
   const pickReward = (k: 'loot' | 'heal' | 'money') => {
-    if (!result) return;
+    // two quick taps paid twice (G16): the first one counts
+    if (!result || rewardPicked.current) return;
+    rewardPicked.current = true;
     const i = result.next.findIndex((x) => x.t === 'reward');
     const next = [...result.next];
     if (k === 'loot') next.splice(i, 1, { t: 'loot', table: 'normal' });
