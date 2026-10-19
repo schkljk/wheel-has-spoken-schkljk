@@ -480,6 +480,8 @@ export const storyPay = (node: 'fight' | 'elite' | 'boss' | 'nemesis', ch: numbe
 export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightResult {
   const F = g.F!;
   const S = storyOf(g);
+  // the step that started this fight is over, whatever happens next (resume.ts)
+  delete S.pend;
   const p = g.save.profile;
   const won = o.w === 0;
   const O = spec.opp;

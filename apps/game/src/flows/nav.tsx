@@ -28,11 +28,19 @@ import {
   upgradeChoose,
   upgradeLists,
   upgradeNone,
+  pendingSteps,
+  pendingNode,
+  lastPlace,
+  pushStep,
+  setPendingSteps,
+  setPlace,
+  stepDone,
+  type Game,
   type Gear,
   type LootTable,
   type Step,
 } from '@whs/core';
-import { G, act, go, sync, toast } from '../state/game';
+import { G, act, enterSlot, go, sync, toast } from '../state/game';
 import { cine, closeSheet, confirm, openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
@@ -141,6 +149,8 @@ export async function levelUps() {
       spinLabel: 'Spin the level-up wheel',
       preview: true,
       nextLabel: 'Continue',
+      // you spin it; it moves on by itself (B3)
+      autoNext: 2000,
       onLand: (it) => {
         up = levelUpLand(G, it);
         if (up === 'power') return <div class="ds">Next: a power spin with only equal or better slices. You can keep your current power if you like it more</div>;
@@ -191,8 +201,12 @@ async function upgradeSpin(kind: 'power' | 'weapon') {
 }
 
 // ---------------------------------------------------------------- loot and new gear
-/** The loot wheel; new gear for a taken slot asks what to do with it. */
-export async function lootFlow(table: LootTable) {
+/**
+ * The loot wheel; new gear for a taken slot asks what to do with it. As a step after a fight (`step`), landing
+ * marks the step done in the same change that pays it, and a gear choice waits as its own step, so closing the
+ * app never pays twice or loses the piece (A4). `landed` runs in that same change too (a map step moving on).
+ */
+export async function lootFlow(table: LootTable, o: { step?: boolean; landed?: (g: Game) => void } = {}) {
   storyEnsure(G);
   const list = lootList(G, table);
   const reasons = act((g) => lootStart(g, table));
@@ -205,8 +219,14 @@ export async function lootFlow(table: LootTable) {
     reasons,
     spinLabel: 'Spin for loot',
     nextLabel: 'Continue',
+    // spoils spin and move on by themselves (B3); a gear choice still waits for you
+    autoSpin: true,
+    autoNext: 1700,
     onLand: (it) => {
       const r = lootLand(G, it);
+      if (o.step) stepDone(G);
+      if (r && r.kind === 'gear' && r.then === 'choose') pushStep(G, { t: 'gear', k: r.gear.k });
+      o.landed?.(G);
       if (!r) return null;
       if (r.kind === 'coins') return note(`+${r.n} coins`);
       if (r.kind === 'item') return note(`${r.item.e} ${r.item.n} added to your bag`);
@@ -224,7 +244,7 @@ export async function lootFlow(table: LootTable) {
       );
     },
   });
-  if (pending) await gearChoice(pending);
+  if (pending) await gearChoice(pending, true);
 }
 
 export function GearReveal({ g }: { g: Gear }) {
@@ -243,8 +263,8 @@ export function GearReveal({ g }: { g: Gear }) {
   );
 }
 
-/** New gear for a slot that is taken: wear it, store it in the armory, or salvage it. */
-export async function gearChoice(g: Gear) {
+/** New gear for a slot that is taken: wear it, store it in the armory, or salvage it. `step`: it is a waiting step. */
+export async function gearChoice(g: Gear, step = false) {
   act((x) => gearArrives(x, g));
   const F = G.F!;
   const old = GEARK[F.gear![g.slot]!];
@@ -275,7 +295,10 @@ export async function gearChoice(g: Gear) {
     const c = pick === 2 ? 2 : keepFirst ? 1 - pick : pick;
     if (c === 2 && !(await confirm({ title: `Salvage ${g.n}?`, body: `You get ${salv} coins. It is gone for good.`, yes: 'Salvage it' }))) continue;
     const prev = F.gear![g.slot];
-    act((x) => gearChoose(x, g, (['wear', 'store', 'salvage'] as const)[c]!));
+    act((x) => {
+      gearChoose(x, g, (['wear', 'store', 'salvage'] as const)[c]!);
+      if (step) stepDone(x);
+    });
     if (c === 0) swapped(`${g.e} ${g.n} equipped`, g.slot, prev);
     else toast(c === 1 ? `${g.e} ${g.n} added to your armory` : `+${salv} 🪙`);
     return;
@@ -283,8 +306,8 @@ export async function gearChoice(g: Gear) {
 }
 
 // ---------------------------------------------------------------- story rewards and cup events
-/** After a story win: a loot spin, 25% HP back, or prize money. */
-export async function rewardFlow() {
+/** After a story win: a loot spin, 25% HP back, or prize money. As a step, the choice and its payout are one change. */
+export async function rewardFlow(step = false) {
   const c = prizeMoney(G);
   const pick = await choose({
     emoji: '🏆',
@@ -296,17 +319,21 @@ export async function rewardFlow() {
       { label: '💰 Prize money', sub: `+${c} coins` },
     ],
   });
-  if (pick === 0) await lootFlow('normal');
-  else if (pick === 1) {
-    act((g) => healS(g, 25));
-    toast('+25% HP');
-  } else {
-    act((g) => addCoins(g, c));
-    toast(`+${c} 🪙`);
-  }
+  if (pick === 0) return lootFlow('normal', { step });
+  takeReward(pick === 1 ? 'heal' : 'money', step);
+}
+/** The story reward's heal or prize money (the loot spin is lootFlow). */
+export function takeReward(k: 'heal' | 'money', step: boolean) {
+  const c = prizeMoney(G);
+  act((g) => {
+    if (k === 'heal') healS(g, 25);
+    else addCoins(g, c);
+    if (step) stepDone(g);
+  });
+  toast(k === 'heal' ? '+25% HP' : `+${c} 🪙`);
 }
 
-export async function eventFlow() {
+export async function eventFlow(step = false) {
   const F = G.F!;
   await spinWheel({
     cat: 'event',
@@ -315,43 +342,65 @@ export async function eventFlow() {
     list: eventList(),
     spinLabel: 'Spin the event wheel',
     nextLabel: 'Continue',
-    onLand: (it) => note(applyEvent(G, it)),
+    onLand: (it) => {
+      const t = applyEvent(G, it);
+      if (step) stepDone(G);
+      return note(t);
+    },
   });
 }
 
 // ---------------------------------------------------------------- places
-/** The fighter page. Waiting level-ups are spun first, as in the legacy game. */
+/** The fighter page. Steps still waiting after a fight come first (A4), then waiting level-ups. */
 export async function goHub(tab: 'play' | 'fighter' | 'goals' | 'more' = 'play') {
   if (!G.F) return go({ screen: 'title' });
+  if (pendingSteps(G).length) return resumeSteps();
   if ((G.F.pendingLv || 0) > 0) await levelUps();
+  act((g) => setPlace(g, 'hub'));
   go({ screen: 'hub', tab });
 }
 
-/** The story map (repairs old stories and opens Act II for those who finished Act I). */
+/** The story map (repairs old stories and opens Act II for those who finished Act I). A step that was entered and not finished picks up where it was. */
 export function goMap() {
   if (!G.F) return go({ screen: 'title' });
+  if (pendingSteps(G).length) return void resumeSteps();
   act((g) => {
     storyEnsure(g);
     const m = act2Migrate(g);
     if (m) toast(m);
     if (placeNemesis(g)) toast(`😈 ${myNemesis(g)!.f.name} is somewhere on this map. Waiting.`);
+    setPlace(g, 'map');
   });
   go({ screen: 'map', key: Math.random() });
+  const i = pendingNode(G);
+  if (i != null) void import('./story').then((m) => m.resumeNode(i));
 }
 
-/** What follows a fight result, in order. Steps that lead somewhere end the chain. */
-export async function runSteps(steps: Step[], places: { bracket?: () => void; gauntlet?: () => void; rush?: () => void; tower?: () => void } = {}) {
+type Places = { bracket?: () => void; gauntlet?: () => void; rush?: () => void; tower?: () => void };
+
+/**
+ * What follows a fight result, in order. The steps are kept in the save as they go (A4): each is done in the
+ * same change that pays it, so closing the app picks up at the next one. Steps that lead somewhere end the chain.
+ */
+export async function runSteps(steps: Step[], places: Places = {}) {
+  act((g) => setPendingSteps(g, steps));
+  const leave = () => act((g) => setPendingSteps(g, null));
   for (const s of steps) {
     switch (s.t) {
+      // these mark themselves done when they pay out
       case 'loot':
-        await lootFlow(s.table);
-        break;
+        await lootFlow(s.table, { step: true });
+        continue;
       case 'reward':
-        await rewardFlow();
-        break;
+        await rewardFlow(true);
+        continue;
       case 'event':
-        await eventFlow();
-        break;
+        await eventFlow(true);
+        continue;
+      case 'gear':
+        if (GEARK[s.k]) await gearChoice(GEARK[s.k]!, true);
+        else act((g) => stepDone(g));
+        continue;
       case 'levelups':
         await levelUps();
         break;
@@ -359,18 +408,51 @@ export async function runSteps(steps: Step[], places: { bracket?: () => void; ga
         await celebrate(s.icon, s.title, s.sub);
         break;
       case 'map':
+        leave();
         return goMap();
       case 'hub':
+        leave();
         return goHub();
       case 'bracket':
+        leave();
         return places.bracket?.();
       case 'gauntlet':
+        leave();
         return places.gauntlet?.();
       case 'rush':
+        leave();
         return places.rush?.();
       case 'tower':
+        leave();
         return places.tower?.();
     }
+    act((g) => stepDone(g));
   }
+  leave();
   sync();
+}
+
+/**
+ * Continue (B5): back into the fighter's game where it was left. Steps still waiting after a fight first, then
+ * the story map, a bracket, or the fighter page.
+ */
+export async function continueGame(i: number) {
+  if (!enterSlot(i)) return;
+  if (pendingSteps(G).length) return resumeSteps();
+  const p = lastPlace(G);
+  if (p === 'map' && G.F!.story) return goMap();
+  if (p === 'bracket') return (await import('./modes')).resumeRun();
+  return goHub();
+}
+/** Where Continue goes, in words (for its button). */
+export function continueText(): string {
+  if (pendingSteps(G).length) return 'Your spoils are waiting';
+  const p = lastPlace(G);
+  return p === 'map' ? 'Back to the story map' : p === 'bracket' ? 'Back to the bracket' : 'Back to the fighter page';
+}
+
+/** Picks up the steps a closed app left waiting, then goes where they lead. */
+export async function resumeSteps() {
+  const m = await import('./modes');
+  await runSteps(pendingSteps(G), { bracket: m.resumeRun, gauntlet: m.resumeRun, rush: () => void m.rushFlow(), tower: () => void m.towerFlow() });
 }

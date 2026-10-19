@@ -20,6 +20,7 @@ import {
   synOf,
   wheelsDone,
   wheelsMaybe,
+  saveBuild,
   wheelsTotal,
   type BuildFighter,
   type Fighter,
@@ -162,8 +163,9 @@ function SoFarSheet({ f }: { f: BuildFighter }) {
 
 // ---------------------------------------------------------------- building a fighter
 /** Spins every wheel of a new fighter: flick or tap, one free reroll, or let the game spin the rest. */
-export function BuildScreen({ name }: { name: string }) {
-  const S = useRef({ f: newBuild(name), idx: 0, auto: false, spinning: false, done: false, lastSpun: -1, list: [] as OddsEntry[], reasons: [] as OddsReason[] }).current;
+export function BuildScreen({ name, resume }: { name: string; resume?: { f: unknown; idx: number; done: boolean } | null }) {
+  // a build in progress is kept in the save after every wheel, so closing the app loses none of it (A4)
+  const S = useRef({ f: (resume?.f as BuildFighter) ?? newBuild(name), idx: resume?.idx ?? 0, auto: false, spinning: false, done: false, lastSpun: -1, list: [] as OddsEntry[], reasons: [] as OddsReason[] }).current;
   const [, setV] = useState(0);
   const rerender = () => setV((x) => x + 1);
   const [landed, setLanded] = useState<Landed | null>(null);
@@ -265,6 +267,7 @@ export function BuildScreen({ name }: { name: string }) {
     if (r.best >= 3) burst();
     S.lastSpun = S.idx;
     S.idx++;
+    act((g) => saveBuild(g, S.f, S.idx, false));
     rerender();
     later(
       () => {
@@ -293,7 +296,11 @@ export function BuildScreen({ name }: { name: string }) {
     },
   };
   const finish = () => {
-    act((g) => finishBuild(g, S.f as Fighter));
+    act((g) => {
+      finishBuild(g, S.f as Fighter);
+      // the finished fighter waits on the card, and is kept until they start a career or get scrapped
+      saveBuild(g, S.f, S.idx, true);
+    });
     go({ screen: 'card', f: S.f });
   };
 
@@ -356,6 +363,8 @@ export function BuildScreen({ name }: { name: string }) {
                 S.idx = S.lastSpun;
                 S.lastSpun = -1;
                 S.done = false;
+                // the reroll is spent the moment it's used, even if the app closes mid-spin
+                act((g) => saveBuild(g, S.f, S.idx, false));
                 load();
                 doSpin();
               }}

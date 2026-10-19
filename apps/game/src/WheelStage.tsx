@@ -87,16 +87,7 @@ export function WheelStage() {
     add(L.hub, 'tw-hub');
     add(L.pointer, 'tw-ptr').style.transformOrigin = L.pivot;
     el.appendChild(box);
-    // a square as big as the space allows (90% of its smaller side, as before)
-    const fit = () => {
-      const s = Math.floor(Math.min(el.clientWidth, el.clientHeight) * 0.9 * (S / N));
-      box.style.width = box.style.height = `${s}px`;
-    };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(el);
     return () => {
-      ro.disconnect();
       box.remove();
     };
   }, []);

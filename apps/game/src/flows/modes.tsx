@@ -28,6 +28,7 @@ import {
   mutatorOf,
   nextGauntletOpp,
   oddsWord,
+  setPlace,
   pick,
   pl,
   powerScale,
@@ -71,6 +72,7 @@ import { tip } from '../state/tips';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
+  act((g) => setPlace(g, 'bracket'));
   go({ screen: 'bracket', run: T, key: Math.random() });
   tip(T.kind === 'gauntlet' ? 'gauntlet' : 'bracket');
 }

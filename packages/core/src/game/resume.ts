@@ -72,6 +72,8 @@ interface NodeState {
   fx?: { aiSkill?: number; poolPct?: number };
   /** the encounter it drew */
   ev?: string;
+  /** what comes after the step's choice was made: a fight from an encounter, a spin (loot, mystery, training) */
+  then?: string;
 }
 const nodeOf = (g: Game) => {
   const S = storyOf(g);
@@ -91,6 +93,17 @@ export function markNode(g: Game, i: number) {
 export function clearNode(g: Game) {
   delete storyOf(g).pend;
 }
+/** The step is done: the map moves on (in the same change as whatever it paid, so nothing pays twice). */
+export function nodeDone(g: Game) {
+  storyOf(g).row++;
+  clearNode(g);
+}
+/** The step's choice is made and this comes next ("fight:elite", "loot:treasure", "mystery", "train"). */
+export function setNodeThen(g: Game, then: string) {
+  const n = nodeOf(g);
+  if (n) n.then = then;
+}
+export const nodeThen = (g: Game): string | null => nodeOf(g)?.then ?? null;
 /** The step's opponent: the one it rolled before, or a new one (kept, so a reload meets the same one). */
 export function nodeFoe(g: Game, kind: 'fight' | 'elite'): CareerFighter {
   const n = nodeOf(g);

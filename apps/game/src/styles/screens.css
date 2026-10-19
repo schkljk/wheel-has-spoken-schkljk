@@ -430,11 +430,13 @@
   inset: 0;
   display: grid;
   place-items: center;
+  /* the wheel is a square as big as the space allows, sized by CSS alone (always in step with the layout) */
+  container-type: size;
 }
 .tw-box {
   position: relative;
-  /* the wheel's middle sits a touch low, like the pointer pulls it */
-  transform: translateY(4%);
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
 }
 .tw {
   position: absolute;
@@ -483,4 +485,16 @@ html[data-motion='reduced'] .tw-face,
 html[data-motion='reduced'] .tw-blink,
 html[data-motion='reduced'] .tw-ptr {
   animation: none;
+}
+
+/* Continue on the title screen (B5): the way back in, with where it goes */
+.btn.cont {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding-block: 0.6rem;
+}
+.btn.cont small {
+  font: 600 0.78rem/1.2 var(--body);
+  opacity: 0.85;
 }

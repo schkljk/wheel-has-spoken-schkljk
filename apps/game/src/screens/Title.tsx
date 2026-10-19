@@ -1,6 +1,6 @@
-import { fullName, deserFighter, randName } from '@whs/core';
+import { fullName, deserFighter, randName, savedBuild } from '@whs/core';
 import { useState } from 'preact/hooks';
-import { goHub } from '../flows/nav';
+import { continueGame, continueText, goHub } from '../flows/nav';
 import { G, enterSlot, go, loadProblems, save, store } from '../state/game';
 import { closeSheet, openSheet } from '../state/ui';
 import { offerImport, describeSave } from '../sheets/Save';
@@ -60,6 +60,10 @@ export function Title() {
     if (enterSlot(i)) void goHub();
   };
   let n = 0;
+  // Continue (B5): a fighter being built, or the last fighter played, straight back where they were
+  const build = savedBuild(G) as { f: { name: string }; idx: number; done: boolean } | null;
+  const cur = s.roster.active != null && slots[s.roster.active] ? s.roster.active : null;
+  const curName = cur != null ? (deserFighter(slots[cur]!.career)?.name ?? null) : null;
   return (
     <main class="screen title-screen">
       <div class="title-hero" aria-hidden="true">
@@ -88,6 +92,21 @@ export function Title() {
             </button>
           </div>
         )}
+        {build ? (
+          <button
+            class="btn block big cont"
+            onClick={() => (build.done ? go({ screen: 'card', f: build.f }) : go({ screen: 'build', name: build.f.name, resume: build }))}
+            {...rise(n++)}
+          >
+            <Icon name="play" /> {build.done ? `Meet ${build.f.name}` : `Keep building ${build.f.name}`}
+            <small>{build.done ? 'Every wheel is spun. They are waiting to start their career' : 'Your spins so far are kept'}</small>
+          </button>
+        ) : cur != null && curName ? (
+          <button class="btn block big cont" onClick={() => void continueGame(cur)} {...rise(n++)}>
+            <Icon name="play" /> Continue with {curName}
+            <small>{continueText()}</small>
+          </button>
+        ) : null}
         <span class="sec-label">Your fighters</span>
         {slots.map((slot, i) => {
           if (!slot)

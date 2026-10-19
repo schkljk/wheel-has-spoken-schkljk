@@ -1,4 +1,4 @@
-import { buildSummary, ctxOf, enterCareer, type CareerFighter, type SumLine } from '@whs/core';
+import { buildSummary, clearBuild, ctxOf, enterCareer, type CareerFighter, type SumLine } from '@whs/core';
 import { G, act, go } from '../state/game';
 import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
@@ -24,7 +24,10 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         <button
           class="btn block"
           onClick={() => {
-            act((g) => enterCareer(g, f));
+            act((g) => {
+              enterCareer(g, f);
+              clearBuild(g);
+            });
             void goHub();
           }}
         >
@@ -33,7 +36,10 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         <button
           class="btn ghost block"
           onClick={async () => {
-            if (await confirm({ title: `Scrap ${f.name}?`, body: 'They go back into the wheel. Every spin is lost.', yes: 'Scrap them', danger: true })) go({ screen: 'title' });
+            if (await confirm({ title: `Scrap ${f.name}?`, body: 'They go back into the wheel. Every spin is lost.', yes: 'Scrap them', danger: true })) {
+              act((g) => clearBuild(g));
+              go({ screen: 'title' });
+            }
           }}
         >
           Scrap them

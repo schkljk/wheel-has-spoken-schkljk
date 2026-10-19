@@ -25,7 +25,7 @@ function Screen() {
     case 'hub':
       return <Hub tab={r.tab as Tab} />;
     case 'build':
-      return <BuildScreen key={r.name as string} name={r.name as string} />;
+      return <BuildScreen key={r.name as string} name={r.name as string} resume={r.resume as { f: unknown; idx: number; done: boolean } | null} />;
     case 'card':
       return <CardScreen f={r.f as CareerFighter} />;
     case 'spin':

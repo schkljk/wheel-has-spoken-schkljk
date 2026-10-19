@@ -41,6 +41,16 @@
   - **B7:** map previews show the opponents' level against yours, and how far the next campfire is.
   - **C2:** the first-fight tip explains the teal ring. Tapping the read opens "what beats what".
   - **C3:** a new injury says how it heals (by itself after cups, or a physio session or a campfire's Patch up).
+  - **A4, nothing lost when the app closes** (`core/game/resume.ts`):
+    - A fighter being built is saved after every wheel, and a finished one waits on its card until it starts a career or is scrapped.
+    - The steps after a fight (reward, loot, a gear choice, level-ups) are saved one by one. Each is marked done in the same change that pays it, so reopening picks up at the next step and never pays twice. A gear choice from a loot spin waits as its own step.
+    - A story step keeps the opponent or encounter it rolled. Reopening goes straight back into it, past any choice already made, so reloading can't re-roll a fight or an event. Treasure, mystery and training spins move the map on in the same change that pays them.
+  - **B3, spoils:** a story win's reward is picked right on the result (Loot spin, Catch your breath, Prize money: one tap instead of Continue plus a sheet). Loot wheels after a fight spin and move on by themselves, and the level-up wheel moves on by itself after you spin it.
+  - **B5, Continue:** the title screen leads with "Continue with {name}". It goes back to the steps still waiting, the story map, the bracket or the fighter page, and says which. A fighter being built shows "Keep building {name}".
+  - **C1, understanding fights:**
+    - Every result has a "How it went" card: damage dealt and taken, the biggest hit each way, reads won each way, burns and poison, dodges, and one tip from the most telling number.
+    - The fight log has round headers.
+    - While a round plays, a line says "Your Strike vs their guard: they read it".
   - **Performance, measured on a desktop CPU unless noted:**
     - D1: canvases that get read back are CPU-backed. This removes the seconds-long stalls the review measured on a phone profile.
     - D2: the 119 race, class, weapon and enchant icons are baked into one 100 KB image (`npm run bake`; a test fails if it goes stale). The game no longer draws 107 sprites while it starts.

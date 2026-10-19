@@ -657,7 +657,8 @@
   cursor: pointer;
 }
 .statpop.top {
-  top: calc(0.6rem + env(safe-area-inset-top));
+  /* under the toasts (an Undo there must stay tappable) */
+  top: calc(4.4rem + env(safe-area-inset-top));
   bottom: auto;
   animation-name: pop-top;
 }
@@ -3428,4 +3429,101 @@ img.pxi.chap {
 .ng-n {
   font-weight: 800;
   color: var(--gold);
+}
+
+/* the spoils on a story win (B3): three picks right on the result */
+.spoils {
+  display: grid;
+  gap: 0.3rem;
+}
+.spoil-opts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.spoil {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.1rem;
+  min-height: 44px;
+  padding: 0.45rem 0.3rem;
+  border-radius: 12px;
+  border: 2px solid var(--edge);
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface) 75%);
+  box-shadow: 0 3px 0 var(--edge);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: center;
+}
+.spoil .pxi {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.spoil b {
+  font: 800 0.88rem/1.1 var(--display);
+}
+.spoil small {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.15;
+}
+.spoil:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--edge);
+}
+/* short screens: the picks keep their names and lose the small print */
+@media (max-height: 700px) {
+  .spoil {
+    padding: 0.3rem 0.25rem;
+  }
+  .spoil small {
+    display: none;
+  }
+  .spoil .pxi {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+}
+
+/* the fight recap (C1): why it went the way it did */
+.recap {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: grid;
+  gap: 0.3rem;
+}
+.recap-h {
+  font: 800 0.8rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.recap-nums {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+}
+.recap-nums b {
+  color: var(--ink);
+}
+.recap-tip {
+  font-size: 0.85rem;
+  color: #ffe9a8;
+}
+/* the round's matchup while it plays (C1) */
+.matchup {
+  font-size: 0.82rem;
+  color: #e6dff5;
+}
+.log .rhead {
+  list-style: none;
+  margin-top: 0.4rem;
+  font: 800 0.78rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }

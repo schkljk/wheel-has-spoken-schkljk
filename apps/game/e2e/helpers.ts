@@ -64,6 +64,9 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
     const els = document.querySelectorAll('button, a, h1, h2, h3, b, small, input, textarea, .card, .chip, .stat, .tag, .pxi, canvas, .kitmv');
     for (const el of els) {
       if (el.closest('.toasts')) continue;
+      // the title wheel's layers: see-through squares that turn (the face) or flick (the pointer), so their
+      // boxes swing past the corners while the wheel itself (.tw-box, fit by CSS) stays put
+      if (el.classList.contains('tw')) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) continue;
       // parked far off-screen on purpose (e.g. Pixi's screen-reader hook at -1000px)
@@ -146,6 +149,8 @@ const TAP_NEXT = `((o) => {
     const out = [...sheet.querySelectorAll('button')].find((b) => /^(Leave|Close|Back|Done)$/i.test(b.textContent.trim()) || b.getAttribute('aria-label') === 'Close');
     return tap(out || null);
   }
+  // a story win's spoils are picked right on the result (B3)
+  if (tap(document.querySelector('.fresult .spoil'))) return true;
   if (tap(document.querySelector('.fresult .btn'))) return true;
   if (tap(document.querySelector('.spin-foot .btn'))) return true;
   if (tap(document.querySelector('.mnode.now'))) return true;

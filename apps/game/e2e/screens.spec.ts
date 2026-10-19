@@ -171,7 +171,7 @@ for (const [width, height] of VIEWS) {
         await check(page, 'share card');
         await sheetClose(page);
       }
-      await page.locator('.fresult .btn').first().click();
+      await page.locator('.fresult .spoil, .fresult .btn').first().click();
       await page.locator('.ch-opt, .tabbar, .maphead, .spin-foot').first().waitFor();
       await check(page, 'after the fight');
       await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);

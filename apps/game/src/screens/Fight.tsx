@@ -26,6 +26,13 @@ import {
   rankTxt,
   oddsWord,
   arenaLand,
+  addCoins,
+  fightRecap,
+  matchupLine,
+  healS,
+  type Recap,
+  prizeMoney,
+  setPendingSteps,
   fightOdds,
   readClue,
   startBattle,
@@ -48,7 +55,7 @@ import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import type { ArenaWheel } from '../flows/fight';
 import { oddsFor } from '../state/odds';
-import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF } from '../state/game';
+import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF, toast } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
@@ -271,6 +278,10 @@ export function FightScreen({
   /** the boss's phase-two slice has been landed (it's once a fight) */
   const [phaseUsed, setPhaseUsed] = useState(false);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
+  /** the round's matchup while it plays out (C1) */
+  const [matchup, setMatchup] = useState<string | null>(null);
+  /** why the fight went the way it did (C1) */
+  const [recap, setRecap] = useState<Recap | null>(null);
   /** the arena wheel during the walk-in: spinning (null arena) or landed */
   const [arenaOut, setArenaOut] = useState<{ a: Arena | null; why?: string } | null>(null);
   const [result, setResult] = useState<FightResult | null>(null);
@@ -498,6 +509,11 @@ export function FightScreen({
     setPhase('playing');
     try {
       const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(G.rng, bt.P[0], bt.P[1], bt.hist[1]));
+      // what each side did this round, and who read whom, in words while it plays
+      const read = evs.find((e) => e.a?.t === 'read');
+      const mine = bt.hist[0].at(-1),
+        theirs = bt.hist[1].at(-1);
+      setMatchup(mine && theirs ? matchupLine(mine, theirs, read ? (read.a!.on as 0 | 1) : null) : null);
       await playEvents(evs);
     } catch (err) {
       console.error(err);
@@ -544,7 +560,12 @@ export function FightScreen({
     // the odds come back from a worker long before a fight ends; if they somehow haven't, work them out now
     if (!Number.isFinite(spec.odds)) spec.odds = fightOdds(G, spec);
     try {
-      r = act(() => end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd }));
+      // the result and the steps after it are saved together: closing the app on this screen loses nothing (A4)
+      r = act((g) => {
+        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });
+        setPendingSteps(g, x.next);
+        return x;
+      });
     } catch (err) {
       console.error(err);
       r = {
@@ -560,6 +581,7 @@ export function FightScreen({
       };
     }
     setPhase('over');
+    setRecap(fightRecap(bt, S.log, r.won));
     setResult(r);
     // a fanfare for a win, a sad trombone for a loss
     sfx(r.won ? 'f.win' : 'f.lose', { vary: 0 });
@@ -837,9 +859,18 @@ export function FightScreen({
     openSheet(
       <Sheet icon="scroll" title="Fight log" sub={`${S.log.length} events`}>
         <ol class="log full">
-          {S.log.map((e, i) => (
-            <LogLine key={i} e={e} names={names} />
-          ))}
+          {S.log.map((e, i) => {
+            // a header where each round starts (C1)
+            const head = e.r > 0 && (i === 0 || S.log[i - 1]!.r !== e.r);
+            return [
+              head && (
+                <li key={`r${i}`} class="rhead">
+                  {bt && bt.sd && e.r > bt.maxR ? `Sudden death, round ${e.r}` : `Round ${e.r}`}
+                </li>
+              ),
+              <LogLine key={i} e={e} names={names} />,
+            ];
+          })}
         </ol>
       </Sheet>,
     );
@@ -864,6 +895,23 @@ export function FightScreen({
     commit((x) => (x.settings.fast = !x.settings.fast));
     if (sceneRef.current) sceneRef.current.sp = SPF();
     tick();
+  };
+  /** A story win's reward, picked on the result: the loot spin comes next; heal or money are paid now. */
+  const pickReward = (k: 'loot' | 'heal' | 'money') => {
+    if (!result) return;
+    const i = result.next.findIndex((x) => x.t === 'reward');
+    const next = [...result.next];
+    if (k === 'loot') next.splice(i, 1, { t: 'loot', table: 'normal' });
+    else next.splice(i, 1);
+    const c = prizeMoney(G);
+    // the payout and the steps left are one change
+    act((g) => {
+      if (k === 'heal') healS(g, 25);
+      if (k === 'money') addCoins(g, c);
+      setPendingSteps(g, next);
+    });
+    if (k !== 'loot') toast(k === 'heal' ? '+25% HP' : `+${c} 🪙`);
+    done({ ...result, next });
   };
   /** The share card: both fighters, the final blow, names and titles. */
   const shareWin = async () => {
@@ -960,6 +1008,8 @@ export function FightScreen({
                 <SlicePeekView it={list[peek].it} bt={bt} foe={O.name} />
               ) : phase === 'spinning' ? (
                 <b>Spinning…</b>
+              ) : phase === 'playing' && matchup ? (
+                <small class="matchup">{matchup}</small>
               ) : focus === 'ult' ? (
                 <>
                   <b class="q3">🌟 {ULTS[F.arch.k] || 'Signature move'}</b>
@@ -988,26 +1038,54 @@ export function FightScreen({
         <section class={`fresult ${result.won ? 'win' : 'lose'}`} aria-live="polite">
           <div class="big">{result.big}</div>
           <p>{result.desc}</p>
-          <ul class="gains scroll">
-            {result.lines.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
-          {result.got.length > 0 && (
-            <div class="chips">
-              {result.got.map((a) => (
-                <Inf key={a.k} k={`it|ach|${a.n}`} class="oc up">
-                  {a.e} New title: {a.n}
-                </Inf>
+          {/* everything that can be long scrolls here; the choices below always stay on screen */}
+          <div class="gains scroll">
+            <ul class="gains">
+              {result.lines.map((l) => (
+                <li key={l}>{l}</li>
               ))}
+            </ul>
+            {result.got.length > 0 && (
+              <div class="chips">
+                {result.got.map((a) => (
+                  <Inf key={a.k} k={`it|ach|${a.n}`} class="oc up">
+                    {a.e} New title: {a.n}
+                  </Inf>
+                ))}
+              </div>
+            )}
+            {recap && <RecapCard r={recap} names={names} />}
+            {result.won && (
+              <button class="btn ghost sm block" onClick={shareWin}>
+                <Icon name="download" /> Save this win as a picture
+              </button>
+            )}
+          </div>
+          {result.next.some((x) => x.t === 'reward') ? (
+            // the spoils, picked right here (B3): one tap instead of a Continue and a sheet
+            <div class="spoils" role="group" aria-label="Spoils: pick one">
+              <span class="sec-label">Spoils: pick one</span>
+              <div class="spoil-opts">
+                <button class="spoil" onClick={() => pickReward('loot')}>
+                  <Icon name="gift" />
+                  <b>Loot spin</b>
+                  <small>Gear, items or coins</small>
+                </button>
+                <button class="spoil" onClick={() => pickReward('heal')}>
+                  <Icon name="heart" />
+                  <b>Catch your breath</b>
+                  <small>Heal 25% HP</small>
+                </button>
+                <button class="spoil" onClick={() => pickReward('money')}>
+                  <Icon name="coin" />
+                  <b>Prize money</b>
+                  <small>+{prizeMoney(G)} coins</small>
+                </button>
+              </div>
             </div>
-          )}
-          <button class="btn block" onClick={() => done(result)}>
-            {result.button}
-          </button>
-          {result.won && (
-            <button class="btn ghost block" onClick={shareWin}>
-              <Icon name="download" /> Save this win as a picture
+          ) : (
+            <button class="btn block" onClick={() => done(result)}>
+              {result.button}
             </button>
           )}
           {result.bracket && (
@@ -1018,6 +1096,43 @@ export function FightScreen({
         </section>
       )}
     </main>
+  );
+}
+
+/** Why the fight went the way it did (C1): the numbers that decided it, and one thing to try. */
+function RecapCard({ r, names }: { r: Recap; names: [string, string] }) {
+  return (
+    <section class="recap" aria-label="How it went">
+      <span class="recap-h">How it went, {r.rounds === 1 ? '1 round' : `${r.rounds} rounds`}</span>
+      <div class="recap-nums">
+        <span>
+          Dealt <b>{r.lost[1]}</b>
+        </span>
+        <span>
+          Taken <b>{r.lost[0]}</b>
+        </span>
+        <span>
+          Biggest hit <b>{r.biggest[0]}</b> vs <b>{r.biggest[1]}</b>
+        </span>
+        <span>
+          Reads won <b>{r.reads[0]}</b> vs <b>{r.reads[1]}</b>
+        </span>
+        {(r.dots[0] > 0 || r.dots[1] > 0) && (
+          <span>
+            Burns and poison <b>{r.dots[1]}</b> vs <b>{r.dots[0]}</b>
+          </span>
+        )}
+        {(r.dodges[0] > 0 || r.dodges[1] > 0) && (
+          <span>
+            Dodges <b>{r.dodges[0]}</b> vs <b>{r.dodges[1]}</b>
+          </span>
+        )}
+      </div>
+      <p class="recap-tip">💡 {r.tip}</p>
+      <small class="sr">
+        {names[0]} against {names[1]}
+      </small>
+    </section>
   );
 }
 
