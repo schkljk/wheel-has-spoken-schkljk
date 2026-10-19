@@ -16,7 +16,7 @@
 ### Review follow-up: the owner's picks
 
 - **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.
-- **Done so far:**
+- **Done:** all of them.
   - **A1, the daily streak:** wins in a row whenever they are played; only a loss resets it. A week off keeps the streak and its pay.
   - **A2, HP thresholds:** every description with engine HP now reads as a percentage ("below 45% HP", "heals 25% HP"). Engine HP is 100 for a full bar, so these were percentages all along. The fix is a wording layer (`data/wording.ts`) laid over the tables at load, so the tables stay a faithful port. The parity tests lay the same wording over the legacy tables before comparing: 75 strings changed, no numbers.
   - **A3:** the map tip says the boss is at the top.
@@ -118,7 +118,11 @@
     - **F10, mentors:** a new career can take a retired champion as a mentor: +1 to their best stat, and they drop by on the map at most once a chapter.
     - **F11, the locker** (More tab): 20 earned cosmetics for gems (wheel rims, pointer charms, victory confetti, nameplates). Looks only.
     - **F12, Wheelborn trials** (Play tab, level 34 or a finished story): ten remixed bosses for levels 34 to 50. Each is one boss's picks wearing two other bosses' phase-two kits, so phase two puts two one-time slices on your wheel. Stat tier and HP are set per trial (`tools/sim/trials.ts`) for a ladder from about 55% to 30% at the trial's level. First clears pay gems; losing costs nothing.
-  - **Still to do:** F3, Spin & Run.
+    - **F3, Spin & Run** (Play tab): a throwaway fighter, every wheel at once, for eight fights and an Act I boss. It starts at level 5 with a piece of gear; HP carries over (+10 after a win); every win is a level and one boon out of three (+2 to a stat, +1 to everything, a patch-up, gear, +2 levels). Walk away between fights, or lose, and the run pays out: its picks join the collection, its wins count toward class mastery, a gem per two wins and 3 more for the boss. The best run is kept. Every opponent and offer comes from the run's own seed, so closing the app re-rolls nothing. `tools/sim/spin-run.ts`, 300 auto-battle runs taking the first boon each time:
+
+      | Wins | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 (whole run) |
+      |---|---|---|---|---|---|---|---|---|---|---|
+      | Runs | 10% | 13% | 15% | 15% | 13% | 9% | 5% | 5% | 7% | 10% |
 
 
 ### Full review (October 2026)

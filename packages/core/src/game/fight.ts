@@ -43,7 +43,7 @@ import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial' | 'run';
 export interface FightTier {
   k: string;
   n: string;
@@ -151,7 +151,7 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
 
 /** Round limits: bosses get 30 rounds and sudden death; elites, legends and cup finals get 20. */
 export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run' | 'tier'>): Pick<BattleOpts, 'maxRounds' | 'suddenDeath'> {
-  if (spec.kind === 'rush' || spec.kind === 'trial' || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
+  if (spec.kind === 'rush' || spec.kind === 'trial' || (spec.kind === 'run' && spec.opp?.isBoss) || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
   if (spec.kind === 'story' && (spec.node === 'elite' || spec.node === 'nemesis')) return { maxRounds: 20 };
   if (spec.kind === 'challenge' && spec.opp && spec.opp.isRival === 'legend') return { maxRounds: 20 };
   if (spec.kind === 'cup') {
@@ -191,7 +191,8 @@ export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(
 /** Mods and context: a stand-in fighter (the daily duel) gets none of the career's. */
 const setupOf = (g: Game, spec: Omit<FightSpec, 'odds'>) =>
   spec.me
-    ? { mods: [{}, {}] as [FightMod, FightMod], ctx: {} }
+    ? // a stand-in (the daily duel, a Spin & Run fighter): only carried HP and a boss's HP, none of the career's
+      { mods: [spec.rushHp != null ? { hp: spec.rushHp } : {}, spec.opp?.maxHp ? { maxHp: spec.opp.maxHp } : {}] as [FightMod, FightMod], ctx: {} }
     : // a ghost fight (F9) is for pride: next-fight buffs stay for a fight that counts
       { mods: spec.kind === 'ghost' ? ([{}, {}] as [FightMod, FightMod]) : fightMods(g, spec), ctx: ctxOf(g) };
 /** The same simulation as plain data, to run off the main thread: run it with headToHead(a, b, mulberry32(seed), n, opts). */
@@ -260,6 +261,8 @@ export type Step =
   | { t: 'gauntlet' }
   | { t: 'rush' }
   | { t: 'tower' }
+  /** back to the Spin & Run between fights (review F3) */
+  | { t: 'run' }
   /** a gear choice from a loot spin, waiting (kept so closing the app doesn't lose the piece) */
   | { t: 'gear'; k: string };
 export interface FightResult {

@@ -456,6 +456,9 @@ export async function runSteps(steps: Step[], places: Places = {}) {
       case 'tower':
         leave();
         return places.tower?.();
+      case 'run':
+        leave();
+        return void import('./run').then((m) => m.runFlow());
     }
     act((g) => stepDone(g));
   }

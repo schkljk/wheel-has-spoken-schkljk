@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
 import { layoutProblems, open, watchErrors } from './helpers';
 
-// The review's new features (docs/SUGGESTIONS.md, F2-F8), each on a small phone with nothing cut off.
+// The review's new features (docs/SUGGESTIONS.md, F2-F12), each on a small phone with nothing cut off.
 test.use({ viewport: { width: 320, height: 568 } });
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -152,5 +152,40 @@ test('F12: the Wheelborn trials open at level 34 and fight a remix', async ({ pa
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await page.getByRole('button', { name: /^Skip/ }).click();
   await expect(page.locator('.fresult .big')).toHaveText(/Trial 1 cleared|The remix wins/, { timeout: 60_000 });
+  expect(errors).toEqual([]);
+});
+
+test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = watchErrors(page);
+  await open(page, { ...careerSaveKV({ seed: 15, lvl: 6, fast: true }), 'whs:seed': 'run' });
+  await play(page);
+  await page.getByRole('button', { name: /Spin & Run/ }).click();
+  await expect(page.getByRole('heading', { name: 'Spin & Run' })).toBeVisible();
+  await fits(page, 'run intro');
+  await page.locator('.ch-opt').first().click();
+  await page.locator('.cine-btn').click();
+  await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
+  await fits(page, 'run fight pick');
+  await page.locator('.ch-opt').first().click();
+  await page.locator('.readpill').waitFor({ timeout: 60_000 });
+  // the runner fights, not the career fighter
+  const me = await page.evaluate(() => (window as unknown as { __whsBattle: { P: { f: { name: string } }[] } }).__whsBattle.P[0]!.f.name);
+  expect(me).not.toBe('Test Hero');
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await expect(page.locator('.fresult .big')).toHaveText(/Fight 1 of 9 won|Run over/, { timeout: 60_000 });
+  const won = /won/.test((await page.locator('.fresult .big').textContent()) || '');
+  await page.locator('.fresult > .btn').first().click();
+  if (won) {
+    await expect(page.getByRole('heading', { name: 'Pick a boon' })).toBeVisible();
+    await fits(page, 'boons');
+    await page.locator('.ch-opt').first().click();
+    await expect(page.getByRole('heading', { name: /fight 2 of 9/ })).toBeVisible();
+    await page.locator('.ch-opt').nth(1).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+  }
+  await page.locator('.tabbar').waitFor();
+  await expect(page.getByRole('button', { name: /Spin & Run/ })).toContainText(won ? 'Best: 1 of 9' : 'Best: 0 of 9');
   expect(errors).toEqual([]);
 });
