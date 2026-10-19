@@ -10,8 +10,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 const atHub = (page: Page) => async () => (await page.locator('.tabbar').count()) > 0 && (await page.locator('.scrim, .cine').count()) === 0;
-async function start(page: Page, o: Parameters<typeof careerSaveKV>[0]) {
-  await open(page, careerSaveKV({ auto: true, fast: true, coins: 200, ...o }));
+async function start(page: Page, o: Parameters<typeof careerSaveKV>[0], pin?: string) {
+  // `pin` fixes the game's dice, for a mode whose length would otherwise change from run to run
+  await open(page, { ...careerSaveKV({ auto: true, fast: true, coins: 200, ...o }), ...(pin ? { 'whs:seed': pin } : {}) });
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.locator('.tabbar').waitFor();
 }
@@ -40,8 +41,10 @@ test('a cup from the first round to the end', async ({ page }) => {
 });
 
 test('the gauntlet until it ends', async ({ page }) => {
+  // it runs until a loss, so its dice are pinned: an unpinned long streak ran past the time limit on CI
+  test.setTimeout(600_000);
   const errors = watchErrors(page);
-  await start(page, { seed: 23, lvl: 1 });
+  await start(page, { seed: 23, lvl: 1 }, 'gauntlet');
   await page.getByRole('button', { name: /The gauntlet/ }).click();
   expect(await autopilot(page, atHub(page), 800)).toBeLessThan(800);
   expect(errors).toEqual([]);
