@@ -2,6 +2,8 @@
 // an arena (its own light loop) and a boss's phase two. Tracks are scheduled a little ahead on the audio
 // clock, a sixteenth note at a time, so they stay in time even when the page is busy.
 
+import { effect } from '@preact/signals';
+import { settings } from '../state/game';
 import { audioCtx, buses, whenUnlocked } from './engine';
 import { THEME, bassNotes, chordOf, harmonyUnder, leadNotes, type SongData } from './songs';
 import { hz, voice, type Spec } from './synth';
@@ -27,11 +29,22 @@ export function playMusic(t: Track | null) {
   want = t;
   whenUnlocked(apply);
 }
+// with the music switched off nothing is scheduled at all; switched back on, the wanted track starts again
+let watching = false;
 function apply() {
+  if (!watching) {
+    watching = true;
+    effect(() => {
+      void settings.value.music;
+      apply();
+    });
+    return;
+  }
   const a = audioCtx();
   const bus = buses().music;
   if (!a || !bus) return;
-  if ((cur?.id ?? null) === (want?.id ?? null)) return;
+  const target = settings.value.music === false ? null : want;
+  if ((cur?.id ?? null) === (target?.id ?? null)) return;
   const t = a.currentTime;
   if (cur) {
     const old = cur;
@@ -43,16 +56,16 @@ function apply() {
     }, 1600);
     cur = null;
   }
-  if (!want) return;
+  if (!target) return;
   const g = a.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.setTargetAtTime(want.level, t + 0.15, 0.35);
+  g.gain.setTargetAtTime(target.level, t + 0.15, 0.35);
   g.connect(bus);
   try {
-    const st = want.setup(a, g);
-    const stop = loop(a, want.bpm, want.steps, st.step);
+    const st = target.setup(a, g);
+    const stop = loop(a, target.bpm, target.steps, st.step);
     cur = {
-      id: want.id,
+      id: target.id,
       g,
       stop: () => {
         stop();

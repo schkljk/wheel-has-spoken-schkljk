@@ -13,6 +13,16 @@
 
 ## After the upgrade list: owner requests
 
+### Full review (October 2026)
+
+- **Asked for:** "review the game entirely, and give me suggestions for improvements, optimizations, and new features."
+- **How:** three reviewers worked in parallel: player experience, performance on a mid-range phone profile, and game design from 40,000 simulated fights.
+- **Result:** every suggestion, numbered, with evidence and effort, is in `docs/SUGGESTIONS.md`.
+- **Fixed right away (D11):** the music sequencer kept finished voices connected until garbage collection, and kept scheduling notes with music switched off. Audio-thread load rose from 3.6% to 14.4% in 30 s.
+  - Finished voices now let go of the mix as they end.
+  - Music off schedules nothing (0 new nodes in 10 s).
+  - Audio-thread load stays at 3–8% while the theme plays (sampled every 5 s for 40 s with Chrome's WebAudio stats).
+
 ### Full sound pass and a looping theme
 
 - **Asked for:** "do the full sound pass, and add a looping game theme music."
