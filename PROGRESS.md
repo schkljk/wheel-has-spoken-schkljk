@@ -90,7 +90,124 @@
 - **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 
+### Review round 2: balance and economy (K1–K10, G11, G13)
 
+- **How:**
+  - Every rule is a switch in `data/balance.ts`, off in the old game's tuning.
+  - Changed rows (gear, talents, titles, set bonuses, a sidekick) are laid over the ported tables by `data/retune.ts` while their switch is on. They come off again when the tuning switches back, so the parity tests still play the legacy rules exactly.
+  - Measured with paired fights: the same pairs and dice for each variant. "Points" are win-rate points.
+  - The tools are `tools/sim/values.ts`, `spin-run.ts`, `club.ts`, `duel.ts` and `trials.ts`, plus story runs for injuries.
+- **K1, premium gear:**
+  - One premium piece per fighter, worn or kept, once Act I is cleared. The vault says so with a lock line and a Locked badge.
+  - Selling or salvaging the piece frees the spot. Pieces bought before stay.
+  - The Coat loses its revive.
+  - The Crown of rizz distracts: opponents lose 12% of their turns.
+  - The halo boots get +1 speed, and the signature wheel lands Jackpot 4× as often and Whiff a quarter as often.
+  - The full kit (88–92% against random fighters) can't be bought any more. 1,500 paired fights:
+
+    | Piece | Before | After |
+    |---|---|---|
+    | Coat of a thousand stars | +20.9 | +9.1 |
+    | Crown of rizz | +0.1 | +4.0 |
+    | Gambler's halo boots | −0.3 | +4.9 |
+    | Heart of the arena | +11.0 | +11.3 |
+
+- **K2, fight club:**
+  - The line is within 10 points of the real odds (20 before). Payouts are 0.88/p (0.92/p).
+  - The insider tells the real odds in words, with no dirt naming a side.
+  - A matchup stays on the board until you bet on it. 300 matchups × 400 lines, return per coin:
+
+    | Strategy | Before | After |
+    |---|---|---|
+    | The insider's tip | +28.0% (46% of matchups) | +3.1% (31%) |
+    | Card reader | +1.9% | −13.5% |
+    | Back the line favorite | −3.3% | −5.2% |
+
+- **K3, Spin & Run:**
+  - Opponents level by fight number, not by you, so +2 levels now puts you ahead.
+  - The first loss is a second wind: back up with 60% HP for a rematch. The run's sheet says when it's ready or used.
+  - 500 paired runs per cell:
+
+    | Boon picks | Wins, before | After | Whole run won, before | After |
+    |---|---|---|---|---|
+    | Random | 3.98 | 5.32 | 11% | 24% |
+    | Prefer +2 levels | 3.88 | 5.60 | 10% | 30% |
+    | Smart | 4.26 | 5.97 | 15% | 37% |
+
+  - Runs with no wins: 8.6% → 4.4%. Smart beats random by 0.65 wins (0.28 before).
+- **G11:** a run's picks join the collection when it pays out, and only after a win. 60 instant walk-aways: 359 entries and 12 gems before, nothing now.
+- **K4, daily duel:**
+  - The day's matchup is re-rolled from the date's seed until the stand-in has 25% to 75%, the same for everyone. 200 days:
+
+    | Odds | Before | After |
+    |---|---|---|
+    | 25% to 75% | 36% of days | 81% |
+    | Under 15% | 23% | 1% |
+    | Over 85% | 19% | 1% |
+
+  - 2.7 rolls a day on average.
+- **G13:**
+  - A loss ranks by the opponent's HP left (lower is better). Old records still count.
+  - Scores say real HP: "won in 5 rounds with 84/131 HP left".
+- **K5, Wheelborn trials:**
+  - Levels 32 to 41, a level a trial. From level 32 the last trial needs 4,905 XP instead of 11,025.
+  - HP is retuned on the mean of hundreds of fighters. The old median of 24 moved by ten points from one sample to the next.
+  - An average build at the trial's level, 600 fighters the tune wasn't made on:
+
+    | Trial | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+    |---|---|---|---|---|---|---|---|---|---|---|
+    | Before (levels 34–50) | 44% | 47% | 59% | 49% | 47% | 30% | 43% | 55% | 46% | 59% |
+    | After (levels 32–41) | 57% | 53% | 47% | 48% | 43% | 40% | 38% | 39% | 34% | 31% |
+    | Aim | 55% | 52% | 49% | 47% | 44% | 41% | 38% | 36% | 33% | 30% |
+
+- **K6, revives:**
+  - One revive in the talent tree: Stubborn, which says one revive counts a fight.
+  - Second wind heals 2% HP and gives 4 energy a round. Lucky break gives +8% crit and dodge.
+  - The talent sheet warns when a revive won't stack with a title, class, power or gear.
+  - Second wind + Stubborn: +11.4 before (the same as Stubborn alone), +15.4 now.
+- **K7, crit and dodge:**
+  - A dodge grazes a signature for half damage, and a crit ignores half a guard.
+  - The Shadow 4-piece's first strike of a fight can't be dodged or guarded.
+  - Knight is trimmed and Clown is reworked.
+  - +10% dodge: 1.5 → 2.0 points. +10% crit: 1.5 → 1.7.
+
+    | Set | Before | After |
+    |---|---|---|
+    | Royal | +10.0 | +9.0 |
+    | Cosmic | +7.2 | +6.9 |
+    | Knight | +9.7 | +6.6 |
+    | Shadow | −0.4 | +3.4 |
+    | Arcane | +5.3 | +3.4 |
+    | Clown | −4.9 | +1.1 |
+
+- **K8, gems and upgrades:**
+  - 23 more Locker looks: 43 looks for 281 gems, up from 20 for 111.
+  - A sold or salvaged piece's upgrades go to the piece that replaced it in its slot, worth what they cost: a rare +3 becomes an epic +2. The confirmation says so.
+- **K9, injuries:**
+  - Story losses injure at most twice, and those injuries heal when a chapter starts over. The defeat says a med kit cures it.
+  - 60 weak fighters, chapter 1: most injuries at once 2.5 → 1.05. Runs with 3 or more: 52% → 0%. Cleared: 50% → 58%.
+- **K10:**
+  - **Quick jab:** 90% damage, up from 75%.
+  - **Lifesteal now heals.** Life drain and the vampire gear did nothing before.
+  - **Dead talents buffed:** Life drain +0.9 → +4.1, Evasion +0.5 → +3.9, Iron guard +0.3 → +1.7.
+  - **Outliers,** win rate in random fights:
+
+    | Pick | Before | After |
+    |---|---|---|
+    | the Undisputed GOAT | 64.2% | 61.1% |
+    | Fraud Watch | 37.0% | 39.8% |
+    | Uno reverse card | 59.3% | 52.6% |
+    | Regeneration | 60.4% | 52.5% |
+    | Tiny dragon | 58.2% | 56.5% |
+
+- **Left as is:**
+  - Heart of the arena (+11) is now the best single premium piece.
+  - The Plot Twist and Plot Armor titles (revive) are still around 59%.
+  - Counterweight is still weak on auto-battle.
+- **Existing saves:**
+  - Owned premium pieces stay, but every Coat loses its revive.
+  - On a re-rolled duel day, an old record no longer counts.
+  - Injuries from before the update aren't tagged, so they don't count toward the cap.
 
 ### Review follow-up: the owner's picks
 
