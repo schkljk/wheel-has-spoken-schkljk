@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { careerSaveKV } from '../../../tools/fixtures/career-save';
-import { layoutProblems, open, watchErrors } from './helpers';
+import { layoutProblems, open, textOverlaps, watchErrors } from './helpers';
 
 // Review items A4, B3, B5 and C1: nothing is lost when the app closes, Continue goes straight back, a story
 // win's spoils are picked on the result, and the result says why the fight went the way it did.
@@ -47,10 +47,12 @@ test('a story win: spoils on the result, a recap, and the steps after it survive
   await expect(res.locator('.recap-tip')).not.toBeEmpty();
   // the spoils are right here, one tap
   await expect(res.getByRole('button', { name: /Prize money/ })).toBeVisible();
-  for (const [width, height] of [[320, 568], [844, 390]] as const) {
+  for (const [width, height] of [[390, 844], [320, 568], [844, 390]] as const) {
     await page.setViewportSize({ width, height });
     await page.waitForTimeout(300);
     expect((await layoutProblems(page)).clipped, `${width}x${height}`).toEqual([]);
+    // the lines, the titles and the recap stack and scroll; none of them land on another
+    expect(await textOverlaps(page, '.fresult'), `${width}x${height}: overlapping text`).toEqual([]);
   }
   await page.setViewportSize({ width: 390, height: 844 });
   // the phone closes the app on the result: the reward still waits
