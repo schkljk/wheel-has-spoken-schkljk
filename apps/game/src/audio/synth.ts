@@ -129,6 +129,14 @@ export function voice(ctx: BaseAudioContext, s: Spec, out: AudioNode, t0: number
     tail = pn;
   }
   tail.connect(out);
+  // a finished voice lets go of the mix at once, instead of piling up until garbage collection
+  const done = () => {
+    try {
+      tail.disconnect();
+    } catch {
+      // already gone
+    }
+  };
   let head: AudioNode = g;
   if (s.trem) {
     const tg = ctx.createGain();
@@ -169,6 +177,7 @@ export function voice(ctx: BaseAudioContext, s: Spec, out: AudioNode, t0: number
     // start somewhere different in the noise each time a sound repeats
     src.start(t, (t * 7.31) % 0.9);
     src.stop(end + 0.05);
+    src.onended = done;
     return end;
   }
   let dst: AudioNode = head;
@@ -208,6 +217,7 @@ export function voice(ctx: BaseAudioContext, s: Spec, out: AudioNode, t0: number
     } else os.connect(dst);
     os.start(t);
     os.stop(end + 0.05);
+    os.onended = done;
   }
   return end;
 }
