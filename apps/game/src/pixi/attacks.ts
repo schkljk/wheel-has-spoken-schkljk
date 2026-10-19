@@ -9,6 +9,7 @@ import type { Look } from '../art/sprite';
 import { beam, burst, dirOf, dust, fade, fly, fxTex, gfx, hexN, mix, piece, popIn, shock, wait, weaponTex, type Pt, type Stage } from './fx-kit';
 import { ease } from './tween';
 import { weaponStyle } from './weapon-style';
+import { sfx } from '../audio/engine';
 
 export interface Blow {
   by: 0 | 1;
@@ -84,10 +85,15 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
   const big = !!b.big;
   const glow = glowOf(b);
   const tgt = () => aim(S, b);
+  // the sounds: an ultimate's are bigger and deeper; a dodged blow makes no contact sound
+  const snd = (name: string, delay = 0) => sfx(name, { pitch: big ? 0.85 : 1, gain: big ? 1.25 : 1, delay: (Math.max(0, delay) * S.sp) / 1000 });
+  const contact = (name: string) => !b.miss && snd(name);
   switch (style) {
     case 'shoot': {
       const bolt = (b.look.weapon || '').toLowerCase().includes('crossbow');
+      if (!bolt) snd('w.shoot.draw');
       await arm(S, by, [0, -86], 200);
+      snd(bolt ? 'w.xbow.go' : 'w.shoot.go');
       const h = S.hand(by);
       const a = piece(S, fxTex(bolt ? 'bolt' : 'arrow'), h, big ? 1.5 : 1);
       void arm(S, by, [-86, -96, -86, 0], 520, [0, 0.12, 0.5, 1]);
@@ -98,6 +104,7 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
         b.hit();
       } else {
         await fly(S, a, h, end, 190, { arc: 6, face: true, trail: glow ?? 0xd8d2c2 });
+        contact('w.shoot.hit');
         b.hit();
         // it sticks for a moment
         a.x += dir * 6;
@@ -111,12 +118,15 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const h = S.hand(by);
       const m = { x: h.x + dir * 10, y: h.y - 3 };
       const charge = piece(S, fxTex('orb', '#FF4D4D'), m, 0.2);
+      snd('w.beam.charge');
       await S.tw.run(160 * S.sp, (k) => charge.scale.set((0.1 + 0.5 * k) * (S.dims.chH / 84)));
       charge.destroy();
       const end = b.miss ? { x: m.x + dir * S.dims.stageW, y: m.y + 10 } : tgt();
       void beam(S, m, end, 0xff3b3b, big ? 12 : 7, 300);
+      snd('w.beam.go');
       void arm(S, by, [-88, -94, 0], 500, [0, 0.15, 1]);
       await wait(S, 40);
+      contact('w.beam.hit');
       b.hit();
       if (!b.miss) S.particles(end.x, end.y, [0xff3b3b, 0xffd0d0, WHITE], 10, 30);
       await wait(S, 380);
@@ -126,8 +136,11 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const name = b.look.weapon || '';
       const comes = name === 'Chakram' || name === 'Boomerang';
       const lob = name === 'Brick';
+      const card = name === 'Uno reverse card';
       void arm(S, by, [0, -165, 35, 0], 520, [0, 0.4, 0.55, 1]);
       await wait(S, 230);
+      snd(card ? 'w.card.go' : 'w.throw.go');
+      if (!lob && !card) snd('w.throw.fly', 40);
       const h = S.hand(by);
       const p = piece(S, weaponTex(name, b.look.ench), h, big ? 1.5 : 1);
       if (comes || lob) S.F[by].holdWeapon(false);
@@ -143,9 +156,11 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
         return;
       }
       await fly(S, p, h, b.miss ? tgt() : end, lob ? 360 : 260, opts);
+      contact(lob ? 'w.brick.hit' : card ? 'w.card.go' : 'w.throw.hit');
       b.hit();
       if (comes) {
         // back to the hand it came from
+        snd('w.throw.fly');
         await fly(S, p, p.position.clone(), S.hand(by), 300, { spin: spin * dir, bend: name === 'Boomerang' ? 36 * dir : 0, trail: glow });
         p.destroy();
         S.F[by].holdWeapon(true);
@@ -171,6 +186,7 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const rod = style === 'rod';
       const step = dash(S, by, to, Math.abs(S.homes[to] - S.homes[by]) * 0.62, 760, 0.3, 0.7);
       void arm(S, by, rod ? [0, -165, -60, -60, -100, 0] : [0, -165, -60, 0], 760, rod ? [0, 0.3, 0.45, 0.62, 0.72, 1] : [0, 0.32, 0.45, 1]);
+      snd(rod ? 'w.rod.go' : 'w.whip.go', rod ? 170 : 200);
       await wait(S, 320);
       const line = gfx(S);
       const end = b.miss ? { x: tgt().x + dir * 30, y: tgt().y - 24 } : tgt();
@@ -183,6 +199,8 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
         line.clear().moveTo(h.x, h.y).quadraticCurveTo(c.x, c.y, e.x, e.y).stroke({ width: rod ? 1.5 : 3, color: rod ? 0xe8e8e8 : 0x5a3a22, cap: 'round' });
         if (rod) line.moveTo(e.x, e.y).lineTo(e.x, e.y + 5).lineTo(e.x - 3 * dir, e.y + 3).stroke({ width: 2, color: 0xb4bec9 });
       });
+      // a whip cracks even when they dodge it
+      snd(rod ? 'w.rod.hit' : 'w.whip.hit');
       if (!rod) {
         const t = piece(S, fxTex('twinkle', '#FFF3B0'), end, 1.4);
         void fade(S, t, 220, 0.6);
@@ -205,9 +223,11 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const h = S.hand(by);
       const top = { x: h.x - dir * 4, y: h.y - S.dims.chH * 0.22 };
       const orb = piece(S, fxTex('orb', toHex(col)), top, 0.3);
+      snd('w.cast.charge');
       const k0 = orb.scale.x;
       await S.tw.run(200 * S.sp, (k) => orb.scale.set(k0 * (1 + 2.3 * k) * (big ? 1.4 : 1)));
       S.particles(top.x, top.y, [col, WHITE], 5, 14);
+      snd('w.cast.go');
       const end = b.miss ? past(S, b, top) : tgt();
       if (b.miss) {
         void fly(S, orb, top, end, 380, { arc: 14, embers: [col, WHITE] }).then(() => orb.destroy());
@@ -219,6 +239,7 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       await fly(S, orb, top, end, 260, { arc: 14, embers: [col, WHITE] });
       orb.destroy();
       void burst(S, end, toHex(col), big ? 1.4 : 1);
+      contact('w.cast.hit');
       b.hit();
       await wait(S, 220);
       return;
@@ -229,12 +250,14 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       await wait(S, 260);
       const c = tgt();
       const f = S.F[by];
+      snd('w.saw.go');
       // it grinds: the arm shakes, sparks fly
       await S.tw.run(420 * S.sp, (k) => {
         f.armAngle = -72 + Math.sin(k * 80) * 5;
         if (!b.miss && Math.random() < 0.35) S.particles(c.x, c.y + 4, [0xffd54f, 0xff9a2f, WHITE], 2, 22);
       });
       if (!b.miss) void S.shake(3, 200);
+      contact('w.saw.hit');
       b.hit();
       void arm(S, by, [-72, 0], 260);
       await go;
@@ -243,10 +266,16 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
     case 'fists': {
       const go = dash(S, by, to, 64, 700, 0.3, 0.72);
       void arm(S, by, [0, -95, -35, -98, 0], 700, [0, 0.32, 0.46, 0.58, 1]);
+      snd('w.fists.go', 150);
       await wait(S, 230);
-      if (!b.miss) void burst(S, tgt(), '#FFE082', 0.5);
+      if (!b.miss) {
+        void burst(S, tgt(), '#FFE082', 0.5);
+        sfx('w.flurry.hit', { gain: 0.7 });
+      }
+      snd('w.fists.go', 80);
       await wait(S, 170);
       if (!b.miss) void burst(S, { x: tgt().x, y: tgt().y - 10 }, '#FFE082', big ? 1.2 : 0.8);
+      contact('w.fists.hit');
       b.hit();
       await go;
       return;
@@ -255,8 +284,10 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const go = dash(S, by, to, 74, 900, 0.25, 0.76);
       void arm(S, by, [0, -155, 25, -155, 25, -150, 0], 900, [0, 0.22, 0.34, 0.46, 0.58, 0.7, 1]);
       for (let k = 0; k < 3; k++) {
+        snd('w.fists.go', k ? 30 : 220);
         await wait(S, k ? 110 : 300);
         if (!b.miss) {
+          sfx('w.flurry.hit', { pitch: 1 + k * 0.08, gain: k === 2 ? 1.2 : 0.8 });
           const p = tgt();
           void burst(S, { x: p.x, y: p.y - 14 + k * 12 }, '#FFE082', 0.45 + (k === 2 ? 0.3 : 0));
         }
@@ -282,6 +313,9 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
       const m = T[style] ?? T.slash!;
       const go = dash(S, by, to, m.gap, m.dur, m.contact - 0.08, m.contact + 0.12);
       void arm(S, by, m.angles, m.dur, m.at);
+      // the whoosh of the swing, just before it lands
+      const GO: Record<string, string> = { slash: 'w.slash.go', heavy: 'w.heavy.go', reap: 'w.reap.go', thrust: 'w.thrust.go', smash: 'w.smash.go', riff: 'w.smash.go', bonk: 'w.swing.go', swing: 'w.swing.go', flop: 'w.flop.go' };
+      snd(GO[style] ?? 'w.slash.go', Math.max(0, m.dur * m.contact - (style === 'reap' ? 300 : style === 'flop' ? 260 : 150)));
       await wait(S, m.dur * m.contact);
       const p = tgt();
       const col = glow ?? WHITE;
@@ -319,6 +353,8 @@ export async function weaponAttack(S: Stage, b: Blow): Promise<void> {
         if ((b.look.weapon || '').includes('Wet')) S.particles(p.x, p.y, [0xf2e2a0, 0xffffff], 6, 20);
       }
       if (style !== 'flop' && style !== 'thrust') void burst(S, p, glow ? toHex(glow) : '#FFD166', big ? 1.3 : style === 'heavy' ? 1 : 0.8);
+      const HIT: Record<string, string> = { slash: 'w.slash.hit', heavy: 'w.heavy.hit', reap: 'w.slash.hit', thrust: 'w.thrust.hit', smash: 'w.smash.hit', riff: 'w.riff.hit', bonk: 'w.bonk.hit', swing: 'w.swing.hit', flop: 'w.flop.hit' };
+      contact(HIT[style] ?? 'w.slash.hit');
       b.hit();
       await go;
       return;

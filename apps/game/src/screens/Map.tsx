@@ -15,6 +15,7 @@ import { Inf } from '../ui/Info';
 import { goHub } from '../flows/nav';
 import { chapterIntro, enterNode, openBag } from '../flows/story';
 import { tip } from '../state/tips';
+import { sfx } from '../ui/sound';
 
 // the stop each kind of step shows on the map
 const KIND_ICON: Partial<Record<NodeKind, string>> = { fight: 'fist', elite: 'attack', event: 'question', rest: 'camp', shop: 'cart', treasure: 'chest' };
@@ -74,6 +75,8 @@ export function MapScreen() {
     if (lastSpot && lastSpot.ch === S.ch && lastSpot.row === S.row - 1 && !reducedMotion()) {
       setWalk({ x: lastSpot.x, y: lastSpot.y });
       requestAnimationFrame(() => requestAnimationFrame(() => setWalk(null)));
+      // footsteps along the way
+      for (let i = 0; i < 4; i++) sfx('s.step', { delay: 0.1 + i * 0.2, pitch: i % 2 ? 1.08 : 0.95 });
     }
     lastSpot = { ch: S.ch, row: S.row, x: here.x, y: here.y };
   }, [L, S.row]);

@@ -11,6 +11,7 @@ import { openBag } from '../../flows/story';
 import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
+import { sfx } from '../../ui/sound';
 
 interface Mode {
   n: string;
@@ -188,7 +189,15 @@ export function PlayTab() {
       <span class="sec-label">More ways to play</span>
       <div class="mtiles">
         {modes.map((m) => (
-          <button key={m.n} class={`mtile${m.locked ? ' locked' : ''}`} onClick={m.go} {...rise(n++)}>
+          <button
+            key={m.n}
+            class={`mtile${m.locked ? ' locked' : ''}`}
+            onClick={() => {
+              if (m.locked) sfx('ui.error', { vary: 0 });
+              m.go();
+            }}
+            {...rise(n++)}
+          >
             <span class="mtile-ic">
               <Icon name={m.icon} />
               {m.locked && <Icon name="lock" class="mtile-lock" />}
@@ -209,7 +218,11 @@ export function PlayTab() {
               key={t.k}
               class={`mtile tier${ok ? '' : ' locked'}`}
               aria-disabled={!ok}
-              onClick={() => (ok ? startTier(t.k) : toast(run && tierUnlocked(t, F) ? 'Finish or abandon the current one first' : t.lock))}
+              onClick={() => {
+                if (ok) return startTier(t.k);
+                sfx('ui.error', { vary: 0 });
+                toast(run && tierUnlocked(t, F) ? 'Finish or abandon the current one first' : t.lock);
+              }}
               {...rise(n++)}
             >
               <span class="mtile-ic">

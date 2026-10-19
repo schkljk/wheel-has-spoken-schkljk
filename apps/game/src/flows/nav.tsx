@@ -35,7 +35,7 @@ import { G, act, go, sync, toast } from '../state/game';
 import { cine, closeSheet, confirm, openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
-import { beep } from '../ui/sound';
+import { duck, sfx } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { GearIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
@@ -107,7 +107,8 @@ export function showCine(content: ComponentChildren, button: string): Promise<vo
 }
 
 export async function celebrate(icon: string, title: string, sub: string) {
-  [523, 659, 784, 1047].forEach((f, i) => beep(f, 0.2, 'triangle', 0.06, i * 0.09));
+  sfx('ui.lvl', { vary: 0 });
+  duck(0.45, 1, 0.8);
   setTimeout(() => burst(innerWidth / 2, innerHeight * 0.35), 150);
   await showCine(
     <>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { sfx } from './sound';
 import { statPop, type StatChange } from '../state/game';
 import { NS_META } from './FighterCard';
 import { Icon } from './Icon';
@@ -25,6 +26,7 @@ export function StatPopHost() {
   const p = statPop.value;
   useEffect(() => {
     if (!p) return;
+    sfx('ui.stat', { vary: 0 });
     const t = setTimeout(() => {
       if (statPop.value === p) statPop.value = null;
     }, 3800);

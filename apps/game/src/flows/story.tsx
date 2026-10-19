@@ -49,7 +49,7 @@ import { closeSheet, confirm, openSheet } from '../state/ui';
 import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
-import { beep } from '../ui/sound';
+import { duck, sfx } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { fight } from './fight';
 import { choose, goMap, lootFlow, runSteps, showCine } from './nav';
@@ -70,7 +70,7 @@ export function chapterIntro() {
   const S = storyOf(G);
   const C = CHAPTERS[S.ch - 1]!;
   const HM = S.hard ? hardMutator(G) : null;
-  [262, 330, 392].forEach((f, i) => beep(f, 0.25, 'triangle', 0.05, i * 0.12));
+  sfx('s.chapter', { vary: 0 });
   return showCine(
     <>
       <div class="cine-kicker">
@@ -117,7 +117,8 @@ function TypeLine({ text }: { text: string }) {
 }
 
 export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, kicker: string) {
-  [98, 110, 82].forEach((f, i) => beep(f, 0.35, 'sawtooth', 0.05, i * 0.32));
+  sfx('s.boss', { vary: 0 });
+  duck(0.3, 1.6, 1);
   buzz([60, 80, 60]);
   await showCine(
     <>
@@ -140,7 +141,8 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
 
 /** The nemesis steps out, with a speech about your last fight. */
 async function nemesisIntro(o: ReturnType<typeof makeBoss>, t: ReturnType<typeof nemesisTaunt>) {
-  [131, 123, 98].forEach((f, i) => beep(f, 0.3, 'square', 0.05, i * 0.26));
+  sfx('s.nemesis', { vary: 0 });
+  duck(0.4, 1, 0.8);
   buzz([40, 60, 40]);
   await showCine(
     <>
@@ -205,10 +207,20 @@ export async function enterNode(i: number) {
     await bossIntro(b, pick(G.rng, BOSSES[storyOf(G).ch - 1]!.lines), `Chapter ${storyOf(G).ch} boss`);
     return storyFight('boss', b);
   }
-  if (t === 'event') return encounter();
-  if (t === 'rest') return campfireFlow();
-  if (t === 'shop') return merchantSheet();
+  if (t === 'event') {
+    sfx('s.event');
+    return encounter();
+  }
+  if (t === 'rest') {
+    sfx('s.rest', { vary: 0 });
+    return campfireFlow();
+  }
+  if (t === 'shop') {
+    sfx('s.shop', { vary: 0 });
+    return merchantSheet();
+  }
   if (t === 'treasure') {
+    sfx('s.chest', { vary: 0 });
     await lootFlow('treasure');
     return backToMap();
   }
@@ -329,7 +341,7 @@ export async function haggleFlow(where: 'merchant' | 'base') {
   if (i >= opts.length) return;
   const p = opts[i]!.p;
   const r = act((g) => haggle(g, where, p));
-  beep(r.ok ? 880 : 220, 0.15, 'triangle', 0.05);
+  sfx(r.ok ? 's.good' : 's.bad', { vary: 0 });
   toast(r.ok ? `🤝 Deal! ${p}% off everything` : `😤 Not happening. Prices up ${Math.round(p / 2)}%`);
 }
 
@@ -409,7 +421,7 @@ function MerchantBody() {
                   if (!(await confirm({ title: `Buy ${g.n}?`, body: `It costs ${p} 🪙. You have ${coinsOf(G)} 🪙. You wear it right away.`, extra: <GearCompareView k={k} />, yes: 'Buy it' }))) return;
                   if (act((x) => buyMerchantGear(x, k))) {
                     toast(`${g.e} ${g.n} equipped`);
-                    beep(880, 0.15, 'triangle', 0.05);
+                    sfx('ui.buy', { vary: 0 });
                   }
                   merchantSheet(false);
                 }}

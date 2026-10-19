@@ -31,7 +31,7 @@ import { G, act, toast } from '../state/game';
 import { confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
-import { beep } from '../ui/sound';
+import { sfx } from '../ui/sound';
 import { burst } from '../ui/fx';
 import { GearIcon, SlotIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
@@ -226,7 +226,7 @@ function Piece({ g, slot }: { g: Gear; slot?: string }) {
               if (!ok) return;
               const prev = F.gear![g.slot];
               act((x) => wear(x, g.k));
-              beep(880, 0.1, 'triangle', 0.05);
+              sfx('ui.equip');
               swapped(`${g.e} ${g.n} equipped`, g.slot, prev, slot);
               showArmory(slot);
             }}
@@ -282,8 +282,7 @@ export function openForge(k: string) {
                   yes: 'Upgrade it',
                 });
                 if (ok && act((x) => upgradeGear(x, k))) {
-                  beep(660, 0.08, 'square', 0.05);
-                  beep(990, 0.12, 'triangle', 0.05, 0.08);
+                  sfx('ui.upgrade', { vary: 0 });
                   if (u.L === UPGRADE_MAX) setTimeout(() => burst(), 150);
                   toast(`${g.e} ${g.n} is now +${u.L}`);
                 }
@@ -306,6 +305,7 @@ export function openForge(k: string) {
             onClick={async () => {
               if (await confirm({ title: 'Salvage a copy?', body: `You get ${copyValue(g)} 🪙. The copy is gone for good.`, yes: 'Salvage it' })) {
                 const c = act((x) => salvageCopy(x, k));
+                sfx('ui.salvage');
                 toast(`+${c} 🪙`);
               }
               openForge(k);
@@ -323,6 +323,7 @@ export function openForge(k: string) {
               if (await confirm({ title: `Salvage ${g.n}?`, body: `You get a few coins. It is gone for good.${lost}${extra}`, yes: 'Salvage it' })) {
                 const before = coinsOf(G);
                 act((x) => salvageStored(x, k));
+                sfx('ui.salvage');
                 toast(`+${coinsOf(G) - before} 🪙`);
                 return back();
               }

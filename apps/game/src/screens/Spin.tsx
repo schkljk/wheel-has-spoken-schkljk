@@ -36,7 +36,7 @@ import { Icon } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
-import { ac, drumRoll, landSound } from '../ui/sound';
+import { ac, drumRoll, landSound, sfx } from '../ui/sound';
 
 /** A wheel entry as the rules list it. */
 export interface Entry<T = Slice> {
@@ -348,6 +348,7 @@ export function BuildScreen({ name }: { name: string }) {
               disabled={!canReroll}
               onClick={() => {
                 if (!canReroll) return;
+                sfx('wh.reroll', { vary: 0 });
                 reroll(S.f, S.lastSpun);
                 S.idx = S.lastSpun;
                 S.lastSpun = -1;
