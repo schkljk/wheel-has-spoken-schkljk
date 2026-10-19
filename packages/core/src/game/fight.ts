@@ -19,6 +19,7 @@ import {
   champsOf,
   gainFame,
   gainXP,
+  healStoryInjuries,
   injText,
   invalidate,
   markSeen,
@@ -27,6 +28,8 @@ import {
   rivalsOf,
   rollSeason,
   setNemesis,
+  STORY_INJ_MAX,
+  storyInjuries,
   tickInjuries,
   track,
   trackMax,
@@ -184,6 +187,9 @@ export function shareWord(w: number): string {
   return 'almost no';
 }
 
+/** A new injury from a story loss (review K9): it also heals when the chapter starts over. */
+export const storyInjLine = (j: Injury) =>
+  `${j.e} Injured: ${j.n}, ${injText(j)}. Heals when a chapter starts over, after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or with a physio session or Patch up (campfire)`;
 /** A new injury, said out loud with how to get rid of it (it used to arrive with one terse line). */
 export const injLine = (j: Injury) =>
   `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
@@ -438,7 +444,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
   lines.push(...gainFame(g, fame));
   if (fame) lines.push(`⭐ +${fame} fame`);
   if (F.pendingLv) lines.push(`⬆️ Level ${F.lvl} reached`);
-  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
   invalidate(F);
   let big: string;
   let desc: string;
@@ -552,7 +558,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   if (won) {
     S.hp = Math.min(100, Math.max(1, Math.ceil(me.hp)) + 10);
     // the +10 after a win is named, so the map's HP isn't a mystery after the fight's (H9)
-    lines.push(`❤️ +10 HP after the win: you go on with ${hpTxt(g, S.hp)} HP`);
+    if (BALANCE.clearResults) lines.push(`❤️ +10 HP after the win: you go on with ${hpTxt(g, S.hp)} HP`);
     if (spec.odds < 0.35) keys.push('giant');
     if (me.hp < 10) keys.push('comeback');
     if (me.st.taken < 0.5) keys.push('flawless');
@@ -561,9 +567,13 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     S.grit--;
     S.hp = 60;
     lines.push(`💔 You lose a grit. ${pl(S.grit, 'grit', 'grit')} left`);
-    if (g.rng() < 0.3) {
-      const j = addInjury(g, F);
-      if (j) lines.push(injLine(j));
+    // with the review's cap (K9) story losses injure at most twice, and those heal when the chapter starts over
+    if (g.rng() < 0.3 && !(BALANCE.injuryCap && storyInjuries(F) >= STORY_INJ_MAX)) {
+      const j = addInjury(g, F, BALANCE.injuryCap);
+      if (j) {
+        lines.push(BALANCE.injuryCap ? storyInjLine(j) : injLine(j));
+        if (BALANCE.injuryCap) lines.push('🧰 A med kit cures this right away: merchants sell them, and they turn up in loot');
+      }
     }
   }
   if (me.st.dodges >= 3) keys.push('untouch');
@@ -616,11 +626,13 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     const lost = Math.floor(coinsOf(g) * 0.25);
     addCoins(g, -lost);
     lines.push(`☠️ Out of grit. Chapter ${ch} starts over on a new path${lost ? `, and you drop ${lost} 🪙` : ''}`);
+    const healed = BALANCE.injuryCap ? healStoryInjuries(F) : 0;
+    if (healed) lines.push(`🩹 A fresh start: ${healed === 1 ? 'your story injury heals' : `your ${healed} story injuries heal`}`);
   }
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}`);
+  lines.unshift(`+${xp} XP${coins || !BALANCE.clearResults ? `, +${coins} 🪙` : ''}`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
   // a boss that toughened up for you pays for it (review E5 and F7)
   if (won && node === 'boss' && tunedBossGems(O)) {

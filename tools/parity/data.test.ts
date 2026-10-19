@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as D from '../../packages/core/src/data';
 import { mulberry32 } from '../../packages/core/src/rng';
 import { clean } from './emit';
@@ -23,7 +23,11 @@ const TABLES: [string, unknown, unknown][] = [
   ]),
 ];
 
-// the descriptions carry the wording fixes (data/wording.ts): lay them over the legacy tables too
+// the descriptions carry the wording fixes (data/wording.ts): lay them over the legacy tables too. Review round
+// 2's retune (data/retune.ts) is laid over some rows while its switches are on: compare with the old tuning
+const tuned = { ...D.BALANCE };
+beforeAll(() => D.useBalance(D.LEGACY_BALANCE));
+afterAll(() => D.useBalance(tuned));
 describe('ported data equals the legacy tables', () => {
   it.each(TABLES)('%s', (_name, ported, original) => {
     expect(ported).toBeDefined();

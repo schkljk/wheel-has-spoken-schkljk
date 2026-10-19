@@ -139,10 +139,10 @@ test('F11: the locker sells looks for gems, and they go on', async ({ page }) =>
   expect(errors).toEqual([]);
 });
 
-test('F12: the Wheelborn trials open at level 34 and fight a remix', async ({ page }) => {
+test('F12: the Wheelborn trials open at level 32 and fight a remix', async ({ page }) => {
   test.setTimeout(180_000);
   const errors = watchErrors(page);
-  await open(page, careerSaveKV({ seed: 13, lvl: 34, fast: true }));
+  await open(page, careerSaveKV({ seed: 13, lvl: 32, fast: true }));
   await play(page);
   await page.getByRole('button', { name: /Wheelborn trials/ }).click();
   await expect(page.locator('.goal.trial')).toHaveCount(10);
@@ -176,9 +176,16 @@ test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', asy
   expect(me).not.toBe('Test Hero');
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await page.getByRole('button', { name: /^Skip/ }).click();
-  await expect(page.locator('.fresult .big')).toHaveText(/Fight 1 of 9 won|Run over/, { timeout: 60_000 });
+  // a first loss is the run's second wind (review K3), not the end
+  await expect(page.locator('.fresult .big')).toHaveText(/Fight 1 of 9 won|Down, not out/, { timeout: 60_000 });
   const won = /won/.test((await page.locator('.fresult .big').textContent()) || '');
   await page.locator('.fresult > .btn').first().click();
+  if (!won) {
+    await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
+    await expect(page.getByText(/second wind used/)).toBeVisible();
+    await page.locator('.ch-opt').nth(1).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+  }
   if (won) {
     await expect(page.getByRole('heading', { name: 'Pick a boon' })).toBeVisible();
     await fits(page, 'boons');

@@ -1,4 +1,5 @@
 import {
+  BALANCE,
   TRIAL_COUNT,
   fightUnder,
   keepRun,
@@ -7,12 +8,15 @@ import {
   TRIAL_FROM,
   trialBoss,
   trialInfo,
+  trialLevel,
   trialTier,
   trialsCleared,
   trialsOpen,
   DUEL_TIER,
   DUEL_WIN_COINS,
   duelBest,
+  duelBestFor,
+  duelScoreText,
   duelDays,
   duelOf,
   duelShare,
@@ -216,7 +220,8 @@ export async function dailyFlow() {
 function DuelSheet({ days }: { days: string[] }) {
   const [day, setDay] = useState(days[0]!);
   const d = useMemo(() => duelOf(day), [day]);
-  const best = duelBest(G, day);
+  // the score as it ranks: a win by rounds and HP, a loss by the HP they had left (G13)
+  const best = duelBestFor(G, d);
   const side = (f: CareerFighter, i: 0 | 1) => (
     <div class="fc-side">
       <FighterSprite look={lookOf(f)} h={84} mirror={i === 1} />
@@ -248,7 +253,7 @@ function DuelSheet({ days }: { days: string[] }) {
         </p>
         {best && (
           <div class="duel-best">
-            <b>Your best: {best.won ? `won in ${best.rounds} rounds` : `lost in ${best.rounds} rounds`}</b>
+            <b>Your best: {duelScoreText(d, best)}</b>
             <span>{best.sq}</span>
             <button class="btn ghost sm" onClick={() => void copyText(duelShare(d, best))}>
               Copy the score
@@ -275,7 +280,7 @@ async function duelFight(d: Duel) {
 function TrialsSheet() {
   const done = trialsCleared(G);
   return (
-    <Sheet emoji="🌀" title="Wheelborn trials" sub="Ten remixed bosses for levels 34 to 50. Losing costs nothing">
+    <Sheet emoji="🌀" title="Wheelborn trials" sub={`Ten remixed bosses for levels ${trialLevel(0)} to ${trialLevel(TRIAL_COUNT - 1)}. Losing costs nothing`}>
       <div class="stack">
         {Array.from({ length: TRIAL_COUNT }, (_, i) => {
           const t = trialInfo(i);
@@ -650,10 +655,13 @@ function ClubSheet({ c }: { c: Club }) {
               🕵️ {free ? 'Charm the insider (your charisma: free)' : 'Ask the insider · 1 💎'}
             </button>
           ))}
+        {BALANCE.clubTight && <p class="hint center">This card stays up until you bet on it. The bookie does not reshuffle for browsers.</p>}
         <div class="row">
-          <button class="btn ghost grow" onClick={() => openClub()}>
-            New matchup
-          </button>
+          {!BALANCE.clubTight && (
+            <button class="btn ghost grow" onClick={() => openClub()}>
+              New matchup
+            </button>
+          )}
           <button class="btn ghost grow" onClick={closeSheet}>
             Leave
           </button>

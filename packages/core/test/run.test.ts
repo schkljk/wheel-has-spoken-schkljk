@@ -3,6 +3,7 @@ import {
   RUN_BOONS,
   RUN_FIGHTS,
   RUN_START_LVL,
+  RUN_WIND_HP,
   autoChoice,
   clockAt,
   endRunFight,
@@ -43,7 +44,7 @@ const result = (g: Game, w: 0 | 1, hp = 60) => {
 const win = (g: Game, hp?: number) => endRunFight(g, runOpponent(g, runState(g)!), result(g, 0, hp));
 
 describe('Spin & Run', () => {
-  it('starts with a fresh fighter at level 5 with gear, its picks in the collection', () => {
+  it('starts with a fresh fighter at level 5 with gear', () => {
     const g = game();
     const R = startRun(g);
     const f = runFighter(R);
@@ -51,9 +52,21 @@ describe('Spin & Run', () => {
     expect(Object.values(f.gear || {}).filter(Boolean).length).toBeGreaterThan(0);
     expect(R.i).toBe(0);
     expect(R.hp).toBe(100);
-    expect(g.save.profile.seen[`race`]).toBeDefined();
     // the career fighter is untouched
     expect(g.F!.name).toBe('Career');
+  });
+  it('adds its picks to the collection when the run pays out, and only after a win (G11)', () => {
+    const g = game();
+    startRun(g);
+    expect(g.save.profile.seen.race).toBeUndefined();
+    // walking away at once: nothing
+    quitRun(g);
+    expect(g.save.profile.seen.race).toBeUndefined();
+    startRun(g);
+    win(g);
+    expect(g.save.profile.seen.race).toBeUndefined();
+    quitRun(g);
+    expect((g.save.profile.seen.race as unknown[] | undefined)?.length).toBe(1);
   });
   it('rolls the same opponent every time it is asked, and a boss last', () => {
     const g = game();
@@ -64,7 +77,20 @@ describe('Spin & Run', () => {
     expect(numStats(a)).toEqual(numStats(b));
     const last = runOpponent(g, { ...R, i: RUN_FIGHTS - 1 });
     expect(last.isBoss).toBe(true);
-    expect(last.lvl).toBe((runFighter(R).lvl || 1) + 1);
+    // levelled by the fight number (K3): the start level, a level a win, plus one
+    expect(last.lvl).toBe(RUN_START_LVL + RUN_FIGHTS - 1 + 1);
+  });
+  it('levels opponents by fight number, so +2 levels puts you ahead (K3)', () => {
+    const g = game();
+    const R = startRun(g);
+    win(g);
+    const before = runOpponent(g, runState(g)!).lvl;
+    const S = runState(g)!;
+    S.offer = ['lvl', 'str', 'spd'];
+    takeBoon(g, 'lvl');
+    expect(runFighter(runState(g)!).lvl).toBe(RUN_START_LVL + 3);
+    expect(runOpponent(g, runState(g)!).lvl).toBe(before);
+    void R;
   });
   it('a win levels up, carries HP plus 10, and offers three different boons', () => {
     const g = game();
@@ -101,9 +127,27 @@ describe('Spin & Run', () => {
     takeBoon(g, k);
     expect(runState(g)!.took).toEqual([k]);
   });
-  it('a loss ends the run: gems for the wins, the best run kept', () => {
+  it('the first loss is a second wind: back up at 60% HP for a rematch (K3)', () => {
     const g = game();
     startRun(g);
+    win(g);
+    takeBoon(g, runState(g)!.offer![0]!);
+    const opp = runOpponent(g, runState(g)!).name;
+    const r = endRunFight(g, runOpponent(g, runState(g)!), result(g, 1));
+    expect(r.runOver).toBe(false);
+    expect(r.next).toEqual([{ t: 'run' }]);
+    expect(r.lines.join(' ')).toContain('Second wind');
+    const R = runState(g)!;
+    expect([R.i, R.hp, R.wind, R.offer]).toEqual([1, RUN_WIND_HP, 1, null]);
+    // the rematch is the same opponent
+    expect(runOpponent(g, R).name).toBe(opp);
+    // the next loss ends it
+    expect(endRunFight(g, runOpponent(g, R), result(g, 1)).runOver).toBe(true);
+  });
+  it('a loss ends the run once the second wind is gone: gems for the wins, the best run kept', () => {
+    const g = game();
+    startRun(g);
+    runState(g)!.wind = 1;
     for (let i = 0; i < 4; i++) {
       win(g);
       takeBoon(g, runState(g)!.offer![0]!);

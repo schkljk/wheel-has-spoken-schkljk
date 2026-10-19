@@ -2,7 +2,7 @@ import { ULTS } from '../data/wheels';
 import { BOSSES } from '../data/content/story';
 import { BOSS_PHASE, type BossPhaseKit } from '../data/content/phase';
 import { ULT_WHEEL } from '../data/kits';
-import { canPower, powCost, ultWeights, type Battle, type Side } from '../battle';
+import { R2_TUNE, canPower, powCost, ultWeights, type Battle, type Side } from '../battle';
 import { BALANCE } from '../data/balance';
 import { kitMoves } from '../kits';
 import { clamp } from '../random';
@@ -42,6 +42,12 @@ export interface CwSlice {
 
 export const cwPowOk = (me: Side) => me.f.power.k !== 'none' && !me.f.power.passive && me.powOn && canPower(me);
 
+/** The quick jab: goes first for less damage (75%, or 90% with the review's retune, K10). */
+function jabSlice(w: number): CwSlice {
+  const x = BALANCE.pickTune ? R2_TUNE.jab : 0.75;
+  return { k: 'jab', n: 'Quick jab', e: '⚡', c: 'strike', m: { dmgX: x, first: 1, label: 'Quick jab' } as RoundMod, q: 1, w, d: `Goes first, ${Math.round(x * 100)}% damage` };
+}
+
 /** The move a focus is about (review E1): Attack strikes, Defend guards, Power uses the power. */
 const FAMILY: Record<string, string> = { atk: 'strike', def: 'guard', pow: 'power' };
 
@@ -72,12 +78,12 @@ export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult
       { k: 'heavy', n: 'Heavy blow', e: '🔨', c: 'strike', m: { dmgX: 1.45, slow: 1, label: 'Heavy blow' } as RoundMod, q: 1, w: nudge((s.str + s.wm) / 2), d: '+45% damage, goes second' },
       { k: 'feint', n: 'Feint', e: '🎭', c: 'feint', q: 1, w: nudge(s.iq), d: 'Baits a guard: the next hit lands 40% harder' },
       BALANCE.pureFocus
-        ? { k: 'jab', n: 'Quick jab', e: '⚡', c: 'strike', m: { dmgX: 0.75, first: 1, label: 'Quick jab' } as RoundMod, q: 1, w: nudge(s.spd), d: 'Goes first, 75% damage' }
+        ? jabSlice(nudge(s.spd))
         : null,
     ],
     def: [
       { k: 'guard', n: 'Guard', e: '🛡️', c: 'guard', q: 1, w: nudge(s.dur), d: 'Beats Strike, blocks and counters' },
-      { k: 'dodge', n: 'Sidestep', e: '💨', c: 'dodge', m: { dodge: 0.45 } as RoundMod, q: 1, w: nudge(s.spd), d: 'Big dodge chance against anything but a signature' },
+      { k: 'dodge', n: 'Sidestep', e: '💨', c: 'dodge', m: { dodge: 0.45 } as RoundMod, q: 1, w: nudge(s.spd), d: BALANCE.critDodge ? 'Big dodge chance; a signature only grazes you' : 'Big dodge chance against anything but a signature' },
       { k: 'counter', n: 'Counter', e: '🔁', c: 'guard', m: { counterX: 1.7, label: 'Counter' } as RoundMod, q: 1, w: nudge(s.iq), d: 'A guard that counters 70% harder' },
     ],
     pow: [
@@ -123,6 +129,12 @@ const MATCHUP: Record<string, string> = {
   ult: "Can't be dodged · a Guard still softens it",
 };
 
+/** With the review's crit and dodge rules (K7) a dodge grazes a signature: half damage. */
+const MATCHUP_K7: Record<string, string> = {
+  dodge: 'Dodges most things · grazes a signature',
+  ult: 'A dodge only grazes it · a Guard still softens it',
+};
+
 /** A slice's preview for the player (side 0) against their opponent, right now. */
 export function peekSlice(bt: Battle, it: CwSlice): SlicePeek {
   const rm = it.m || {};
@@ -130,7 +142,7 @@ export function peekSlice(bt: Battle, it: CwSlice): SlicePeek {
   const ultM = it.ultIdx != null ? ULT_WHEEL[it.ultIdx]!.m : 1;
   const p = kind ? bt.preview(0, kind, rm, ultM) : null;
   const c = it.c === 'guard' ? bt.counterPreview(0, rm) : null;
-  return { dmg: p ? [p.lo, p.hi] : null, counter: c ? [c.lo, c.hi] : null, weak: !!p?.weak, beats: MATCHUP[it.c] ?? '' };
+  return { dmg: p ? [p.lo, p.hi] : null, counter: c ? [c.lo, c.hi] : null, weak: !!p?.weak, beats: (BALANCE.critDodge && MATCHUP_K7[it.c]) || MATCHUP[it.c] || '' };
 }
 
 /** A boss's phase-two kit, found by name so it works in every mode bosses fight in (a remix: its first kit). */

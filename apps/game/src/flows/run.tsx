@@ -1,4 +1,4 @@
-import { RUN_FIGHTS, boonOf, fightUnder, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon, type NumStats } from '@whs/core';
+import { BALANCE, RUN_FIGHTS, RUN_WIND_HP, boonOf, fightUnder, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, runWindLeft, startRun, takeBoon, type NumStats } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, act, popStats } from '../state/game';
@@ -23,8 +23,9 @@ export async function runFlow() {
       sub: 'Built in two minutes. Expected to last three.',
       body: (
         <p class="hint">
-          A brand new fighter from the wheels, for one run: {RUN_FIGHTS - 1} fights and a boss. HP carries over, plus 10 after a win, and every win is a level and a pick of one boon out of three. Their picks
-          join your collection, their wins count toward class mastery, and the run pays gems. {best ? `Your best: ${best.wins} ${best.wins === 1 ? 'win' : 'wins'}${best.won ? ', boss included' : ''}.` : ''}
+          A brand new fighter from the wheels, for one run: {RUN_FIGHTS - 1} fights and a boss. HP carries over, plus 10 after a win, and every win is a level and a pick of one boon out of three.
+          {BALANCE.runFair ? ` One second wind: the first loss leaves you standing with ${RUN_WIND_HP}% HP for a rematch.` : ''} Their picks join your collection
+          {BALANCE.runFair ? ' once they win a fight' : ''}, their wins count toward class mastery, and the run pays gems. {best ? `Your best: ${best.wins} ${best.wins === 1 ? 'win' : 'wins'}${best.won ? ', boss included' : ''}.` : ''}
         </p>
       ),
       options: [{ label: '🎡 Spin a runner', sub: 'Every wheel, all at once' }, { label: 'Not now' }],
@@ -77,7 +78,7 @@ export async function runFlow() {
     const c = under ? 0 : await choose({
       emoji: boss ? '💀' : '🏃',
       title: boss ? 'Spin & Run: the boss' : `Spin & Run: fight ${R.i + 1} of ${RUN_FIGHTS}`,
-      sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}`,
+      sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}${BALANCE.runFair ? (runWindLeft(R) ? ' · second wind ready' : ' · second wind used') : ''}`,
       body: (
         <>
           Next: <b>{o.name}</b>, {boss && o.bossTitle ? `${o.bossTitle}, level ${o.lvl}` : `level ${o.lvl} ${lc(o.race.n)} ${lc(o.arch.n)}`}.
@@ -85,7 +86,10 @@ export async function runFlow() {
       ),
       options: [
         { label: boss ? '💀 Face the boss' : '⚔️ Fight', sub: boss ? 'Up to 30 rounds, then sudden death' : `${RUN_FIGHTS - R.i - 1} more after this, then the boss` },
-        { label: 'Walk away', sub: `Ends the run with ${R.i} ${R.i === 1 ? 'win' : 'wins'}, and keeps what it earned` },
+        {
+          label: 'Walk away',
+          sub: BALANCE.runFair && R.i === 0 ? 'Ends the run with no wins: nothing to keep, not even the picks' : `Ends the run with ${R.i} ${R.i === 1 ? 'win' : 'wins'}, and keeps what it earned`,
+        },
       ],
     });
     if (c !== 0) {

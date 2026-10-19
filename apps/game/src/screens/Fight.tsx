@@ -1131,7 +1131,7 @@ export function FightScreen({
               ) : focus === 'ult' ? (
                 <>
                   <b class="q3">🌟 {ULTS[F.arch.k] || 'Signature move'}</b>
-                  <small>Full energy. This wheel is the damage: spin it and hope for a jackpot. It can't be dodged.</small>
+                  <small>Full energy. This wheel is the damage: spin it and hope for a jackpot. {BALANCE.critDodge ? 'A dodge only grazes it.' : "It can't be dodged."}</small>
                 </>
               ) : (
                 <>
