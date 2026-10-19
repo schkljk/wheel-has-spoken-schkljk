@@ -35,6 +35,8 @@ test('a cup from the first round to the end', async ({ page }) => {
   const errors = watchErrors(page);
   await start(page, { seed: 22, lvl: 10 });
   await page.getByRole('button', { name: /Local brawl/ }).click();
+  // the bracket loads on first use (J8): wait for it to replace the hub
+  await page.locator('.tabbar').waitFor({ state: 'detached', timeout: 30_000 });
   expect(await autopilot(page, atHub(page), 600)).toBeLessThan(600);
   expect(await page.getByText(/in progress/).count()).toBe(0);
   expect(errors).toEqual([]);
@@ -46,6 +48,8 @@ test('the gauntlet until it ends', async ({ page }) => {
   const errors = watchErrors(page);
   await start(page, { seed: 23, lvl: 1 }, 'gauntlet');
   await page.getByRole('button', { name: /The gauntlet/ }).click();
+  // the bracket loads on first use (J8): wait for it to replace the hub
+  await page.locator('.tabbar').waitFor({ state: 'detached', timeout: 30_000 });
   expect(await autopilot(page, atHub(page), 800)).toBeLessThan(800);
   expect(errors).toEqual([]);
 });
@@ -54,6 +58,8 @@ test('the daily challenge, once a day', async ({ page }) => {
   const errors = watchErrors(page);
   await start(page, { seed: 24, lvl: 8 });
   await page.getByRole('button', { name: /Daily challenge/ }).click();
+  // screens load on first use (J8): the hub stays up a moment, so wait for the daily's first screen
+  await expect(page.getByRole('heading', { name: /^(Mutator|Daily challenge)$/ })).toBeVisible({ timeout: 30_000 });
   expect(await autopilot(page, atHub(page), 300)).toBeLessThan(300);
   await expect(page.getByText(/Won today|Done for today/)).toBeVisible();
   expect(errors).toEqual([]);

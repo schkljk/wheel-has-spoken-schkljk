@@ -341,7 +341,22 @@ export function FightScreen({
     const r = el.getBoundingClientRect();
     const h = host.getBoundingClientRect();
     sc.placeWheel(r.left - h.left + r.width / 2, r.top - h.top + r.height / 2, Math.min(r.width, r.height));
+    measureHud();
   };
+  // banners sit under the HUD as it really is: a narrow phone wraps its numbers onto a second line (H9)
+  const measureHud = () => {
+    const sc = sceneRef.current;
+    const host = root.current;
+    const hud = host?.querySelector('.fhud');
+    if (sc && host && hud) sc.hudBottom = hud.getBoundingClientRect().bottom - host.getBoundingClientRect().top;
+  };
+  useEffect(() => {
+    const hud = root.current?.querySelector('.fhud');
+    if (!hud) return;
+    const ro = new ResizeObserver(measureHud);
+    ro.observe(hud);
+    return () => ro.disconnect();
+  }, []);
 
   const { host } = usePixi((app, _el, px) => {
     const d = fightDims(app.screen.width, app.screen.height);
@@ -551,7 +566,7 @@ export function FightScreen({
       setSnap(last);
       sc.applySnap(last);
     }
-    toast(`Back in the fight: round ${bt.round + 1}${bt.sd ? '' : ` of ${bt.maxR}`}`);
+    toast(`Back in the fight: round ${bt.round + 1}${bt.sd ? '' : ` of ${bt.maxR}`}`, 4500);
   }
 
   function forceEnd() {

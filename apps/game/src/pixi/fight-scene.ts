@@ -409,9 +409,12 @@ export class FightScene {
    * A combo or synergy going off: its name and what it did, over the fighter it belongs to, with its own
    * sound. Shown at the moment of impact for hits.
    */
+  /** where the HUD really ends, measured from the page (taller when a narrow phone wraps its numbers: H9) */
+  hudBottom = 0;
   showProc(p: Proc) {
     this.procBox?.destroy({ children: true });
     const d = this.dims;
+    const hud = Math.max(d.hud, this.hudBottom);
     const mine = p.side === 0;
     const fill = p.kind === 'combo' ? (TINT_COL[COMBOS[p.k]?.tint ?? ''] ?? 0xffd166) : p.anti ? 0xc9c1dc : mine ? 0xffd166 : 0xff9db0;
     const box = new Container();
@@ -437,7 +440,7 @@ export class FightScene {
     const half = Math.max(name.width, sub.width) / 2 + 8;
     const x = d.fcx + (mine ? -1 : 1) * d.span * 0.55;
     const heads = d.groundY - d.chH;
-    box.position.set(clamp(x, half, Math.max(half, d.stageW - half)), Math.max(d.hud + name.height + 4, d.hud + (heads - d.hud) * 0.55));
+    box.position.set(clamp(x, half, Math.max(half, d.stageW - half)), Math.max(hud + name.height + 4, hud + (heads - hud) * 0.55));
     this.top.addChild(box);
     this.procBox = box;
     procSound(p.k);
