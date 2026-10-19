@@ -380,6 +380,19 @@ export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: st
 };
 
 /** Stat and pill texts for the review's stat roles (E3), read before STAT_INFO and PILL_INFO while they are on. */
+/** Rule pages for review round 2's switches, read before RULES_NOW while they are on. */
+export const RULES_R2: Record<string, [e: string, title: string, paragraphs: string[]]> = {
+  club: [
+    '🎰',
+    'Fight club',
+    [
+      "Bet coins on a fight between two other fighters. The payout follows the bookie's line: backing the underdog pays more.",
+      'The line is close to the real odds, but not exact. The insider tells you the real odds, in words: a gem buys the tip, or 45 charisma and up gets it for free.',
+      'A matchup stays on the board until you bet on it. Then the next one goes up.',
+      'Call a hall of fame exhibition before the bell: a right call pays 5 coins.',
+    ],
+  ],
+};
 export const STAT_NOW: Record<string, [e: string, n: string, d: string]> = {
   spd: [
     '👟', 'Speed',
