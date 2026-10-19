@@ -9,6 +9,7 @@ import { installErrorLog } from './state/errlog';
 import { installCosmetics } from './state/cosmetics';
 import { warmPixi } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
+import { loadEmojiSheet } from './art/emoji-px';
 import { effect } from '@preact/signals';
 import { installAudio } from './audio/engine';
 import { THEME_TRACK, playMusic } from './audio/music';
@@ -25,6 +26,8 @@ import './styles/screens.css';
 import './styles/game.css';
 
 installErrorLog();
+// the baked pixel emojis for the page start loading before anything draws (any that are needed sooner get drawn)
+void loadEmojiSheet(16);
 installEmojiIcons();
 installCosmetics();
 // the Android app's glue, only in the Android build (the web build doesn't carry Capacitor at all)
@@ -49,8 +52,12 @@ ensurePool({
 });
 
 // the Pixi chunk (wheels and fights) loads once the first screen is up, and its first app warms up (WebGL made,
-// shaders compiled), so the first spin and the first fight don't wait for either
-if ('requestIdleCallback' in window) requestIdleCallback(() => void warmPixi());
-else setTimeout(() => void warmPixi(), 300);
+// shaders compiled), so the first spin and the first fight don't wait for either; the wheels' bigger emojis too
+const warm = () => {
+  void warmPixi();
+  void loadEmojiSheet(32);
+};
+if ('requestIdleCallback' in window) requestIdleCallback(warm);
+else setTimeout(warm, 300);
 // and the pixel icons the wheels show, a few at a time
 warmPortraits();
