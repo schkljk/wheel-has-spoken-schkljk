@@ -1,6 +1,8 @@
 // The music: one track at a time on the music bus, crossfading when the game moves between menus (the theme),
-// an arena (its own light loop) and a boss's phase two. Tracks are scheduled a little ahead on the audio
-// clock, a sixteenth note at a time, so they stay in time even when the page is busy.
+// an arena (its own light loop) and a boss's phase two. Each track is rendered once, offline, into a loop that
+// plays on repeat (mono, 22 kHz): synthesizing it note by note as it played cost 34 ms of every second on the
+// hub on a mid-range phone, and about 80 audio nodes a second. Where offline rendering isn't available, tracks
+// are scheduled a little ahead on the audio clock, a sixteenth note at a time, as before.
 
 import { effect } from '@preact/signals';
 import { settings } from '../state/game';
@@ -27,6 +29,8 @@ export const musicWanted = () => want?.id ?? null;
 /** Plays a track (the same one keeps playing), or fades the music out with null. */
 export function playMusic(t: Track | null) {
   want = t;
+  // its loop renders while the page is idle, before sound is allowed (offline audio needs no tap)
+  if (t && settings.value.music !== false) void loopOf(t);
   whenUnlocked(apply);
 }
 // with the music switched off nothing is scheduled at all; switched back on, the wanted track starts again
@@ -59,22 +63,111 @@ function apply() {
   if (!target) return;
   const g = a.createGain();
   g.gain.setValueAtTime(0, t);
-  g.gain.setTargetAtTime(target.level, t + 0.15, 0.35);
   g.connect(bus);
-  try {
+  const live = () => {
+    // scheduled note by note (no offline rendering, or it failed)
     const st = target.setup(a, g);
     const stop = loop(a, target.bpm, target.steps, st.step);
-    cur = {
-      id: target.id,
-      g,
-      stop: () => {
-        stop();
-        st.dispose?.();
-      },
+    return () => {
+      stop();
+      st.dispose?.();
     };
-  } catch {
-    cur = null;
+  };
+  let stopped = false;
+  let stopIt: (() => void) | null = null;
+  const entry = {
+    id: target.id,
+    g,
+    stop: () => {
+      stopped = true;
+      stopIt?.();
+    },
+  };
+  cur = entry;
+  const begin = (start: () => () => void) => {
+    // a track that was replaced (or switched off) while its loop rendered doesn't start late
+    if (stopped || cur !== entry) return;
+    const now = a.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(0, now);
+    g.gain.setTargetAtTime(target.level, now + 0.15, 0.35);
+    try {
+      stopIt = start();
+    } catch {
+      if (cur === entry) cur = null;
+    }
+  };
+  if (!canRender()) return begin(live);
+  void loopOf(target).then((b) =>
+    begin(
+      b
+        ? () => {
+            const src = a.createBufferSource();
+            src.buffer = b;
+            src.loop = true;
+            src.connect(g);
+            src.start(a.currentTime + 0.05);
+            return () => {
+              try {
+                src.stop();
+              } catch {
+                // never started
+              }
+              src.disconnect();
+            };
+          }
+        : live,
+    ),
+  );
+}
+
+// ---------------------------------------------------------------- loops rendered offline
+const RATE = 22050;
+/** Sixteenths of the pass before rendered ahead of the loop: their echoes and long notes ring into its start. */
+const LEAD = 32;
+const canRender = () => typeof OfflineAudioContext !== 'undefined';
+const loops = new Map<string, Promise<AudioBuffer | null>>();
+/** The theme, plus this many other loops, are kept (an arena's is about 1 MB). */
+const KEEP = 3;
+/** A track's loop as one buffer, rendered once (null if it can't be). */
+function loopOf(t: Track): Promise<AudioBuffer | null> {
+  let p = loops.get(t.id);
+  if (p) {
+    loops.delete(t.id);
+    loops.set(t.id, p);
+    return p;
   }
+  p = canRender() ? renderLoop(t).catch(() => null) : Promise.resolve(null);
+  loops.set(t.id, p);
+  const others = [...loops.keys()].filter((k) => k !== THEME_ID);
+  if (others.length > KEEP) loops.delete(others[0]!);
+  return p;
+}
+const idle = () => new Promise<void>((r) => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 250 }) : setTimeout(r, 16)));
+/**
+ * Renders one pass of a track into a buffer that loops without a seam: the end of the pass before is rendered
+ * first, so the start carries its tails exactly as the second time round does live. The notes are made a few
+ * dozen at a time while the page is idle; the rendering itself runs off the main thread.
+ */
+export async function renderLoop(t: Track, rate = RATE): Promise<AudioBuffer> {
+  const len = 60 / t.bpm / 4;
+  const lead = Math.min(LEAD, t.steps);
+  const from = Math.round((0.05 + lead * len) * rate);
+  const n = Math.round(t.steps * len * rate);
+  const oc = new OfflineAudioContext(1, from + n, rate);
+  const st = t.setup(oc, oc.destination);
+  for (let i = 0; i < lead + t.steps; i++) {
+    if (i % 24 === 0) await idle();
+    try {
+      st.step(i < lead ? t.steps - lead + i : i - lead, 0.05 + i * len, len);
+    } catch {
+      // a missed note is better than no music
+    }
+  }
+  const all = await oc.startRendering();
+  const out = oc.createBuffer(1, n, rate);
+  out.copyToChannel(all.getChannelData(0).subarray(from, from + n), 0);
+  return out;
 }
 
 /**
@@ -203,8 +296,9 @@ export function songTrack(id: string, S: SongData): Track {
   };
 }
 
+const THEME_ID = 'theme';
 /** The game's theme (menus, the map, the wheels). */
-export const THEME_TRACK = songTrack('theme', THEME);
+export const THEME_TRACK = songTrack(THEME_ID, THEME);
 
 // ---------------------------------------------------------------- the arena loops (upgrade 36)
 const v0 = (s: Omit<Spec, 'at'>) => s as Spec;
