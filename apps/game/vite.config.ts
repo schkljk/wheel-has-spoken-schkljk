@@ -1,6 +1,7 @@
 import preact from '@preact/preset-vite';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+import { pixiCpuProbe } from '../../tools/build/pixi-probe';
 
 // GitHub Pages serves the site under /<repo>/; the deploy workflow sets BASE_PATH.
 const base = process.env.BASE_PATH ?? '/';
@@ -17,6 +18,7 @@ export default defineConfig({
   define: { __BUILD__: JSON.stringify(build), __NATIVE__: JSON.stringify(app) },
   plugins: [
     preact(),
+    pixiCpuProbe(),
     VitePWA({
       disable: app,
       registerType: 'autoUpdate',
