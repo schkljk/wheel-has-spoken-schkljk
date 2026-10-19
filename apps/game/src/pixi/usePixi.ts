@@ -15,6 +15,17 @@ const OPTS = { backgroundAlpha: 0, antialias: true, autoDensity: true } as const
 const resolution = () => Math.min(devicePixelRatio || 1, 2);
 /** apps made so far (a screen that needed one before the warm-up ran already did the warming) */
 let made = 0;
+/**
+ * Apps on screen. Pixi's system ticker (its renderers' scheduler) runs every frame once any renderer exists, even
+ * with every app in the pool: 15 ms of every second on the idle hub on a mid-range phone. It only runs while one
+ * is out.
+ */
+let active = 0;
+const inUse = (P: Px, d: number) => {
+  active = Math.max(0, active + d);
+  if (active) P.Ticker.system.start();
+  else P.Ticker.system.stop();
+};
 
 // The first app (three WebGL contexts made, the shaders compiled) is made while the game is idle, before
 // anything needs it; a wheel that comes up meanwhile waits for it instead of making its own.
@@ -25,6 +36,7 @@ export function warmPixi(): Promise<void> {
     .then(async (P) => {
       if (made) return;
       made++;
+      inUse(P, 1);
       const a = new P.Application();
       await a.init({ ...OPTS, width: 64, height: 64, resolution: resolution() });
       a.stop();
@@ -38,6 +50,7 @@ export function warmPixi(): Promise<void> {
 
 async function acquire(P: Px, el: HTMLDivElement): Promise<Application> {
   if (warming) await warming;
+  inUse(P, 1);
   for (let a = idle.pop(); a; a = idle.pop()) {
     if (!a.renderer) continue;
     a.resizeTo = el;
@@ -46,12 +59,17 @@ async function acquire(P: Px, el: HTMLDivElement): Promise<Application> {
   }
   made++;
   const a = new P.Application();
-  await a.init({ ...OPTS, resizeTo: el, resolution: resolution() });
+  try {
+    await a.init({ ...OPTS, resizeTo: el, resolution: resolution() });
+  } catch (e) {
+    inUse(P, -1);
+    throw e;
+  }
   return a;
 }
 /** Back to the pool: the screen's things and per-frame work go, the WebGL context stays. */
 function release(P: Px, a: Application) {
-  if (!a.renderer) return;
+  if (!a.renderer) return inUse(P, -1);
   // a fresh ticker: every callback the screen added goes with the old one
   const old = a.ticker;
   a.ticker = new P.Ticker();
@@ -65,6 +83,7 @@ function release(P: Px, a: Application) {
   a.canvas.remove();
   if (idle.length < MAX_IDLE) idle.push(a);
   else a.destroy(true, { children: true });
+  inUse(P, -1);
 }
 
 /**
