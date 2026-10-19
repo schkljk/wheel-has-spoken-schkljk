@@ -29,8 +29,6 @@ export const musicWanted = () => want?.id ?? null;
 /** Plays a track (the same one keeps playing), or fades the music out with null. */
 export function playMusic(t: Track | null) {
   want = t;
-  // its loop renders while the page is idle, before sound is allowed (offline audio needs no tap)
-  if (t && settings.value.music !== false) void loopOf(t);
   whenUnlocked(apply);
 }
 // with the music switched off nothing is scheduled at all; switched back on, the wanted track starts again
@@ -146,8 +144,10 @@ function loopOf(t: Track): Promise<AudioBuffer | null> {
 const idle = () => new Promise<void>((r) => ('requestIdleCallback' in window ? requestIdleCallback(() => r(), { timeout: 250 }) : setTimeout(r, 16)));
 /**
  * Renders one pass of a track into a buffer that loops without a seam: the end of the pass before is rendered
- * first, so the start carries its tails exactly as the second time round does live. The notes are made a few
- * dozen at a time while the page is idle; the rendering itself runs off the main thread.
+ * first, so the start carries its tails exactly as the second time round does live. The notes are made a bar at a
+ * time while it renders (the render pauses for each), as they would be live: made all at once, thousands of
+ * nodes were alive through the whole render and it took longer than the music lasts. The rendering itself runs
+ * off the main thread.
  */
 export async function renderLoop(t: Track, rate = RATE): Promise<AudioBuffer> {
   const len = 60 / t.bpm / 4;
@@ -156,14 +156,34 @@ export async function renderLoop(t: Track, rate = RATE): Promise<AudioBuffer> {
   const n = Math.round(t.steps * len * rate);
   const oc = new OfflineAudioContext(1, from + n, rate);
   const st = t.setup(oc, oc.destination);
-  for (let i = 0; i < lead + t.steps; i++) {
-    if (i % 24 === 0) await idle();
-    try {
-      st.step(i < lead ? t.steps - lead + i : i - lead, 0.05 + i * len, len);
-    } catch {
-      // a missed note is better than no music
+  const total = lead + t.steps;
+  const BAR = 16;
+  const notes = (k: number) => {
+    for (let i = k; i < Math.min(total, k + BAR); i++)
+      try {
+        st.step(i < lead ? t.steps - lead + i : i - lead, 0.05 + i * len, len);
+      } catch {
+        // a missed note is better than no music
+      }
+  };
+  await idle();
+  notes(0);
+  if (typeof oc.suspend === 'function') {
+    // each later bar is made a little before it starts, on a render quantum (128 frames)
+    let last = 0;
+    for (let k = BAR; k < total; k += BAR) {
+      const q = Math.floor(((0.05 + k * len - 0.25) * rate) / 128);
+      if (q <= last) {
+        notes(k);
+        continue;
+      }
+      last = q;
+      void oc.suspend((q * 128) / rate).then(() => {
+        notes(k);
+        void oc.resume();
+      });
     }
-  }
+  } else for (let k = BAR; k < total; k += BAR) notes(k);
   const all = await oc.startRendering();
   const out = oc.createBuffer(1, n, rate);
   out.copyToChannel(all.getChannelData(0).subarray(from, from + n), 0);
