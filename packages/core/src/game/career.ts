@@ -300,12 +300,12 @@ export function codexCount(g: Game): { f: number; t: number } {
 }
 
 const ST = (g: Game, k: string) => g.save.profile.stats[k] || 0;
-export function track(g: Game, k: string, n = 1) {
+export function track(g: Game, k: string, n = 1, who?: Fighter) {
   const s = g.save.profile.stats;
   s[k] = (s[k] || 0) + n;
   checkGoals(g);
-  // the bounty board counts the same steps (review F5)
-  for (let i = 0; i < n; i++) bountyStep(g, k);
+  // the bounty board counts the same steps (review F5), for whoever fought
+  for (let i = 0; i < n; i++) bountyStep(g, k, who ?? g.F);
 }
 export function trackMax(g: Game, k: string, v: number) {
   const s = g.save.profile.stats;

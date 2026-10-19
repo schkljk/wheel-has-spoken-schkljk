@@ -75,9 +75,11 @@ export function bountyBoard(g: Game): { b: Bounty; cur: number; need: number; fi
 }
 export const bountiesDone = (g: Game) => state(g).done.length;
 
-/** A career stat stepped (a boss beaten, a cup won...): bounties on it that the active fighter fits move on. */
-export function bountyStep(g: Game, on: string) {
-  const F = g.F;
+/**
+ * A career stat stepped (a boss beaten, a cup won...): bounties on it that the fighter fits move on. That is the
+ * active fighter, or whoever actually fought (a Spin & Run runner: H2).
+ */
+export function bountyStep(g: Game, on: string, F: Fighter | null = g.F) {
   if (!F || !BALANCE.bounties) return;
   deal(g);
   const s = state(g);

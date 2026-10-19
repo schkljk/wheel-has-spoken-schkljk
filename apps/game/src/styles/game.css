@@ -3856,3 +3856,36 @@ html[data-plate='pl_wanted'] .hn.mine {
   font-family: Georgia, 'Times New Roman', serif;
   letter-spacing: 0.04em;
 }
+
+/* Spin & Run's runner (review H2): the picks tick in, the whole card folds out */
+.run-picks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 3.6rem;
+  max-width: 24rem;
+}
+.run-pick {
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.run-card {
+  width: 100%;
+  text-align: left;
+}
+.run-card > summary {
+  cursor: pointer;
+  text-align: center;
+  font-weight: 700;
+  color: var(--gold);
+  min-height: 2.75rem;
+  display: grid;
+  place-items: center;
+}
+.cine-card .gains {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+}

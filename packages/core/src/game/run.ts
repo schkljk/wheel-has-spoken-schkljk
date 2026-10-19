@@ -100,19 +100,21 @@ export function startRun(g: Game): RunState {
   prof(g).run = R;
   return R;
 }
-/** A run fighter's picks and synergies join the collection. */
-function collect(g: Game, f: CareerFighter) {
+/** A run fighter's picks and synergies join the collection; how many were new. */
+function collect(g: Game, f: CareerFighter): number {
+  let n = 0;
   for (const W of WHEELS) {
     const it = f[W.k] as { n: string; skip?: unknown } | undefined;
-    if (CX_CATS.has(W.k) && it && !it.skip) markSeen(g, W.k, cxKey(W.k, it, f));
+    if (CX_CATS.has(W.k) && it && !it.skip && markSeen(g, W.k, cxKey(W.k, it, f))) n++;
   }
-  for (const s of synOf(f)) if (!s.hidden) markSeen(g, 'syn', s.n);
+  for (const s of synOf(f)) if (!s.hidden && markSeen(g, 'syn', s.n)) n++;
+  return n;
 }
 
-/** Gives up the run: it counts as ended where it is. */
-export function quitRun(g: Game) {
+/** Gives up the run: it counts as ended where it is. Returns what it paid, for the payout card (H2). */
+export function quitRun(g: Game): string[] {
   const R = runState(g);
-  if (R) settle(g, R, false);
+  return R ? settle(g, R, false) : [];
 }
 
 /** The run's next opponent: the same one every time it's asked for (its own die). */
@@ -148,10 +150,10 @@ export function runOpponent(g: Game, R: RunState): CareerFighter {
   return o;
 }
 
-/** Three boons to pick from after a win (kept until one is picked). */
+/** Three boons to pick from after a win (kept until one is picked). No patching up at full HP (H2). */
 function offer(R: RunState): string[] {
   const rng = mulberry32((R.seed ^ Math.imul(0x9e3779b9, R.i + 3)) >>> 0);
-  const left = RUN_BOONS.slice();
+  const left = RUN_BOONS.filter((b) => b.k !== 'heal' || R.hp < 95);
   const out: string[] = [];
   while (out.length < 3 && left.length) out.push(left.splice(pickW(rng, left), 1)[0]!.k);
   return out;
@@ -185,9 +187,13 @@ function settle(g: Game, R: RunState, won: boolean): string[] {
   const wins = R.i;
   const gems = Math.floor(wins / 2) + (won ? 3 : 0);
   if (gems) awardGems(g, gems, lines);
+  else lines.push('No gems: a run pays one for every two wins');
   const f = runFighter(R);
   // the picks join the collection when the run pays out, and only after a win (G11: walking away at once was a free farm)
-  if (BALANCE.runFair && wins > 0) collect(g, f);
+  if (BALANCE.runFair && wins > 0) {
+    const n = collect(g, f);
+    if (n) lines.push(`📚 ${pl(n, 'new entry', 'new entries')} in your collection`);
+  }
   const best = runBest(g);
   if (!best || wins > best.wins || (won && !best.won)) {
     prof(g).runBest = { wins, n: f.name, e: f.race.e, won };
@@ -222,6 +228,8 @@ export function endRunFight(g: Game, O: CareerFighter, o: FightOutcome): FightRe
     invalidate(f);
     R.f = serFighter(f);
     addMasteryWin(g, f);
+    // a run's win is a win: goals count it, and bounties the runner fits (H2)
+    track(g, 'wins', 1, f);
     // real numbers, and the +10 named (H9, G15)
     const mx = numStats(f).hp;
     lines.push(`${f.name} is level ${f.lvl}. +10 HP after the win: ${Math.max(1, Math.round((R.hp / 100) * mx))}/${mx} HP for the next one`);

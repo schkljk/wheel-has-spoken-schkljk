@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  endRunFight,
+  quitRun,
+  runFighter,
+  runOpponent,
+  runState,
+  startRun,
+  takeBoon,
   ALL_GOALS,
   checkGoals,
   goalCur,
@@ -172,5 +179,37 @@ describe('L6: synergy hunt goals', () => {
     expect(g.save.profile.gems).toBeGreaterThanOrEqual(gems + 3);
     checkGoals(g);
     expect(g.save.profile.goalsDone.filter((k) => k === 'syn10')).toHaveLength(1);
+  });
+});
+
+describe('H2: Spin & Run is part of the game', () => {
+  it('a run win counts as a win for goals and for bounties the runner fits; walking away says what it paid', () => {
+    const g = game(4);
+    g.pool = null;
+    startRun(g);
+    const R = runState(g)!;
+    // a Slime runner, for the "Win 10 fights as a Slime" bounty
+    (R.f.picks as Record<string, string>).race = 'Slime';
+    delete (R.f.picks as Record<string, string>).rsub;
+    expect(runFighter(R).race.n).toBe('Slime');
+    g.save.profile.extra.bounty = { up: ['slimewins'], done: [], prog: {} } as never;
+    const wins0 = g.save.profile.stats.wins || 0;
+    endRunFight(g, runOpponent(g, R), { w: 0, me: { hp: 50, maxHp: 100 }, them: { hp: 0, maxHp: 100 }, round: 3, sd: false, hist: [[], []] } as never);
+    expect(g.save.profile.stats.wins).toBe(wins0 + 1);
+    expect((g.save.profile.extra.bounty as { prog: Record<string, number> }).prog.slimewins).toBe(1);
+    takeBoon(g, runState(g)!.offer![0]!);
+    const lines = quitRun(g);
+    expect(lines.length).toBeGreaterThan(0);
+    expect(runState(g)).toBe(null);
+  });
+  it('no patching up at full HP', () => {
+    for (let s = 1; s <= 30; s++) {
+      const g = game(s);
+      startRun(g);
+      const R = runState(g)!;
+      endRunFight(g, runOpponent(g, R), { w: 0, me: { hp: 100, maxHp: 100 }, them: { hp: 0, maxHp: 100 }, round: 3, sd: false, hist: [[], []] } as never);
+      expect(runState(g)!.hp).toBe(100);
+      expect(runState(g)!.offer).not.toContain('heal');
+    }
   });
 });
