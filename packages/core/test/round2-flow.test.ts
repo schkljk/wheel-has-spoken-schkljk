@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BOUNTIES,
+  BOUNTY_JOB_GEMS,
+  POWERS,
+  WHEEL,
+  bountyBoard,
+  bountyJob,
+  dropJob,
+  jobSlice,
+  jobUsed,
+  swapBounty,
+  takeJob,
   clockAt,
   enterCareer,
   ensureSeen,
@@ -87,5 +98,60 @@ describe('H4: the level-up pick shows the real numbers', () => {
     expect(numStats(g.F!, ctxOf(g))).toEqual(now);
     expect(levelUpPreview(g, levelUpItem('awaken')!)).toBe(null);
     expect(levelUpPreview(g, levelUpItem('arsenal')!)).toBe(null);
+  });
+});
+
+describe('H5 and L1: bounties you can steer', () => {
+  it("every bounty's job slice is on its wheel", () => {
+    for (const b of BOUNTIES) {
+      if (!b.pin) continue;
+      const W = WHEEL[b.pin.w];
+      const items = (typeof W.items === 'function' ? [] : W.items) as { n: string; k?: string }[];
+      // the power wheel depends on the class: No power is on the usual one
+      const list = b.pin.w === 'power' ? (POWERS as { n: string; k?: string }[]) : items;
+      const hit = (x: { n: string; k?: string }) => (b.pin!.n != null && x.n === b.pin!.n) || (b.pin!.k != null && x.k === b.pin!.k);
+      expect(list.some(hit), b.k).toBe(true);
+      const f = { [b.pin.w]: list.find(hit) } as never;
+      expect(b.is(f), b.k).toBe(true);
+    }
+    expect(BOUNTIES.filter((b) => b.pin).length).toBeGreaterThanOrEqual(BOUNTIES.length - 1);
+  });
+  it('the board says who fits, puts those first, and always has one the roster can do when any fits', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      const g = game(seed);
+      const fitAny = BOUNTIES.some((b) => b.is(g.F!));
+      const board = bountyBoard(g);
+      expect(board.length).toBe(3);
+      if (fitAny) {
+        expect(board[0]!.fits).toEqual([g.F!.name]);
+        expect(board.some((r) => r.fits.length)).toBe(true);
+      }
+      // fitting rows come first
+      const firstMiss = board.findIndex((r) => !r.fits.length);
+      if (firstMiss >= 0) expect(board.slice(firstMiss).every((r) => !r.fits.length)).toBe(true);
+    }
+  });
+  it('a job costs gems, fixes one slice on the next build, and comes back if dropped', () => {
+    const g = game(3);
+    g.save.profile.gems = 5;
+    const row = bountyBoard(g).find((r) => r.b.pin && r.b.pin.w === 'race') ?? bountyBoard(g).find((r) => r.b.pin)!;
+    expect(takeJob(g, row.b.k)).toBe(true);
+    expect(g.save.profile.gems).toBe(5 - BOUNTY_JOB_GEMS);
+    expect(bountyJob(g)!.k).toBe(row.b.k);
+    // one job at a time, and that bounty can't be swapped out from under it
+    expect(takeJob(g, row.b.k)).toBe(false);
+    expect(swapBounty(g, row.b.k)).toBe(false);
+    const W = WHEEL[row.b.pin!.w];
+    const items = (row.b.pin!.w === 'power' ? POWERS : typeof W.items === 'function' ? [] : W.items) as { n: string; k?: string }[];
+    const at = jobSlice(g, row.b.pin!.w, items);
+    expect(at).toBeGreaterThanOrEqual(0);
+    expect(jobSlice(g, 'title', items)).toBe(-1);
+    dropJob(g);
+    expect(g.save.profile.gems).toBe(5);
+    expect(bountyJob(g)).toBe(null);
+    takeJob(g, row.b.k);
+    jobUsed(g);
+    expect(bountyJob(g)).toBe(null);
+    expect(g.save.profile.gems).toBe(5 - BOUNTY_JOB_GEMS);
   });
 });

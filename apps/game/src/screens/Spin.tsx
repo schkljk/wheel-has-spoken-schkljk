@@ -10,6 +10,8 @@ import {
   fullName,
   hashStr,
   itemKeyFor,
+  jobSlice,
+  jobUsed,
   labelOf,
   mulberry32,
   newBuild,
@@ -201,6 +203,9 @@ export function BuildScreen({ name, resume }: { name: string; resume?: { f: unkn
     const od = playerOdds(G, WHEELS[S.idx]!, S.f);
     S.list = od.list;
     S.reasons = od.reasons;
+    // a bounty's job fixes this wheel (L1): it says so, and lands there
+    const j = jobSlice(G, WHEELS[S.idx]!.k, S.list.map((e) => e.it));
+    if (j >= 0) S.reasons = [{ cls: 'up', txt: `📌 The job: this wheel lands on ${S.list[j]!.it.n}` }, ...S.reasons];
     setHi(null);
     setHub('?');
     rerender();
@@ -239,7 +244,10 @@ export function BuildScreen({ name, resume }: { name: string; resume?: { f: unkn
     }
     v.spinPhysics(S.auto ? 'auto' : 'button', fast, undefined, aim);
   };
-  const buildAim = () => preRoll(`build|${S.f.name}|${WHEELS[S.idx]?.k}`, itemsRef.current);
+  const buildAim = () => {
+    const j = jobSlice(G, WHEELS[S.idx]?.k ?? '', S.list.map((e) => e.it));
+    return j >= 0 ? j : preRoll(`build|${S.f.name}|${WHEELS[S.idx]?.k}`, itemsRef.current);
+  };
   const onFlick = (w: number) => {
     if (S.spinning || S.done || !wheel.current) return;
     prep();
@@ -250,7 +258,11 @@ export function BuildScreen({ name, resume }: { name: string; resume?: { f: unkn
     const e = S.list[i]!;
     const it = e.it;
     const Wk = WHEELS[S.idx]!;
-    const r = act((g) => buildLand(g, S.f, Wk, it, S.idx));
+    const r = act((g) => {
+      // the job's slice landed: the job is used, in the same change (L1)
+      if (jobSlice(g, Wk.k, S.list.map((x) => x.it)) === i) jobUsed(g);
+      return buildLand(g, S.f, Wk, it, S.idx);
+    });
     setHub(it.e || String(it.v ?? '✓'));
     if (r.respin) {
       setLanded({ name: it.n, rx: '🩹 Resilient: below Peak human, so the wheel spins again', q: 1 });

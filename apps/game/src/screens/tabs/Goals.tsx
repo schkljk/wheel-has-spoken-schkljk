@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { ARCHS, BOUNTY_SWAP_GEMS, COL_STEP, GOALS, MASTERY, MASTERY_RW, bountyBoard, bountiesDone, codexCount, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals, swapBounty } from '@whs/core';
+import { ARCHS, BOUNTY_JOB_GEMS, BOUNTY_SWAP_GEMS, COL_STEP, GOALS, MASTERY, MASTERY_RW, WHEEL, bountyBoard, bountiesDone, bountyJob, codexCount, dropJob, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals, swapBounty, takeJob } from '@whs/core';
 import { G, act, activeFighter, ensure, save, toast } from '../../state/game';
 import { confirm, openSheet } from '../../state/ui';
 import { Sheet, rise } from '../../ui/kit';
@@ -31,12 +31,35 @@ function GoalRow({ g, done }: { g: Goal; done?: boolean }) {
   );
 }
 
-/** A standing build challenge on the bounty board (F5): no timer, and swapping it for another costs a gem. */
+/** The slice a bounty's job fixes, in words: "your next fighter's race wheel lands on Pigeon". */
+function jobText(b: ReturnType<typeof bountyBoard>[number]['b']) {
+  const pin = b.pin!;
+  const W = WHEEL[pin.w];
+  const it = W && typeof W.items !== 'function' ? W.items.find((x) => (pin.n != null && x.n === pin.n) || (pin.k != null && (x as { k?: string }).k === pin.k)) : null;
+  return `your next new fighter's ${W ? (typeof W.label === 'string' ? W.label : W.lc).toLowerCase() : pin.w} wheel lands on ${it?.n ?? pin.n ?? pin.k}`;
+}
+
+/**
+ * A standing build challenge on the bounty board (F5): no timer, and swapping it for another costs a gem. It says
+ * who on your roster fits it (H5), and its job can be taken (L1): its slice fixed on your next fighter's wheel.
+ */
 function BountyRow({ x }: { x: ReturnType<typeof bountyBoard>[number] }) {
   const gems = G.save.profile.gems || 0;
+  const job = bountyJob(G);
+  const mine = job?.k === x.b.k;
   const swap = async () => {
     if (!(await confirm({ title: 'Swap this bounty?', body: `"${x.b.n}" comes down and a new one goes up. Costs ${BOUNTY_SWAP_GEMS} 💎.`, yes: 'Swap it' }))) return;
     if (!act((g) => swapBounty(g, x.b.k))) toast('Not enough gems');
+  };
+  const take = async () => {
+    const body = `For ${BOUNTY_JOB_GEMS} 💎, ${jobText(x.b)}. The rest of the wheels still spin as usual. Drop the job before then and the gems come back.`;
+    if (!(await confirm({ title: 'Take the job?', body, yes: `Take it, ${BOUNTY_JOB_GEMS} 💎` }))) return;
+    if (act((g) => takeJob(g, x.b.k))) toast('📌 The wheel takes requests. It charges in dignity');
+    else toast('Not enough gems');
+  };
+  const drop = async () => {
+    if (!(await confirm({ title: 'Drop the job?', body: `Your next fighter's wheels spin free again, and the ${BOUNTY_JOB_GEMS} 💎 come back.`, yes: 'Drop it' }))) return;
+    act((g) => dropJob(g));
   };
   return (
     <div class="goal bounty">
@@ -49,6 +72,8 @@ function BountyRow({ x }: { x: ReturnType<typeof bountyBoard>[number] }) {
           💎 {x.b.gems}
           {x.need > 1 ? ` · ${x.cur}/${x.need}` : ''}
         </small>
+        {x.fits.length > 0 && <small class="fits">Fits {x.fits.join(', ')}</small>}
+        {mine && <small class="jobline">📌 Job taken: {jobText(x.b)}</small>}
         <small class="flav">{x.b.f}</small>
         {x.need > 1 && (
           <div class="xpbar">
@@ -56,8 +81,20 @@ function BountyRow({ x }: { x: ReturnType<typeof bountyBoard>[number] }) {
           </div>
         )}
       </div>
-      <span class="g-r">
-        <button class="btn ghost sm" disabled={gems < BOUNTY_SWAP_GEMS} aria-label={`Swap "${x.b.n}" for another bounty, ${BOUNTY_SWAP_GEMS} gem`} onClick={() => void swap()}>
+      <span class="g-r b-acts">
+        {mine ? (
+          <button class="btn ghost sm" onClick={() => void drop()}>
+            Drop job
+          </button>
+        ) : (
+          x.b.pin &&
+          !job && (
+            <button class="btn ghost sm" disabled={gems < BOUNTY_JOB_GEMS} aria-label={`Take the job for "${x.b.n}", ${BOUNTY_JOB_GEMS} gems`} onClick={() => void take()}>
+              Job
+            </button>
+          )
+        )}
+        <button class="btn ghost sm" disabled={gems < BOUNTY_SWAP_GEMS || mine} aria-label={`Swap "${x.b.n}" for another bounty, ${BOUNTY_SWAP_GEMS} gem`} onClick={() => void swap()}>
           Swap
         </button>
       </span>

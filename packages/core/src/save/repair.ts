@@ -19,9 +19,10 @@ function repairExtra(x: Raw, fixed: string[]) {
   const note = (what: string) => fixed.push(`${what} was repaired`);
   if (x.bounty !== undefined) {
     const b = isObj(x.bounty) ? x.bounty : {};
-    const ok = isObj(x.bounty) && strs(b.up) && strs(b.done) && (b.prog === undefined || numMap(b.prog)) && (b.last == null || typeof b.last === 'string');
+    const job = b.job == null || (isObj(b.job) && typeof b.job.k === 'string' && typeof b.job.gems === 'number');
+    const ok = isObj(x.bounty) && strs(b.up) && strs(b.done) && (b.prog === undefined || numMap(b.prog)) && (b.last == null || typeof b.last === 'string') && job;
     if (!ok) {
-      x.bounty = { up: strs(b.up) ? b.up : [], done: strs(b.done) ? b.done : [], prog: numMap(b.prog) ? b.prog : {} };
+      x.bounty = { up: strs(b.up) ? b.up : [], done: strs(b.done) ? b.done : [], prog: numMap(b.prog) ? b.prog : {}, ...(job && b.job ? { job: b.job } : {}) };
       note('the bounty board');
     }
   }

@@ -3791,3 +3791,16 @@ html[data-plate='pl_wanted'] .hn.mine {
 .mentor-line {
   color: var(--gold);
 }
+/* the bounty board (H5, L1): who fits it, and a job taken */
+.bounty .fits {
+  color: var(--good, #7be38b);
+  font-weight: 700;
+}
+.bounty .jobline {
+  color: var(--gold);
+}
+.b-acts {
+  display: grid;
+  gap: 0.3rem;
+  justify-items: end;
+}

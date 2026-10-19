@@ -252,10 +252,10 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
                     <small>{s.d}</small>
                   </span>
                 ) : (
-                  // a hidden synergy nobody has found yet
+                  // a hidden synergy nobody has found yet: it is one of the collection's riddles (H5)
                   <span key={s.k} class="syn secret">
-                    <span>❓ ???</span>
-                    <small>Something about this build is off. In a good way. A fight will tell.</small>
+                    <span>🧩 Solves a riddle</span>
+                    <small>Something about this build is off. In a good way. One fight and the collection learns which riddle.</small>
                   </span>
                 ),
               )}

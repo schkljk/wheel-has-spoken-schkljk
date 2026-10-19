@@ -21,6 +21,7 @@ export function CodexScreen({ back }: { back: () => void }) {
   const f = cxf.value;
   const on = codexFilterOn(f) || cxCat.value != null;
   const nOn = [f.show && f.show !== 'all', f.q != null, cxCat.value != null].filter(Boolean).length;
+  const riddles = cxCat.value === 'syn' && f.show === 'missing';
   let shown = 0;
   return (
     <main class="screen codex-screen with-filters">
@@ -40,6 +41,17 @@ export function CodexScreen({ back }: { back: () => void }) {
           <SearchBox label="Search the collection" placeholder="Search what you've found" value={f.text || ''} onInput={(text) => (cxf.value = { ...f, text })} />
           <button class={`btn ghost sm fbtn${nOn ? ' on' : ''}`} aria-expanded={cxOpen.value} onClick={() => (cxOpen.value = !cxOpen.value)}>
             Filters{nOn ? ` (${nOn})` : ''}
+          </button>
+          {/* straight to the riddles, which otherwise start far down the list (H5) */}
+          <button
+            class={`btn ghost sm fbtn${riddles ? ' on' : ''}`}
+            aria-pressed={riddles}
+            onClick={() => {
+              cxCat.value = riddles ? null : 'syn';
+              cxf.value = { ...f, show: riddles ? 'all' : 'missing' };
+            }}
+          >
+            🧩 Riddles
           </button>
         </div>
         {cxOpen.value && (
