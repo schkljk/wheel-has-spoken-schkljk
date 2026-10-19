@@ -90,6 +90,8 @@
 - **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 
+
+
 ### Review follow-up: the owner's picks
 
 - **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.
