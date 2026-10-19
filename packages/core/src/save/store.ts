@@ -1,4 +1,4 @@
-import { LEGACY_STORE_KEY, migrate, SaveFormatError } from './migrate';
+import { LEGACY_STORE_KEY, migrate, NewerSaveError, SaveFormatError } from './migrate';
 import { newSave, type Roster, type SaveData, type Slot } from './schema';
 
 /** The bit of localStorage the store needs (in tests, a Map-backed fake). */
@@ -31,14 +31,20 @@ export class StorageFullError extends Error {}
 
 export interface LoadResult {
   save: SaveData;
-  /** 'saved' (normal), 'new' (nothing stored yet) or 'recovered' (from a backup) */
-  source: 'saved' | 'new' | 'recovered';
+  /**
+   * 'saved' (normal), 'new' (nothing stored yet), 'recovered' (from a backup), or 'newer': the stored save comes
+   * from a newer version of the game, so nothing is written until the game is updated (a stale tab, an older
+   * app, a rolled-back deploy used to call it damaged and write a fresh save over it)
+   */
+  source: 'saved' | 'new' | 'recovered' | 'newer';
   problems: string[];
 }
 
 export class SaveStore {
   /** last written text per key, to skip rewriting unchanged sections */
   private written = new Map<string, string>();
+  /** true while the stored save is from a newer version: writes are dropped so it is never lost (G7) */
+  locked = false;
 
   constructor(
     private kv: KV,
@@ -55,6 +61,11 @@ export class SaveStore {
       if (fixed.length) problems.push(`Repaired your save: ${fixed.join(', ')}`);
       return { save, source: 'saved', problems };
     } catch (e) {
+      if (e instanceof NewerSaveError) {
+        this.locked = true;
+        problems.push('Your save comes from a newer version of the game. Update the game to keep playing: nothing was changed.');
+        return { save: newSave(this.now()), source: 'newer', problems };
+      }
       problems.push(`Your save could not be read (${(e as Error).message})`);
     }
     for (const b of this.listBackups()) {
@@ -98,6 +109,7 @@ export class SaveStore {
 
   /** Writes the save, section by section (unchanged sections are skipped). */
   write(save: SaveData): void {
+    if (this.locked) return;
     save.savedAt = this.now();
     const { active } = save.roster;
     const parts: [string, unknown][] = [
@@ -165,6 +177,7 @@ export class SaveStore {
 
   /** Copies the save into the oldest (or an empty) backup slot. */
   backup(save: SaveData, reason: string): void {
+    if (this.locked) return;
     const used = this.listBackups();
     let slot = [...Array(BACKUP_SLOTS).keys()].find((i) => !used.some((b) => b.slot === i));
     if (slot === undefined) slot = used.at(-1)!.slot;

@@ -12,6 +12,7 @@ import { Icon } from '../ui/Icon';
 import { Sheet, rise } from '../ui/kit';
 import { careerLine, raceEmoji } from '../ui/fighter';
 import { WheelStage } from '../WheelStage';
+import { updateNow } from '../state/update';
 
 /** Name a new fighter (or roll a silly name), then spin every wheel. */
 function NewFighterSheet() {
@@ -52,6 +53,49 @@ function NewFighterSheet() {
 }
 
 export function Title() {
+  return (
+    <main class="screen title-screen">
+      <div class="title-hero" aria-hidden="true">
+        <WheelStage />
+      </div>
+      <h1 class="title-name">The Wheel Has Spoken</h1>
+      <div class="title-body scroll pad stack">
+        {store.locked ? (
+          // a save from a newer version: nothing to play until the game catches up, and nothing is written (G7)
+          <div class="card" role="alert" {...rise(0)}>
+            <b>Your save is from a newer version</b>
+            <p style={{ margin: '0.25rem 0 0.6rem' }}>
+              <small>This copy of the game is older than your save. Update it to keep playing: your save was not touched.</small>
+            </p>
+            <button class="btn block" onClick={updateNow}>
+              <Icon name="download" /> Update the game
+            </button>
+          </div>
+        ) : (
+          <TitleBody />
+        )}
+      </div>
+      {!store.locked && (
+        <div class="title-foot pad row">
+          <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
+            <Icon name="cup" /> <span class="ellipsis">Records</span>
+          </button>
+          <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex', from: 'title' })}>
+            <Icon name="card" /> <span class="ellipsis">Collection</span>
+          </button>
+          <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
+            <Icon name="book" />
+          </button>
+          <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
+            <Icon name="gear" />
+          </button>
+        </div>
+      )}
+    </main>
+  );
+}
+
+function TitleBody() {
   const s = save.value;
   const slots = s.roster.slots;
   const hasFighters = slots.some(Boolean);
@@ -82,12 +126,7 @@ export function Title() {
     openSheet(<NewFighterSheet />);
   };
   return (
-    <main class="screen title-screen">
-      <div class="title-hero" aria-hidden="true">
-        <WheelStage />
-      </div>
-      <h1 class="title-name">The Wheel Has Spoken</h1>
-      <div class="title-body scroll pad stack">
+    <>
         {loadProblems.value.length > 0 && (
           <div class="card" role="status" {...rise(n++)}>
             <b>About your save</b>
@@ -159,21 +198,6 @@ export function Title() {
             </div>
           );
         })}
-      </div>
-      <div class="title-foot pad row">
-        <button class="btn ghost sm grow" onClick={() => openSheet(<RecordsSheet />)}>
-          <Icon name="cup" /> <span class="ellipsis">Records</span>
-        </button>
-        <button class="btn ghost sm grow" onClick={() => go({ screen: 'codex', from: 'title' })}>
-          <Icon name="card" /> <span class="ellipsis">Collection</span>
-        </button>
-        <button class="iconbtn" aria-label="How to play" onClick={startTutorial}>
-          <Icon name="book" />
-        </button>
-        <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
-          <Icon name="gear" />
-        </button>
-      </div>
-    </main>
+    </>
   );
 }

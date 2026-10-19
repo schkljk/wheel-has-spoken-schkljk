@@ -14,6 +14,8 @@ export const MIGRATIONS: ((s: Raw, now: number) => Raw)[] = [
 ];
 
 export class SaveFormatError extends Error {}
+/** A save written by a newer version of the game: never repaired, restored over, or written over (G7). */
+export class NewerSaveError extends SaveFormatError {}
 
 export const LEGACY_STORE_KEY = 'wheel-has-spoken-v1';
 
@@ -33,7 +35,7 @@ export function migrate(input: unknown, now = Date.now(), notes?: string[]): Sav
   let s = typeof input === 'string' ? parseJson(input) : input;
   let v = saveVersion(s);
   if (v === null) throw new SaveFormatError("That doesn't look like a save from this game");
-  if (v > SAVE_VERSION) throw new SaveFormatError('This save comes from a newer version of the game. Update the game first');
+  if (v > SAVE_VERSION) throw new NewerSaveError('This save comes from a newer version of the game. Update the game first');
   while (v < SAVE_VERSION) {
     s = MIGRATIONS[v]!(s as Raw, now);
     v++;

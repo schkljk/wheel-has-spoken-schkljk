@@ -168,4 +168,22 @@ describe('save store', () => {
     expect(migrate(exportText(s), 1000)).toEqual(s);
     expect(exportFileName(new Date(2026, 9, 6))).toBe('wheel-has-spoken-2026-10-06.json');
   });
+  it('never writes over a save from a newer version (G7)', () => {
+    const kv = new MemKV();
+    const old = new SaveStore(kv, () => 1000);
+    old.write(imported());
+    // a newer version of the game wrote this save
+    const meta = JSON.parse(kv.getItem(KEYS.meta)!) as { version: number };
+    kv.setItem(KEYS.meta, JSON.stringify({ ...meta, version: meta.version + 1 }));
+    const before = new Map(kv.m);
+    const store = new SaveStore(kv, () => 9e12);
+    const r = store.load();
+    expect(r.source).toBe('newer');
+    expect(store.locked).toBe(true);
+    expect(r.problems.join(' ')).toMatch(/newer version/);
+    // playing on, or a backup coming due, changes nothing
+    store.write(r.save);
+    store.backup(r.save, 'Automatic');
+    expect(kv.m).toEqual(before);
+  });
 });
