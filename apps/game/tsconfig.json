@@ -12,6 +12,6 @@
     "types": ["vite/client", "vite-plugin-pwa/client"],
     "paths": { "react": ["../../node_modules/preact/compat"], "react-dom": ["../../node_modules/preact/compat"] }
   },
-  "include": ["src"],
+  "include": ["src", "src/**/*.json"],
   "references": [{ "path": "../../packages/core" }]
 }

@@ -6,7 +6,6 @@ import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
 import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
-import { installNative } from './native';
 import { loadPx } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import { effect } from '@preact/signals';
@@ -26,7 +25,8 @@ import './styles/game.css';
 
 installErrorLog();
 installEmojiIcons();
-void installNative();
+// the Android app's glue, only in the Android build (the web build doesn't carry Capacitor at all)
+if (__NATIVE__) void import('./native').then((m) => m.installNative());
 installPressFeedback();
 // sound starts with the first tap; the theme plays everywhere but in fights, which bring their own
 installAudio();

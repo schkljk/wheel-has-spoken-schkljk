@@ -5,7 +5,6 @@ import {
   endStoryFight,
   endTierFight,
   endTowerFight,
-  fightOdds,
   type Arena,
   type CareerFighter,
   type FightOutcome,
@@ -17,6 +16,7 @@ import {
   type TowerState,
 } from '@whs/core';
 import { G, act, go } from '../state/game';
+import { oddsFor } from '../state/odds';
 
 /** The arena wheel the fight screen spins while the fighters walk in (no separate screen, no extra tap). */
 export interface ArenaWheel {
@@ -30,8 +30,8 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
   const O: CareerFighter = spec0.opp;
   const fixed = opts.arena !== undefined;
   const spec = { ...spec0, arena: fixed ? opts.arena! : null, odds: NaN } as FightSpec;
-  // a fixed arena knows its odds now; a spun one once it lands
-  if (fixed) spec.odds = fightOdds(G, spec);
+  // a fixed arena's odds are worked out now (off the main thread); a spun one's once it lands
+  if (fixed) void oddsFor(spec);
   const arenaWheel: ArenaWheel | null = fixed ? null : arenaOdds(G, F, O);
   const end = (o: FightOutcome): FightResult => {
     if (spec.kind === 'story') return endStoryFight(G, spec, o);

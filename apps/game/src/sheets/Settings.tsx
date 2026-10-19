@@ -4,9 +4,7 @@ import { openSheet } from '../state/ui';
 import { Segmented, Sheet, Slider, Toggle } from '../ui/kit';
 import { DEFAULT_MUSIC_VOL, DEFAULT_SFX_VOL, previewVolume } from '../audio/engine';
 import { sfx } from '../ui/sound';
-import { SoundTestSheet } from './SoundTest';
 import { SaveSheet } from './Save';
-import { ErrorLogSheet } from './ErrorLog';
 import { errLog } from '../state/errlog';
 
 const taps = { n: 0 };
@@ -81,7 +79,7 @@ export function SettingsSheet() {
         <button class="btn ghost block" onClick={startTutorial}>
           How to play
         </button>
-        <button class="btn ghost block" onClick={() => openSheet(<SoundTestSheet back={() => openSheet(<SettingsSheet />)} />)}>
+        <button class="btn ghost block" onClick={() => void import('./SoundTest').then(({ SoundTestSheet }) => openSheet(<SoundTestSheet back={() => openSheet(<SettingsSheet />)} />))}>
           Sound test
         </button>
         <button class="btn ghost block" onClick={() => openSheet(<SaveSheet />)}>
@@ -103,7 +101,7 @@ export function SettingsSheet() {
       </p>
       {/* the hidden error log: only shows up when something went wrong (upgrade 45) */}
       {errLog.value.length > 0 && (
-        <button class="btn ghost sm errbadge" onClick={() => openSheet(<ErrorLogSheet />)}>
+        <button class="btn ghost sm errbadge" onClick={() => void import('./ErrorLog').then(({ ErrorLogSheet }) => openSheet(<ErrorLogSheet />))}>
           ⚠ {errLog.value.length} {errLog.value.length === 1 ? 'error' : 'errors'} logged
         </button>
       )}

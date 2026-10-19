@@ -400,6 +400,8 @@ export interface SpinSpec<T extends { n: string; e?: string; q?: number; d?: str
   onLand: (it: T) => ComponentChildren | void;
   /** continue on its own after this many ms (the arena wheel) */
   autoNext?: number;
+  /** spin on its own as soon as the wheel is up (spoils after a fight: no tap needed) */
+  autoSpin?: boolean;
 }
 
 /** A single wheel (loot, level-ups, events, arenas...). Resolves with what landed once Continue is tapped. */
@@ -439,6 +441,10 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
     if (reducedMotion()) v.spinTo(pickW(G.rng, items), { dur: 500, turns: 1 });
     else v.spinPhysics('button', fast);
   };
+  // spoils spin themselves; doSpin waits for the wheel if it isn't drawn yet
+  useEffect(() => {
+    if (spec.autoSpin) doSpin();
+  }, []);
   const landedAt = (i: number, info: { turns: number; flick: boolean }) => {
     stopDrum.current();
     const it = spec.list[i]!.it;

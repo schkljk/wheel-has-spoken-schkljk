@@ -180,6 +180,14 @@ export const injLine = (j: Injury) =>
 
 /** Simulated chance to win, shown before the fight (120 fights at the fight's HP, default round limit). */
 export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(g.F!, spec.opp, g.rng, 120, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) });
+/** The same simulation as plain data, to run off the main thread: run it with headToHead(a, b, mulberry32(seed), n, opts). */
+export const fightOddsJob = (g: Game, spec: Omit<FightSpec, 'odds'>) => ({
+  a: g.F!,
+  b: spec.opp,
+  n: 120,
+  seed: Math.floor(g.rng() * 2 ** 31),
+  opts: { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) },
+});
 
 /** Starts the battle; next-fight buffs are used up. */
 export function startBattle(g: Game, spec: FightSpec): Battle {
@@ -212,7 +220,9 @@ export type Step =
   | { t: 'bracket' }
   | { t: 'gauntlet' }
   | { t: 'rush' }
-  | { t: 'tower' };
+  | { t: 'tower' }
+  /** a gear choice from a loot spin, waiting (kept so closing the app doesn't lose the piece) */
+  | { t: 'gear'; k: string };
 export interface FightResult {
   won: boolean;
   big: string;

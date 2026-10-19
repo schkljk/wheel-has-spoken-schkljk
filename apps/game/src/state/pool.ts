@@ -1,6 +1,6 @@
 import { signal } from '@preact/signals';
 import { hashStr, poolSeed, type GameContext, type PoolRanking } from '@whs/core';
-import type { PoolMessage } from '../workers/pool.worker';
+import type { PoolMessage, PoolRequest } from '../workers/sim.worker';
 import { kv } from './storage';
 import { G } from './game';
 
@@ -35,7 +35,7 @@ export function ensurePool(ctx: GameContext): void {
   pool.value = null;
   poolProgress.value = 0;
   const seed = poolSeed(day);
-  worker = new Worker(new URL('../workers/pool.worker.ts', import.meta.url), { type: 'module' });
+  worker = new Worker(new URL('../workers/sim.worker.ts', import.meta.url), { type: 'module' });
   worker.onmessage = (e: MessageEvent<PoolMessage>) => {
     const m = e.data;
     if (m.type === 'progress') poolProgress.value = m.done / m.total;
@@ -53,5 +53,5 @@ export function ensurePool(ctx: GameContext): void {
       worker = null;
     }
   };
-  worker.postMessage({ seed, ctx });
+  worker.postMessage({ type: 'pool', seed, ctx } satisfies PoolRequest);
 }

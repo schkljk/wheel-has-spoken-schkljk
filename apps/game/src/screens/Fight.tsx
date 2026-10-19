@@ -47,13 +47,13 @@ import { fightDims, type FightDims } from '../pixi/dims';
 import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import type { ArenaWheel } from '../flows/fight';
+import { oddsFor } from '../state/odds';
 import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet, Toggle } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
-import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
 import { ac, arenaMusic, landSound, phaseMusic, sfx, tick } from '../ui/sound';
@@ -415,7 +415,7 @@ export function FightScreen({
     const a = aw.list[idx]!.it;
     act((g) => arenaLand(g, a));
     spec.arena = a;
-    spec.odds = fightOdds(G, spec);
+    void oddsFor(spec);
     landSound(a.q ?? 1);
     sc.setArena(a);
     S.music();
@@ -541,6 +541,8 @@ export function FightScreen({
       // cosmetic
     }
     let r: FightResult;
+    // the odds come back from a worker long before a fight ends; if they somehow haven't, work them out now
+    if (!Number.isFinite(spec.odds)) spec.odds = fightOdds(G, spec);
     try {
       r = act(() => end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd }));
     } catch (err) {
@@ -864,8 +866,10 @@ export function FightScreen({
     tick();
   };
   /** The share card: both fighters, the final blow, names and titles. */
-  const shareWin = () => {
+  const shareWin = async () => {
     if (!result) return;
+    // the share card's drawing code loads the first time it's wanted
+    const { ShareSheet } = await import('../ui/ShareSheet');
     const w = result.won ? 0 : 1;
     // the last real blow (not a bleed or burn tick), falling back to any last damage
     const dealt = [...S.log].reverse().filter((e) => e.d != null && e.d > 0 && e.a && e.a.by === w);

@@ -24,3 +24,5 @@ export * from './summary';
 export * from './filters';
 export * from './dots';
 export * from './preview';
+export * from './recap';
+export * from './resume';

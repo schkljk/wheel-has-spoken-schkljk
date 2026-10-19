@@ -13,6 +13,51 @@
 
 ## After the upgrade list: owner requests
 
+### Review follow-up: the owner's picks
+
+- **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.
+- **Done so far:**
+  - **A1, the daily streak:** wins in a row whenever they are played; only a loss resets it. A week off keeps the streak and its pay.
+  - **A2, HP thresholds:** every description with engine HP now reads as a percentage ("below 45% HP", "heals 25% HP"). Engine HP is 100 for a full bar, so these were percentages all along. The fix is a wording layer (`data/wording.ts`) laid over the tables at load, so the tables stay a faithful port. The parity tests lay the same wording over the legacy tables before comparing: 75 strings changed, no numbers.
+  - **A3:** the map tip says the boss is at the top.
+  - **A5, upgrades:**
+    - A new piece of loot is tagged Upgrade, Downgrade or About even, and the better choice is listed first. The judgement weighs the real numbers it moves, its rarity and upgrade level, and the synergies it starts or ends.
+    - Armory rows and slots show ▲ or ▼, and there is a "Wear your best gear" button (one Undo for all of it).
+  - **A6:** a talent point can be taken back for 3 seconds, and learned talents get a gold frame.
+  - **A7:** the stats popup waits at the top of the screen while a sheet is open.
+  - **A8, words, not percentages:**
+    - Win odds are words: Long shot, Big underdog, Underdog, Coin flip, Favorite, Heavy favorite, Sure thing.
+    - Pool ranks read "Rank 140", and the card says "Beats most random level 1 fighters".
+  - **A9, the new fighter's card:** the fighter comes first, the scouting report is folded under it, and the report speaks in words, not raw rolls. Stat rows show only their effect, green or red.
+  - **A10:** the build counter says "Spin 2 of 21+" while sub-wheels may still join.
+  - **A12:** mid-chapter, the bracket shows a locked "Shop opens after this chapter".
+  - **A13, readable fight HUD:**
+    - HP numbers are at least 13 px; focus chips are 44 px tall; momentum pips are bigger.
+    - Belts have screen-reader names.
+  - **B2, faster fights:**
+    - After chapter 1, a 1×/2× button sits in the fight HUD; it is the Fast mode setting, and a first-time tip introduces it.
+    - The arena wheel spins on the combat wheel's spot while the fighters walk in, so there is no separate arena screen or extra tap. Its scenery fades in where it lands.
+  - **B6:** goals sort by about how many fights they still need, not by percent, and the next one is pinned on the Play tab.
+  - **B7:** map previews show the opponents' level against yours, and how far the next campfire is.
+  - **C2:** the first-fight tip explains the teal ring. Tapping the read opens "what beats what".
+  - **C3:** a new injury says how it heals (by itself after cups, or a physio session or a campfire's Patch up).
+  - **Performance, measured on a desktop CPU unless noted:**
+    - D1: canvases that get read back are CPU-backed. This removes the seconds-long stalls the review measured on a phone profile.
+    - D2: the 119 race, class, weapon and enchant icons are baked into one 100 KB image (`npm run bake`; a test fails if it goes stale). The game no longer draws 107 sprites while it starts.
+    - D3: pixel buffers are typed arrays. Sprites build about 35% faster (25 ms vs 39 ms median) with byte-identical pixels (the same hash over 60 sprites, every icon and the map decorations). One build is now shared by the page, the fight and the faces.
+    - D4: Pixi applications (WebGL contexts) are pooled and handed from screen to screen instead of being created and destroyed every time.
+    - D5: the combat wheel skips redraws when its slices and size haven't changed, and rims are cached by size.
+    - D6: fight odds run in a worker. The pool and the odds share one worker file, so the engine downloads once for both.
+    - D7: the title wheel is drawn once into canvases and turned by CSS, with no WebGL on the title screen.
+    - D8:
+      - The web build no longer contains Capacitor.
+      - The share card, sound test and error log load when opened.
+      - The developer lab worker and Pixi's WebGPU renderer are left out of the offline cache.
+      - The 512 px PNG icon is now in the app manifest for Android installs.
+    - D9: the save keeps its backup index in memory instead of parsing three backups on every write.
+    - D10: portrait caches are capped. Evicted fighter textures are destroyed unless a fighter on stage still uses them.
+
+
 ### Full review (October 2026)
 
 - **Asked for:** "review the game entirely, and give me suggestions for improvements, optimizations, and new features."
