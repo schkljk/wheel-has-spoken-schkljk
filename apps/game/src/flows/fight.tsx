@@ -4,6 +4,7 @@ import {
   endDuelFight,
   endGhostFight,
   endTrialFight,
+  endRunFight,
   type Duel,
   endRushFight,
   endStoryFight,
@@ -43,6 +44,7 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
     if (spec.kind === 'duel') return endDuelFight(G, opts.duel!, o);
     if (spec.kind === 'ghost') return endGhostFight(G, O, o);
     if (spec.kind === 'trial') return endTrialFight(G, opts.trial!, O, o);
+    if (spec.kind === 'run') return endRunFight(G, O, o);
     if (spec.kind === 'rush') return endRushFight(G, opts.rush!, O, o);
     if (spec.kind === 'tower') return endTowerFight(G, opts.tower!, O, o);
     return endTierFight(G, spec, o);

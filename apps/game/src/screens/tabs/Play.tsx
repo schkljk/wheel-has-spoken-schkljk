@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, duelText, TRIAL_COUNT, TRIAL_FROM, trialsCleared, trialsOpen, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, duelText, RUN_FIGHTS, runBest, runState, TRIAL_COUNT, TRIAL_FROM, trialsCleared, trialsOpen, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
@@ -52,6 +52,13 @@ export function PlayTab() {
   const modes: Mode[] = [
     { n: 'Daily challenge', icon: 'calendar', st: dailyText(G), fl: 'One twist, zero refunds', go: () => void dailyFlow() },
     { n: 'Daily duel', icon: 'sword', st: duelText(G), fl: 'Same fighters. Same dice. Different excuses', go: () => openDuel() },
+    {
+      n: 'Spin & Run',
+      icon: 'momentum',
+      st: runState(G) ? `Run on: fight ${runState(G)!.i + 1} of ${RUN_FIGHTS}` : runBest(G) ? `Best: ${runBest(G)!.won ? 'the whole run' : `${runBest(G)!.wins} of ${RUN_FIGHTS}`}` : 'A throwaway fighter, nine fights',
+      fl: 'Built in two minutes. Expected to last three',
+      go: () => void import('../../flows/run').then((m) => m.runFlow()),
+    },
     {
       n: 'Wheelborn trials',
       icon: 'swirl',
