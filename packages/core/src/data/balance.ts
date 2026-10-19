@@ -52,6 +52,8 @@ export interface Balance {
   secondOpinion: boolean;
   /** the fight club's payouts follow a noisy bookie's line, and an insider tells the real odds (review F8) */
   clubInsider: boolean;
+  /** the bounty board counts career steps toward standing build challenges (review F5) */
+  bounties: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -79,6 +81,7 @@ export const LEGACY_BALANCE: Balance = {
   storyPacing: false,
   secondOpinion: false,
   clubInsider: false,
+  bounties: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -131,6 +134,7 @@ export const BALANCE: Balance = {
   storyPacing: true,
   secondOpinion: true,
   clubInsider: true,
+  bounties: true,
 };
 
 /**
