@@ -2,6 +2,7 @@ import {
   arenaOdds,
   endDailyFight,
   endDuelFight,
+  endGhostFight,
   type Duel,
   endRushFight,
   endStoryFight,
@@ -39,6 +40,7 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
     if (spec.kind === 'story') return endStoryFight(G, spec, o);
     if (spec.kind === 'daily') return endDailyFight(G, O, o);
     if (spec.kind === 'duel') return endDuelFight(G, opts.duel!, o);
+    if (spec.kind === 'ghost') return endGhostFight(G, O, o);
     if (spec.kind === 'rush') return endRushFight(G, opts.rush!, O, o);
     if (spec.kind === 'tower') return endTowerFight(G, opts.tower!, O, o);
     return endTierFight(G, spec, o);

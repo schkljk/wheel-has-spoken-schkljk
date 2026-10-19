@@ -3600,3 +3600,34 @@ img.pxi.chap {
 .fc-bets[data-hscroll] .fchip {
   flex: none;
 }
+/* ghost codes (F9) */
+.ghost-code {
+  display: block;
+  max-height: 5.5rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.ghost-in {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: none;
+}
+.ghost-prev {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}

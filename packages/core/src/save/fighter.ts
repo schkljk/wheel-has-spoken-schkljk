@@ -55,6 +55,8 @@ export interface CareerFighter extends Fighter {
   _win?: number | null;
   /** challenge opponents: 'rival' or 'legend' */
   isRival?: string;
+  /** a fighter from someone else's ghost code (review F9) */
+  isGhost?: boolean;
   /** pool opponents: where they rank (0 weakest, 1 strongest) */
   poolPct?: number;
   bossTitle?: string;

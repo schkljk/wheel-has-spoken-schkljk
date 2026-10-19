@@ -17,6 +17,7 @@ export function MoreTab() {
     ['cup', 'Records and legacy', 'Seasons, legacy perks, the hall of fame', () => openSheet(<RecordsSheet />)],
     ['card', 'Collection', 'Everything your fighters have found', () => go({ screen: 'codex' })],
     ['shield', 'Trophy room', 'Belts, boss kills, rare titles and mastered classes', () => void import('../../sheets/Trophies').then((m) => m.openTrophies())],
+    ['people', 'Ghost codes', 'Send your fighter to a friend, fight theirs', () => void import('../../sheets/Ghosts').then((m) => openSheet(<m.GhostSheet />))],
     ['book', 'How to play', 'A quick tour of the game', startTutorial],
     ['people', 'Your fighters', 'Switch fighter', () => go({ screen: 'title' })],
   ];
