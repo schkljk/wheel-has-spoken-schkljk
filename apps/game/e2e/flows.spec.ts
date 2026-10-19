@@ -397,7 +397,7 @@ test('a hidden synergy is a mystery on the card until the first fight gives it a
   await page.getByRole('button', { name: /^Skip/ }).click();
   await page.locator('.fresult').waitFor({ timeout: 60_000 });
   await page.locator('.fresult .spoil, .fresult > .btn').first().click();
-  await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);
+  await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40, { stop: '.maphead' });
   await page.getByRole('button', { name: 'Home' }).click();
   await page.getByRole('tab', { name: 'Fighter' }).click();
   await page.getByRole('button', { name: 'Every wheel result and trait' }).click();

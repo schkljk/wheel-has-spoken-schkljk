@@ -174,7 +174,7 @@ for (const [width, height] of VIEWS) {
       await page.locator('.fresult .spoil, .fresult > .btn').first().click();
       await page.locator('.ch-opt, .tabbar, .maphead, .spin-foot').first().waitFor();
       await check(page, 'after the fight');
-      await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);
+      await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40, { stop: '.maphead' });
       await page.getByRole('button', { name: 'Home' }).click();
       await page.locator('.tabbar').waitFor();
       await page.getByRole('button', { name: /Local brawl/ }).click();
