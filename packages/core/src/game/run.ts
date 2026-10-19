@@ -7,7 +7,7 @@ import { poolPick } from '../pool';
 import { pickW } from '../random';
 import { mulberry32 } from '../rng';
 import { deserFighter, serFighter, type CareerFighter, type SerFighter } from '../save/fighter';
-import { synOf } from '../stats';
+import { numStats, synOf } from '../stats';
 import { addMasteryWin, awardGems, invalidate, markSeen, randomGear, track } from './career';
 import type { FightOutcome, FightResult, FightTier } from './fight';
 import { ctxOf, pl, type Game } from './game';
@@ -194,7 +194,9 @@ export function endRunFight(g: Game, O: CareerFighter, o: FightOutcome): FightRe
     invalidate(f);
     R.f = serFighter(f);
     addMasteryWin(g, f);
-    lines.push(`${f.name} is level ${f.lvl}. HP ${R.hp}% for the next one`);
+    // real numbers, and the +10 named (H9, G15)
+    const mx = numStats(f).hp;
+    lines.push(`${f.name} is level ${f.lvl}. +10 HP after the win: ${Math.max(1, Math.round((R.hp / 100) * mx))}/${mx} HP for the next one`);
     if (R.i >= RUN_FIGHTS) over = true;
     else R.offer = offer(R);
   }

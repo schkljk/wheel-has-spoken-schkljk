@@ -19,6 +19,7 @@ import {
   pendingUpgrade,
   levelSpinsPerLevel,
   levelUpItem,
+  levelUpPreview,
   levelUpLand,
   levelUpList,
   lootLand,
@@ -55,6 +56,7 @@ import { spinWheel } from '../screens/Spin';
 import { GearIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
 import { swapped } from './armory';
+import { NS_META } from '../ui/FighterCard';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {
@@ -103,21 +105,24 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
 }
 
 /** A full-screen card with one button (intros, celebrations). */
-export function showCine(content: ComponentChildren, button: string): Promise<void> {
+/** A full-screen card with one button, or two (`alt` answers no): resolves true for the main one. */
+export function showCine(content: ComponentChildren, button: string, alt?: string): Promise<boolean> {
   return new Promise((resolve) => {
+    const answer = (yes: boolean) => {
+      cine.value = null;
+      resolve(yes);
+    };
     cine.value = (
       <div class="cine-card">
         {content}
-        <button
-          class="btn block cine-btn"
-          ref={(b) => b?.focus()}
-          onClick={() => {
-            cine.value = null;
-            resolve();
-          }}
-        >
+        <button class="btn block cine-btn" ref={(b) => b?.focus()} onClick={() => answer(true)}>
           {button}
         </button>
+        {alt && (
+          <button class="btn ghost block cine-alt" onClick={() => answer(false)}>
+            {alt}
+          </button>
+        )}
       </div>
     );
   });
@@ -142,7 +147,6 @@ export async function celebrate(icon: string, title: string, sub: string) {
 const note = (t: string, cls = 'sub') => (t ? <div class={`note ${cls}`}>{t}</div> : null);
 
 // ---------------------------------------------------------------- level-ups
-/** Spins the level-up wheel for every level waiting. Awakening and Arsenal lead to an upgrade spin. */
 /** What keeping a level-up slice does, for the pick between two spins. */
 const LV_SUB: Record<string, string> = {
   awaken: 'A power spin with only equal or better slices. You can keep your current power',
@@ -151,12 +155,26 @@ const LV_SUB: Record<string, string> = {
   all1: '+1 strength, speed, durability, IQ and both masteries',
 };
 
+/** What a level-up slice does to the real numbers, old → new (review H4), or what it does in words. */
+function lvChange(x: NonNullable<ReturnType<typeof levelUpItem>>): string | undefined {
+  const p = levelUpPreview(G, x);
+  if (!p) return LV_SUB[x.k];
+  const rows = NS_META.filter(([k]) => p.a[k] != null && p.b[k] != null && p.a[k] !== p.b[k]);
+  if (!rows.length) return LV_SUB[x.k] ?? 'No change to the numbers yet';
+  return rows.map(([k, , n, u = '']) => `${n} ${p.a[k]}${u} → ${p.b[k]}${u}`).join(', ');
+}
+
+/** Spins the level-up wheel for every level waiting. Awakening and Arsenal lead to an upgrade spin. */
 export async function levelUps() {
   // an upgrade spin the app closed on comes first (G5)
   const up0 = pendingUpgrade(G);
   if (up0) await upgradeSpin(up0);
+  // with several waiting, each says which level it is for (H4)
+  const total = G.F?.pendingLv || 0;
   while (G.F && (G.F.pendingLv || 0) > 0) {
     const F = G.F;
+    const at = (F.lvl || 1) - (F.pendingLv || 1) + 1;
+    const of = total > 1 ? `, level-up ${total - (F.pendingLv || 1) + 1} of ${total}` : '';
     // a second opinion (F4): two spins a level, keep one. Spins landed before the app closed still count (A4)
     const per = levelSpinsPerLevel();
     const got = levelSpins(G)
@@ -168,7 +186,7 @@ export async function levelUps() {
       const it = await spinWheel({
         cat: 'lvl',
         title: second ? 'Second opinion' : 'Level up',
-        who: second ? `Then keep the one you like. ${F.name}, level ${F.lvl}` : `${F.name} reached level ${F.lvl}`,
+        who: second ? `Then keep the one you like. ${F.name}, level ${at}${of}` : `${F.name} reached level ${at}${of}`,
         list: levelUpList(),
         spinLabel: second ? 'Spin for a second opinion' : 'Spin the level-up wheel',
         preview: true,
@@ -188,8 +206,8 @@ export async function levelUps() {
       const c = await choose({
         emoji: '⚖️',
         title: 'Keep one',
-        sub: `Level ${F.lvl}: two spins, one pick. The other goes back in the wheel`,
-        options: got.map((x) => ({ label: `${x.e} ${x.n}`, sub: LV_SUB[x.k] })),
+        sub: `Level ${at}${of}: two spins, one pick. The other goes back in the wheel`,
+        options: got.map((x) => ({ label: `${x.e} ${x.n}`, sub: lvChange(x) })),
       });
       it = got[c]!;
     } else if (got.length > 1) toast(`Both spins agree: ${it.e} ${it.n}`);

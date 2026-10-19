@@ -1,9 +1,10 @@
-import { RANKS, rankOf, seeGoals, tabDots } from '@whs/core';
+import { RANKS, ensureSeen, rankOf, seeGoals, tabDots } from '@whs/core';
 import { G, activeFighter, activeSlot, ensure, go, route, save, type Tab } from '../state/game';
 import { openSheet } from '../state/ui';
 import { SettingsSheet } from '../sheets/Settings';
 import { FighterFace } from '../art/FighterFace';
 import { Icon, type IconName } from '../ui/Icon';
+import { Inf } from '../ui/Info';
 import { FighterTab } from './tabs/Fighter';
 import { GoalsTab } from './tabs/Goals';
 import { MoreTab } from './tabs/More';
@@ -27,6 +28,8 @@ export function Hub({ tab }: { tab: Tab }) {
   // something new waiting on a tab (upgrade 32); saves from before the dots start with goals seen
   void save.value;
   if (G.save.profile.extra.goalsSeen == null) ensure((g) => seeGoals(g));
+  // the "New" ribbons (H1) start from what is already open
+  if (G.save.profile.extra.seenNew == null) ensure((g) => ensureSeen(g));
   const dots = tabDots(G);
   return (
     <main class="screen hub">
@@ -49,9 +52,9 @@ export function Hub({ tab }: { tab: Tab }) {
         <span class="chip" aria-label={`${slot.coins} coins`}>
           <Icon name="coin" /> {slot.coins}
         </span>
-        <span class="chip" aria-label={`${save.value.profile.gems} gems`}>
+        <Inf k="rule|gems" class="chip" label={`${save.value.profile.gems} gems. What gems buy`}>
           <Icon name="gem" /> {save.value.profile.gems}
-        </span>
+        </Inf>
         <button class="iconbtn" aria-label="Settings" onClick={() => openSheet(<SettingsSheet />)}>
           <Icon name="gear" />
         </button>

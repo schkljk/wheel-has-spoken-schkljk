@@ -12,6 +12,9 @@ import {
   endTierFight,
   endTowerFight,
   openFight,
+  newlyOpen,
+  noteUnlocks,
+  unlocked,
   type Arena,
   type CareerFighter,
   type FightOutcome,
@@ -54,7 +57,14 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
   if (fixed) void oddsFor(spec);
   // the arena wheel leans toward whoever actually fights: a stand-in (a Spin & Run runner), or the fighter (G16)
   const arenaWheel: ArenaWheel | null = fixed ? null : { ...arenaOdds(G, spec0.me ?? F, O), seed: rec.arena };
+  // a fight that opens a mode says so on its result (H1)
   const end = (o: FightOutcome): FightResult => {
+    const before = unlocked(G);
+    const r = endOf(o);
+    noteUnlocks(r, newlyOpen(before, unlocked(G)));
+    return r;
+  };
+  const endOf = (o: FightOutcome): FightResult => {
     if (spec.kind === 'story') return endStoryFight(G, spec, o);
     if (spec.kind === 'daily') return endDailyFight(G, O, o);
     if (spec.kind === 'duel') return endDuelFight(G, opts.duel!, o);

@@ -438,7 +438,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
   lines.push(...gainFame(g, fame));
   if (fame) lines.push(`⭐ +${fame} fame`);
   if (F.pendingLv) lines.push(`⬆️ Level ${F.lvl} reached`);
-  lines.unshift(`+${xp} XP, +${coins} 🪙${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
+  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}${got.length ? `, +${got.length * 3} 🪙 for new titles` : ''}`);
   invalidate(F);
   let big: string;
   let desc: string;
@@ -551,6 +551,8 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   let fame = won ? pay.fame : 0;
   if (won) {
     S.hp = Math.min(100, Math.max(1, Math.ceil(me.hp)) + 10);
+    // the +10 after a win is named, so the map's HP isn't a mystery after the fight's (H9)
+    lines.push(`❤️ +10 HP after the win: you go on with ${hpTxt(g, S.hp)} HP`);
     if (spec.odds < 0.35) keys.push('giant');
     if (me.hp < 10) keys.push('comeback');
     if (me.st.taken < 0.5) keys.push('flawless');
@@ -618,7 +620,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
   // a boss that toughened up for you pays for it (review E5 and F7)
   if (won && node === 'boss' && tunedBossGems(O)) {

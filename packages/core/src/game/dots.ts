@@ -1,15 +1,18 @@
 import { dailyReady } from './economy';
 import type { Game } from './game';
+import { newOnMore, newOnPlay } from './unlocks';
 
 /**
  * Notification dots on the tabs (Phase 4, upgrade 32): something new is waiting there. Play: the daily wheel or
- * today's daily challenge, or a challenger. Fighter: talent points to spend. Goals: a goal finished since you
- * last looked. Nothing nags about a day you missed; tomorrow just has its own.
+ * today's daily challenge, a challenger, or a mode that just opened (H1). Fighter: talent points to spend.
+ * Goals: a goal finished since you last looked. More: a feature not looked at yet (H1). Nothing nags about a
+ * day you missed; tomorrow just has its own.
  */
 export interface TabDots {
   play: boolean;
   fighter: boolean;
   goals: boolean;
+  more: boolean;
 }
 export function tabDots(g: Game): TabDots {
   const F = g.F;
@@ -18,9 +21,10 @@ export function tabDots(g: Game): TabDots {
   const challengeReady = !(dc && dc.date === g.clock.today && dc.done);
   const seen = p.extra.goalsSeen as number | undefined;
   return {
-    play: !!F && (dailyReady(g) || challengeReady || !!F.challenge),
+    play: !!F && (dailyReady(g) || challengeReady || !!F.challenge || newOnPlay(g)),
     fighter: !!F && (F.tp || 0) > 0,
     goals: seen != null && p.goalsDone.length > seen,
+    more: newOnMore(g),
   };
 }
 /** Looking at the Goals tab clears its dot (and starts the count for saves from before the dots). */

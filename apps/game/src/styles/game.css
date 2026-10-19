@@ -3734,3 +3734,60 @@ html[data-plate='pl_wanted'] .hn.mine {
   border-radius: 3px;
   border: 1px solid var(--edge);
 }
+
+/* ---------- a mode or feature that just opened (review H1) ---------- */
+.has-ribbon {
+  position: relative;
+  overflow: hidden;
+}
+.ribbon {
+  position: absolute;
+  top: 0.5rem;
+  right: -1.85rem;
+  z-index: 1;
+  padding: 0.12rem 2rem;
+  transform: rotate(35deg);
+  font: 800 0.62rem/1.2 var(--display);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #1a1426;
+  background: var(--gold);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  animation: ribbon-in 0.5s 0.25s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes ribbon-in {
+  from {
+    transform: rotate(35deg) translateY(-1.5rem);
+    opacity: 0;
+  }
+}
+
+/* ---------- the Play tab on a phone held sideways (review H9): the story card beside everything else ---------- */
+.play-rest {
+  display: contents;
+}
+@media (orientation: landscape) and (max-height: 500px) {
+  .play-stack {
+    max-width: 60rem;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+  }
+  .play-stack > .story-card {
+    position: sticky;
+    top: 0;
+  }
+  .play-rest {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.6rem;
+    align-content: start;
+  }
+}
+.ng-d {
+  font-weight: 600;
+  color: var(--muted);
+}
+.mentor-line {
+  color: var(--gold);
+}

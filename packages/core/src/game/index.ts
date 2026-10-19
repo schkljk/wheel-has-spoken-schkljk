@@ -33,3 +33,4 @@ export * from './mentor';
 export * from './cosmetics';
 export * from './trials';
 export * from './run';
+export * from './unlocks';

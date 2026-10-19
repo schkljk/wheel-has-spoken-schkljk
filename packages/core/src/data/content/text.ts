@@ -397,6 +397,15 @@ export const PILL_NOW: Record<string, [e: string, n: string, d: string]> = {
 };
 
 export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {
+  gems: [
+    '💎',
+    'Gems',
+    [
+      "Gems buy what coins can't: premium gear in the base shop, looks for your wheel in the Locker (More tab), the fight club insider's tip, and a fresh bounty when you don't like the board.",
+      'They come from bosses (more on hard, and more when a boss sized you up), elites and your nemesis, the regional and world cups, the daily challenge, the boss rush, tower chests, the trials, Spin & Run, goals, collection milestones and ranks.',
+      'They belong to you, not to one fighter: a retired fighter leaves theirs behind. Shiny, useless, and somehow the thing everyone wants. Like a cat.',
+    ],
+  ],
   nemstory: [
     '😈',
     'Nemesis',

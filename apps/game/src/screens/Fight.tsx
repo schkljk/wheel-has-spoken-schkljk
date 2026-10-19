@@ -491,11 +491,9 @@ export function FightScreen({
       setTimeout(() => sceneRef.current?.showProc({ kind: 'synergy', k: s.k, n: s.n, e: s.e, sub: 'Hidden synergy found', side: 0, anti: false }), i * 1700),
     );
     if (navigator.webdriver) (window as unknown as { __whsBattle?: Battle }).__whsBattle = bt;
-    // the first fight explains the wheel and the reads (upgrade 31)
+    // the first fight explains the wheel (upgrade 31); the reads and the speed switch wait for the first round
+    // to play out, so tips don't stack up before the very first spin (H9)
     tip('fight');
-    tip('reads');
-    // the speed switch introduces itself the first fight it appears in
-    if (!settings.value.fast && ((F.story?.ch || 1) > 1 || (F.lvl || 1) >= 6)) tip('speed');
     S.playing = true;
     setSnap(bt.snap());
     sc.applySnap(bt.snap());
@@ -578,6 +576,11 @@ export function FightScreen({
     if (autoRef.current) return void doRound(null);
     // a sure story win can be claimed from the menu; the first one says so
     if (canClaim(spec, bt)) tip('claim');
+    if (bt.round >= 1) {
+      tip('reads');
+      // the speed switch introduces itself the first fight it appears in
+      if (!settings.value.fast && ((F.story?.ch || 1) > 1 || (F.lvl || 1) >= 6)) tip('speed');
+    }
     setPhase('input');
   }
 

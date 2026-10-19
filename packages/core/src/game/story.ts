@@ -12,7 +12,7 @@ import { poolPick } from '../pool';
 import { clamp, pick, pickW, shuffle } from '../random';
 import { GEARK, gearPool, numStats, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
-import type { CareerFighter, Json, StoryState } from '../save/fighter';
+import { deserFighter, serFighter, type CareerFighter, type Json, type StoryState } from '../save/fighter';
 import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
@@ -677,6 +677,19 @@ export function levelUpLand(g: Game, it: (typeof LEVELUP)[number]): 'power' | 'w
   applyBonus(F, it);
   invalidate(F);
   return null;
+}
+
+/**
+ * What a level-up slice would do to the fighter's real numbers (review H4): now and with it. Null for the
+ * slices that start an upgrade spin instead (Awakening, New weapon).
+ */
+export function levelUpPreview(g: Game, it: (typeof LEVELUP)[number]) {
+  if (it.k === 'awaken' || it.k === 'arsenal') return null;
+  const C = deserFighter(serFighter(g.F!));
+  if (!C) return null;
+  applyBonus(C, it);
+  invalidate(C);
+  return { a: numStats(g.F!, ctxOf(g)), b: numStats(C, ctxOf(g)) };
 }
 
 /** The slices of an upgrade spin: only equal or better than what the fighter has. Null if nothing is better. */

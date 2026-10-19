@@ -16,7 +16,7 @@ async function start(f: CareerFighter) {
       title: 'Pick a mentor?',
       sub: `A retired fighter shows ${f.name} the ropes, and drops by now and then`,
       options: [
-        ...ms.map((x) => ({ label: `${x.e} ${x.n}`, sub: `+1 ${STATN[x.k]!.toLowerCase()} to start. ${x.s}` })),
+        ...ms.map((x) => ({ label: `${x.e} ${x.n}`, sub: `+1 ${STATN[x.k] === 'IQ' ? 'IQ' : STATN[x.k]!.toLowerCase()} to start. ${x.s}` })),
         { label: 'No mentor', sub: 'Figure it all out alone. Very brave. Very slow' },
       ],
     });

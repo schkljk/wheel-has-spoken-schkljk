@@ -7,6 +7,7 @@ import {
   RANKS,
   RANK_EFFECT,
   SLOT_N,
+  STATN,
   TIERS_T,
   contractOffers,
   dropContract,
@@ -73,6 +74,12 @@ export function FighterTab() {
           <small>
             {F.rec?.w ?? 0} wins, {F.rec?.l ?? 0} losses
           </small>
+          {F.mentor && (
+            // who taught them, and what (H9)
+            <small class="mentor-line">
+              {F.mentor.e} Mentored by {F.mentor.n}: +1 {STATN[F.mentor.k]}
+            </small>
+          )}
           <div class="belts">
             {TIERS_T.filter((t) => t.size).map((t) => (
               <Inf key={t.k} k={`tier|${t.k}`} class={`belt${F.belts && F.belts[t.k] ? ' on' : ''}`} label={`${t.n} belt: ${F.belts && F.belts[t.k] ? 'won' : 'not won yet'}`}>

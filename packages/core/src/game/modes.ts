@@ -118,7 +118,7 @@ export function endDailyFight(g: Game, O: CareerFighter, o: FightOutcome): Fight
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}`);
   lines.push(...gainFame(g, fame));
   const next: Step[] = won ? [{ t: 'loot', table: 'elite' }] : [];
   next.push({ t: 'levelups' }, { t: 'hub' });
@@ -179,6 +179,7 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
     track(g, 'bosses');
     R.i++;
     R.hp = Math.min(100, Math.max(1, Math.ceil(o.me.hp)) + 25);
+    lines.push(`❤️ +25 HP between bosses: ${hpTxt(g, R.hp)} HP for the next one`);
     xp = 10 + R.i * 3;
     coins = 5 * R.i;
     fame = 3 * R.i;
@@ -205,7 +206,7 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}`);
   lines.push(...gainFame(g, fame));
   const done = R.i >= total;
   if (!won || done) next.push({ t: 'levelups' }, { t: 'hub' });
@@ -324,7 +325,7 @@ export function endTowerFight(g: Game, T: TowerState, O: CareerFighter, o: Fight
   gainXP(g, F, xp);
   addCoins(g, coins);
   award(g, keys, got);
-  lines.unshift(`+${xp} XP, +${coins} 🪙`);
+  lines.unshift(`+${xp} XP${coins ? `, +${coins} 🪙` : ''}`);
   if (over) next.push({ t: 'levelups' }, { t: 'hub' });
   keepRun(g, 'tower', over ? null : T);
   return {
