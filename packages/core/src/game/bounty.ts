@@ -1,5 +1,8 @@
 import { BOUNTIES, type Bounty } from '../data/content/bounties';
+import { BALANCE } from '../data/balance';
 import { pick } from '../random';
+import { mulberry32 } from '../rng';
+import { hashStr } from '../save/fighter';
 import { grant } from './career';
 import type { Game } from './game';
 
@@ -21,14 +24,18 @@ export const BOUNTY_SWAP_GEMS = 1;
 const state = (g: Game) => (g.save.profile.extra.bounty ??= { up: [], done: [], prog: {} }) as unknown as BountyState;
 const byKey = (k: string) => BOUNTIES.find((b) => b.k === k);
 
-/** Fills the board up to three from the bounties not up and not done. */
+/**
+ * Fills the board up to three from the bounties not up and not done. The pick is its own little die, seeded by
+ * the board, so it never moves the game's dice (a fight's or a spin's).
+ */
 function deal(g: Game) {
   const s = state(g);
+  const rng = mulberry32(hashStr(`${s.up.join()}|${s.done.join()}|${s.last || ''}`));
   s.up = s.up.filter((k) => byKey(k) && !s.done.includes(k));
   while (s.up.length < BOUNTY_SLOTS) {
     const free = BOUNTIES.filter((b) => !s.up.includes(b.k) && !s.done.includes(b.k) && b.k !== s.last);
     if (!free.length) break;
-    s.up.push(pick(g.rng, free).k);
+    s.up.push(pick(rng, free).k);
     s.last = null;
   }
 }
@@ -47,7 +54,7 @@ export const bountiesDone = (g: Game) => state(g).done.length;
 /** A career stat stepped (a boss beaten, a cup won...): bounties on it that the active fighter fits move on. */
 export function bountyStep(g: Game, on: string) {
   const F = g.F;
-  if (!F) return;
+  if (!F || !BALANCE.bounties) return;
   deal(g);
   const s = state(g);
   for (const k of [...s.up]) {
