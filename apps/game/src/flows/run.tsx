@@ -1,4 +1,4 @@
-import { BALANCE, RUN_FIGHTS, RUN_WIND_HP, boonOf, fightUnder, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, runWindLeft, startRun, takeBoon, type NumStats } from '@whs/core';
+import { BALANCE, RUN_FIGHTS, RUN_WIND_HP, boonOf, pl, relicOf, fightUnder, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, runWindLeft, startRun, takeBoon, type NumStats } from '@whs/core';
 import { useEffect, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
@@ -89,8 +89,9 @@ export async function runFlow() {
       const c = await choose({
         emoji: '🎁',
         title: 'Pick a boon',
-        sub: `Fight ${R.i} of ${RUN_FIGHTS} won. One of these, for the rest of the run`,
-        options: offer.map((k) => ({ label: `${boonOf(k).e} ${boonOf(k).n}`, sub: boonOf(k).d })),
+        sub: offer.some((k) => relicOf(k)) ? `Fight ${R.i} of ${RUN_FIGHTS} won. Relics on offer: power, with a catch` : `Fight ${R.i} of ${RUN_FIGHTS} won. One of these, for the rest of the run`,
+        // relics (L5) wear their catch on a tag
+        options: offer.map((k) => ({ label: `${boonOf(k).e} ${boonOf(k).n}`, sub: boonOf(k).d, ...(relicOf(k) ? { tag: 'Tradeoff', tone: 'even' as const } : {}) })),
       });
       act((g) => takeBoon(g, offer[c]!));
       continue;
@@ -104,7 +105,7 @@ export async function runFlow() {
     const c = under ? 0 : await choose({
       emoji: boss ? '💀' : '🏃',
       title: boss ? 'Spin & Run: the boss' : `Spin & Run: fight ${R.i + 1} of ${RUN_FIGHTS}`,
-      sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}${BALANCE.runFair ? (runWindLeft(R) ? ' · second wind ready' : ' · second wind used') : ''}`,
+      sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}${BALANCE.runFair ? (runWindLeft(R) ? ' · second wind ready' : ' · second wind used') : ''}${R.relics?.length ? ` · ${R.relics.map((k) => relicOf(k)?.e).join('')}` : ''}${R.ends != null ? ` · ${pl(R.ends - R.i, 'fight')} of borrowed time` : ''}`,
       body: (
         <>
           Next: <b>{o.name}</b>, {boss && o.bossTitle ? `${o.bossTitle}, level ${o.lvl}` : `level ${o.lvl} ${lc(o.race.n)} ${lc(o.arch.n)}`}.

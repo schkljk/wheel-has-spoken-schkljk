@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  relicOf,
   RUN_BOONS,
   RUN_FIGHTS,
   RUN_START_LVL,
@@ -42,6 +43,8 @@ const result = (g: Game, w: 0 | 1, hp = 60) => {
   return { w, me: { f, hp, maxHp: 100 }, round: 8, sd: false } as unknown as FightOutcome;
 };
 const win = (g: Game, hp?: number) => endRunFight(g, runOpponent(g, runState(g)!), result(g, 0, hp));
+/** The first plain boon on offer (every third pick also brings relics: L5). */
+const plain = (g: Game) => runState(g)!.offer!.find((k) => !relicOf(k))!;
 
 describe('Spin & Run', () => {
   it('starts with a fresh fighter at level 5 with gear', () => {
@@ -150,7 +153,7 @@ describe('Spin & Run', () => {
     runState(g)!.wind = 1;
     for (let i = 0; i < 4; i++) {
       win(g);
-      takeBoon(g, runState(g)!.offer![0]!);
+      takeBoon(g, plain(g));
     }
     const gems = g.save.profile.gems || 0;
     const r = endRunFight(g, runOpponent(g, runState(g)!), result(g, 1));
@@ -167,7 +170,7 @@ describe('Spin & Run', () => {
     startRun(g);
     let r = win(g);
     for (let i = 1; i < RUN_FIGHTS; i++) {
-      takeBoon(g, runState(g)!.offer![0]!);
+      takeBoon(g, plain(g));
       r = win(g);
     }
     expect(r.runOver).toBe(true);

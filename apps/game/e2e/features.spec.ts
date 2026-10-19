@@ -166,6 +166,8 @@ test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', asy
   await expect(page.getByRole('heading', { name: 'Spin & Run' })).toBeVisible();
   await fits(page, 'run intro');
   await page.locator('.ch-opt').first().click();
+  // the runner's picks tick in, and the whole card folds out (H2)
+  await expect(page.locator('.run-pick').first()).toBeVisible();
   await page.locator('.cine-btn').click();
   await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
   await fits(page, 'run fight pick');
@@ -183,16 +185,20 @@ test('F3: Spin & Run, a throwaway fighter, a fight, a boon and a walk away', asy
   if (!won) {
     await expect(page.getByRole('heading', { name: /fight 1 of 9/ })).toBeVisible();
     await expect(page.getByText(/second wind used/)).toBeVisible();
-    await page.locator('.ch-opt').nth(1).click();
+    await page.locator('.ch-opt').filter({ hasText: 'Walk away' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+    // what the run paid, on a card of its own (H2)
+    await page.locator('.cine-btn').click();
   }
   if (won) {
     await expect(page.getByRole('heading', { name: 'Pick a boon' })).toBeVisible();
     await fits(page, 'boons');
     await page.locator('.ch-opt').first().click();
     await expect(page.getByRole('heading', { name: /fight 2 of 9/ })).toBeVisible();
-    await page.locator('.ch-opt').nth(1).click();
+    await page.locator('.ch-opt').filter({ hasText: 'Walk away' }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'End the run' }).click();
+    // what the run paid, on a card of its own (H2)
+    await page.locator('.cine-btn').click();
   }
   await page.locator('.tabbar').waitFor();
   await expect(page.getByRole('button', { name: /Spin & Run/ })).toContainText(won ? 'Best: 1 of 9' : 'Best: 0 of 9');

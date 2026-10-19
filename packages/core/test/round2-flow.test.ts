@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  relicOf,
+  runMods,
+  runSpecOf,
   endRunFight,
   quitRun,
   runFighter,
@@ -211,5 +214,57 @@ describe('H2: Spin & Run is part of the game', () => {
       expect(runState(g)!.hp).toBe(100);
       expect(runState(g)!.offer).not.toContain('heal');
     }
+  });
+});
+
+describe('L5: Spin & Run relics', () => {
+  const win = (g: Game, hp = 80) => endRunFight(g, runOpponent(g, runState(g)!), { w: 0, me: { hp, maxHp: 100 }, them: { hp: 0, maxHp: 100 }, round: 3, sd: false, hist: [[], []] } as never);
+  const pickPlain = (g: Game) => takeBoon(g, runState(g)!.offer!.find((k) => !relicOf(k))!);
+  it('every third pick offers two relics and a plain boon; the others none', () => {
+    const g = game(5);
+    startRun(g);
+    for (let i = 1; i <= 6; i++) {
+      win(g);
+      const o = runState(g)!.offer!;
+      expect(o).toHaveLength(3);
+      expect(o.filter((k) => relicOf(k)).length, `after win ${i}`).toBe(i % 3 === 0 ? 2 : 0);
+      pickPlain(g);
+    }
+  });
+  it('Glass cannon, Blood pact, Borrowed time and the Cursed crown do what they say', () => {
+    const g = game(6);
+    startRun(g);
+    const R = () => runState(g)!;
+    for (let i = 0; i < 3; i++) (win(g), i < 2 && pickPlain(g));
+    const take = (k: string) => {
+      R().offer = [k, 'str', 'spd'];
+      takeBoon(g, k);
+    };
+    const before = runOpponent(g, R()).lvl;
+    take('crown');
+    expect(runOpponent(g, R()).lvl).toBe(before + 2);
+    R().offer = ['glass'];
+    takeBoon(g, 'glass');
+    R().hp = 80;
+    expect(runMods(R())).toMatchObject({ hp: 60, maxHp: 75, dmgX: 1.4 });
+    expect(runSpecOf(g, R()).mods![0]).toMatchObject({ maxHp: 75 });
+    R().offer = ['pact'];
+    takeBoon(g, 'pact');
+    expect(runMods(R()).en).toBe(100);
+    // a win under the pact heals nothing
+    win(g, 50);
+    expect(R().hp).toBe(50);
+    pickPlain(g);
+    R().offer = ['borrowed'];
+    takeBoon(g, 'borrowed');
+    expect(R().hp).toBe(100);
+    const ends = R().ends!;
+    expect(ends).toBe(R().i + 3);
+    while (runState(g) && runState(g)!.i < ends) {
+      const r = win(g);
+      if (runState(g)?.offer) pickPlain(g);
+      if (!runState(g)) expect(r.lines.join(' ')).toMatch(/Borrowed time is up/);
+    }
+    expect(runState(g)).toBe(null);
   });
 });

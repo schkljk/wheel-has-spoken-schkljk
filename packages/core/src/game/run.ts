@@ -9,6 +9,7 @@ import { mulberry32 } from '../rng';
 import { deserFighter, serFighter, type CareerFighter, type SerFighter } from '../save/fighter';
 import { numStats, synOf } from '../stats';
 import { addMasteryWin, awardGems, invalidate, markSeen, randomGear, track } from './career';
+import type { FightMod } from '../data/misc';
 import type { FightOutcome, FightResult, FightTier } from './fight';
 import { ctxOf, pl, type Game } from './game';
 import { CX_CATS, cxKey } from './lookups';
@@ -58,6 +59,27 @@ export const RUN_BOONS: RunBoon[] = [
   { k: 'lvl', n: '+2 levels', e: '⏫', d: 'Skipped two grades. Nobody checked.', w: 1.2 },
 ];
 
+/**
+ * Relics (review L5): every third boon is a tradeoff. Each is taken once a run, and two are offered next to a
+ * plain boon, so a tradeoff is never forced. Mechanics in `d`, the joke in `f`.
+ */
+export interface RunRelic {
+  k: string;
+  n: string;
+  e: string;
+  d: string;
+  f: string;
+}
+// prettier-ignore
+export const RUN_RELICS: RunRelic[] = [
+  { k: 'glass', n: 'Glass cannon', e: '🔪', d: '+40% damage, but 25% less max HP for the rest of the run', f: 'Hits like a truck. Built like a teacup.' },
+  { k: 'borrowed', n: 'Borrowed time', e: '⏳', d: 'A full heal now, but the run ends after three more fights', f: 'The clock is ticking. Loudly. On purpose.' },
+  { k: 'pact', n: 'Blood pact', e: '🩸', d: 'Every fight starts with full energy, but a win heals nothing (no +10 HP)', f: 'The fine print was written in something red.' },
+  { k: 'crown', n: 'Cursed crown', e: '👑', d: '+3 to everything, but every opponent gets two more levels', f: 'Heavy is the head. Heavier are the people punching it.' },
+];
+export const relicOf = (k: string) => RUN_RELICS.find((r) => r.k === k);
+const hasRelic = (R: RunState, k: string) => (R.relics || []).includes(k);
+
 export interface RunState {
   /** the throwaway fighter */
   f: SerFighter;
@@ -72,6 +94,9 @@ export interface RunState {
   took: string[];
   /** the second wind is used: the first loss of a run leaves you standing once (review K3) */
   wind?: 1;
+  /** relics taken (L5), and the fight count Borrowed time ends the run at */
+  relics?: string[];
+  ends?: number;
 }
 export interface RunBest {
   wins: number;
@@ -135,7 +160,8 @@ export function runOpponent(g: Game, R: RunState): CareerFighter {
       wheelBoss: def.wheelBoss,
       isBoss: true,
       bossTitle: def.title,
-      lvl: runYardstick(R, me) + 1,
+      // a Cursed crown makes everyone two levels angrier (L5)
+      lvl: runYardstick(R, me) + 1 + (hasRelic(R, 'crown') ? 2 : 0),
     });
     invalidate(b);
     return b;
@@ -143,22 +169,44 @@ export function runOpponent(g: Game, R: RunState): CareerFighter {
   // the pool from the bottom up: each fight picks from a little higher, and catches up to your level
   const lo = Math.min(0.85, RUN_TUNE.lo0 + R.i * RUN_TUNE.loStep);
   const o = poolPick(g.pool, lo, Math.min(1, lo + 0.2), rng, undefined, ctxOf(g)) as CareerFighter;
-  levelUp(o, Math.max(0, runYardstick(R, me) - 1 - (RUN_TUNE.under[R.i] ?? 0)), rng);
+  levelUp(o, Math.max(0, runYardstick(R, me) - 1 - (RUN_TUNE.under[R.i] ?? 0)) + (hasRelic(R, 'crown') ? 2 : 0), rng);
   if (R.i >= 3) randomGear(o, 1 + (R.i >= 6 ? 1 : 0), rng);
   o.aiSkill = 0.05 * R.i;
   invalidate(o);
   return o;
 }
 
-/** Three boons to pick from after a win (kept until one is picked). No patching up at full HP (H2). */
+/**
+ * Three boons to pick from after a win (kept until one is picked). No patching up at full HP (H2). Every third
+ * pick brings two relics not taken yet, and one plain boon (L5).
+ */
 function offer(R: RunState): string[] {
   const rng = mulberry32((R.seed ^ Math.imul(0x9e3779b9, R.i + 3)) >>> 0);
   const left = RUN_BOONS.filter((b) => b.k !== 'heal' || R.hp < 95);
   const out: string[] = [];
+  if (R.i % 3 === 0) {
+    const rel = RUN_RELICS.filter((r) => !hasRelic(R, r.k)).map((r) => ({ ...r, w: 1 }));
+    while (out.length < 2 && rel.length) out.push(rel.splice(pickW(rng, rel), 1)[0]!.k);
+  }
   while (out.length < 3 && left.length) out.push(left.splice(pickW(rng, left), 1)[0]!.k);
   return out;
 }
-export const boonOf = (k: string) => RUN_BOONS.find((b) => b.k === k)!;
+/** A boon, or a relic as one (its mechanics as the description). */
+export const boonOf = (k: string): RunBoon => {
+  const r = relicOf(k);
+  return r ? { k: r.k, n: `Relic: ${r.n}`, e: r.e, d: `${r.d}. ${r.f}`, w: 0 } : RUN_BOONS.find((b) => b.k === k)!;
+};
+/**
+ * The runner's starting tweaks for a fight: the HP carried in, and what the relics change (L5). Engine HP is
+ * out of 100 at the base, so Glass cannon's max is 75 and the carried HP scales with it.
+ */
+export function runMods(R: RunState): FightMod {
+  const glass = hasRelic(R, 'glass');
+  const m: FightMod = { hp: Math.max(1, Math.round(R.hp * (glass ? 0.75 : 1))) };
+  if (glass) Object.assign(m, { maxHp: 75, dmgX: 1.4 });
+  if (hasRelic(R, 'pact')) m.en = 100;
+  return m;
+}
 
 /** Takes one of the boons on offer. */
 export function takeBoon(g: Game, k: string) {
@@ -166,7 +214,16 @@ export function takeBoon(g: Game, k: string) {
   if (!R || !R.offer || !R.offer.includes(k)) return;
   const f = runFighter(R);
   const rng = mulberry32((R.seed + 104729 * (R.i + 1)) >>> 0);
-  if (k === 'heal') R.hp = Math.min(100, R.hp + 50);
+  const relic = relicOf(k);
+  if (relic) {
+    R.relics = [...(R.relics || []), k];
+    f.boons = [...(f.boons || []), { k, n: relic.n, e: relic.e }];
+    if (k === 'borrowed') {
+      R.hp = 100;
+      R.ends = R.i + 3;
+    }
+    if (k === 'crown') for (const s of ['str', 'spd', 'dur', 'iq', 'wm', 'pm'] as const) f.bonus[s] = (f.bonus[s] || 0) + 3;
+  } else if (k === 'heal') R.hp = Math.min(100, R.hp + 50);
   else if (k === 'gear') randomGear(f, 1, rng);
   else if (k === 'lvl') levelUp(f, 2, rng);
   else if (k === 'all1') applyBonus(f, { k: 'all1', n: '+1 to everything', e: '🌟' });
@@ -222,7 +279,8 @@ export function endRunFight(g: Game, O: CareerFighter, o: FightOutcome): FightRe
   }
   if (won) {
     R.i++;
-    R.hp = Math.min(100, Math.max(1, Math.ceil((o.me.hp / o.me.maxHp) * 100)) + 10);
+    // a Blood pact heals nothing after a win (L5)
+    R.hp = Math.min(100, Math.max(1, Math.ceil((o.me.hp / o.me.maxHp) * 100)) + (hasRelic(R, 'pact') ? 0 : 10));
     // a level a win, and the class mastery counts it, run fighter or not
     levelUp(f, 1, mulberry32((R.seed + 31 * R.i) >>> 0));
     invalidate(f);
@@ -232,9 +290,17 @@ export function endRunFight(g: Game, O: CareerFighter, o: FightOutcome): FightRe
     track(g, 'wins', 1, f);
     // real numbers, and the +10 named (H9, G15)
     const mx = numStats(f).hp;
-    lines.push(`${f.name} is level ${f.lvl}. +10 HP after the win: ${Math.max(1, Math.round((R.hp / 100) * mx))}/${mx} HP for the next one`);
+    lines.push(
+      hasRelic(R, 'pact')
+        ? `${f.name} is level ${f.lvl}. The blood pact heals nothing: ${Math.max(1, Math.round((R.hp / 100) * mx))}/${mx} HP for the next one`
+        : `${f.name} is level ${f.lvl}. +10 HP after the win: ${Math.max(1, Math.round((R.hp / 100) * mx))}/${mx} HP for the next one`,
+    );
     if (R.i >= RUN_FIGHTS) over = true;
-    else R.offer = offer(R);
+    else if (R.ends != null && R.i >= R.ends) {
+      // Borrowed time is up (L5): the run ends here and pays out
+      over = true;
+      lines.push(`⏳ Borrowed time is up. ${f.name} walks off with ${pl(R.i, 'win')}`);
+    } else R.offer = offer(R);
   }
   const done = R.i >= RUN_FIGHTS;
   if (over) lines.push(...settle(g, R, done));
@@ -259,4 +325,9 @@ export function endRunFight(g: Game, O: CareerFighter, o: FightOutcome): FightRe
 }
 
 /** The run's fighter for a fight, with HP carried in (`rushHp`). */
-export const runSpecOf = (g: Game, R: RunState) => ({ kind: 'run' as const, tier: RUN_TIER(R.i), opp: runOpponent(g, R), me: runFighter(R), rushHp: R.hp });
+export const runSpecOf = (g: Game, R: RunState) => {
+  const opp = runOpponent(g, R);
+  // relics (L5) change the runner's starting tweaks; without any, the HP carried in is all there is
+  const mods = R.relics?.length ? { mods: [runMods(R), opp.maxHp ? { maxHp: opp.maxHp } : {}] as [FightMod, FightMod] } : {};
+  return { kind: 'run' as const, tier: RUN_TIER(R.i), opp, me: runFighter(R), rushHp: R.hp, ...mods };
+};
