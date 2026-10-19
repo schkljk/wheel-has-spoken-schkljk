@@ -1,4 +1,5 @@
 import {
+  arenaByKey,
   arenaOdds,
   endDailyFight,
   endDuelFight,
@@ -10,6 +11,7 @@ import {
   endStoryFight,
   endTierFight,
   endTowerFight,
+  openFight,
   type Arena,
   type CareerFighter,
   type FightOutcome,
@@ -27,18 +29,31 @@ import { oddsFor } from '../state/odds';
 export interface ArenaWheel {
   list: WheelEntry<Arena>[];
   reasons: OddsNote[];
+  /** its die, kept with the fight (G2) */
+  seed?: number;
 }
 
 /** Opens the fight (its arena spins during the walk-in unless it is fixed) and resolves with its result. */
 export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { arena?: Arena | null; rush?: RushState; tower?: TowerState; duel?: Duel; trial?: number } = {}): Promise<FightResult> {
   const F = G.F!;
   const O: CareerFighter = spec0.opp;
-  const fixed = opts.arena !== undefined;
-  const spec = { ...spec0, arena: fixed ? opts.arena! : null, odds: NaN } as FightSpec;
+  // the fight's dice are kept in the save as it opens, and every round as it is played: closing the app and
+  // opening this fight again plays the same fight to where it was, not a fresh one (G2)
+  const rec = act((g) => openFight(g, spec0.kind, O.name));
+  const landed = arenaByKey(rec.arenaK ?? undefined);
+  const fixed = opts.arena !== undefined || !!landed;
+  const spec = {
+    ...spec0,
+    seed: spec0.seed ?? rec.seed,
+    wheelSeed: spec0.wheelSeed ?? rec.wheel,
+    ...(rec.mods ? { mods: rec.mods } : {}),
+    arena: opts.arena !== undefined ? opts.arena : landed,
+    odds: NaN,
+  } as FightSpec;
   // a fixed arena's odds are worked out now (off the main thread); a spun one's once it lands
   if (fixed) void oddsFor(spec);
   // the arena wheel leans toward whoever actually fights: a stand-in (a Spin & Run runner), or the fighter (G16)
-  const arenaWheel: ArenaWheel | null = fixed ? null : arenaOdds(G, spec0.me ?? F, O);
+  const arenaWheel: ArenaWheel | null = fixed ? null : { ...arenaOdds(G, spec0.me ?? F, O), seed: rec.arena };
   const end = (o: FightOutcome): FightResult => {
     if (spec.kind === 'story') return endStoryFight(G, spec, o);
     if (spec.kind === 'daily') return endDailyFight(G, O, o);
@@ -50,6 +65,5 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
     if (spec.kind === 'tower') return endTowerFight(G, opts.tower!, O, o);
     return endTierFight(G, spec, o);
   };
-  act(() => 0);
   return new Promise((resolve) => go({ screen: 'fight', spec, end, done: resolve, arenaWheel, key: Math.random() }));
 }

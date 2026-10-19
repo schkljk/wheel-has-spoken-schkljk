@@ -60,8 +60,21 @@ function repairExtra(x: Raw, fixed: string[]) {
     const build = r.build == null || (isObj(r.build) && isObj(r.build.f) && typeof r.build.idx === 'number' && typeof r.build.done === 'boolean');
     const lv = r.lv == null || strs(r.lv);
     const slot = r.slot == null || typeof r.slot === 'number';
-    if (!isObj(x.resume) || !steps || !place || !build || !lv || !slot) {
-      x.resume = { slot: slot ? (r.slot ?? null) : null, steps: steps ? (r.steps ?? null) : null, place: place ? (r.place ?? null) : null, build: build ? (r.build ?? null) : null, lv: lv ? (r.lv ?? null) : null } as Json;
+    // a fight under way (G2): its dice and every round played, or nothing
+    const f = r.fight;
+    const nums = (o: Raw, ks: string[]) => ks.every((k) => typeof o[k] === 'number' && Number.isFinite(o[k]));
+    const move = (m: unknown) => isObj(m) && typeof m.c === 'string';
+    const fight = f == null || (isObj(f) && typeof f.kind === 'string' && typeof f.opp === 'string' && nums(f, ['seed', 'wheel', 'arena', 'dn']) && Array.isArray(f.moves) && f.moves.every(move) && (f.pend == null || move(f.pend)));
+    if (!isObj(x.resume) || !steps || !place || !build || !lv || !slot || !fight) {
+      x.resume = {
+        ...r,
+        slot: slot ? (r.slot ?? null) : null,
+        steps: steps ? (r.steps ?? null) : null,
+        place: place ? (r.place ?? null) : null,
+        build: build ? (r.build ?? null) : null,
+        lv: lv ? (r.lv ?? null) : null,
+        fight: fight ? (r.fight ?? null) : null,
+      } as Json;
       note('what you were in the middle of');
     }
   }

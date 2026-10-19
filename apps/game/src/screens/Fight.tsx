@@ -24,7 +24,13 @@ import {
   pickW,
   powerScale,
   discoverHidden,
+  endFightRec,
+  fightUnder,
   finisherOf,
+  noteFight,
+  recordRound,
+  recordSpin,
+  startMods,
   procFeed,
   procOf,
   rankOf,
@@ -48,9 +54,12 @@ import {
   type CwSlice,
   type FightOutcome,
   type FightResult,
+  type FightRec,
   type FightSpec,
   type Focus,
+  type Json,
   type Move,
+  type RecMove,
   type RoundMod,
 } from '@whs/core';
 import { lookOf } from '../art/sprite';
@@ -270,7 +279,12 @@ export function FightScreen({
   const F = spec.me ?? G.F!;
   const O = spec.opp;
   const names: [string, string] = [F.name, O.name];
-  const dice = useMemo(() => (spec.wheelSeed != null ? mulberry32(spec.wheelSeed) : G.rng), []);
+  // its draws are counted, so a fight picked up after the app closed draws on from the same place (G2)
+  const dn = useRef(0);
+  const dice = useMemo(() => {
+    const r = spec.wheelSeed != null ? mulberry32(spec.wheelSeed) : G.rng;
+    return () => (dn.current++, r());
+  }, []);
   // the label as the fight starts (a cup's round moves on once it is won)
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
@@ -424,7 +438,7 @@ export function FightScreen({
   /** The arena wheel, spun on the combat wheel's spot while the fighters walk in. Sets the arena and the odds. */
   async function spinArena(sc: FightScene, aw: ArenaWheel) {
     const items = toSlices(aw.list, 'arena');
-    const idx = pickW(G.rng, aw.list);
+    const idx = pickW(aw.seed != null ? mulberry32(aw.seed) : G.rng, aw.list);
     setArenaOut({ a: null, why: aw.reasons[0]?.txt });
     sc.wheel.setItems(items, sc.wheel.size || dims.cw, null);
     sc.wheel.setHub('🏟️');
@@ -435,7 +449,10 @@ export function FightScreen({
       sc.wheel.spinTo(idx, { turns: reducedMotion() ? 1 : 2, dur: reducedMotion() ? 200 : fast ? 900 : 1500 });
     });
     const a = aw.list[idx]!.it;
-    act((g) => arenaLand(g, a));
+    act((g) => {
+      arenaLand(g, a);
+      noteFight(g, { arenaK: a.k });
+    });
     spec.arena = a;
     void oddsFor(spec);
     landSound(a.q ?? 1);
@@ -461,8 +478,13 @@ export function FightScreen({
       S.music = arenaMusic(sc.arena?.k);
       await sc.intro();
     }
-    const bt = act((g) => startBattle(g, spec));
+    const bt = act((g) => {
+      // the starting tweaks are kept with the fight before its next-fight buffs are used up (G2)
+      if (!spec.mods) noteFight(g, { mods: (spec.mods = startMods(g, spec)) as unknown as Json });
+      return startBattle(g, spec);
+    });
     btRef.current = bt;
+    const rec = fightUnder(G, spec.kind, O.name);
     // the first fight with a hidden synergy gives it away
     const found = spec.me ? [] : act((g) => discoverHidden(g, F));
     found.forEach((s, i) =>
@@ -479,13 +501,57 @@ export function FightScreen({
     sc.applySnap(bt.snap());
     setPhase('playing');
     try {
-      await playEvents(bt.start());
+      if (rec && (rec.moves.length || rec.pend)) replay(bt, rec, bt.start());
+      else await playEvents(bt.start());
     } catch (err) {
       console.error(err);
       forceEnd();
     }
     S.playing = false;
+    // a spin that landed before the app closed is this round's move
+    const p = rec?.pend;
+    if (p && !bt.over && !S.ended) {
+      bt.plan();
+      if (p.u != null) bt.P[0].ultSpin = ULT_WHEEL[p.u]!;
+      if (p.ph) setPhaseUsed((u) => [...u, p.ph!]);
+      return void doRound(p.c as Move, (p.m || {}) as RoundMod, { u: p.u, ph: p.ph });
+    }
     nextTurn();
+  }
+
+  /**
+   * Back after the app closed mid-fight (G2): the rounds already played replay in an instant, from the same dice
+   * and in the same order (the opponent plans its move before each round), so it is the same fight.
+   */
+  function replay(bt: Battle, rec: FightRec, first: BattleEvent[]) {
+    const evs = [...first];
+    const used: string[] = [];
+    for (const mv of rec.moves) {
+      if (bt.over) break;
+      bt.plan();
+      if (mv.u != null) bt.P[0].ultSpin = ULT_WHEEL[mv.u]!;
+      if (mv.ph) used.push(mv.ph);
+      evs.push(...(mv.auto ? bt.step(mv.c as Move) : bt.step(mv.c as Move, null, (mv.m || {}) as RoundMod)));
+    }
+    while (dn.current < rec.dn) dice();
+    S.nudged = !!rec.nudged;
+    if (used.length) setPhaseUsed(used);
+    S.log.push(...evs);
+    if (evs.some((e) => e.a?.t === 'phase' && e.a.on === 1)) {
+      const kit = phaseKitOf(O);
+      if (kit) {
+        S.music();
+        S.music = phaseMusic(kit.tune);
+      }
+    }
+    const sc = sceneRef.current!;
+    sc.settle();
+    const last = evs[evs.length - 1];
+    if (last) {
+      setSnap(last);
+      sc.applySnap(last);
+    }
+    toast(`Back in the fight: round ${bt.round + 1}${bt.sd ? '' : ` of ${bt.maxR}`}`);
   }
 
   function forceEnd() {
@@ -515,13 +581,16 @@ export function FightScreen({
     setPhase('input');
   }
 
-  async function doRound(choice: Move | null, m?: RoundMod) {
+  async function doRound(choice: Move | null, m?: RoundMod, x: Pick<RecMove, 'u' | 'ph'> = {}) {
     const bt = btRef.current;
     if (S.playing || S.ended || !bt || bt.over) return;
     S.playing = true;
     setPhase('playing');
     try {
-      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(dice, bt.P[0], bt.P[1], bt.hist[1]));
+      const c = choice ?? autoChoice(dice, bt.P[0], bt.P[1], bt.hist[1]);
+      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(c);
+      // every round is kept as it is played (G2)
+      act((g) => recordRound(g, choice ? { c, m: (m || {}) as Json, ...x } : { c, auto: true }, dn.current));
       // what each side did this round, and who read whom, in words while it plays
       const read = evs.find((e) => e.a?.t === 'read');
       const mine = bt.hist[0].at(-1),
@@ -577,10 +646,12 @@ export function FightScreen({
       r = act((g) => {
         const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd, hist: bt.hist });
         setPendingSteps(g, x.next);
+        endFightRec(g);
         return x;
       });
     } catch (err) {
       console.error(err);
+      act((g) => endFightRec(g));
       r = {
         won: bt.w === 0,
         big: bt.w === 0 ? 'You won' : 'You lost',
@@ -625,6 +696,9 @@ export function FightScreen({
     buzz(it.q >= 3 ? [30, 40, 50] : 20);
     if (it.q >= 3) burst(sc.wheel.x, sc.wheel.y);
     setOut({ it });
+    // the landed slice is kept as the next round (G2): closing the app now plays it, it doesn't re-spin
+    const ph = it.src === 'phase' ? it.n : undefined;
+    act((g) => recordSpin(g, { c: it.c, m: (it.m || {}) as Json, u: it.c === 'ult' ? it.ultIdx : undefined, ph }, dn.current, S.nudged));
     // once per fight the player may push the wheel one more slice: offer it for a moment longer
     const offer = !S.nudged && !autoRef.current && list.length > 1;
     const nx = offer ? sc.wheel.nextSlice(idx, S.dir) : -1;
@@ -637,10 +711,10 @@ export function FightScreen({
         if (it.src === 'phase') setPhaseUsed((u) => [...u, it.n]);
         if (it.c === 'ult') {
           if (it.ultIdx != null) bt.P[0].ultSpin = ULT_WHEEL[it.ultIdx]!;
-          void doRound('ult', { ...(it.m || {}) });
+          void doRound('ult', { ...(it.m || {}) }, { u: it.ultIdx, ph });
           return;
         }
-        void doRound(it.c as Move, { ...(it.m || {}) });
+        void doRound(it.c as Move, { ...(it.m || {}) }, { ph });
       },
       offer ? NUDGE_MS(fast) : fast ? 350 : 650,
     );

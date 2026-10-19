@@ -8,8 +8,10 @@ import {
   buildLand,
   finishBuild,
   fullName,
+  hashStr,
   itemKeyFor,
   labelOf,
+  mulberry32,
   newBuild,
   nextWheel,
   pickW,
@@ -39,6 +41,13 @@ import { Inf } from '../ui/Info';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { ac, drumRoll, landSound, sfx } from '../ui/sound';
+
+/**
+ * Where a wheel will land, rolled before it spins from a die the save keeps (review G2): the die moves on with
+ * every landing (profile.spins), so closing the app mid-spin and spinning again lands on the same slice.
+ * The slices' sizes are their weights, so the odds are the same as a free-running wheel's.
+ */
+const preRoll = (tag: string, items: readonly { w: number }[]) => pickW(mulberry32(hashStr(`${tag}|${G.save.profile.spins}`)), items);
 
 /** A wheel entry as the rules list it. */
 export interface Entry<T = Slice> {
@@ -223,16 +232,18 @@ export function BuildScreen({ name, resume }: { name: string; resume?: { f: unkn
     if (S.done) return;
     if (!v) return void (pending.current = true);
     prep();
+    const aim = buildAim();
     if (reducedMotion()) {
-      v.spinTo(pickW(G.rng, itemsRef.current), { dur: 500, turns: 1 });
+      v.spinTo(aim, { dur: 500, turns: 1 });
       return;
     }
-    v.spinPhysics(S.auto ? 'auto' : 'button', fast);
+    v.spinPhysics(S.auto ? 'auto' : 'button', fast, undefined, aim);
   };
+  const buildAim = () => preRoll(`build|${S.f.name}|${WHEELS[S.idx]?.k}`, itemsRef.current);
   const onFlick = (w: number) => {
     if (S.spinning || S.done || !wheel.current) return;
     prep();
-    wheel.current.view.spinPhysics('flick', fast, w);
+    wheel.current.view.spinPhysics('flick', fast, w, buildAim());
   };
   const landedAt = (i: number, info: { turns: number; flick: boolean }) => {
     stopDrum.current();
@@ -449,9 +460,10 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
     if (spinning || finished) return;
     if (!v) return void (pending.current = true);
     prep();
-    if (reducedMotion()) v.spinTo(pickW(G.rng, items), { dur: 500, turns: 1 });
-    else v.spinPhysics('button', fast);
+    if (reducedMotion()) v.spinTo(aim(), { dur: 500, turns: 1 });
+    else v.spinPhysics('button', fast, undefined, aim());
   };
+  const aim = () => preRoll(`${G.F?.cid ?? '-'}|${spec.cat ?? ''}|${spec.title}`, items);
   // spoils spin themselves; doSpin waits for the wheel if it isn't drawn yet
   useEffect(() => {
     if (spec.autoSpin) doSpin();
@@ -503,7 +515,7 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
   const onFlick = (w: number) => {
     if (spinning || finished || !wheel.current) return;
     prep();
-    wheel.current.view.spinPhysics('flick', fast, w);
+    wheel.current.view.spinPhysics('flick', fast, w, aim());
   };
   return (
     <main class="screen spin-screen single">

@@ -114,3 +114,70 @@ test('G8: a second tab that is behind asks to reload instead of writing over the
   await expect(other.getByRole('alertdialog')).toHaveCount(0);
   await expect(other.getByRole('button', { name: /Continue with Test Hero/ })).toBeVisible();
 });
+
+test('G2: closing the app mid-fight comes back to the same fight, not a fresh one', async ({ page }) => {
+  test.setTimeout(300_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  // a fight that lasts a few rounds (the move history test's)
+  await open(page, { ...careerSaveKV({ seed: 4, lvl: 12, ch: 3, fast: true }), 'whs:seed': 'move history' });
+  await page.getByRole('button', { name: 'Play', exact: true }).first().click();
+  await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
+  await page.getByRole('button', { name: 'Begin' }).click();
+  await page.locator('.mnode.now').first().click();
+  const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  for (let r = 1; r <= 2; r++) {
+    await spin.click();
+    await expect(spin).toBeEnabled({ timeout: 60_000 });
+  }
+  const hp = page.getByRole('button', { name: /^\d+\/\d+ HP$/ });
+  const before = await hp.allTextContents();
+  // the phone closes the app; it opens again with other dice
+  await page.evaluate(() => localStorage.setItem('whs:seed', 'another launch'));
+  await page.reload();
+  const cont = page.getByRole('button', { name: /Continue with Test Hero/ });
+  await expect(cont).toContainText('Back into the fight');
+  await cont.click();
+  await expect(page.getByText(/Back in the fight: round 3 of/)).toBeVisible({ timeout: 60_000 });
+  await expect(spin).toBeEnabled({ timeout: 60_000 });
+  expect(await hp.allTextContents()).toEqual(before);
+  // and it goes on to a result like any fight
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await page.locator('.fresult').waitFor({ timeout: 60_000 });
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Continue with Test Hero/ })).not.toContainText('Back into the fight');
+  expect(errors).toEqual([]);
+});
+
+test('G2: closing the app mid-spin lands the wheel on the same slice', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = watchErrors(page);
+  // the same new fighter spun twice: once straight through, once with the app closed during the second spin
+  const landed: string[] = [];
+  for (const close of [false, true]) {
+    await open(page, { 'whs:seed': close ? 'one launch' : 'other launch' });
+    await page.getByRole('button', { name: 'Spin one' }).first().click();
+    await page.getByRole('textbox', { name: 'Fighter name' }).fill('Same Dice');
+    await page.getByRole('button', { name: 'Spin a new fighter' }).click();
+    const prog = page.locator('.prog-n');
+    const go = page.locator('.spin-foot .btn.block');
+    await expect(prog).toHaveText(/^Spin 1 of/, { timeout: 20_000 });
+    await go.click();
+    await expect(prog).toHaveText(/^Spin 2 of/, { timeout: 60_000 });
+    await go.click();
+    if (close) {
+      await page.waitForTimeout(300);
+      await page.evaluate(() => localStorage.setItem('whs:seed', 'third launch'));
+      await page.reload();
+      await page.getByRole('button', { name: /Keep building Same Dice/ }).click();
+      await expect(prog).toHaveText(/^Spin 2 of/, { timeout: 20_000 });
+      await go.click();
+    }
+    await expect(prog).toHaveText(/^Spin 3 of/, { timeout: 60_000 });
+    landed.push((await page.locator('.landed .ln').textContent())!);
+  }
+  expect(landed[1]).toBe(landed[0]);
+  expect(errors).toEqual([]);
+});

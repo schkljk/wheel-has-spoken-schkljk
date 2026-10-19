@@ -34,6 +34,7 @@ import {
   upgradeLists,
   upgradeNone,
   pendingSteps,
+  fightRec,
   pendingNode,
   lastPlace,
   pushStep,
@@ -482,14 +483,20 @@ export async function runSteps(steps: Step[], places: Places = {}) {
 export async function continueGame(i: number) {
   if (!enterSlot(i)) return;
   if (pendingSteps(G).length) return resumeSteps();
+  // a fight the app closed on comes back first, where it was (G2); a story fight comes back through the map
+  const f = fightRec(G);
+  if (f && f.kind !== 'story' && (await (await import('./modes')).resumeFight(f.kind))) return;
   const p = lastPlace(G);
   if (p === 'map' && G.F!.story) return goMap();
   if (p === 'bracket') return (await import('./modes')).resumeRun();
   return goHub();
 }
+/** The fights Continue goes straight back into (the others pick up when they are opened again). */
+const BACK_IN = new Set(['story', 'cup', 'gauntlet', 'daily', 'rush', 'tower', 'run']);
 /** Where Continue goes, in words (for its button). */
 export function continueText(): string {
   if (pendingSteps(G).length) return 'Your spoils are waiting';
+  if (BACK_IN.has(fightRec(G)?.kind ?? '')) return 'Back into the fight';
   const p = lastPlace(G);
   return p === 'map' ? 'Back to the story map' : p === 'bracket' ? 'Back to the bracket' : 'Back to the fighter page';
 }

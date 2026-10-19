@@ -57,11 +57,10 @@ export function frictionFor(kind: 'flick' | 'button' | 'auto', fast: boolean, rn
   return { k: 0.55 * v, c: 0.9 * v };
 }
 /** How far (radians) a wheel pushed at w rad/s travels before it stops. */
-export function predictTravel(w: number, fr: Friction) {
+export function predictTravel(w: number, fr: Friction, dt = 1 / 120) {
   let o = Math.abs(w);
   let th = 0;
   let t = 0;
-  const dt = 1 / 120;
   while (o > 0.02 && t < 40) {
     o = Math.max(0, o - (fr.c + fr.k * o) * dt);
     th += o * dt;
@@ -79,6 +78,8 @@ interface Phys {
   bounces: number;
   suspense: boolean;
   travel: number;
+  /** the slice this spin was aimed at (a result rolled before it spun: G2), and the turn it stops at */
+  aim?: { idx: number; want: number };
 }
 interface Tween {
   from: number;
@@ -88,6 +89,8 @@ interface Tween {
   idx: number;
   seg: number;
   dir: number;
+  /** what the spin before it reports on landing (an aimed spin's last click) */
+  info?: { turns: number; flick: boolean };
 }
 
 export interface WheelEvents {
@@ -485,8 +488,12 @@ export class WheelView extends Container {
     }
   }
 
-  /** Physics spin: a flick at w rad/s, or a machine push that always clears the 1½-turn rule. */
-  spinPhysics(kind: 'flick' | 'button' | 'auto', fast: boolean, w?: number) {
+  /**
+   * Physics spin: a flick at w rad/s, or a machine push that always clears the 1½-turn rule. With `aim`, the
+   * result was rolled before the spin (G2): the push is adjusted by a hair so the wheel coasts to a stop on that
+   * slice, the same number of turns as the flick would have given, so closing the app mid-spin re-rolls nothing.
+   */
+  spinPhysics(kind: 'flick' | 'button' | 'auto', fast: boolean, w?: number, aim?: number) {
     const fr = frictionFor(kind, fast, this.rng);
     if (w == null) {
       const want = (kind === 'auto' ? 1.8 + this.rng() * 0.8 : fast ? 2.2 + this.rng() : 3.2 + this.rng() * 1.8) * TAU;
@@ -494,11 +501,34 @@ export class WheelView extends Container {
       while (predictTravel(w, fr) < want && w < 90) w *= 1.08;
     }
     const valid = predictTravel(w, fr) >= MIN_TURNS * TAU;
+    let aimed: Phys['aim'];
+    if (valid && aim != null && this.segs[aim]) {
+      const dir = Math.sign(w) || 1;
+      const seg = this.segs[aim]!;
+      const at = seg[0] + (seg[1] - seg[0]) * (0.25 + this.rng() * 0.5);
+      const want = ((-at % TAU) + TAU) % TAU;
+      const cur = ((this.rot % TAU) + TAU) % TAU;
+      const base = (((dir > 0 ? want - cur : cur - want) % TAU) + TAU) % TAU;
+      // predicted with the frame loop's own step (60 fps: five steps a frame), so the last click is a hair at most
+      const ft = (v: number) => predictTravel(v, fr, 1 / 300);
+      let travel = base + TAU * Math.round((ft(w) - base) / TAU);
+      while (travel < MIN_TURNS * TAU) travel += TAU;
+      let lo = 0;
+      let hi = Math.abs(w) + 1;
+      while (ft(hi) < travel) hi *= 1.5;
+      for (let i = 0; i < 40; i++) {
+        const mid = (lo + hi) / 2;
+        if (ft(mid) < travel) lo = mid;
+        else hi = mid;
+      }
+      w = dir * hi;
+      aimed = { idx: aim, want };
+    }
     // the wheel leaves the hand: a whoosh, bigger for a harder spin
     sfx('wh.spin', { gain: Math.min(1.3, 0.6 + w / 40), pitch: Math.min(1.3, 0.8 + w / 80) });
     this.highlight(null);
     this.suspenseOn = false;
-    this.phys = { w, fr, valid, kind, seg: this.segAt(), bounces: 0, suspense: false, travel: 0 };
+    this.phys = { w, fr, valid, kind, seg: this.segAt(), bounces: 0, suspense: false, travel: 0, aim: aimed };
   }
 
   /** Spins to a chosen slice (combat and signature wheels), easing out over `dur` ms. */
@@ -548,7 +578,7 @@ export class WheelView extends Container {
         this.tween = null;
         this.highlight(t.idx);
         this.celebrate();
-        this.events.land?.(t.idx, { turns: Math.abs(t.to - t.from) / TAU, flick: false });
+        this.events.land?.(t.idx, t.info ?? { turns: Math.abs(t.to - t.from) / TAU, flick: false });
       }
       return;
     }
@@ -568,7 +598,8 @@ export class WheelView extends Container {
       const sg = this.segAt();
       if (sg !== p.seg) {
         // a peg sits on every slice edge: a crawling wheel can bounce off it and settle back
-        if (p.valid && no < 0.55 && p.bounces < 2 && this.rng() < 0.55) {
+        // (an aimed spin doesn't bounce: the bounce would move it off the slice it was rolled to)
+        if (p.valid && !p.aim && no < 0.55 && p.bounces < 2 && this.rng() < 0.55) {
           this.setRot(this.rot - step * 1.5);
           p.w = -p.w * 0.45;
           p.bounces++;
@@ -595,6 +626,16 @@ export class WheelView extends Container {
         return;
       }
       const idx = this.segAt();
+      if (p.aim && idx !== p.aim.idx) {
+        // the frame steps left it a hair short or long: it clicks over the last peg into place
+        const dir = Math.sign(p.w) || 1;
+        const cur = ((this.rot % TAU) + TAU) % TAU;
+        let d = p.aim.want - cur;
+        if (d > Math.PI) d -= TAU;
+        if (d < -Math.PI) d += TAU;
+        this.tween = { from: this.rot, to: this.rot + d, t0: performance.now(), dur: 260, idx: p.aim.idx, seg: idx, dir: d >= 0 ? dir : -dir, info: { turns: (p.travel + Math.abs(d)) / TAU, flick: p.kind === 'flick' } };
+        return;
+      }
       this.highlight(idx);
       this.celebrate();
       this.events.land?.(idx, { turns, flick: p.kind === 'flick' });

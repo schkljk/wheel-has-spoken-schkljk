@@ -1,4 +1,4 @@
-import { RUN_FIGHTS, boonOf, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon, type NumStats } from '@whs/core';
+import { RUN_FIGHTS, boonOf, fightUnder, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon, type NumStats } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, act, popStats } from '../state/game';
@@ -72,7 +72,9 @@ export async function runFlow() {
     const boss = R.i === RUN_FIGHTS - 1;
     // the same opponent the fight will bring (the run's own dice)
     const o = act((g) => runOpponent(g, R));
-    const c = await choose({
+    // a fight the app closed on goes straight back in (G2)
+    const under = !!fightUnder(G, 'run', o.name);
+    const c = under ? 0 : await choose({
       emoji: boss ? '💀' : '🏃',
       title: boss ? 'Spin & Run: the boss' : `Spin & Run: fight ${R.i + 1} of ${RUN_FIGHTS}`,
       sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}`,
@@ -94,7 +96,7 @@ export async function runFlow() {
       continue;
     }
     const spec = act((g) => runSpecOf(g, R));
-    if (boss) await bossIntro(spec.opp, 'You are not even on the poster.', 'Spin & Run');
+    if (boss && !under) await bossIntro(spec.opp, 'You are not even on the poster.', 'Spin & Run');
     const r = await fight(spec);
     // a win comes back here (a 'run' step); the end goes home
     return void runSteps(r.next);

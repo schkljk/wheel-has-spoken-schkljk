@@ -1,5 +1,6 @@
 import {
   TRIAL_COUNT,
+  fightUnder,
   keepRun,
   keptRush,
   keptTower,
@@ -109,6 +110,22 @@ export function resumeRun() {
   if (T) showRun(T);
   else void goHub();
 }
+/**
+ * Back into a fight the app closed on (G2), through its own mode so what follows it is the same, skipping
+ * the questions before it. False if the mode has nothing to go back to.
+ */
+export async function resumeFight(kind: string): Promise<boolean> {
+  if (kind === 'cup' || kind === 'gauntlet') {
+    const T = act((g) => loadRun(g));
+    if (!T) return false;
+    await runFight(T);
+    return true;
+  }
+  const go = kind === 'daily' ? dailyFlow : kind === 'rush' && keptRush(G) ? rushFlow : kind === 'tower' && keptTower(G) ? towerFlow : kind === 'run' ? (await import('./run')).runFlow : null;
+  if (!go) return false;
+  await go();
+  return true;
+}
 export async function abandon() {
   if (!(await confirm({ title: 'Abandon this tournament?', body: 'Your progress in it is lost.', yes: 'Abandon it', danger: true }))) return;
   act((g) => abandonRun(g));
@@ -171,7 +188,8 @@ export async function dailyFlow() {
     act((g) => (g.save.profile.dc = null as never));
     return goHub();
   }
-  const c = await choose({
+  // a fight the app closed on goes straight back in (G2)
+  const c = fightUnder(G, 'daily', o.name) ? 0 : await choose({
     emoji: '📆',
     title: 'Daily challenge',
     sub: dc.streak ? `Streak: ${dc.streak} ${dc.streak === 1 ? 'win' : 'wins'} in a row` : 'Win to start a streak. Skipping a day never breaks it',
@@ -321,7 +339,8 @@ async function towerNext(T: TowerState) {
   const m = towerMutator(T);
   const best = towerBest(G);
   const fresh = T.floor === 1 && (T.lives ?? TOWER_LIVES) === TOWER_LIVES;
-  const c = await choose({
+  // a fight the app closed on goes straight back in (G2)
+  const c = fightUnder(G, 'tower', o.name) ? 0 : await choose({
     emoji: '🗼',
     title: `Tower, floor ${T.floor}`,
     sub: `HP ${hpTxt(G, T.hp)} ${'❤️'.repeat(T.lives ?? TOWER_LIVES)}${'🖤'.repeat(TOWER_LIVES - (T.lives ?? TOWER_LIVES))}. Record: ${best.floor ? `floor ${best.floor} (${best.who})` : 'nobody yet'}`,
@@ -448,8 +467,10 @@ async function rushNext(R: RushState) {
   act((g) => keepRun(g, 'rush', R));
   const n = rushBosses(G).length;
   const { boss, def } = act((g) => rushBoss(g, R));
+  // a fight the app closed on goes straight back in (G2)
+  const under = !!fightUnder(G, 'rush', boss.name);
   // between bosses: keep going, or walk away with the best so far on record
-  if (R.i > 0) {
+  if (R.i > 0 && !under) {
     const c = await choose({
       emoji: '💀',
       title: `Boss rush: ${R.i} of ${n} down`,
@@ -467,7 +488,7 @@ async function rushNext(R: RushState) {
       return void goHub();
     }
   }
-  await rushIntro(boss, pick(G.rng, def.lines), `Boss rush, ${R.i + 1} of ${n}`, R);
+  if (!under) await rushIntro(boss, pick(G.rng, def.lines), `Boss rush, ${R.i + 1} of ${n}`, R);
   const r = await fight({ kind: 'rush', tier: rushTier(G, R), opp: boss, node: 'boss', rushHp: R.hp }, { rush: R });
   await runSteps(r.next, { rush: () => void rushNext(R) });
 }

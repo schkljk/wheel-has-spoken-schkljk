@@ -72,6 +72,8 @@ export interface FightSpec {
   seed?: number;
   /** and the combat wheel's */
   wheelSeed?: number;
+  /** the starting tweaks, as they were when the fight began (a fight picked up after the app closed: G2) */
+  mods?: [FightMod, FightMod];
 }
 
 /** The header label of a fight. */
@@ -190,7 +192,9 @@ export const injLine = (j: Injury) =>
 export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(spec.me ?? g.F!, spec.opp, g.rng, 120, { arena: spec.arena, ...setupOf(g, spec) });
 /** Mods and context: a stand-in fighter (the daily duel) gets none of the career's. */
 const setupOf = (g: Game, spec: Omit<FightSpec, 'odds'>) =>
-  spec.me
+  spec.mods
+    ? { mods: spec.mods, ctx: spec.me ? {} : ctxOf(g) }
+    : spec.me
     ? // a stand-in (the daily duel, a Spin & Run fighter): only carried HP and a boss's HP, none of the career's
       { mods: [spec.rushHp != null ? { hp: spec.rushHp } : {}, spec.opp?.maxHp ? { maxHp: spec.opp.maxHp } : {}] as [FightMod, FightMod], ctx: {} }
     : // a ghost fight (F9) is for pride: next-fight buffs stay for a fight that counts
@@ -204,6 +208,8 @@ export const fightOddsJob = (g: Game, spec: Omit<FightSpec, 'odds'>) => ({
   opts: { arena: spec.arena, ...setupOf(g, spec) },
 });
 
+/** The fight's starting tweaks (kept with a fight under way before its next-fight buffs are used up: G2). */
+export const startMods = (g: Game, spec: Omit<FightSpec, 'odds'>): [FightMod, FightMod] => JSON.parse(JSON.stringify(setupOf(g, spec).mods)) as [FightMod, FightMod];
 /** Starts the battle; next-fight buffs are used up. */
 export function startBattle(g: Game, spec: FightSpec): Battle {
   const F = g.F!;

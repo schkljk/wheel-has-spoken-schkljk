@@ -24,6 +24,44 @@
 - **Result:** 51 open suggestions with evidence, effort and a suggested order, in `docs/SUGGESTIONS.md` (round 2, IDs G–L). Round 1 is kept below it.
 - **Fixed right away (G1):** the fight result piled its lines on top of each other. A chapter-cleared result was unreadable at every size, and nothing scrolled: the scroll box and the list inside it shared a class, so the box's rows could shrink to nothing. The box has its own class now. A new e2e check (`textOverlaps`) runs at 390×844, 320×568 and 844×390; it fails on the old style and passes now.
 
+### Round 2 fixes, part 1: nothing lost, nothing re-rolled
+
+- **Asked for:** "Do G2–G16, H1–H5, H7–H9, J1–J11, K1–K10, L1, L2, L4–L6" (H6 and L3 not picked). This part covers the bug fixes. The performance (J) and balance (K, G11, G13) work runs alongside on its own branches and lands next. Then come flow (H) and features (L).
+- **The owner's report, "fights are a tad too dark":**
+  - Night skies are lifted toward white, more the darker they are (up to 14%).
+  - A soft light lies over the backdrop.
+  - The vignette starts further out and is lighter (24% at the edge, was darker and closer in).
+  - The floor's shading is lighter.
+  - Measured on six seeded fights: average brightness 24–32 went to 50–64 (of 255). A daylight arena went from 108 to 154.
+- **The owner's report, "the Victory screen has overlapping text":** that was G1, fixed in APK build 13 and on the site. I checked the current build at 320×568, 360×800, 390×844, 412×915 and 844×390, at every text size: story, boss, duel and run wins have no overlaps.
+- **G2, no free retries:**
+  - *Wheels:* every wheel's landing is rolled before it spins, from a die the save keeps (the fighter's spin count, which moves on with every landing). The physics push is adjusted by a hair so the wheel coasts onto that slice, with the same number of turns and no peg bounce. Slice sizes are their weights, so the odds are unchanged. Closing the app mid-spin and spinning again lands on the same slice. An e2e test closes the app during the second build wheel: without the fix it landed Daywalker instead of Cherub, and with it the result matches.
+  - *Fights:* a fight's dice (battle, combat wheel, arena wheel) are kept in the save as it opens. Its starting tweaks are kept too, since next-fight buffs are used up by then. Every round is kept as it is played, and so is a spin that landed but hasn't played yet.
+  - *Coming back:* opening the same fight again (same mode, same opponent) replays the rounds in an instant, from the same dice and in the same order. The opponent plans before each round, as it does live, so it is the same fight. A toast says "Back in the fight: round 3 of 12". Continue goes straight back into a story, cup, gauntlet, daily, rush, tower or Spin & Run fight, skipping the question before it. The record is cleared in the same change that pays the result.
+  - *Tests:* a core test plays 12 seeded fights, closes and reopens each with other launch dice, and checks the same state mid-fight and the same end. It fails if the replay skips the opponent's planning. An e2e test closes the app after two rounds and gets the same HP and round back.
+- **G3, updates:** a new version shows "A new version is ready" with an Update button on the title screen and the fighter page. A screen whose files were replaced under it reloads once by itself instead of doing nothing.
+- **G4:** starting a new fighter asks "Scrap {name}?" before it throws away a build in progress.
+- **G5:** an Awakening or New weapon won by a level-up is kept in the save until its spin is done.
+- **G6:** a boss rush or tower climb is kept between fights. The Play tab shows "Rush on: 3 of 10 down" or "Climb on: floor 7", and Continue picks it up.
+- **G7:** a save from a newer version is never written over. The title screen says "Update the game to open this save", and every write waits.
+- **G8:** saves carry a generation number. A tab that is behind shows "Open somewhere else" with Reload instead of writing over the newer save.
+- **G9:** the collection filters' style no longer leaks into the fight HUD, duel days, bet chips and shop tabs. The ☰ and 1×/2× buttons have 44 px tap areas that don't overlap.
+- **G10:** new gear on a loot spin waits for a tap. Reduced motion keeps the reading time (it only removes animation).
+- **G12:** the game's day never goes back. Setting the phone's date backward no longer refreshes the dailies or pays past duels again.
+- **G14, save safety net:**
+  - Repair knows the newer parts (bounty board, locker, duel scores, Spin & Run, what you were in the middle of, tower, trials).
+  - Career counts stored as text are fixed.
+  - A save too big for storage changes nothing and keeps every backup.
+  - A save writes all of its parts or none.
+- **G15, rule breaks:**
+  - Reads are said in steps on the clue scale, using the engine's true values: "reads a step and a half clearer". Several old texts understated these by a third.
+  - Spin & Run shows real HP numbers.
+  - The runner's and the mentor's stat changes pop up old → new.
+  - "About average" replaces "−0%".
+  - The help text has the right coin numbers.
+- **G16:** "Prize money" pays once however fast it is tapped. A half-spun level-up stays with its fighter. Ghost codes clamp level (1–50), bonuses and gear. Spin & Run's arena wheel leans toward the runner.
+- **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
+
 ### Review follow-up: the owner's picks
 
 - **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.

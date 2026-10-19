@@ -9,6 +9,7 @@ import { eventOf, storyEvent, storyOf, storyOpponent, type StoryEventView } from
  * - a fighter being built (every wheel spun so far), or built and waiting on "Start their career";
  * - the steps after a fight (reward, loot, a gear choice, level-ups) still to come;
  * - the story step being played, with the opponent or encounter it rolled;
+ * - a fight under way: its dice and every round played so far (G2);
  * - and where they were (the map, a bracket, the fighter page), for Continue.
  */
 export interface ResumeState {
@@ -25,6 +26,8 @@ export interface ResumeState {
   /** a boss rush or a tower climb under way, between fights (G6) */
   rush?: { i: number; hp: number } | null;
   tower?: { floor: number; hp: number; seed: number; lives?: number } | null;
+  /** a fight under way (G2) */
+  fight?: FightRec | null;
 }
 export type Place = 'map' | 'hub' | 'bracket';
 
@@ -36,7 +39,7 @@ const mine = (g: Game) => {
 /** The state for the active fighter: another fighter's steps, place and half-picked level-up go (G16). */
 const own = (g: Game) => {
   const r = state(g);
-  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null, lv: null, up: null, rush: null, tower: null });
+  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null, lv: null, up: null, rush: null, tower: null, fight: null });
   r.slot = g.save.roster.active;
   return r;
 };
@@ -89,6 +92,81 @@ export function keepRun(g: Game, kind: 'rush' | 'tower', run: object | null) {
 export const pendingUpgrade = (g: Game): 'power' | 'weapon' | null => mine(g)?.up ?? null;
 export function setUpgrade(g: Game, kind: 'power' | 'weapon' | null) {
   own(g).up = kind;
+}
+
+// ---------------------------------------------------------------- a fight under way (G2)
+/** One round as it was played: the move and its slice's tweaks, the signature slice it rolled, a boss's phase-two slice. */
+export interface RecMove {
+  c: string;
+  m?: Json;
+  /** the signature wheel's slice */
+  u?: number;
+  /** the boss phase-two slice it was (each lands once a fight) */
+  ph?: string;
+  /** auto-battle picked it */
+  auto?: boolean;
+}
+/**
+ * A fight under way: its dice and every round as it is played, so closing the app and opening the fight again
+ * plays the same fight to where it was, instead of a fresh one (no free retries). Cleared in the same change
+ * that pays its result.
+ */
+export interface FightRec {
+  kind: string;
+  /** who it is against: only the same fight against the same opponent picks it up */
+  opp: string;
+  /** the battle's dice, the combat wheel's and the arena wheel's */
+  seed: number;
+  wheel: number;
+  arena: number;
+  /** the arena it landed on */
+  arenaK?: string | null;
+  /** the fight's starting tweaks as it began (its next-fight buffs are used up by then) */
+  mods?: Json | null;
+  moves: RecMove[];
+  /** draws from the combat wheel's dice so far */
+  dn: number;
+  /** a spin that landed and isn't played yet: it is the next round */
+  pend?: RecMove | null;
+  nudged?: boolean;
+}
+/** The fight under way for the active fighter, if any. */
+export const fightRec = (g: Game): FightRec | null => mine(g)?.fight ?? null;
+/** The fight of this kind against this opponent, if it is the one under way. */
+export const fightUnder = (g: Game, kind: string, opp: string): FightRec | null => {
+  const r = fightRec(g);
+  return r && r.kind === kind && r.opp === opp ? r : null;
+};
+/** A fight opens: the same fight under way picks up where it was; any other gets fresh dice, kept at once. */
+export function openFight(g: Game, kind: string, opp: string): FightRec {
+  const old = fightUnder(g, kind, opp);
+  if (old) return old;
+  const die = () => Math.floor(g.rng() * 2 ** 31);
+  const rec: FightRec = { kind, opp, seed: die(), wheel: die(), arena: die(), moves: [], dn: 0 };
+  own(g).fight = rec;
+  return rec;
+}
+/** Keeps the fight's arena or starting tweaks once they are known. */
+export function noteFight(g: Game, patch: Pick<FightRec, 'arenaK'> | Pick<FightRec, 'mods'>) {
+  const r = fightRec(g);
+  if (r) Object.assign(r, JSON.parse(JSON.stringify(patch)));
+}
+/** A spin landed (it is the next round), or a round was played; `dn` is the combat wheel's draws so far. */
+export function recordSpin(g: Game, mv: RecMove, dn: number, nudged: boolean) {
+  const r = fightRec(g);
+  if (r) Object.assign(r, { pend: JSON.parse(JSON.stringify(mv)) as RecMove, dn, nudged });
+}
+export function recordRound(g: Game, mv: RecMove, dn: number) {
+  const r = fightRec(g);
+  if (!r) return;
+  r.moves.push(JSON.parse(JSON.stringify(mv)) as RecMove);
+  r.dn = dn;
+  r.pend = null;
+}
+/** The fight is over (or was never real). */
+export function endFightRec(g: Game) {
+  const r = mine(g);
+  if (r) r.fight = null;
 }
 
 // ---------------------------------------------------------------- a fighter being built
