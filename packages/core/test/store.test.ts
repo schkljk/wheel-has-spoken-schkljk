@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { AUTO_BACKUP_EVERY, KEYS, LEGACY_STORE_KEY, SaveStore, StorageFullError, exportFileName, exportText, migrate, newSave, type KV } from '../src';
+import { AUTO_BACKUP_EVERY, KEYS, LEGACY_STORE_KEY, SaveStore, StaleSaveError, StorageFullError, exportFileName, exportText, migrate, newSave, type KV } from '../src';
 
 /** In-memory localStorage with an optional size limit, counting writes per key. */
 class MemKV implements KV {
@@ -220,5 +220,28 @@ describe('save store', () => {
     if (next.roster.slots[a]) (next.roster.slots[a] as unknown as Record<string, unknown>).junk = 'x'.repeat(used);
     expect(() => store.write(next)).toThrow(StorageFullError);
     expect(new Map(kv.m)).toEqual(before);
+  });
+  it('a tab that is behind never writes its stale copy over another tab\'s save (G8)', () => {
+    const kv = new MemKV();
+    new SaveStore(kv, () => 1000).write(imported());
+    const a = new SaveStore(kv, () => 2000);
+    const b = new SaveStore(kv, () => 2000);
+    const sa = a.load().save;
+    const sb = b.load().save;
+    // tab A plays on (say, retires a fighter for legacy points)
+    sa.profile.legacy.pts += 15;
+    a.write(sa);
+    const after = new Map(kv.m);
+    // tab B, still on the old copy, taps something
+    expect(b.stale()).toBe(true);
+    expect(() => b.write(sb)).toThrow(StaleSaveError);
+    b.backup(sb, 'Automatic');
+    expect(new Map(kv.m)).toEqual(after);
+    // reloading picks up A's save, and then it can write
+    const b2 = new SaveStore(kv, () => 3000);
+    const fresh = b2.load().save;
+    expect(fresh.profile.legacy.pts).toBe(sa.profile.legacy.pts);
+    b2.write(fresh);
+    expect(a.stale()).toBe(true);
   });
 });

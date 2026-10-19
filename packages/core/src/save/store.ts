@@ -28,6 +28,8 @@ export interface BackupInfo {
   version: number;
 }
 export class StorageFullError extends Error {}
+/** Another tab (or window) has written the save since this one read it: this one must reload, not write (G8). */
+export class StaleSaveError extends Error {}
 
 export interface LoadResult {
   save: SaveData;
@@ -45,6 +47,26 @@ export class SaveStore {
   private written = new Map<string, string>();
   /** true while the stored save is from a newer version: writes are dropped so it is never lost (G7) */
   locked = false;
+  /**
+   * The save's generation when this store last read or wrote it. Every write bumps it in meta; a store whose
+   * generation is behind (another tab wrote since) refuses to write instead of putting its stale copy back (G8).
+   */
+  private gen = 0;
+  private storedGen(): number | null {
+    const m = this.kv.getItem(KEYS.meta);
+    if (m == null) return null;
+    try {
+      const g = (JSON.parse(m) as { gen?: unknown }).gen;
+      return typeof g === 'number' ? g : 0;
+    } catch {
+      return 0;
+    }
+  }
+  /** True when another tab has written the save since this store last read or wrote it. */
+  stale(): boolean {
+    const g = this.storedGen();
+    return g != null && g !== this.gen;
+  }
 
   constructor(
     private kv: KV,
@@ -68,6 +90,8 @@ export class SaveStore {
       }
       problems.push(`Your save could not be read (${(e as Error).message})`);
     }
+    // restoring a backup writes over what is stored now: this store owns it from here
+    this.gen = this.storedGen() ?? 0;
     for (const b of this.listBackups()) {
       try {
         const save = this.readBackup(b.slot);
@@ -92,7 +116,8 @@ export class SaveStore {
       this.written.set(k, v);
       return o;
     };
-    const meta = get(KEYS.meta) as { game: string; version: number; savedAt: number };
+    const meta = get(KEYS.meta) as { game: string; version: number; savedAt: number; gen?: number };
+    this.gen = typeof meta.gen === 'number' ? meta.gen : 0;
     const roster = get(KEYS.roster) as Roster;
     const active = get(KEYS.active) as { i: number | null; slot: Slot | null };
     // sections that lost their core are damaged too (patching them would quietly lose fighters or records)
@@ -104,7 +129,9 @@ export class SaveStore {
     const profile = get(KEYS.profile) as Record<string, unknown>;
     if (!('sound' in settings)) throw new Error(`damaged ${KEYS.settings}`);
     if (!('seen' in profile) && !('gems' in profile)) throw new Error(`damaged ${KEYS.profile}`);
-    return migrate({ ...meta, settings, roster: { ...roster, active: active.i, slots }, profile }, this.now(), notes);
+    // the generation is the store's own bookkeeping, not part of the save
+    const { gen: _gen, ...head } = meta;
+    return migrate({ ...head, settings, roster: { ...roster, active: active.i, slots }, profile }, this.now(), notes);
   }
 
   /**
@@ -114,7 +141,9 @@ export class SaveStore {
    */
   write(save: SaveData, protect?: number): void {
     if (this.locked) return;
+    if (this.stale()) throw new StaleSaveError('The game was saved from another tab since this one loaded');
     save.savedAt = this.now();
+    const gen = this.gen + 1;
     const { active } = save.roster;
     const parts: [string, unknown][] = [
       [KEYS.settings, save.settings],
@@ -122,7 +151,7 @@ export class SaveStore {
       [KEYS.roster, { ...save.roster, slots: save.roster.slots.map((s, i) => (i === active ? null : s)) }],
       [KEYS.active, { i: active, slot: active != null ? save.roster.slots[active] : null }],
       // meta last: a save only counts once all its sections are in
-      [KEYS.meta, { game: save.game, version: save.version, savedAt: save.savedAt }],
+      [KEYS.meta, { game: save.game, version: save.version, savedAt: save.savedAt, gen }],
     ];
     const done: [string, string | null][] = [];
     try {
@@ -145,6 +174,7 @@ export class SaveStore {
       }
       throw e;
     }
+    this.gen = gen;
     if (this.backupDue()) this.backup(save, 'Automatic');
   }
 
@@ -199,7 +229,7 @@ export class SaveStore {
 
   /** Copies the save into the oldest (or an empty) backup slot. */
   backup(save: SaveData, reason: string): void {
-    if (this.locked) return;
+    if (this.locked || this.stale()) return;
     const used = this.listBackups();
     let slot = [...Array(BACKUP_SLOTS).keys()].find((i) => !used.some((b) => b.slot === i));
     if (slot === undefined) slot = used.at(-1)!.slot;
@@ -234,6 +264,7 @@ export class SaveStore {
     this.backup(current, 'Before erasing everything');
     for (const k of Object.values(KEYS)) this.kv.removeItem(k);
     this.written.clear();
+    this.gen = 0;
     return newSave(this.now());
   }
 

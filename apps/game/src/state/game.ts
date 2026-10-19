@@ -1,6 +1,7 @@
 import { computed, effect, signal } from '@preact/signals';
 import {
   SaveStore,
+  StaleSaveError,
   StorageFullError,
   clockAt,
   forwardDay,
@@ -20,6 +21,11 @@ import { keepSave, kv, persistent } from './storage';
 
 export const store = new SaveStore(kv);
 const first = store.load();
+/** Another tab or window has saved since this one loaded (G8): this one reloads before it plays on. */
+export const staleTab = signal(false);
+addEventListener('storage', (e) => {
+  if (e.key === 'whs:meta' && store.stale()) staleTab.value = true;
+});
 
 /** The save as screens see it (a fresh snapshot after every change). */
 export const save = signal<SaveData>(first.save);
@@ -58,7 +64,8 @@ export function sync(): void {
   try {
     store.write(G.save);
   } catch (e) {
-    toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
+    if (e instanceof StaleSaveError) staleTab.value = true;
+    else toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
   }
   save.value = structuredClone(G.save);
   fver.value++;

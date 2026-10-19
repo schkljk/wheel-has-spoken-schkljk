@@ -13,7 +13,7 @@ import { G, go } from './state/game';
 import { goHub } from './flows/nav';
 import type { ArenaWheel } from './flows/fight';
 import type { FightOutcome, FightResult, FightSpec } from '@whs/core';
-import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
+import { CineHost, ConfirmHost, SheetHost, StaleHost, ToastHost } from './ui/kit';
 import { InfoHost } from './ui/Info';
 import { TipHost } from './ui/Tip';
 import { WipeHost } from './ui/Wipe';
@@ -56,6 +56,7 @@ export function App() {
       <TipHost />
       <StatPopHost />
       <ToastHost />
+      <StaleHost />
     </>
   );
 }

@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { buzz, dropToast, route, toasts } from '../state/game';
+import { buzz, dropToast, route, staleTab, toasts } from '../state/game';
 import { updateNow, updateReady } from '../state/update';
 import { sfx, uiTap } from './sound';
 import { cine, closeSheet, confirmReq, sheet, sheetLocked } from '../state/ui';
@@ -85,6 +85,25 @@ export function SheetHost() {
     <div class="scrim" onClick={(e) => e.target === e.currentTarget && !sheetLocked.value && closeSheet()}>
       <section class="sheet" role="dialog" aria-modal="true">
         {content}
+      </section>
+    </div>
+  );
+}
+
+/** The game was saved in another tab or window (G8): this copy is behind, so it reloads before anything else. */
+export function StaleHost() {
+  if (!staleTab.value) return null;
+  return (
+    <div class="scrim" style={{ alignItems: 'center', zIndex: 70 }}>
+      <section class="confirm" role="alertdialog" aria-modal="true" aria-labelledby="stale-title">
+        <h2 id="stale-title">Open somewhere else</h2>
+        <p style={{ margin: 0, color: 'var(--muted)' }}>The game was saved from another tab or window. Reload to pick up from there: nothing played there is lost.</p>
+        <p style={{ margin: 0 }}>
+          <em>Two of you, one save. The wheel only answers to one.</em>
+        </p>
+        <button class="btn block" onClick={() => location.reload()}>
+          Reload
+        </button>
       </section>
     </div>
   );

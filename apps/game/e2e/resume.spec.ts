@@ -95,3 +95,22 @@ test('G4: starting a new fighter asks before it scraps the one being built', asy
   await expect(page.getByRole('textbox', { name: 'Fighter name' })).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test('G8: a second tab that is behind asks to reload instead of writing over the first', async ({ page, context }) => {
+  test.setTimeout(120_000);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page, careerSaveKV({ seed: 4, lvl: 6 }));
+  // the same game in another tab
+  const other = await context.newPage();
+  await other.route('**/fonts.{googleapis,gstatic}.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+  await other.goto('./');
+  await expect(other.getByRole('button', { name: /Continue with Test Hero/ })).toBeVisible();
+  // the first tab plays on
+  await page.getByRole('button', { name: /Continue with Test Hero/ }).click();
+  await page.locator('.tabbar').waitFor();
+  // the second tab finds out, and offers a reload rather than its old copy
+  await expect(other.getByRole('alertdialog').getByText('Open somewhere else')).toBeVisible();
+  await other.getByRole('button', { name: 'Reload' }).click();
+  await expect(other.getByRole('alertdialog')).toHaveCount(0);
+  await expect(other.getByRole('button', { name: /Continue with Test Hero/ })).toBeVisible();
+});
