@@ -413,7 +413,7 @@ export function applyEvent(g: Game, it: (typeof EVENTS)[number]): string {
       break;
     case 'food':
       nx({ hp: 80 });
-      out = 'Starts the next fight at 80 HP';
+      out = 'Starts the next fight at 80% HP';
       break;
     case 'energy':
       nx({ en: 100 });

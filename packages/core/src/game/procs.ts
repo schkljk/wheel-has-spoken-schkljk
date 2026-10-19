@@ -36,7 +36,7 @@ export const SYN_PROC: Record<string, string> = {
   zero: 'Freezes way more often',
   storm: 'The lightning chains',
   blood: 'Drains twice as much',
-  bonelord: 'Rises with 60 HP',
+  bonelord: 'Rises with 60% HP',
   selfown: 'The attack backfires',
 };
 

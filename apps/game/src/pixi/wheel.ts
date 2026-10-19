@@ -41,6 +41,8 @@ export interface WheelSlice {
 }
 
 const TAU = Math.PI * 2;
+/** Rim art by size (a handful of sizes in use at once; the oldest goes first). */
+const RIMS = new Map<string, Texture>();
 export const MIN_TURNS = 1.5;
 export interface Friction {
   k: number;
@@ -199,6 +201,12 @@ export class WheelView extends Container {
 
   /** Draws the wheel for these slices at this diameter (call again when either changes). */
   setItems(items: WheelSlice[], size = this.size, hi: number | null = null) {
+    // the same slices at the same size need no new art, only the highlight (the fight asked 4 or 5 times a
+    // round, and each redraw was a quarter of the fight's JavaScript)
+    if (items === this.items && this.owned.length && Math.abs(size - this.size) < 0.5) {
+      this.highlight(hi);
+      return;
+    }
     this.items = items;
     this.size = size;
     // the old art goes after the next frame, once the renderer no longer holds it
@@ -224,7 +232,15 @@ export class WheelView extends Container {
     const colors = items.map((it, i) => it.col ?? SLICE_COLORS[it.q == null ? 1 : it.q]![i % 2]!);
     this.face.texture = this.own(texRgba(wheelFace(faceN, spans.length ? spans : [TAU], colors.length ? colors : ['#5b4bb7'], hole)));
     this.face.scale.set(p);
-    this.rim.texture = this.own(texRgba(wheelRim(N, rw)));
+    // the rim only depends on the size: drawn once per size and kept
+    const rk = `${N}|${rw}`;
+    let rim = RIMS.get(rk);
+    if (!rim) {
+      // forgotten, not destroyed: another wheel may still show it
+      if (RIMS.size >= 8) RIMS.delete(RIMS.keys().next().value!);
+      RIMS.set(rk, (rim = texRgba(wheelRim(N, rw))));
+    }
+    this.rim.texture = rim;
     this.rim.scale.set(p);
     // labels along each slice, right-aligned at the rim, in the pixel face
     const rIn = (faceN * p) / 2;

@@ -13,7 +13,8 @@ const build = (process.env.GITHUB_SHA ?? '').slice(0, 7) || new Date().toISOStri
 
 export default defineConfig({
   base,
-  define: { __BUILD__: JSON.stringify(build) },
+  // __NATIVE__: the Android app's glue only goes into the Android build
+  define: { __BUILD__: JSON.stringify(build), __NATIVE__: JSON.stringify(app) },
   plugins: [
     preact(),
     VitePWA({
@@ -28,10 +29,16 @@ export default defineConfig({
         background_color: '#14182b',
         display: 'standalone',
         orientation: 'any',
-        icons: [{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' }],
+        // the PNG is what Android's install prompt and home screen want
+        icons: [
+          { src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any maskable' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+        ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // not for players: the developer balance lab, and Pixi's WebGPU renderer (the game asks for WebGL)
+        globIgnores: ['**/lab.worker-*.js', '**/WebGPURenderer-*.js'],
         navigateFallbackDenylist: [/\/legacy\//],
         // fonts work offline after the first visit
         runtimeCaching: [

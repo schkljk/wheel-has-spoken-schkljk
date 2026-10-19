@@ -16,13 +16,14 @@ export type TipKey =
   | 'gauntlet'
   | 'club'
   | 'tower'
-  | 'hard';
+  | 'hard'
+  | 'speed';
 
 export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }> = {
   fight: {
     e: '🎡',
     t: 'The combat wheel',
-    d: 'Spin it each round to pick your move. Strike beats Power, Power beats Guard, Guard beats Strike. A full energy bar unlocks your signature move. The ☰ menu has everything else.',
+    d: 'Spin it each round to pick your move. Strike beats Power, Power beats Guard, Guard beats Strike. The teal ring marks the focus that counters their read; tap the read for the full cheat sheet. A full energy bar unlocks your signature move. The ☰ menu has everything else.',
     f: 'You can also just watch. The wheel does not judge. Much.',
   },
   reads: {
@@ -41,7 +42,7 @@ export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }
     e: '🗺️',
     t: 'The story map',
     d: 'Pick one step at a time: fights, elites, rests, events, merchants, treasure, then the boss. HP carries between fights. A lost fight costs a grit; run out and the chapter starts over on a new path.',
-    f: 'The boss is at the bottom. Bosses always are. It is a union thing.',
+    f: 'The boss waits at the top, so you walk up. Bosses always take the view. It is a union thing.',
   },
   shop: {
     e: '🏪',
@@ -108,5 +109,11 @@ export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }
     t: 'Hard mode',
     d: 'Replay a cleared chapter with tougher fights, a meaner boss and one twist for the whole chapter. Better loot. Your story waits where you left it.',
     f: 'You beat it once. It took that personally.',
+  },
+  speed: {
+    e: '⏩',
+    t: 'Fight speed',
+    d: 'The 1× button at the top of every fight switches to 2×: same fight, same odds, half the waiting. Tap it again to slow back down. It remembers.',
+    f: 'For people who have seen a sword before.',
   },
 };

@@ -21,7 +21,7 @@ test('a whole story chapter, boss included', async ({ page }) => {
   await start(page, { seed: 21, lvl: 14 });
   await page.getByRole('button', { name: /Start the chapter/ }).click();
   const chapter = () => page.locator('.maphead small').first().textContent();
-  await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 10);
+  await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 10, { stop: '.maphead' });
   const first = await chapter();
   // fights are skipped from the fight menu here: the other modes watch theirs play out
   const taps = await autopilot(page, async () => (await page.locator('.maphead').count()) > 0 && (await chapter()) !== first, 1500, { skipFights: true });

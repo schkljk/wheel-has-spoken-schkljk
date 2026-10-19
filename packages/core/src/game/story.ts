@@ -235,7 +235,7 @@ const gainFameText = (g: Game, n: number) => {
 function trainStat(g: Game, k: 'str' | 'spd' | 'wm') {
   hurtS(g, 20);
   applyBonus(g.F!, { k, n: '+1 ' + STATN[k], e: '🥋' });
-  return `+1 ${STATN[k]!.toLowerCase()} for good. Your body hates you right now (−20 HP).`;
+  return `+1 ${STATN[k]!.toLowerCase()} for good. Your body hates you right now (−20% HP).`;
 }
 function blessing(g: Game) {
   const F = g.F!;

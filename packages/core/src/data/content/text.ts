@@ -323,6 +323,23 @@ export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: st
       'You can only shop at base between chapters: once a chapter has started, use the merchants you meet on the map instead.',
     ],
   ],
+  read: [
+    '🔮',
+    'Reading the opponent',
+    [
+      'Before each round you get a read on their next move. How sure you are shows as a clue: Clear as day, Pretty sure, Probably, Maybe, Just a hunch, or Wild guess.',
+      'The teal ring around a focus button is the counter to the read. What beats what: they Strike, you Defend. They use Power, you Attack. They Guard, you use Power. Their Signature, you Defend. A Feint or Charging up, you Attack.',
+      'The surer the clue, the more often the read is right. Higher IQ and charisma than them, a Tactical stance, scouting reports and some gear make reads clearer. Tricksters and trash talkers are harder to read.',
+    ],
+  ],
+  simodds: [
+    '📊',
+    'Simulated odds',
+    [
+      'The game runs this exact matchup 120 times in this arena with both fighters on autopilot, and says how it went in words: Long shot, Underdog, Coin flip, Favorite, Heavy favorite or Sure thing.',
+      "Good reads beat these odds. Autopilot doesn't use the read at all.",
+    ],
+  ],
 };
 
 export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {

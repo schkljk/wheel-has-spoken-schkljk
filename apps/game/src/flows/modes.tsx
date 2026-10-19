@@ -27,6 +27,8 @@ import {
   mutatorList,
   mutatorOf,
   nextGauntletOpp,
+  oddsWord,
+  setPlace,
   pick,
   pl,
   powerScale,
@@ -70,6 +72,7 @@ import { tip } from '../state/tips';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
+  act((g) => setPlace(g, 'bracket'));
   go({ screen: 'bracket', run: T, key: Math.random() });
   tip(T.kind === 'gauntlet' ? 'gauntlet' : 'bracket');
 }
@@ -147,7 +150,7 @@ export async function dailyFlow() {
   const c = await choose({
     emoji: '📆',
     title: 'Daily challenge',
-    sub: dc.streak ? `${dc.streak}-day streak` : 'Win to start a streak',
+    sub: dc.streak ? `Streak: ${dc.streak} ${dc.streak === 1 ? 'win' : 'wins'} in a row` : 'Win to start a streak. Skipping a day never breaks it',
     body: (
       <>
         <b>{o.name}</b>, level {o.lvl} {o.race.n.toLowerCase()} {o.arch.n.toLowerCase()}.
@@ -424,7 +427,7 @@ function ClubSheet({ c }: { c: Club }) {
         Level {f.lvl} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}
       </small>
       <small>📈 {powerScale(f, ctx).n}</small>
-      <span class="fc-odds">{Math.round(p * 100)}% to win</span>
+      <span class={`fc-odds ${oddsWord(p).tone}`}>{oddsWord(p).t}</span>
       <button
         class="btn sm"
         disabled={!(coins >= bet && bet > 0)}

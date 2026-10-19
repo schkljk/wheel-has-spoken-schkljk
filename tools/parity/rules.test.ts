@@ -103,6 +103,8 @@ const SETUP = `const setup=(c)=>{
     BT=newBattle(F,O,false,Object.assign({arena:curArena,mods:fightMods(O)},fightRules()));F.next=null;saveCareer();fightLog=[];
     BT.start();while(!BT.over){BT.plan();BT.step(autoChoice(BT.P[0],BT.P[1],BT.hist[1]));}};`;
 
+// a new injury now says how it heals (game/fight.ts injLine); the rest of the line is the legacy one
+const legacyLine = (l: string) => l.replace(/^(.+?) Injured: (.+?), (.+?)\. Heals by itself.*$/, '$1 Injury: $2 ($3)');
 function snapNew(g: Game, r?: { lines: string[]; big: string; desc: string }) {
   persistFighter(g);
   const p = g.save.profile;
@@ -121,7 +123,7 @@ function snapNew(g: Game, r?: { lines: string[]; big: string; desc: string }) {
     patch: p.patch,
     lastTop: p.lastTop,
     champIds: p.champIds,
-    lines: r?.lines,
+    lines: r?.lines.map(legacyLine),
     big: r?.big,
     desc: r?.desc,
     next: g.rng(),

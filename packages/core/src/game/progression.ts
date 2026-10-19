@@ -25,6 +25,22 @@ export function rankTalent(g: Game, key: string): boolean {
   return true;
 }
 
+/**
+ * Takes back the rank just bought (the 3-second Undo) and refunds its point. Only for the latest rank: that puts
+ * the tree back exactly as it was, so every requirement still holds.
+ */
+export function unrankTalent(g: Game, key: string): boolean {
+  const F = g.F!;
+  const m = talMap(F);
+  if (!TNODE[key] || !m[key]) return false;
+  m[key]!--;
+  if (!m[key]) delete m[key];
+  F.talents = m;
+  F.tp = (F.tp || 0) + 1;
+  invalidate(F);
+  return true;
+}
+
 // ---------------------------------------------------------------- legacy perks
 export const legacyCost = (g: Game, k: string) => {
   const p = LEGACY.find((x) => x.k === k)!;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import * as D from '../../packages/core/src/data';
 import { mulberry32 } from '../../packages/core/src/rng';
 import { clean } from './emit';
+import { rewordDeep } from '../../packages/core/src/data/wording';
 import { loadLegacyCore } from './legacy';
 
 const legacy = loadLegacyCore(mulberry32(1));
@@ -22,9 +23,10 @@ const TABLES: [string, unknown, unknown][] = [
   ]),
 ];
 
+// the descriptions carry the wording fixes (data/wording.ts): lay them over the legacy tables too
 describe('ported data equals the legacy tables', () => {
   it.each(TABLES)('%s', (_name, ported, original) => {
     expect(ported).toBeDefined();
-    expect(ported).toEqual(clean(original));
+    expect(ported).toEqual(rewordDeep(clean(original)));
   });
 });

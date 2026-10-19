@@ -47,7 +47,7 @@ export function FighterTab() {
   const NX = RANKS[rk + 1];
   const fm = F.fame || 0;
   const nx = (F.next || {}) as Record<string, number>;
-  const nextB = [nx.dmgX ? '+15% damage' : '', nx.hp ? 'starts at 80 HP' : '', nx.en ? 'full energy' : '', nx.readB ? 'reads 20% better' : ''].filter(Boolean);
+  const nextB = [nx.dmgX ? '+15% damage' : '', nx.hp ? 'starts at 80% HP' : '', nx.en ? 'full energy' : '', nx.readB ? 'reads 20% better' : ''].filter(Boolean);
   const offers = F.contract ? [] : ensure((g) => contractOffers(g));
   const c = F.contract ? CONTRACTK[F.contract as string] : null;
   let n = 0;
@@ -74,7 +74,7 @@ export function FighterTab() {
           </small>
           <div class="belts">
             {TIERS_T.filter((t) => t.size).map((t) => (
-              <Inf key={t.k} k={`tier|${t.k}`} class={`belt${F.belts && F.belts[t.k] ? ' on' : ''}`}>
+              <Inf key={t.k} k={`tier|${t.k}`} class={`belt${F.belts && F.belts[t.k] ? ' on' : ''}`} label={`${t.n} belt: ${F.belts && F.belts[t.k] ? 'won' : 'not won yet'}`}>
                 {t.e}
               </Inf>
             ))}

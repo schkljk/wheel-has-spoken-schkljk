@@ -19,6 +19,8 @@ import {
   synFound,
   synOf,
   wheelsDone,
+  wheelsMaybe,
+  saveBuild,
   wheelsTotal,
   type BuildFighter,
   type Fighter,
@@ -161,8 +163,9 @@ function SoFarSheet({ f }: { f: BuildFighter }) {
 
 // ---------------------------------------------------------------- building a fighter
 /** Spins every wheel of a new fighter: flick or tap, one free reroll, or let the game spin the rest. */
-export function BuildScreen({ name }: { name: string }) {
-  const S = useRef({ f: newBuild(name), idx: 0, auto: false, spinning: false, done: false, lastSpun: -1, list: [] as OddsEntry[], reasons: [] as OddsReason[] }).current;
+export function BuildScreen({ name, resume }: { name: string; resume?: { f: unknown; idx: number; done: boolean } | null }) {
+  // a build in progress is kept in the save after every wheel, so closing the app loses none of it (A4)
+  const S = useRef({ f: (resume?.f as BuildFighter) ?? newBuild(name), idx: resume?.idx ?? 0, auto: false, spinning: false, done: false, lastSpun: -1, list: [] as OddsEntry[], reasons: [] as OddsReason[] }).current;
   const [, setV] = useState(0);
   const rerender = () => setV((x) => x + 1);
   const [landed, setLanded] = useState<Landed | null>(null);
@@ -264,6 +267,7 @@ export function BuildScreen({ name }: { name: string }) {
     if (r.best >= 3) burst();
     S.lastSpun = S.idx;
     S.idx++;
+    act((g) => saveBuild(g, S.f, S.idx, false));
     rerender();
     later(
       () => {
@@ -292,11 +296,17 @@ export function BuildScreen({ name }: { name: string }) {
     },
   };
   const finish = () => {
-    act((g) => finishBuild(g, S.f as Fighter));
+    act((g) => {
+      finishBuild(g, S.f as Fighter);
+      // the finished fighter waits on the card, and is kept until they start a career or get scrapped
+      saveBuild(g, S.f, S.idx, true);
+    });
     go({ screen: 'card', f: S.f });
   };
 
   const total = wheelsTotal(S.f);
+  // sub-wheels that may still join say so ("of 21+") instead of the total creeping up one spin at a time
+  const more = S.done ? 0 : wheelsMaybe(S.f);
   const done = S.done ? total : wheelsDone(S.f, S.idx);
   const canReroll = !S.auto && S.lastSpun >= 0 && !S.spinning && (S.f.free || 0) > 0;
   const label = W && !S.done ? labelOf(W, S.f) : 'Done';
@@ -323,7 +333,7 @@ export function BuildScreen({ name }: { name: string }) {
               <i style={{ width: `${(done / total) * 100}%` }} />
             </span>
           </span>
-          <small class="prog-n">{S.done ? `${total} of ${total} spun` : `Spin ${done + 1} of ${total}`}</small>
+          <small class="prog-n">{S.done ? `${total} of ${total} spun` : `Spin ${done + 1} of ${total}${more ? '+' : ''}`}</small>
           <button class="btn ghost sm" onClick={() => openSheet(<SoFarSheet f={S.f} />)}>
             <Icon name="scroll" /> So far
           </button>
@@ -353,6 +363,8 @@ export function BuildScreen({ name }: { name: string }) {
                 S.idx = S.lastSpun;
                 S.lastSpun = -1;
                 S.done = false;
+                // the reroll is spent the moment it's used, even if the app closes mid-spin
+                act((g) => saveBuild(g, S.f, S.idx, false));
                 load();
                 doSpin();
               }}
@@ -397,6 +409,8 @@ export interface SpinSpec<T extends { n: string; e?: string; q?: number; d?: str
   onLand: (it: T) => ComponentChildren | void;
   /** continue on its own after this many ms (the arena wheel) */
   autoNext?: number;
+  /** spin on its own as soon as the wheel is up (spoils after a fight: no tap needed) */
+  autoSpin?: boolean;
 }
 
 /** A single wheel (loot, level-ups, events, arenas...). Resolves with what landed once Continue is tapped. */
@@ -436,6 +450,10 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
     if (reducedMotion()) v.spinTo(pickW(G.rng, items), { dur: 500, turns: 1 });
     else v.spinPhysics('button', fast);
   };
+  // spoils spin themselves; doSpin waits for the wheel if it isn't drawn yet
+  useEffect(() => {
+    if (spec.autoSpin) doSpin();
+  }, []);
   const landedAt = (i: number, info: { turns: number; flick: boolean }) => {
     stopDrum.current();
     const it = spec.list[i]!.it;

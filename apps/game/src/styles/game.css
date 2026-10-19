@@ -89,6 +89,13 @@
   inset: 0;
   overflow: hidden;
 }
+/* a Pixi canvas is always its host's size: the drawing buffer follows a frame later (ResizeObserver), and in
+   that frame the old picture is stretched instead of spilling past the host */
+.pixiwheel > canvas,
+.fight-canvas > canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 .pixiwheel.live {
   cursor: grab;
 }
@@ -345,6 +352,12 @@
 .st .modv {
   margin-left: 0.4rem;
 }
+.st .modv.up {
+  color: var(--good);
+}
+.st .modv.down {
+  color: var(--danger);
+}
 .st .tr {
   grid-area: tr;
   height: 0.35rem;
@@ -532,6 +545,16 @@
   background: #b388ff;
   color: #1a1426;
 }
+.ch-tag.up {
+  background: var(--good);
+}
+.ch-tag.down {
+  background: var(--danger);
+  color: #fff;
+}
+.ch-tag.even {
+  background: var(--muted);
+}
 .ch-opt:disabled {
   opacity: 0.5;
 }
@@ -640,6 +663,18 @@
   animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
   cursor: pointer;
 }
+.statpop.top {
+  /* under the toasts (an Undo there must stay tappable) */
+  top: calc(4.4rem + env(safe-area-inset-top));
+  bottom: auto;
+  animation-name: pop-top;
+}
+@keyframes pop-top {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -1.5rem) scale(0.9);
+  }
+}
 .sp-h {
   font: 800 0.95rem/1.2 var(--display);
   letter-spacing: 0.04em;
@@ -734,8 +769,8 @@
   filter: none;
 }
 .mom i {
-  width: 0.85rem;
-  height: 0.4rem;
+  width: 1.05rem;
+  height: 0.5rem;
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.22);
 }
@@ -744,7 +779,7 @@
   box-shadow: 0 0 6px rgba(242, 181, 68, 0.7);
 }
 .mom small {
-  font: 800 0.66rem/1 var(--display);
+  font: 800 0.78rem/1 var(--display);
   color: #ffd166;
   margin: 0 0.1rem;
 }
@@ -823,7 +858,8 @@
   display: flex;
   justify-content: space-between;
   gap: 0.3rem;
-  font-size: clamp(0.66rem, 2.3vw, 0.78rem);
+  /* never below 13 px: these are the numbers the fight is about */
+  font-size: clamp(0.8125rem, 2.8vw, 0.9rem);
   font-weight: 700;
   white-space: nowrap;
 }
@@ -928,6 +964,23 @@
   border-color: rgba(255, 255, 255, 0.2);
   color: #f3eeff;
 }
+.fspeed {
+  pointer-events: auto;
+  min-width: 2.5rem;
+  min-height: 1.9rem;
+  padding: 0 0.4rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(20, 15, 34, 0.8);
+  color: #f3eeff;
+  font: 800 0.9rem/1 var(--display);
+  cursor: pointer;
+}
+.fspeed.on {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-ink);
+}
 .fpanel {
   position: absolute;
   top: var(--groundY);
@@ -984,7 +1037,9 @@
 .fchip {
   position: relative;
   overflow: hidden;
-  padding: 0.35rem 0.55rem;
+  /* a full thumb's height to tap */
+  min-height: 2.75rem;
+  padding: 0.35rem 0.6rem;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(20, 15, 34, 0.72);
@@ -1112,8 +1167,8 @@
 }
 @media (max-width: 360px) {
   .fchip {
-    padding: 0.3rem 0.4rem;
-    font-size: 0.76rem;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.8rem;
   }
   .cw-chips {
     gap: 0.25rem;
@@ -2204,10 +2259,12 @@
   font-size: 0.72rem;
 }
 .tt-node.has {
-  border-color: var(--c);
+  /* learned: gold, with the branch color as a strip (a red frame read as an error) */
+  border-color: var(--gold);
+  box-shadow: inset 4px 0 0 var(--c);
 }
 .tt-node.max {
-  background: color-mix(in srgb, var(--c) 14%, var(--surface));
+  background: color-mix(in srgb, var(--gold) 12%, var(--surface));
 }
 .tt-node:disabled {
   opacity: 0.55;
@@ -2348,6 +2405,12 @@
 }
 .fc-odds {
   font-weight: 800;
+}
+.fc-odds.good {
+  color: var(--good);
+}
+.fc-odds.bad {
+  color: var(--danger);
 }
 .fc-v {
   font: 800 1.2rem/1 var(--display);
@@ -3031,11 +3094,32 @@ img.pxi.chap {
 .scout {
   display: grid;
   gap: 0.4rem;
-  margin-bottom: 0.6rem;
+  margin-top: 0.6rem;
+}
+.scout summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  gap: 0.15rem;
+  min-height: 44px;
+  align-content: center;
+}
+.scout summary::-webkit-details-marker {
+  display: none;
+}
+.scout summary small {
+  color: var(--muted);
 }
 .scout h3 {
   margin: 0;
   font-size: 1.05rem;
+}
+.scout h3::after {
+  content: ' ▸';
+  color: var(--muted);
+}
+.scout[open] h3::after {
+  content: ' ▾';
 }
 .sr-list {
   list-style: none;
@@ -3294,4 +3378,159 @@ img.pxi.chap {
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 0.15rem;
+}
+
+/* armory: better or worse than what is worn */
+.gv {
+  font-size: 0.8em;
+}
+.gv.up {
+  color: var(--good);
+}
+.gv.down {
+  color: var(--danger);
+}
+
+/* the next goal, pinned on the Play tab */
+.nextgoal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-card);
+  border: 2px solid var(--edge);
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface) 75%);
+  box-shadow: var(--card-shadow);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.ng-e {
+  font-size: 1.3rem;
+}
+.ng-t {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.ng-t small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ng-bar {
+  display: block;
+  height: 0.35rem;
+  border-radius: 9px;
+  background: var(--well);
+  overflow: hidden;
+}
+.ng-bar i {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.ng-n {
+  font-weight: 800;
+  color: var(--gold);
+}
+
+/* the spoils on a story win (B3): three picks right on the result */
+.spoils {
+  display: grid;
+  gap: 0.3rem;
+}
+.spoil-opts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+.spoil {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 0.1rem;
+  min-height: 44px;
+  padding: 0.45rem 0.3rem;
+  border-radius: 12px;
+  border: 2px solid var(--edge);
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface) 75%);
+  box-shadow: 0 3px 0 var(--edge);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: center;
+}
+.spoil .pxi {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.spoil b {
+  font: 800 0.88rem/1.1 var(--display);
+}
+.spoil small {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.15;
+}
+.spoil:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 var(--edge);
+}
+/* short screens: the picks keep their names and lose the small print */
+@media (max-height: 700px) {
+  .spoil {
+    padding: 0.3rem 0.25rem;
+  }
+  .spoil small {
+    display: none;
+  }
+  .spoil .pxi {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+}
+
+/* the fight recap (C1): why it went the way it did */
+.recap {
+  margin-top: 0.4rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  display: grid;
+  gap: 0.3rem;
+}
+.recap-h {
+  font: 800 0.8rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.recap-nums {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.2rem 0.6rem;
+  font-size: 0.82rem;
+}
+.recap-nums b {
+  color: var(--ink);
+}
+.recap-tip {
+  font-size: 0.85rem;
+  color: #ffe9a8;
+}
+/* the round's matchup while it plays (C1) */
+.matchup {
+  font-size: 0.82rem;
+  color: #e6dff5;
+}
+.log .rhead {
+  list-style: none;
+  margin-top: 0.4rem;
+  font: 800 0.78rem/1 var(--display);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
 }

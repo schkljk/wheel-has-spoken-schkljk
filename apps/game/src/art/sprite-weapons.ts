@@ -1,7 +1,7 @@
 // Weapons, held in the near hand. Most are drawn in the weapon's own frame: t runs along the handle (up and
 // forward), s across it (positive = toward the edge, forward). Enchanted weapons glow around their outline.
 
-import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, blank, forPx, ln, raw, stamp, type Buf, type Pt, type Ramp } from './px';
+import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, blank, forPx, ln, pack, rampId, raw, stamp, type Buf, type Pt, type Ramp } from './px';
 import { own } from './sprite-data';
 
 /** Weapon glow color per enchant key. */
@@ -54,8 +54,8 @@ function glow(A: Buf, W: Buf, G: Ramp) {
     for (let x = 0; x < W.w; x++, i++) {
       const k = d[i]!;
       if (!k || A.c[i]) continue;
-      A.c[i] = G[k === 1 ? LIT : BASE]!;
-      A.r[i] = G;
+      A.c[i] = pack(G[k === 1 ? LIT : BASE]!);
+      A.r[i] = rampId(G);
       A.t[i] = k === 1 ? LIT : BASE;
       A.a[i] = k === 1 ? 170 : 90;
     }
@@ -342,8 +342,8 @@ function draw(W: Buf, n: string, hx: number, hy: number) {
       if (d > 7.5 || d < 4.5) return;
       const lit = x - cx + (y - cy) < -2;
       const sh = x - cx + (y - cy) > 3;
-      W.c[i] = R[lit ? LIT : sh ? SHD : BASE]!;
-      W.r[i] = R;
+      W.c[i] = pack(R[lit ? LIT : sh ? SHD : BASE]!);
+      W.r[i] = rampId(R);
       W.t[i] = BASE;
       W.a[i] = 255;
     });

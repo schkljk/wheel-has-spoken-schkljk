@@ -12,7 +12,7 @@ test('a gear swap can be undone for three seconds', async ({ page }) => {
   await page.getByRole('tab', { name: 'Fighter' }).click();
   await page.getByRole('button', { name: /Armory/ }).click();
   await page.locator('.arm-slot').first().click();
-  await page.getByRole('button', { name: 'Wear' }).click();
+  await page.getByRole('button', { name: 'Wear', exact: true }).click();
   await page.getByRole('alertdialog').getByRole('button', { name: 'Wear it' }).click();
   await expect(page.locator('.shopitem').filter({ hasText: 'Knight plate ✓' })).toHaveCount(1);
   await page.getByRole('button', { name: 'Undo' }).click();

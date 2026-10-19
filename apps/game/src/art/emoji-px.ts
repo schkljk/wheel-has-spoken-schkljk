@@ -2,6 +2,7 @@
 // hand-drawn icon (art/icons.ts); the rest are pixelized from the phone's own emoji: drawn large, averaged down to
 // 16x16, cut to a few colors, and given the dark colored outline the sprites have. Browser only.
 
+import { cpuCanvas } from './canvas';
 import { iconCanvas } from './portraits';
 
 /** Emojis with a hand-drawn icon of the same thing. */
@@ -154,9 +155,7 @@ export function pixelEmoji(e: string, SZ = 16): HTMLCanvasElement | null {
     return fromHsl(h, Math.min(1, s * 1.15), l);
   });
   const near = (c: RGB) => pal.reduce((best, q) => ((q[0] - c[0]) ** 2 + (q[1] - c[1]) ** 2 + (q[2] - c[2]) ** 2 < (best[0] - c[0]) ** 2 + (best[1] - c[1]) ** 2 + (best[2] - c[2]) ** 2 ? q : best), pal[0]!);
-  const out = document.createElement('canvas');
-  out.width = out.height = OUT;
-  const o = out.getContext('2d')!;
+  const [out, o] = cpuCanvas(OUT, OUT);
   const id = o.createImageData(OUT, OUT);
   const at = (x: number, y: number) => (x < 0 || y < 0 || x >= SZ || y >= SZ ? null : px[y * SZ + x]!);
   for (let y = -1; y <= SZ; y++)

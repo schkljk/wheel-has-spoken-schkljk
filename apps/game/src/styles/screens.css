@@ -423,3 +423,78 @@
   color: #ff9a9d;
   margin-top: 0.4rem;
 }
+
+/* the title wheel: drawn once, turned by CSS (WheelStage) */
+.title-wheel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  /* the wheel is a square as big as the space allows, sized by CSS alone (always in step with the layout) */
+  container-type: size;
+}
+.tw-box {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+}
+.tw {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+/* about one turn every ten seconds; each slice brings a peg past the pointer */
+.tw-face {
+  animation: tw-turn 10.5s linear infinite;
+}
+.tw-blink {
+  animation: tw-blink 1.2s steps(1) infinite;
+}
+.tw-ptr {
+  animation: tw-flick calc(10.5s / 16) ease-out infinite;
+}
+@keyframes tw-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes tw-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes tw-flick {
+  0% {
+    transform: rotate(-9deg);
+  }
+  35%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tw-face,
+  .tw-blink,
+  .tw-ptr {
+    animation: none;
+  }
+}
+html[data-motion='reduced'] .tw-face,
+html[data-motion='reduced'] .tw-blink,
+html[data-motion='reduced'] .tw-ptr {
+  animation: none;
+}
+
+/* Continue on the title screen (B5): the way back in, with where it goes */
+.btn.cont {
+  display: grid;
+  justify-items: center;
+  gap: 0.15rem;
+  padding-block: 0.6rem;
+}
+.btn.cont small {
+  font: 600 0.78rem/1.2 var(--body);
+  opacity: 0.85;
+}

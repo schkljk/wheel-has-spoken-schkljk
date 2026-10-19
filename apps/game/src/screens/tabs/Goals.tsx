@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { ARCHS, COL_STEP, GOALS, MASTERY, MASTERY_RW, codexCount, goalCur, masteryLvl, rwText, seeGoals } from '@whs/core';
+import { ARCHS, COL_STEP, GOALS, MASTERY, MASTERY_RW, codexCount, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals } from '@whs/core';
 import { G, act, activeFighter, save } from '../../state/game';
 import { openSheet } from '../../state/ui';
 import { Sheet, rise } from '../../ui/kit';
@@ -36,7 +36,7 @@ function AllGoals() {
   return (
     <Sheet icon="target" title="All goals" sub={`${done.length} of ${GOALS.length} done`}>
       <div class="stack">
-        {GOALS.map((g) => (
+        {[...goalsBySoonest(G), ...GOALS.filter((g) => done.includes(g.k))].map((g) => (
           <GoalRow key={g.k} g={g} done={done.includes(g.k)} />
         ))}
       </div>
@@ -79,9 +79,8 @@ export function GoalsTab() {
   });
   const F = activeFighter.value!;
   const done = G.save.profile.goalsDone;
-  const open = GOALS.filter((g) => !done.includes(g.k))
-    .sort((a, b) => goalCur(G, b.k) / b.need - goalCur(G, a.k) / a.need)
-    .slice(0, 6);
+  // the soonest done first, by fights still needed (not by percent)
+  const open = goalsBySoonest(G).slice(0, 6);
   const mk = F.arch.k;
   const ml = masteryLvl(G, mk);
   const mw = G.save.profile.mastery[mk] || 0;

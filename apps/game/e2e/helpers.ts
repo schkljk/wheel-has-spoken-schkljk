@@ -64,6 +64,9 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
     const els = document.querySelectorAll('button, a, h1, h2, h3, b, small, input, textarea, .card, .chip, .stat, .tag, .pxi, canvas, .kitmv');
     for (const el of els) {
       if (el.closest('.toasts')) continue;
+      // the title wheel's layers: see-through squares that turn (the face) or flick (the pointer), so their
+      // boxes swing past the corners while the wheel itself (.tw-box, fit by CSS) stays put
+      if (el.classList.contains('tw')) continue;
       const r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) continue;
       // parked far off-screen on purpose (e.g. Pixi's screen-reader hook at -1000px)
@@ -108,13 +111,16 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
 /**
  * Plays on its own: taps whatever the current screen asks for (spin, continue, the first open choice,
  * the current map step, fight results...) until `done` says stop. Fights should run on auto-battle.
+ * Some screens move on by themselves (loot and level-up wheels), so `stop` (a selector) is also checked
+ * right before each tap: reaching the map between a `done` check and the next tap must not start a fight.
  * Returns how many taps it made.
  */
-export async function autopilot(page: Page, done: () => Promise<boolean>, max = 400, o: { skipFights?: boolean } = {}): Promise<number> {
+export async function autopilot(page: Page, done: () => Promise<boolean>, max = 400, o: { skipFights?: boolean; stop?: string } = {}): Promise<number> {
   const src = `(${TAP_NEXT})(${JSON.stringify(o)})`;
   for (let i = 0; i < max; i++) {
     if (await done()) return i;
     const tapped = await page.evaluate(src);
+    if (tapped === 'stop') return i;
     await page.waitForTimeout(tapped ? 250 : 400);
   }
   return max;
@@ -122,6 +128,7 @@ export async function autopilot(page: Page, done: () => Promise<boolean>, max = 
 
 // plain source (not a function) so compilers can't add helpers the page doesn't have
 const TAP_NEXT = `((o) => {
+  if (o.stop && document.querySelector(o.stop)) return 'stop';
   const vis = (el) => {
     if (!el) return false;
     const r = el.getBoundingClientRect();
@@ -146,7 +153,10 @@ const TAP_NEXT = `((o) => {
     const out = [...sheet.querySelectorAll('button')].find((b) => /^(Leave|Close|Back|Done)$/i.test(b.textContent.trim()) || b.getAttribute('aria-label') === 'Close');
     return tap(out || null);
   }
-  if (tap(document.querySelector('.fresult .btn'))) return true;
+  // a story win's spoils are picked right on the result (B3)
+  if (tap(document.querySelector('.fresult .spoil'))) return true;
+  // the result's own button, not the share button in its scrolling part
+  if (tap(document.querySelector('.fresult > .btn'))) return true;
   if (tap(document.querySelector('.spin-foot .btn'))) return true;
   if (tap(document.querySelector('.mnode.now'))) return true;
   if (tap(document.querySelector('.bracket-screen .dock .btn'))) return true;

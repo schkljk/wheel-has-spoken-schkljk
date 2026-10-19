@@ -1,12 +1,12 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
 import { Hearts } from '../../ui/Hearts';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
-import { goMap } from '../../flows/nav';
+import { goHub, goMap } from '../../flows/nav';
 import { openBag } from '../../flows/story';
 import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
@@ -37,6 +37,7 @@ export function PlayTab() {
   const C = CHAPTERS[ch - 1]!;
   const run = runSummary(G);
   const NM = ensure((g) => myNemesis(g));
+  const NG = goalsBySoonest(G)[0];
   const chal = F.challenge as { kind: string; name: string } | null;
   const open = rushOpen(G);
   const act2 = !!(S && (S.cleared || []).includes(11));
@@ -84,7 +85,7 @@ export function PlayTab() {
       n: 'Base shop',
       icon: 'cart',
       locked: !baseOpen(G),
-      st: baseOpen(G) ? 'Supplies and a daily deal' : 'Closed until the chapter ends',
+      st: baseOpen(G) ? 'Supplies and a daily deal' : 'Opens after this chapter',
       fl: 'Gear priced like rent',
       go: () => openBaseShop(),
     },
@@ -177,6 +178,24 @@ export function PlayTab() {
       {dailyReady(G) && (
         <button class="btn daily block" onClick={() => void dailyWheel()} {...rise(n++)}>
           <Icon name="gift" /> Your daily wheel is ready
+        </button>
+      )}
+      {NG && (
+        // the goal closest to done, pinned where you play (the Goals tab has the rest)
+        <button class="nextgoal" onClick={() => void goHub('goals')} {...rise(n++)}>
+          <span class="ng-e" aria-hidden="true">
+            {NG.e}
+          </span>
+          <span class="ng-t">
+            <small>Next goal</small>
+            <b class="ellipsis">{NG.n}</b>
+            <span class="ng-bar" aria-hidden="true">
+              <i style={{ width: `${Math.round((Math.min(NG.need, goalCur(G, NG.k)) / NG.need) * 100)}%` }} />
+            </span>
+          </span>
+          <small class="ng-n">
+            {Math.min(NG.need, goalCur(G, NG.k))}/{NG.need}
+          </small>
         </button>
       )}
       {NM && (

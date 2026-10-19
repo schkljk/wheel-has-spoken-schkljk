@@ -118,10 +118,10 @@ for (const [width, height] of VIEWS) {
       await page.getByRole('button', { name: 'Begin' }).click();
       await check(page, 'map');
       await page.locator('.mnode.now').first().click();
-      await page.getByRole('button', { name: 'Spin the arena' }).waitFor();
-      await check(page, 'arena wheel');
-      await page.getByRole('button', { name: 'Spin the arena' }).click();
+      // the arena wheel spins on the fight screen during the walk-in (too quick to catch in tests), and the
+      // arena it lands on is the fight's
       await page.locator('.readpill').waitFor({ timeout: 60_000 });
+      expect(await page.evaluate(() => !!(window as unknown as { __whsFight?: { arena: unknown } }).__whsFight?.arena)).toBe(true);
       await check(page, 'fight');
       // combo and synergy banners (the longest of each) stay on the stage, under the HP bars
       const ban = await page.evaluate(`(() => {
@@ -171,10 +171,10 @@ for (const [width, height] of VIEWS) {
         await check(page, 'share card');
         await sheetClose(page);
       }
-      await page.locator('.fresult .btn').first().click();
+      await page.locator('.fresult .spoil, .fresult > .btn').first().click();
       await page.locator('.ch-opt, .tabbar, .maphead, .spin-foot').first().waitFor();
       await check(page, 'after the fight');
-      await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40);
+      await autopilot(page, async () => (await page.locator('.maphead').count()) > 0, 40, { stop: '.maphead' });
       await page.getByRole('button', { name: 'Home' }).click();
       await page.locator('.tabbar').waitFor();
       await page.getByRole('button', { name: /Local brawl/ }).click();

@@ -58,7 +58,8 @@ export function dailyState(g: Game): DailyState {
     opp: serFighter(o),
     mut: null,
     done: false,
-    streak: prev.lastWin === g.clock.yesterday ? prev.streak || 0 : 0,
+    // wins in a row, whenever they are played: skipping a day never breaks a streak (only a loss does)
+    streak: prev.streak || 0,
     lastWin: prev.lastWin || null,
   };
   p.dc = dc as unknown as Json;
@@ -69,7 +70,7 @@ export function dailyText(g: Game) {
   const p = g.save.profile;
   const all = p.dc as unknown as DailyState | undefined;
   const dc = all && all.date === g.clock.today ? all : null;
-  return dc && dc.done ? (dc.won ? `Won today. Streak: ${pl(dc.streak, 'day')}` : 'Done for today') : `Ready${all && all.streak ? `. Streak: ${pl(all.streak, 'day')}` : ''}`;
+  return dc && dc.done ? (dc.won ? `Won today. Streak: ${pl(dc.streak, 'win')}` : 'Done for today') : `Ready${all && all.streak ? `. Streak: ${pl(all.streak, 'win')}` : ''}`;
 }
 export const mutatorOf = (k: string | null) => MUTATORS.find((m) => m.k === k) || null;
 export function setDailyMutator(g: Game, k: string) {
@@ -78,8 +79,7 @@ export function setDailyMutator(g: Game, k: string) {
 /** Coins a daily win pays with the current streak. */
 export function dailyWinCoins(g: Game) {
   const dc = dailyState(g);
-  const streak = (dc.lastWin === g.clock.yesterday ? dc.streak || 0 : 0) + 1;
-  return 9 + 2 * Math.min(streak, 5);
+  return 9 + 2 * Math.min((dc.streak || 0) + 1, 5);
 }
 export const dailyArena = (k: string | undefined) => (k ? ARENAS.find((a) => a.k === k) || null : null);
 
@@ -100,16 +100,16 @@ export function endDailyFight(g: Game, O: CareerFighter, o: FightOutcome): Fight
     track(g, 'wins');
     addMasteryWin(g, F);
     track(g, 'dailies');
-    dc.streak = (dc.lastWin === g.clock.yesterday ? dc.streak || 0 : 0) + 1;
+    dc.streak = (dc.streak || 0) + 1;
     dc.lastWin = g.clock.today;
     coins = 9 + 2 * Math.min(dc.streak, 5);
     fame = 8;
     awardGems(g, 1, lines);
     if (dc.streak >= 5) keys.push('daily5');
-    lines.push(`📆 Streak: ${pl(dc.streak, 'day')}`);
+    lines.push(`📆 Streak: ${pl(dc.streak, 'win')} in a row`);
   } else {
     dc.streak = 0;
-    lines.push('Streak reset. Try again tomorrow');
+    lines.push('Streak reset. The next one is tomorrow');
   }
   gainXP(g, F, xp);
   addCoins(g, coins);

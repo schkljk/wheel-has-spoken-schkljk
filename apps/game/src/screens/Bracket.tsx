@@ -36,12 +36,16 @@ function Chip({ f, you, state, right }: { f: CareerFighter; you?: boolean; state
 export function BracketScreen({ run: T }: { run: Run }) {
   void activeFighter.value;
   const F = G.F!;
-  // the base shop only opens between chapters; mid-chapter there is nothing to buy here
+  // the base shop only opens between chapters: mid-chapter it says so, with a lock, instead of vanishing
   const shop = baseOpen(G) ? (
     <button class="btn ghost sm" onClick={() => openBaseShop()}>
       <Icon name="cart" /> Shop (🪙 {coinsOf(G)})
     </button>
-  ) : null;
+  ) : (
+    <button class="btn ghost sm" disabled aria-label="The base shop opens after this chapter">
+      <Icon name="lock" /> Shop opens after this chapter
+    </button>
+  );
   if (T.kind === 'gauntlet') {
     return (
       <main class="screen bracket-screen">

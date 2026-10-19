@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
   ARCHS, BALANCE, LEGACY_BALANCE, useBalance, LS, RACES, WHEELS, applyBonus, bestStat, eff, kitMoves, levelUp, mulberry32, numStats, powerScale, randName,
-  randomFighter, rate, synOf, traitsBase, traitsOf, type Fighter, type GameContext,
+  randomFighter, rate, rewordDeep, synOf, traitsBase, traitsOf, type Fighter, type GameContext,
 } from '../../packages/core/src';
+import { clean } from './emit';
 import { decorate, legacyCore, randomExtras } from './fixtures';
 
 // the old game had no soft caps on the card's crit and dodge
@@ -92,7 +93,8 @@ describe('stats, traits and kits', () => {
       expect(LS(ported), at).toBe(lfn<[LF], number>('LS')(legacy));
       expect(powerScale(ported), at).toEqual(lfn<[LF], unknown>('powerScale')(legacy));
       expect(bestStat(ported), at).toBe(lfn<[LF], string>('bestStat')(legacy));
-      expect(kitMoves(ported), at).toEqual(lfn<[LF], unknown>('kitMoves')(legacy));
+      // move descriptions carry the wording fixes (data/wording.ts)
+      expect(kitMoves(ported), at).toEqual(rewordDeep(clean(lfn<[LF], unknown>('kitMoves')(legacy))));
     }
   });
 

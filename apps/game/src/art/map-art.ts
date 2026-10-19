@@ -7,7 +7,7 @@
 import { ARCHS, BOSSES, hashStr, type NodeKind } from '@whs/core';
 import { drawDeco } from './map-deco';
 import { mapTheme, type MapTheme } from './map-themes';
-import { h2r, type RGB } from './px';
+import { h2r, unpack, type RGB } from './px';
 import type { Look } from './sprite';
 
 export interface MapStop {
@@ -448,9 +448,9 @@ export function renderMap(L: MapLayout, ch: number, st: MapState, seed: number):
         for (let yy = -1; yy <= 1; yy++) for (let xx = -Math.floor(D.w / 2.6); xx <= Math.floor(D.w / 2.6); xx++) dim(I, p.x + xx + 1, p.y + yy, 0.72);
       for (let yy = 0; yy < D.h; yy++)
         for (let xx = 0; xx < D.w; xx++) {
-          const c = D.c[yy * D.w + xx];
+          const c = D.c[yy * D.w + xx]!;
           if (!c) continue;
-          put(I, ox + xx, oy + yy, c, D.a[yy * D.w + xx]! / 255);
+          put(I, ox + xx, oy + yy, unpack(c), D.a[yy * D.w + xx]! / 255);
         }
     }
 

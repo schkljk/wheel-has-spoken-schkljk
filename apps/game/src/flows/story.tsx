@@ -31,10 +31,14 @@ import {
   pick,
   pl,
   powerScale,
-  storyEvent,
   talkOf,
   storyOf,
-  storyOpponent,
+  markNode,
+  nodeDone,
+  nodeEvent,
+  nodeFoe,
+  nodeThen,
+  setNodeThen,
   trainLand,
   trainList,
   useItem,
@@ -165,7 +169,8 @@ async function nemesisIntro(o: ReturnType<typeof makeBoss>, t: ReturnType<typeof
 
 /** A story fight from the map (or an encounter): fight, results, then rewards and back to the map. */
 async function storyFight(kind: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: ReturnType<typeof makeBoss>) {
-  const o = opp ?? act((g) => storyOpponent(g, kind as 'fight' | 'elite'));
+  // the step's opponent is kept with it: closing the app meets the same one again (A4)
+  const o = opp ?? act((g) => nodeFoe(g, kind as 'fight' | 'elite'));
   const label = { boss: 'Boss fight', elite: 'Elite fight', nemesis: 'Nemesis fight', fight: 'Story fight' }[kind];
   const r = await fight({
     kind: 'story',
@@ -177,10 +182,10 @@ async function storyFight(kind: 'fight' | 'elite' | 'boss' | 'nemesis', opp?: Re
 }
 
 /** Taps on the map's current step. */
-export async function enterNode(i: number) {
+export async function enterNode(i: number, resume = false) {
   const S = storyOf(G);
   const t = S.rows[S.row]![i]! as NodeKind;
-  if (t === 'boss') {
+  if (t === 'boss' && !resume) {
     const B = BOSSES[S.ch - 1]!;
     const ok = await confirm({
       title: `Face ${B.name}?`,
@@ -193,18 +198,20 @@ export async function enterNode(i: number) {
   act((g) => {
     const st = storyOf(g);
     st.picks[st.row] = i;
+    // the step is under way: what it rolls is kept, and closing the app comes back to it (A4)
+    markNode(g, i);
   });
   if (t === 'fight' || t === 'elite') return storyFight(t);
   if (t === 'nemesis') {
     // they may have been beaten (or replaced) somewhere else since: then it is an elite fight
     if (!myNemesis(G)) return storyFight('elite');
     const o = act((g) => nemesisOpponent(g));
-    await nemesisIntro(o, act((g) => nemesisTaunt(g)));
+    if (!resume) await nemesisIntro(o, act((g) => nemesisTaunt(g)));
     return storyFight('nemesis', o);
   }
   if (t === 'boss') {
     const b = act((g) => makeBoss(g, storyOf(g).ch));
-    await bossIntro(b, pick(G.rng, BOSSES[storyOf(G).ch - 1]!.lines), `Chapter ${storyOf(G).ch} boss`);
+    if (!resume) await bossIntro(b, pick(G.rng, BOSSES[storyOf(G).ch - 1]!.lines), `Chapter ${storyOf(G).ch} boss`);
     return storyFight('boss', b);
   }
   if (t === 'event') {
@@ -221,14 +228,30 @@ export async function enterNode(i: number) {
   }
   if (t === 'treasure') {
     sfx('s.chest', { vary: 0 });
-    await lootFlow('treasure');
-    return backToMap();
+    // the spin that pays also moves the map on, so it can't pay twice
+    await lootFlow('treasure', { landed: nodeDone });
+    return goMap();
   }
+}
+
+/** A step a closed app left half done: straight back into it, past any choice already made. */
+export async function resumeNode(i: number) {
+  const then = nodeThen(G);
+  if (!then) return enterNode(i, true);
+  if (then.startsWith('fight:')) return storyFight(then.slice(6) as 'fight' | 'elite');
+  if (then.startsWith('loot:')) {
+    await lootFlow(then.slice(5) as 'treasure', { landed: nodeDone });
+    return goMap();
+  }
+  if (then === 'mystery') return mysterySpin();
+  if (then === 'train') return trainSpin();
+  return enterNode(i, true);
 }
 
 // ---------------------------------------------------------------- encounters
 async function encounter() {
-  const ev = act((g) => storyEvent(g));
+  // the encounter is kept with the step: closing the app can't draw a better one (A4)
+  const ev = act((g) => nodeEvent(g));
   // the charisma option comes last; below what it needs it shows locked, as a tease
   const t = talkOf(G, ev.k);
   const i = await choose({
@@ -250,24 +273,21 @@ async function encounter() {
         : []),
     ],
   });
-  const r = act((g) => eventOption(g, ev.k, i));
+  // the answer, and what it leads to, in one change: an answer that ends the step moves the map on with it
+  const r = act((g) => {
+    const r = eventOption(g, ev.k, i);
+    if ('fight' in r) setNodeThen(g, `fight:${r.fight}`);
+    else if ('wheel' in r) setNodeThen(g, 'mystery');
+    else if ('loot' in r) setNodeThen(g, `loot:${r.loot}`);
+    else nodeDone(g);
+    return r;
+  });
   if ('fight' in r) return storyFight(r.fight);
-  if ('wheel' in r) {
-    await spinWheel({
-      cat: 'mystery',
-      title: 'Mystery wheel',
-      who: 'It creaks as it turns',
-      list: mysteryList(),
-      spinLabel: 'Spin it',
-      nextLabel: 'Back to the map',
-      onLand: (it) => <div class="note sub">{mysteryLand(G, it)}</div>,
-    });
-    return backToMap();
-  }
+  if ('wheel' in r) return mysterySpin();
   if ('loot' in r) {
     if (r.bit) toast(`It bites! −${r.bit} HP`);
-    await lootFlow(r.loot as 'treasure');
-    return backToMap();
+    await lootFlow(r.loot as 'treasure', { landed: nodeDone });
+    return goMap();
   }
   // chapter events keep the mechanics apart from the joke: what happened, then the italic flavor line
   const body = 'fx' in r && r.fx ? (
@@ -279,7 +299,25 @@ async function encounter() {
     r.txt
   );
   await choose({ emoji: ev.e, title: ev.t, body, options: [{ label: 'Continue' }] });
-  backToMap();
+  goMap();
+}
+
+/** An encounter's mystery wheel: what lands is paid, and the map moves on, in one change. */
+async function mysterySpin() {
+  await spinWheel({
+    cat: 'mystery',
+    title: 'Mystery wheel',
+    who: 'It creaks as it turns',
+    list: mysteryList(),
+    spinLabel: 'Spin it',
+    nextLabel: 'Back to the map',
+    onLand: (it) => {
+      const t = mysteryLand(G, it);
+      nodeDone(G);
+      return <div class="note sub">{t}</div>;
+    },
+  });
+  goMap();
 }
 
 // ---------------------------------------------------------------- campfire
@@ -292,21 +330,36 @@ async function campfireFlow() {
     body: 'A quiet spot to catch your breath. You only have time for one thing.',
     options: [
       { label: 'Sleep it off', sub: 'Heal 45% HP' },
-      { label: 'Train', sub: '10 HP: spin the training wheel for a permanent stat point' },
+      { label: 'Train', sub: '10% HP: spin the training wheel for a permanent stat point' },
       { label: 'See the medic', sub: `Cure injuries and heal 20% HP${(F.inj || []).length ? '' : '. You have no injuries right now'}` },
     ],
   });
   if (c === 0) {
-    act((g) => campfire(g, 'sleep'));
+    act((g) => {
+      campfire(g, 'sleep');
+      nodeDone(g);
+    });
     toast('+45% HP');
-    return backToMap();
+    return goMap();
   }
   if (c === 2) {
-    act((g) => campfire(g, 'medic'));
+    act((g) => {
+      campfire(g, 'medic');
+      nodeDone(g);
+    });
     toast('Patched up. +20% HP');
-    return backToMap();
+    return goMap();
   }
-  act((g) => campfire(g, 'train'));
+  act((g) => {
+    campfire(g, 'train');
+    setNodeThen(g, 'train');
+  });
+  return trainSpin();
+}
+
+/** The training wheel: the stat point and the map moving on are one change. */
+async function trainSpin() {
+  const F = G.F!;
   await spinWheel({
     cat: 'train',
     title: 'Training',
@@ -317,10 +370,11 @@ async function campfireFlow() {
     nextLabel: 'Back to the map',
     onLand: (it) => {
       const t = trainLand(G, it);
+      nodeDone(G);
       return t ? <div class="note sub">{t}</div> : null;
     },
   });
-  backToMap();
+  goMap();
 }
 
 // ---------------------------------------------------------------- merchants and haggling

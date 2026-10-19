@@ -24,8 +24,19 @@ import {
   procOf,
   rankOf,
   rankTxt,
+  oddsWord,
+  arenaLand,
+  addCoins,
+  fightRecap,
+  matchupLine,
+  healS,
+  type Recap,
+  prizeMoney,
+  setPendingSteps,
+  fightOdds,
   readClue,
   startBattle,
+  type Arena,
   type Battle,
   type BattleEvent,
   type CareerFighter,
@@ -42,13 +53,14 @@ import type { FightScene } from '../pixi/fight-scene';
 import { fightDims, type FightDims } from '../pixi/dims';
 import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
-import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF } from '../state/game';
+import type { ArenaWheel } from '../flows/fight';
+import { oddsFor } from '../state/odds';
+import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF, toast } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
 import { Sheet, Toggle } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
-import { ShareSheet } from '../ui/ShareSheet';
 import { SettingsSheet } from '../sheets/Settings';
 import { burst } from '../ui/fx';
 import { ac, arenaMusic, landSound, phaseMusic, sfx, tick } from '../ui/sound';
@@ -146,6 +158,7 @@ function Hud({
   names,
   last,
   onMenu,
+  speed,
 }: {
   bt: Battle | null;
   snap: BattleEvent | ReturnType<Battle['snap']> | null;
@@ -153,6 +166,8 @@ function Hud({
   /** the opponent's last moves, oldest first, and how many rounds they have played */
   last: { m: Move[]; n: number };
   onMenu: () => void;
+  /** the 1×/2× switch, once it is offered (after chapter 1, or once fast mode is on) */
+  speed: { on: boolean; flip: () => void } | null;
 }) {
   // momentum changes replay their animation: a pop when it grows, a red flash when it's lost
   const momRef = useRef({ v: [0, 0], fx: ['', ''], n: [0, 0] });
@@ -216,6 +231,11 @@ function Hud({
         <button class="iconbtn fmenu" aria-label="Fight menu" onClick={onMenu}>
           <Icon name="menu" />
         </button>
+        {speed && (
+          <button class={`fspeed${speed.on ? ' on' : ''}`} aria-pressed={speed.on} aria-label={speed.on ? 'Fight speed 2×. Tap for normal speed' : 'Fight speed 1×. Tap for double speed'} onClick={speed.flip}>
+            {speed.on ? '2×' : '1×'}
+          </button>
+        )}
       </div>
       {side(1)}
     </div>
@@ -225,7 +245,18 @@ function Hud({
 type Phase = 'intro' | 'input' | 'spinning' | 'playing' | 'over';
 
 /** A fight: the arena fills the screen, the combat wheel stands on the floor, everything else is in the ☰ menu. */
-export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: FightOutcome) => FightResult; done: (r: FightResult) => void }) {
+export function FightScreen({
+  spec,
+  end,
+  done,
+  arenaWheel,
+}: {
+  spec: FightSpec;
+  end: (o: FightOutcome) => FightResult;
+  done: (r: FightResult) => void;
+  /** the arena still to spin: it spins on the combat wheel's spot while the fighters walk in */
+  arenaWheel?: ArenaWheel | null;
+}) {
   const F = G.F!;
   const O = spec.opp;
   const names: [string, string] = [F.name, O.name];
@@ -247,6 +278,12 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   /** the boss's phase-two slice has been landed (it's once a fight) */
   const [phaseUsed, setPhaseUsed] = useState(false);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
+  /** the round's matchup while it plays out (C1) */
+  const [matchup, setMatchup] = useState<string | null>(null);
+  /** why the fight went the way it did (C1) */
+  const [recap, setRecap] = useState<Recap | null>(null);
+  /** the arena wheel during the walk-in: spinning (null arena) or landed */
+  const [arenaOut, setArenaOut] = useState<{ a: Arena | null; why?: string } | null>(null);
   const [result, setResult] = useState<FightResult | null>(null);
   const [auto, setAuto] = useState(settings.value.autoBattle);
   const [dims, setDims] = useState<FightDims>(() => fightDims(innerWidth, innerHeight));
@@ -292,7 +329,14 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     sc.wheel.rng = Math.random;
     sc.wheel.events = {
       tick: () => tick(),
-      land: (i) => cwLandRef.current(i),
+      // the arena spin during the walk-in lands here first; every later landing is a combat move
+      land: (i) => {
+        const al = arenaLandRef.current;
+        if (al) {
+          arenaLandRef.current = null;
+          al(i);
+        } else cwLandRef.current(i);
+      },
     };
     const kit = phaseKitOf(O);
     if (kit) sc.phaseKit = { light: kit.light, bpm: kit.tune.bpm };
@@ -366,13 +410,46 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     }
   }
 
+  /** The arena wheel, spun on the combat wheel's spot while the fighters walk in. Sets the arena and the odds. */
+  async function spinArena(sc: FightScene, aw: ArenaWheel) {
+    const items = toSlices(aw.list, 'arena');
+    const idx = pickW(G.rng, aw.list);
+    setArenaOut({ a: null, why: aw.reasons[0]?.txt });
+    sc.wheel.setItems(items, sc.wheel.size || dims.cw, null);
+    sc.wheel.setHub('🏟️');
+    sc.wheel.visible = true;
+    const fast = settings.value.fast;
+    await new Promise<void>((res) => {
+      arenaLandRef.current = () => res();
+      sc.wheel.spinTo(idx, { turns: reducedMotion() ? 1 : 2, dur: reducedMotion() ? 200 : fast ? 900 : 1500 });
+    });
+    const a = aw.list[idx]!.it;
+    act((g) => arenaLand(g, a));
+    spec.arena = a;
+    void oddsFor(spec);
+    landSound(a.q ?? 1);
+    sc.setArena(a);
+    S.music();
+    S.music = arenaMusic(a.k);
+    setArenaOut({ a });
+    // a beat to read where they ended up
+    await new Promise((r) => setTimeout(r, reducedMotion() ? 300 : fast ? 650 : 1100));
+    sc.wheel.visible = false;
+    setArenaOut(null);
+  }
+
   async function start(sc: FightScene) {
     ac();
-    // a light loop for the arena (upgrade 36); a boss's phase two swaps in its own
-    S.music();
-    S.music = arenaMusic(sc.arena?.k);
     S.procs = procFeed();
-    await sc.intro();
+    if (arenaWheel) {
+      // the walk-in and the arena spin happen together: one screen, no extra tap
+      await Promise.all([sc.intro(), spinArena(sc, arenaWheel)]);
+    } else {
+      // a light loop for the arena (upgrade 36); a boss's phase two swaps in its own
+      S.music();
+      S.music = arenaMusic(sc.arena?.k);
+      await sc.intro();
+    }
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
     // the first fight with a hidden synergy gives it away
@@ -384,6 +461,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     // the first fight explains the wheel and the reads (upgrade 31)
     tip('fight');
     tip('reads');
+    // the speed switch introduces itself the first fight it appears in
+    if (!settings.value.fast && ((F.story?.ch || 1) > 1 || (F.lvl || 1) >= 6)) tip('speed');
     S.playing = true;
     setSnap(bt.snap());
     sc.applySnap(bt.snap());
@@ -430,6 +509,11 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     setPhase('playing');
     try {
       const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(G.rng, bt.P[0], bt.P[1], bt.hist[1]));
+      // what each side did this round, and who read whom, in words while it plays
+      const read = evs.find((e) => e.a?.t === 'read');
+      const mine = bt.hist[0].at(-1),
+        theirs = bt.hist[1].at(-1);
+      setMatchup(mine && theirs ? matchupLine(mine, theirs, read ? (read.a!.on as 0 | 1) : null) : null);
       await playEvents(evs);
     } catch (err) {
       console.error(err);
@@ -473,8 +557,15 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       // cosmetic
     }
     let r: FightResult;
+    // the odds come back from a worker long before a fight ends; if they somehow haven't, work them out now
+    if (!Number.isFinite(spec.odds)) spec.odds = fightOdds(G, spec);
     try {
-      r = act(() => end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd }));
+      // the result and the steps after it are saved together: closing the app on this screen loses nothing (A4)
+      r = act((g) => {
+        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });
+        setPendingSteps(g, x.next);
+        return x;
+      });
     } catch (err) {
       console.error(err);
       r = {
@@ -490,6 +581,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
       };
     }
     setPhase('over');
+    setRecap(fightRecap(bt, S.log, r.won));
     setResult(r);
     // a fanfare for a win, a sad trombone for a loss
     sfx(r.won ? 'f.win' : 'f.lose', { vary: 0 });
@@ -644,6 +736,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   const cwSpinRef = useRef(cwSpin);
   cwSpinRef.current = cwSpin;
   const cwLandRef = useRef(cwLand);
+  /** set while the arena wheel spins, so its landing doesn't count as a move */
+  const arenaLandRef = useRef<((i: number) => void) | null>(null);
   cwLandRef.current = cwLand;
 
   // ---------------------------------------------------------------- the ☰ menu
@@ -676,7 +770,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     const bt = btRef.current;
     // once it's decided, the menu only looks back: no skipping, forfeiting or switching modes
     const over = phaseRef.current === 'over' || S.ended;
-    const pct = Math.round(spec.odds * 100);
+    // a spun arena's odds exist once it lands
+    const odds = Number.isFinite(spec.odds) ? oddsWord(spec.odds) : null;
     const ctx = ctxOf(G);
     // what is on each fighter right now (the icons over their heads, tappable here)
     const sx = bt?.snap().sx;
@@ -684,9 +779,11 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     openSheet(
       <Sheet icon="menu" title={fightLabel(spec)} sub={`Round ${bt?.round || 1}`}>
         <div class="fm-scout">
-          <Inf k="rule|simodds" class={`chip ${pct >= 60 ? 'good' : pct >= 40 ? 'even' : 'bad'}`}>
-            {pct}% to win
-          </Inf>
+          {odds && (
+            <Inf k="rule|simodds" class={`chip ${odds.tone}`}>
+              {odds.t}
+            </Inf>
+          )}
           <Inf k="rule|scale" class="chip">
             📈 {powerScale(F, ctx).n} vs {powerScale(O, ctx).n}
           </Inf>
@@ -762,9 +859,18 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     openSheet(
       <Sheet icon="scroll" title="Fight log" sub={`${S.log.length} events`}>
         <ol class="log full">
-          {S.log.map((e, i) => (
-            <LogLine key={i} e={e} names={names} />
-          ))}
+          {S.log.map((e, i) => {
+            // a header where each round starts (C1)
+            const head = e.r > 0 && (i === 0 || S.log[i - 1]!.r !== e.r);
+            return [
+              head && (
+                <li key={`r${i}`} class="rhead">
+                  {bt && bt.sd && e.r > bt.maxR ? `Sudden death, round ${e.r}` : `Round ${e.r}`}
+                </li>
+              ),
+              <LogLine key={i} e={e} names={names} />,
+            ];
+          })}
         </ol>
       </Sheet>,
     );
@@ -783,9 +889,35 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
     '--cw': `${dims.cw}px`,
   } as Record<string, string>;
   const busy = phase !== 'input';
-  /** The share card: both fighters, the final blow, names and titles. */
-  const shareWin = () => {
+  // fights are slow by default: after chapter 1 a 1×/2× switch sits right in the HUD (it is the Fast mode setting)
+  const speedOffer = settings.value.fast || (F.story?.ch || 1) > 1 || (F.lvl || 1) >= 6;
+  const flipSpeed = () => {
+    commit((x) => (x.settings.fast = !x.settings.fast));
+    if (sceneRef.current) sceneRef.current.sp = SPF();
+    tick();
+  };
+  /** A story win's reward, picked on the result: the loot spin comes next; heal or money are paid now. */
+  const pickReward = (k: 'loot' | 'heal' | 'money') => {
     if (!result) return;
+    const i = result.next.findIndex((x) => x.t === 'reward');
+    const next = [...result.next];
+    if (k === 'loot') next.splice(i, 1, { t: 'loot', table: 'normal' });
+    else next.splice(i, 1);
+    const c = prizeMoney(G);
+    // the payout and the steps left are one change
+    act((g) => {
+      if (k === 'heal') healS(g, 25);
+      if (k === 'money') addCoins(g, c);
+      setPendingSteps(g, next);
+    });
+    if (k !== 'loot') toast(k === 'heal' ? '+25% HP' : `+${c} 🪙`);
+    done({ ...result, next });
+  };
+  /** The share card: both fighters, the final blow, names and titles. */
+  const shareWin = async () => {
+    if (!result) return;
+    // the share card's drawing code loads the first time it's wanted
+    const { ShareSheet } = await import('../ui/ShareSheet');
     const w = result.won ? 0 : 1;
     // the last real blow (not a bleed or burn tick), falling back to any last damage
     const dealt = [...S.log].reverse().filter((e) => e.d != null && e.d > 0 && e.a && e.a.by === w);
@@ -815,7 +947,7 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
   return (
     <main class={`fight${dims.side ? ' side' : ''}`} ref={root} style={style}>
       <div ref={host} class="fight-canvas" />
-      <Hud bt={bt} snap={snap} names={names} last={last} onMenu={openMenu} />
+      <Hud bt={bt} snap={snap} names={names} last={last} onMenu={openMenu} speed={speedOffer ? { on: settings.value.fast, flip: flipSpeed } : null} />
       {phase !== 'over' && (
         <section class="fpanel" aria-label="Your move">
           <div class="readpill-row">
@@ -844,7 +976,21 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
           <div class="cw-row">
             <div class="cw-slot" ref={slot} style={{ width: `${dims.cw}px`, height: `${dims.cw}px` }} aria-hidden="true" />
             <div class="cw-out" aria-live="polite">
-              {out ? (
+              {arenaOut ? (
+                arenaOut.a ? (
+                  <>
+                    <b class={`q${arenaOut.a.q ?? 1}`}>
+                      {arenaOut.a.e} {arenaOut.a.n}
+                    </b>
+                    <small>{arenaOut.a.d}</small>
+                  </>
+                ) : (
+                  <>
+                    <b>Spinning the arena…</b>
+                    {arenaOut.why && <small>{arenaOut.why}</small>}
+                  </>
+                )
+              ) : out ? (
                 <>
                   <b class={`q${out.it.q}`}>
                     {out.it.e} {out.it.n}
@@ -862,6 +1008,8 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
                 <SlicePeekView it={list[peek].it} bt={bt} foe={O.name} />
               ) : phase === 'spinning' ? (
                 <b>Spinning…</b>
+              ) : phase === 'playing' && matchup ? (
+                <small class="matchup">{matchup}</small>
               ) : focus === 'ult' ? (
                 <>
                   <b class="q3">🌟 {ULTS[F.arch.k] || 'Signature move'}</b>
@@ -890,26 +1038,54 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
         <section class={`fresult ${result.won ? 'win' : 'lose'}`} aria-live="polite">
           <div class="big">{result.big}</div>
           <p>{result.desc}</p>
-          <ul class="gains scroll">
-            {result.lines.map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-          </ul>
-          {result.got.length > 0 && (
-            <div class="chips">
-              {result.got.map((a) => (
-                <Inf key={a.k} k={`it|ach|${a.n}`} class="oc up">
-                  {a.e} New title: {a.n}
-                </Inf>
+          {/* everything that can be long scrolls here; the choices below always stay on screen */}
+          <div class="gains scroll">
+            <ul class="gains">
+              {result.lines.map((l) => (
+                <li key={l}>{l}</li>
               ))}
+            </ul>
+            {result.got.length > 0 && (
+              <div class="chips">
+                {result.got.map((a) => (
+                  <Inf key={a.k} k={`it|ach|${a.n}`} class="oc up">
+                    {a.e} New title: {a.n}
+                  </Inf>
+                ))}
+              </div>
+            )}
+            {recap && <RecapCard r={recap} names={names} />}
+            {result.won && (
+              <button class="btn ghost sm block" onClick={shareWin}>
+                <Icon name="download" /> Save this win as a picture
+              </button>
+            )}
+          </div>
+          {result.next.some((x) => x.t === 'reward') ? (
+            // the spoils, picked right here (B3): one tap instead of a Continue and a sheet
+            <div class="spoils" role="group" aria-label="Spoils: pick one">
+              <span class="sec-label">Spoils: pick one</span>
+              <div class="spoil-opts">
+                <button class="spoil" onClick={() => pickReward('loot')}>
+                  <Icon name="gift" />
+                  <b>Loot spin</b>
+                  <small>Gear, items or coins</small>
+                </button>
+                <button class="spoil" onClick={() => pickReward('heal')}>
+                  <Icon name="heart" />
+                  <b>Catch your breath</b>
+                  <small>Heal 25% HP</small>
+                </button>
+                <button class="spoil" onClick={() => pickReward('money')}>
+                  <Icon name="coin" />
+                  <b>Prize money</b>
+                  <small>+{prizeMoney(G)} coins</small>
+                </button>
+              </div>
             </div>
-          )}
-          <button class="btn block" onClick={() => done(result)}>
-            {result.button}
-          </button>
-          {result.won && (
-            <button class="btn ghost block" onClick={shareWin}>
-              <Icon name="download" /> Save this win as a picture
+          ) : (
+            <button class="btn block" onClick={() => done(result)}>
+              {result.button}
             </button>
           )}
           {result.bracket && (
@@ -920,6 +1096,43 @@ export function FightScreen({ spec, end, done }: { spec: FightSpec; end: (o: Fig
         </section>
       )}
     </main>
+  );
+}
+
+/** Why the fight went the way it did (C1): the numbers that decided it, and one thing to try. */
+function RecapCard({ r, names }: { r: Recap; names: [string, string] }) {
+  return (
+    <section class="recap" aria-label="How it went">
+      <span class="recap-h">How it went, {r.rounds === 1 ? '1 round' : `${r.rounds} rounds`}</span>
+      <div class="recap-nums">
+        <span>
+          Dealt <b>{r.lost[1]}</b>
+        </span>
+        <span>
+          Taken <b>{r.lost[0]}</b>
+        </span>
+        <span>
+          Biggest hit <b>{r.biggest[0]}</b> vs <b>{r.biggest[1]}</b>
+        </span>
+        <span>
+          Reads won <b>{r.reads[0]}</b> vs <b>{r.reads[1]}</b>
+        </span>
+        {(r.dots[0] > 0 || r.dots[1] > 0) && (
+          <span>
+            Burns and poison <b>{r.dots[1]}</b> vs <b>{r.dots[0]}</b>
+          </span>
+        )}
+        {(r.dodges[0] > 0 || r.dodges[1] > 0) && (
+          <span>
+            Dodges <b>{r.dodges[0]}</b> vs <b>{r.dodges[1]}</b>
+          </span>
+        )}
+      </div>
+      <p class="recap-tip">💡 {r.tip}</p>
+      <small class="sr">
+        {names[0]} against {names[1]}
+      </small>
+    </section>
   );
 }
 

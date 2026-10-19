@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
-import { TIER_LVL, TIER_PTS, TNODE, TREE, branchPts, canRank, rankTalent, talRank } from '@whs/core';
-import { G, act } from '../state/game';
+import { TIER_LVL, TIER_PTS, TNODE, TREE, branchPts, canRank, rankTalent, talRank, unrankTalent } from '@whs/core';
+import { G, act, dropToast, toast } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burstFrom } from '../ui/fx';
@@ -8,6 +8,8 @@ import { landSound } from '../ui/sound';
 import { tip } from '../state/tips';
 
 const pl = (n: number, one: string) => `${n} ${n === 1 ? one : one + 's'}`;
+// the open Undo toast: only the latest rank can be taken back
+let lastUndo = 0;
 
 /** The talent tree: five branches, six tiers each; deeper tiers need a higher level and points in the branch. */
 function Talents({ br: br0 }: { br: string }) {
@@ -50,6 +52,18 @@ function Talents({ br: br0 }: { br: string }) {
                   landSound(talRank(F, n.key) >= n.max ? 3 : 2);
                   burstFrom(el);
                   setV((x) => x + 1);
+                  // a point spent on one tap can be taken back for three seconds, like a gear swap
+                  if (lastUndo) dropToast(lastUndo);
+                  lastUndo = toast(`${n.e} ${n.n} ${talRank(F, n.key) > 1 ? `rank ${talRank(F, n.key)}` : 'learned'}`, 3000, {
+                    label: 'Undo',
+                    run: () => {
+                      lastUndo = 0;
+                      if (act((g) => unrankTalent(g, n.key))) {
+                        toast('Point back');
+                        setV((x) => x + 1);
+                      }
+                    },
+                  });
                 }
               }}
             >

@@ -1,7 +1,7 @@
 // Heads: the skull shape of each race, a face with a mood, hair, race features (ears, horns, snouts, beaks...),
 // class face gear (masks, patches, goggles) and every hat. Faces look right, three-quarter view.
 
-import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, box, dot, dotOn, ell, fine, h2r, has, ln, minus, or, poly, raw, shade, forPx, shadeAt, type Buf, type RGB, type Ramp, type Test } from './px';
+import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, box, dot, dotOn, ell, fine, h2r, has, ln, minus, or, poly, raw, shade, forPx, shadeAt, rampId, type Buf, type RGB, type Ramp, type Test } from './px';
 import { HIDES_HAIR, type Ctx, type Mood } from './sprite-data';
 
 const WHITE: RGB = [250, 250, 246];
@@ -593,7 +593,7 @@ export function hat(B: Buf, c: Ctx, cx: number, hc: number, r: number, creature 
       S(B, or(minus(outer, hole), poly([[cx - r - 2.5, hc + 2], [cx + 1, hc + 7], [cx + 3, hc + r + 5], [cx - r - 3, hc + r + 6]])), cx - r - 4, hc - r - 4, cx + r + 4, hc + r + 7, H, { ol: true, bv: 3 });
       // the hood's shadow on the face
       forPx(B, Math.round(cx - r), Math.round(hc - r), cx + r + 2, hc + r, (i, x, y) => {
-        if (hole(x, y) && B.r[i] === c.S && (!hole(x, y - 2) || !hole(x - 2, y))) shadeAt(B, i, 1);
+        if (hole(x, y) && B.r[i] === rampId(c.S) && (!hole(x, y - 2) || !hole(x - 2, y))) shadeAt(B, i, 1);
       });
       break;
     }

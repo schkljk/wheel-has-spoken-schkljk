@@ -127,13 +127,23 @@ export class SaveStore {
         const oldest = this.listBackups().at(-1);
         if (!oldest || k.startsWith('whs:backup:')) throw new StorageFullError(`Storage is full (${(e as Error).message})`);
         this.kv.removeItem(backupKey(oldest.slot));
+        this.index = this.listBackups().filter((b) => b.slot !== oldest.slot);
       }
     }
   }
 
   // ---------- backups ----------
+  /**
+   * The backups' headers, read once and then kept up to date here. Every write used to re-read and parse all
+   * three backups (whole saves) just to see whether one was due: about 10 ms a tap on a mid-range phone.
+   */
+  private index: BackupInfo[] | null = null;
   /** Newest first. */
   listBackups(): BackupInfo[] {
+    if (!this.index) this.index = this.readIndex();
+    return [...this.index];
+  }
+  private readIndex(): BackupInfo[] {
     const out: BackupInfo[] = [];
     for (let i = 0; i < BACKUP_SLOTS; i++) {
       const v = this.kv.getItem(backupKey(i));
@@ -159,7 +169,10 @@ export class SaveStore {
     let slot = [...Array(BACKUP_SLOTS).keys()].find((i) => !used.some((b) => b.slot === i));
     if (slot === undefined) slot = used.at(-1)!.slot;
     try {
-      this.set(backupKey(slot), JSON.stringify({ at: this.now(), reason, save }));
+      const at = this.now();
+      this.set(backupKey(slot), JSON.stringify({ at, reason, save }));
+      const s = slot;
+      this.index = [{ slot: s, at, reason, version: save.version }, ...this.listBackups().filter((b) => b.slot !== s)].sort((a, b) => b.at - a.at);
     } catch {
       // a backup that does not fit is skipped; the live save matters more
     }

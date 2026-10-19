@@ -91,7 +91,7 @@ export class FightScene {
   constructor(
     readonly app: Application,
     looks: [Look, Look],
-    readonly arena: Arena | null,
+    public arena: Arena | null,
     opts: { mythic?: boolean; chapter?: number } = {},
   ) {
     this.chapter = opts.chapter;
@@ -168,6 +168,21 @@ export class FightScene {
     this.homes = [d.fcx - d.span, d.fcx + d.span];
   }
   homes: [number, number] = [0, 0];
+
+  /** The arena wheel landed during the walk-in: its sky, scenery, floor and weather fade in. */
+  setArena(a: Arena | null) {
+    this.arena = a;
+    const old = this.ambient;
+    this.ambient = new Ambient(a?.k);
+    this.world.addChildAt(this.ambient, this.world.getChildIndex(old));
+    this.world.removeChild(old);
+    old.destroy({ children: true });
+    if (this.dims) this.layout(this.dims.W, this.dims.H);
+    if (this.reduced) return;
+    const layers = [this.sky, this.scenery, this.ambient, this.floor];
+    for (const l of layers) l.alpha = 0;
+    void this.tw.run(420 * this.sp, (k) => layers.forEach((l) => (l.alpha = k)), ease.out);
+  }
 
   /** Puts the combat wheel where the DOM left room for it (stage pixels). */
   placeWheel(cx: number, cy: number, size: number, items?: Parameters<WheelView['setItems']>[0]) {

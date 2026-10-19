@@ -20,6 +20,9 @@ import {
   filterGear,
   gearFilterOn,
   setsOf,
+  bestFor,
+  bestUpgrades,
+  gearVerdict,
   type Gear,
   type GearFilter,
   type GearSlot,
@@ -86,17 +89,31 @@ function ArmorySheet({ slot }: { slot?: string }) {
   let body;
   if (!slot && !on) {
     const bonus = synOf(F).filter((x) => x.k.startsWith('set_'));
+    const ups = bestUpgrades(G);
     body = (
       <>
+        {ups.length > 0 && (
+          <button class="btn primary block" onClick={() => wearBest(ups.map((p) => p[1]))}>
+            ▲ Wear your best gear ({pl(ups.length, 'upgrade')})
+          </button>
+        )}
         <div class="arm-grid">
           {GEAR_SLOTS.map((s) => {
             const g = GEARK[F.gear![s]!];
             const n = own.filter((x) => x.slot === s).length;
+            const up = ups.some((p) => p[0] === s);
             return (
               <button key={s} class={`arm-slot${g ? ' r-' + g.r : ''}`} onClick={() => showArmory(s)}>
                 <span class="as-e">{g ? <GearIcon g={g} /> : <SlotIcon slot={s} />}</span>
                 <span class="as-t">
-                  <small>{SLOT_N[s]}</small>
+                  <small>
+                    {SLOT_N[s]}
+                    {up && (
+                      <span class="gv up" aria-label="An upgrade is waiting">
+                        {' '}▲
+                      </span>
+                    )}
+                  </small>
                   <b class="ellipsis">{g ? g.n : 'Empty'}</b>
                   <small>{pl(n, 'piece')} owned</small>
                 </span>
@@ -121,8 +138,14 @@ function ArmorySheet({ slot }: { slot?: string }) {
   } else {
     const base = slot ? own.filter((x) => x.slot === slot) : own;
     const list = filterGear(base, slot ? { ...f, slot: '' } : f).sort((a, b) => ORDER.indexOf(a.r) - ORDER.indexOf(b.r) || a.slot.localeCompare(b.slot));
+    const best = slot ? bestFor(G, slot) : null;
     body = (
       <>
+        {best && (
+          <button class="btn primary block" onClick={() => wearBest([best], slot)}>
+            ▲ Wear the best: {GEARK[best]!.n}
+          </button>
+        )}
         {slot ? null : (
           <button
             class="btn ghost sm"
@@ -181,12 +204,38 @@ export function swapped(text: string, slotK: string, prev: string | undefined, v
 }
 const sheetIsArmory = () => !!document.querySelector('.sheet .arm-filters');
 
+/** Puts on several pieces at once, with one Undo for all of them. */
+function wearBest(keys: string[], view?: string) {
+  const F = G.F!;
+  const before = { ...F.gear! };
+  act((x) => keys.forEach((k) => wear(x, k)));
+  sfx('ui.equip');
+  const names = keys.map((k) => `${GEARK[k]!.e} ${GEARK[k]!.n}`);
+  toast(keys.length === 1 ? `${names[0]} equipped` : `${keys.length} upgrades equipped`, 3000, {
+    label: 'Undo',
+    run: () => {
+      act((x) => {
+        for (const k of keys) {
+          const s = GEARK[k]!.slot;
+          const prev = before[s];
+          if (prev) wear(x, prev);
+          else takeOff(x, k);
+        }
+      });
+      toast('Back as it was');
+      if (sheetIsArmory()) showArmory(view);
+    },
+  });
+  showArmory(view);
+}
+
 /** One owned piece: wear or take off (with a compare first), and the forge. */
 function Piece({ g, slot }: { g: Gear; slot?: string }) {
   const F = G.F!;
   const on = F.gear![g.slot] === g.k;
   const L = upgradeLevel(F, g.k);
   const cp = copiesOf(F, g.k);
+  const v = on ? null : gearVerdict(G, g.k);
   return (
     <div class={`shopitem r-${g.r}`}>
       <span class="se">
@@ -197,6 +246,11 @@ function Piece({ g, slot }: { g: Gear; slot?: string }) {
           <Inf k={`it|gear|${g.n}`}>{g.n}</Inf>
           {L ? <span class="up-lv"> +{L}</span> : null}
           {on ? ' ✓' : ''}
+          {v && v !== 'even' && (
+            <span class={`gv ${v}`} title={v === 'up' ? 'Better than what you wear' : 'Worse than what you wear'} aria-label={v === 'up' ? 'Upgrade' : 'Downgrade'}>
+              {v === 'up' ? ' ▲' : ' ▼'}
+            </span>
+          )}
         </b>
         <small>
           <span class={`rar r-${g.r}`}>{RARITY[g.r]?.n ?? ''}</span>

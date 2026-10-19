@@ -16,6 +16,7 @@ import {
   numStats,
   personalityOf,
   powerScale,
+  shareWord,
   synFound,
   synOf,
   verdict,
@@ -102,10 +103,10 @@ function StatRows({ f }: { f: CareerFighter }) {
             <Inf k={`stat|${k}`} class="lb">
               {lb}
             </Inf>
-            <span class="vl">
+            {/* the roll, then only its effect, colored by what it does (bonuses are already in it) */}
+            <span class="vl" title={diff ? `${diff > 0 ? '+' : '−'}${Math.abs(diff)} from bonuses and penalties` : undefined}>
               {base.n}
-              {diff ? <em class={diff < 0 ? 'neg' : ''}>{`${diff > 0 ? '+' : '−'}${Math.abs(diff)}`}</em> : null}
-              <small class="modv">{modTxt(k, v)}</small>
+              <small class={`modv ${v > 6 ? 'up' : v < 6 ? 'down' : ''}`}>{modTxt(k, v)}</small>
             </span>
             <span class="tr" aria-hidden="true">
               <i class={`f${TQ(Math.min(14, v))}`} style={{ width: `${Math.min(100, Math.round((v / 20) * 100))}%` }} />
@@ -185,7 +186,7 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
         </Inf>
       </div>
       <p class="fc-win">
-        Beats about <b>{Math.round(w * 100)}%</b> of random level 1 fighters.
+        Beats <b>{shareWord(w)}</b> random level 1 fighters.
       </p>
       <NumBlock f={f} />
       <StatRows f={f} />

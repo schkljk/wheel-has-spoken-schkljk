@@ -2,7 +2,7 @@
 // A 24x24 pixel wheel, scaled by whole numbers for every screen density so the pixels stay square.
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { BASE, DEEP, LIT, SHINE, C, E, P, RP, S, buf, dot, outline, shade, toRGBA, type Buf } from '../../apps/game/src/art/px';
+import { BASE, DEEP, LIT, SHINE, C, E, P, RP, S, buf, dot, outline, pack, rampOf, shade, toRGBA, type Buf } from '../../apps/game/src/art/px';
 import { png } from './png';
 
 const RES = resolve(import.meta.dirname, '../../apps/game/android/app/src/main/res');
@@ -10,10 +10,10 @@ const BG: [number, number, number] = [0x14, 0x18, 0x2b];
 /** One tone lighter (the opposite of shade). */
 function lift(B: Buf, x: number, y: number) {
   const i = y * B.w + x,
-    R = B.r[i];
+    R = rampOf(B.r[i]!);
   if (!R || B.t[i]! >= LIT) return;
   B.t[i] = B.t[i]! + 1;
-  B.c[i] = R[B.t[i]!]!;
+  B.c[i] = pack(R[B.t[i]!]!);
 }
 
 /** The 24x24 art: the wheel, its gold rim and pegs, the hub, the red pointer. */

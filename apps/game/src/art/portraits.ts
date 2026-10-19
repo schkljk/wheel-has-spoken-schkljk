@@ -6,70 +6,86 @@ import { iconPixels } from '../ui/icon-pixels';
 import { POWER_ICON } from './icons';
 import { drawDeco } from './map-deco';
 import { mapTheme } from './map-themes';
-import { buf, outline, toRGBA } from './px';
+import { toRGBA } from './px';
+import { cpuCanvas } from './canvas';
 import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, type Look } from './sprite';
-import { weapon } from './sprite-weapons';
+import { archLook, cropRGBA, faceKey, faceRGBA, raceLook, weaponKey, weaponRGBA } from './content-art';
+import type { Rgba } from './wheel-art';
+// the baked race, class, weapon and enchant icons (tools/art/bake.ts): the image and where each one is in it
+import ATLAS_URL from './baked/content.png?url';
+import ATLAS from './baked/content.json';
 
 const cache = new Map<string, HTMLCanvasElement | null>();
 const urls = new Map<string, string | null>();
+// every fighter's face is its own entry, so a long session would keep adding: the oldest go past this many
+const MAX = 400;
+const capped = <V,>(m: Map<string, V>, k: string, v: V) => {
+  m.set(k, v);
+  if (m.size > MAX) m.delete(m.keys().next().value!);
+};
 
-/** The square around the opaque pixels of an RGBA image (only the top `rows` rows when given). */
-function crop(rgba: Uint8ClampedArray, w: number, h: number, rows?: number): HTMLCanvasElement | null {
-  const on = (x: number, y: number) => rgba[(y * w + x) * 4 + 3]! > 0;
-  let top = h,
-    bottom = -1;
-  for (let y = 0; y < h; y++)
-    for (let x = 0; x < w; x++)
-      if (on(x, y)) {
-        top = Math.min(top, y);
-        bottom = Math.max(bottom, y);
-      }
-  if (bottom < 0) return null;
-  const n = rows ? Math.min(rows, bottom - top + 1) : bottom - top + 1;
-  let l = w,
-    r = -1;
-  for (let y = top; y < top + n; y++)
-    for (let x = 0; x < w; x++)
-      if (on(x, y)) {
-        l = Math.min(l, x);
-        r = Math.max(r, x);
-      }
-  const side = Math.max(n, r - l + 1);
-  const src = document.createElement('canvas');
-  src.width = w;
-  src.height = h;
-  const sx = src.getContext('2d')!;
-  const id = sx.createImageData(w, h);
-  id.data.set(rgba);
-  sx.putImageData(id, 0, 0);
-  const out = document.createElement('canvas');
-  out.width = side;
-  out.height = side;
-  const cy = rows ? top : Math.round((top + bottom + 1) / 2 - side / 2);
-  out.getContext('2d')!.drawImage(src, Math.round((l + r + 1) / 2 - side / 2), cy, side, side, 0, 0, side, side);
-  return out;
+/** A canvas holding RGBA pixels (CPU-backed: they get read back as images). */
+function rgbaCanvas(r: Rgba | null): HTMLCanvasElement | null {
+  if (!r) return null;
+  const [cv, x] = cpuCanvas(r.w, r.h);
+  const id = x.createImageData(r.w, r.h);
+  id.data.set(r.d);
+  x.putImageData(id, 0, 0);
+  return cv;
+}
+const crop = (rgba: Uint8ClampedArray, w: number, h: number, rows?: number) => rgbaCanvas(cropRGBA(rgba, w, h, rows));
+
+// ---------------------------------------------------------------- the baked atlas
+// The race, class, weapon and enchant icons are drawn ahead of time into one image (tools/art/bake.ts); while it
+// loads, or if it can't, they are drawn here as before.
+let atlas: ImageBitmap | HTMLImageElement | null = null;
+let atlasLoad: Promise<void> | null = null;
+/** Starts loading the baked icons (once). */
+export function loadAtlas(): Promise<void> {
+  return (atlasLoad ??= (async () => {
+    try {
+      const r = await fetch(ATLAS_URL);
+      if (!r.ok) return;
+      const b = await r.blob();
+      atlas = 'createImageBitmap' in window ? await createImageBitmap(b) : await new Promise<HTMLImageElement>((ok, no) => {
+        const im = new Image();
+        im.onload = () => ok(im);
+        im.onerror = no;
+        im.src = URL.createObjectURL(b);
+      });
+    } catch {
+      atlas = null;
+    }
+  })());
+}
+function fromAtlas(key: string): HTMLCanvasElement | null {
+  const at = atlas && (ATLAS.at as unknown as Record<string, [number, number, number, number]>)[key];
+  if (!at) return null;
+  const [x, y, w, h] = at;
+  const [cv, c] = cpuCanvas(w, h);
+  c.drawImage(atlas!, x, y, w, h, 0, 0, w, h);
+  return cv;
 }
 
 function cached(key: string, make: () => HTMLCanvasElement | null): HTMLCanvasElement | null {
   if (cache.has(key)) return cache.get(key)!;
   let cv: HTMLCanvasElement | null = null;
   try {
-    cv = make();
+    cv = fromAtlas(key) ?? make();
   } catch {
     cv = null;
   }
-  cache.set(key, cv);
+  capped(cache, key, cv);
   return cv;
 }
 const url = (key: string, cv: () => HTMLCanvasElement | null) => {
-  if (!urls.has(key)) urls.set(key, cv()?.toDataURL('image/png') ?? null);
+  if (!urls.has(key)) capped(urls, key, cv()?.toDataURL('image/png') ?? null);
   return urls.get(key)!;
 };
 
 /** A face: the top of the sprite (the whole thing for pigeons and rubber ducks), in plain clothes unless a class is given. */
-export const faceCanvas = (look: Look, rows = 30) =>
-  cached(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => crop(buildSprite({ name: look.race || 'x', arch: 'npc', ...look, weapon: 'Bare fists' }).body, SPRITE_PW, SPRITE_PH, rows * SPRITE_S));
-export const facePortrait = (look: Look, rows = 30) => url(`face|${look.race}|${look.rsub ?? ''}|${look.arch ?? ''}|${rows}`, () => faceCanvas(look, rows));
+export const faceCanvas = (look: Look, rows = 30) => cached(faceKey(look, rows), () => rgbaCanvas(faceRGBA(look, rows)));
+export const facePortrait = (look: Look, rows = 30) => url(faceKey(look, rows), () => faceCanvas(look, rows));
 /** A chapter's badge: the piece of its map's scenery that stands for it (a bin for the alley, a gear for the citadel). */
 export const chapterIcon = (ch: number) =>
   url(`chap|${ch}`, () =>
@@ -87,23 +103,15 @@ export const fighterFace = (look: Look) =>
   );
 
 /** A weapon on its own (with its enchant's glow), held at an angle. */
-export const weaponCanvas = (name: string, ench?: string) =>
-  cached(`weapon|${name}|${ench ?? ''}`, () => {
-    const B = buf(40, 40, SPRITE_S);
-    weapon(B, name, ench, 10, 31);
-    outline(B);
-    return crop(toRGBA(B), B.w, B.h);
-  });
-export const weaponPortrait = (name: string, ench?: string) => url(`weapon|${name}|${ench ?? ''}`, () => weaponCanvas(name, ench));
+export const weaponCanvas = (name: string, ench?: string) => cached(weaponKey(name, ench), () => rgbaCanvas(weaponRGBA(name, ench)));
+export const weaponPortrait = (name: string, ench?: string) => url(weaponKey(name, ench), () => weaponCanvas(name, ench));
 
 /** A pixel icon as a canvas (for Pixi), `s` real pixels per art pixel. */
 export const iconCanvas = (name: string, s = 1) =>
   cached(`icon|${name}|${s}`, () => {
     const p = iconPixels(name, undefined, s);
     if (!p) return null;
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = p.size;
-    const x = cv.getContext('2d')!;
+    const [cv, x] = cpuCanvas(p.size, p.size);
     const id = x.createImageData(p.size, p.size);
     p.px.forEach((c, i) => c && id.data.set([c[0], c[1], c[2], p.a ? p.a[i]! : 255], i * 4));
     x.putImageData(id, 0, 0);
@@ -112,9 +120,9 @@ export const iconCanvas = (name: string, s = 1) =>
 
 /** The icon for a wheel slice or collection entry, if its kind has one. */
 export function contentCanvas(cat: string | undefined, it: { n: string; k?: string }, race?: string): HTMLCanvasElement | null {
-  if (cat === 'race') return faceCanvas({ race: it.n });
+  if (cat === 'race') return faceCanvas(raceLook(it.n));
   if (cat === 'rsub' && race) return faceCanvas({ race, rsub: it.n });
-  if (cat === 'arch' && it.k) return faceCanvas({ race: 'Human', arch: it.k, name: 'Class ' + it.k });
+  if (cat === 'arch' && it.k) return faceCanvas(archLook(it.k));
   if (cat === 'weapon' && it.n !== 'Bare fists') return weaponCanvas(it.n);
   if (cat === 'ench' && it.k && it.k !== 'none') return weaponCanvas('Sword', it.k);
   if (cat === 'power' && it.k && POWER_ICON[it.k]) return iconCanvas(POWER_ICON[it.k]!, 2);
@@ -122,20 +130,22 @@ export function contentCanvas(cat: string | undefined, it: { n: string; k?: stri
 }
 
 /**
- * Builds the race, class and weapon icons a few at a time while the browser is idle, so the first wheel that
- * shows them doesn't have to stop and draw 47 faces.
+ * Gets the race, class and weapon icons ready while the browser is idle, so the first wheel that shows them
+ * doesn't have to stop and draw 47 faces: from the baked image when it loads, drawn a few at a time otherwise.
  */
 export function warmPortraits() {
-  const jobs: (() => unknown)[] = [
-    ...RACES.map((r) => () => contentCanvas('race', r)),
-    ...ARCHS.map((a) => () => contentCanvas('arch', a)),
-    ...WEAPONS.map((w) => () => contentCanvas('weapon', w)),
-  ];
-  const idle = (f: (d?: IdleDeadline) => void) => ('requestIdleCallback' in window ? requestIdleCallback(f) : setTimeout(f, 40));
-  const step = (d?: IdleDeadline) => {
-    do jobs.shift()?.();
-    while (jobs.length && d && d.timeRemaining() > 4);
-    if (jobs.length) idle(step);
-  };
-  idle(step);
+  void loadAtlas().then(() => {
+    const jobs: (() => unknown)[] = [
+      ...RACES.map((r) => () => contentCanvas('race', r)),
+      ...ARCHS.map((a) => () => contentCanvas('arch', a)),
+      ...WEAPONS.map((w) => () => contentCanvas('weapon', w)),
+    ];
+    const idle = (f: (d?: IdleDeadline) => void) => ('requestIdleCallback' in window ? requestIdleCallback(f) : setTimeout(f, 40));
+    const step = (d?: IdleDeadline) => {
+      do jobs.shift()?.();
+      while (jobs.length && d && d.timeRemaining() > 4);
+      if (jobs.length) idle(step);
+    };
+    idle(step);
+  });
 }
