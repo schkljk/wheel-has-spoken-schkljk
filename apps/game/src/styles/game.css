@@ -2510,6 +2510,12 @@
   padding-top: 0.6rem;
   padding-bottom: 1rem;
 }
+/* only the categories near the screen are laid out and painted (3,944 elements at once otherwise); each keeps
+   its real height once it has been shown, and starts from an estimate (set per category in Codex.tsx) */
+.cx-cat {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
 .cx-cat h3 {
   display: flex;
   justify-content: space-between;
