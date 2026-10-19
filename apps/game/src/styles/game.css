@@ -3631,3 +3631,56 @@ img.pxi.chap {
   gap: 0.6rem;
   min-width: 0;
 }
+/* earned nameplates (F11) */
+html[data-plate] .fc-name.mine,
+html[data-plate] .hn.mine {
+  background: var(--plate-bg);
+  color: var(--plate-ink);
+  border-radius: 6px;
+  padding: 0 0.35rem;
+  box-shadow: 0 2px 0 var(--edge);
+  width: fit-content;
+  max-width: 100%;
+}
+html[data-plate='pl_wanted'] .fc-name.mine,
+html[data-plate='pl_wanted'] .hn.mine {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+/* the locker (F11) */
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.45rem;
+}
+.locker-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  text-align: center;
+  min-width: 0;
+}
+.locker-item.on {
+  border-color: var(--gold);
+}
+.locker-item .lk-e {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.locker-item small {
+  color: var(--muted);
+}
+.lk-sw {
+  display: flex;
+  gap: 2px;
+}
+.lk-sw i {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 3px;
+  border: 1px solid var(--edge);
+}

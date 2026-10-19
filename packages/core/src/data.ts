@@ -24,5 +24,6 @@ export * from './data/content/build-summary';
 export * from './data/content/tips';
 export * from './data/content/bounties';
 export * from './data/content/riddles';
+export * from './data/content/cosmetics';
 // the wording fixes: laid over the tables above once, on load
 export { reword, rewordDeep } from './data/wording';

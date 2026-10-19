@@ -172,7 +172,8 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
       <div class="fc-top">
         <FighterSprite look={lookOf(f)} h={118} />
         <div class="grow">
-          <div class="fc-name">{fullName(f)}</div>
+          {/* the player's own fighter wears their nameplate (F11) */}
+          <div class={`fc-name${f === G.F ? ' mine' : ''}`}>{fullName(f)}</div>
           <div class="fc-sub">
             Level {f.lvl || 1} {f.size?.n.toLowerCase()} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}
             {f.isNem || nemesis ? '. Your nemesis 😈' : ''}

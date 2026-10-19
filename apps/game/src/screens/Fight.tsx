@@ -188,7 +188,7 @@ function Hud({
     }
     return (
       <div class={`hs${i ? ' r' : ' me'}`}>
-        <div class="hn ellipsis">{names[i]}</div>
+        <div class={`hn ellipsis${i === 0 && G.F && bt?.P[0].f === G.F ? ' mine' : ''}`}>{names[i]}</div>
         <Inf
           key={`mom${M.n[i]}`}
           k="rule|momentum"

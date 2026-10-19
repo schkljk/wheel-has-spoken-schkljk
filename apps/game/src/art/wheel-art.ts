@@ -114,13 +114,13 @@ export function sliceMask(n: number, a0: number, a1: number, hole = 0.2): Rgba {
 }
 
 /** The rim that stays put: a bevelled gold ring, outlined, `n` across with a ring `rw` wide. */
-export function wheelRim(n: number, rw: number): Rgba {
+export function wheelRim(n: number, rw: number, col = '#E0A13A', lip = '#8C5E14'): Rgba {
   const B = buf(n + 2, n + 2);
   const c = (n + 2) / 2,
     R = n / 2 - 0.5;
-  S(B, minus(ell(c, c, R, R), ell(c, c, R - rw, R - rw)), 0, 0, n + 2, n + 2, RP('#E0A13A'), { bv: Math.max(2, rw / 2), shine: true, ol: true });
+  S(B, minus(ell(c, c, R, R), ell(c, c, R - rw, R - rw)), 0, 0, n + 2, n + 2, RP(col), { bv: Math.max(2, rw / 2), shine: true, ol: true });
   // an inner lip, darker, where the rim meets the face
-  S(B, minus(ell(c, c, R - rw + 1, R - rw + 1), ell(c, c, R - rw, R - rw)), 0, 0, n + 2, n + 2, RP('#8C5E14'), { bv: 0, tone: SHD, onto: true });
+  S(B, minus(ell(c, c, R - rw + 1, R - rw + 1), ell(c, c, R - rw, R - rw)), 0, 0, n + 2, n + 2, RP(lip), { bv: 0, tone: SHD, onto: true });
   outline(B);
   return { w: B.w, h: B.h, d: toRGBA(B) };
 }
