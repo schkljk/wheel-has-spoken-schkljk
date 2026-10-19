@@ -68,3 +68,30 @@ test('a story win: spoils on the result, a recap, and the steps after it survive
   await expect(page.getByRole('button', { name: /Continue with Test Hero/ })).toContainText('Back to the story map');
   expect(errors).toEqual([]);
 });
+
+test('G4: starting a new fighter asks before it scraps the one being built', async ({ page }) => {
+  test.setTimeout(120_000);
+  const errors = watchErrors(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await open(page);
+  await page.getByRole('button', { name: 'Spin one' }).first().click();
+  await page.getByRole('textbox', { name: 'Fighter name' }).fill('Keeper');
+  await page.getByRole('button', { name: 'Spin a new fighter' }).click();
+  const prog = page.locator('.prog-n');
+  await expect(prog).toHaveText(/^Spin 1 of/, { timeout: 20_000 });
+  await page.locator('.spin-foot .btn.block').click();
+  await expect(prog).toHaveText(/^Spin 2 of/, { timeout: 20_000 });
+  await page.reload();
+  await expect(page.getByRole('button', { name: /Keep building Keeper/ })).toBeVisible();
+  // changing your mind keeps them
+  await page.getByRole('button', { name: 'Spin one' }).first().click();
+  const ask = page.getByRole('alertdialog');
+  await expect(ask.getByText('Scrap Keeper?')).toBeVisible();
+  await ask.getByRole('button', { name: 'Keep Keeper' }).click();
+  await expect(page.getByRole('button', { name: /Keep building Keeper/ })).toBeVisible();
+  // saying yes goes on to the new fighter
+  await page.getByRole('button', { name: 'Spin one' }).first().click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Scrap and spin new' }).click();
+  await expect(page.getByRole('textbox', { name: 'Fighter name' })).toBeVisible();
+  expect(errors).toEqual([]);
+});

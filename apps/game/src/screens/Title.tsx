@@ -2,7 +2,7 @@ import { fullName, deserFighter, randName, savedBuild } from '@whs/core';
 import { useState } from 'preact/hooks';
 import { continueGame, continueText, goHub } from '../flows/nav';
 import { G, enterSlot, go, loadProblems, save, store } from '../state/game';
-import { closeSheet, openSheet } from '../state/ui';
+import { closeSheet, confirm, openSheet } from '../state/ui';
 import { offerImport, describeSave } from '../sheets/Save';
 import { SettingsSheet } from '../sheets/Settings';
 import { RecordsSheet } from '../sheets/Records';
@@ -64,6 +64,23 @@ export function Title() {
   const build = savedBuild(G) as { f: { name: string }; idx: number; done: boolean } | null;
   const cur = s.roster.active != null && slots[s.roster.active] ? s.roster.active : null;
   const curName = cur != null ? (deserFighter(slots[cur]!.career)?.name ?? null) : null;
+  // only one build is kept at a time: a new one would throw the waiting one away, so ask first (review G4)
+  const spinNew = async () => {
+    if (
+      build &&
+      !(await confirm({
+        title: `Scrap ${build.f.name}?`,
+        body: build.done
+          ? `${build.f.name} is fully spun and waiting to start a career. A new fighter takes their place.`
+          : `${build.f.name}'s spins so far are kept for you. A new fighter throws them away.`,
+        yes: 'Scrap and spin new',
+        no: `Keep ${build.f.name}`,
+        danger: true,
+      }))
+    )
+      return;
+    openSheet(<NewFighterSheet />);
+  };
   return (
     <main class="screen title-screen">
       <div class="title-hero" aria-hidden="true">
@@ -119,7 +136,7 @@ export function Title() {
                   <b>Empty slot</b>
                   <small>Room for one more fighter</small>
                 </span>
-                <button class="btn ghost sm" onClick={() => openSheet(<NewFighterSheet />)}>
+                <button class="btn ghost sm" onClick={() => void spinNew()}>
                   Spin one
                 </button>
               </div>

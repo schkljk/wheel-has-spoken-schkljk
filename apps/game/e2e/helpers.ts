@@ -88,6 +88,33 @@ export async function textOverlaps(page: Page, sel: string): Promise<string[]> {
   }, sel);
 }
 
+/**
+ * Buttons you can't hit with a thumb: a tap 21 px from the centre (up, down, left, right) has to land on the
+ * button itself, so a hit area stretched by padding or a pseudo-element counts, and a neighbour on top doesn't.
+ */
+export async function smallTargets(page: Page, sel: string): Promise<string[]> {
+  return page.evaluate((sel) => {
+    const out: string[] = [];
+    for (const el of document.querySelectorAll<HTMLElement>(sel)) {
+      const r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2 || getComputedStyle(el).visibility === 'hidden') continue;
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const miss = [
+        [cx - 21, cy],
+        [cx + 21, cy],
+        [cx, cy - 21],
+        [cx, cy + 21],
+      ].filter(([x, y]) => {
+        const hit = document.elementFromPoint(x!, y!);
+        return !hit || !(hit === el || el.contains(hit));
+      });
+      if (miss.length) out.push(`${(el.getAttribute('aria-label') || el.textContent || el.className).trim().slice(0, 24)} (${Math.round(r.width)}×${Math.round(r.height)})`);
+    }
+    return out;
+  }, sel);
+}
+
 export async function layoutProblems(page: Page): Promise<{ clipped: string[]; pageScrolls: boolean }> {
   return page.evaluate(() => {
     const vw = innerWidth;

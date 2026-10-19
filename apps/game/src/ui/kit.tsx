@@ -11,8 +11,10 @@ export function installPressFeedback() {
   document.addEventListener(
     'pointerdown',
     (e) => {
-      const b = (e.target as Element | null)?.closest<HTMLElement>('.btn,.iconbtn,.card.tap,.tabbar button,.setrow,.seg button');
-      if (!b || (b as HTMLButtonElement).disabled) return;
+      const hit = (e.target as Element | null)?.closest<HTMLElement>('.btn,.iconbtn,.card.tap,.tabbar button,.setrow,.seg button,.fhit');
+      if (!hit || (hit as HTMLButtonElement).disabled) return;
+      // a tap area around a smaller button (the fight HUD's): the ripple goes on the button you see
+      const b = hit.classList.contains('fhit') ? ((hit.firstElementChild as HTMLElement | null) ?? hit) : hit;
       if (document.documentElement.dataset.motion !== 'reduced') {
         const r = b.getBoundingClientRect();
         const s = Math.max(r.width, r.height) * 2.2;

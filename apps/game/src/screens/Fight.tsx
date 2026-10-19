@@ -234,12 +234,15 @@ function Hud({
       {side(0)}
       <div class="rd">
         <span>{bt && bt.sd ? 'Sudden death' : `Round ${Math.max(1, snap?.r || 1)}/${mr}`}</span>
-        <button class="iconbtn fmenu" aria-label="Fight menu" onClick={onMenu}>
-          <Icon name="menu" />
+        {/* the buttons look small, but each sits in a thumb-sized tap area that doesn't move the layout (G9) */}
+        <button class="fhit" aria-label="Fight menu" onClick={onMenu}>
+          <span class="iconbtn fmenu">
+            <Icon name="menu" />
+          </span>
         </button>
         {speed && (
-          <button class={`fspeed${speed.on ? ' on' : ''}`} aria-pressed={speed.on} aria-label={speed.on ? 'Fight speed 2×. Tap for normal speed' : 'Fight speed 1×. Tap for double speed'} onClick={speed.flip}>
-            {speed.on ? '2×' : '1×'}
+          <button class="fhit sp" aria-pressed={speed.on} aria-label={speed.on ? 'Fight speed 2×. Tap for normal speed' : 'Fight speed 1×. Tap for double speed'} onClick={speed.flip}>
+            <span class={`fspeed${speed.on ? ' on' : ''}`}>{speed.on ? '2×' : '1×'}</span>
           </button>
         )}
       </div>

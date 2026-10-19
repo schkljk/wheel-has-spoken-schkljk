@@ -956,6 +956,38 @@
   background: rgba(10, 7, 20, 0.55);
   align-self: start;
 }
+/* the menu and speed buttons look small but take a full thumb: the button is a 44 px tap area around the
+   visible part, with negative margins so the HUD's layout stays as it was */
+.fhit {
+  pointer-events: auto;
+  display: grid;
+  min-width: 44px;
+  min-height: 44px;
+  /* the menu's area grows upward and the speed button's downward, so the two never overlap */
+  place-items: end center;
+  margin: calc(2.3rem - 44px) calc((2.5rem - 44px) / 2) 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.fhit.sp {
+  place-items: start center;
+  margin-top: 0;
+  margin-bottom: calc(1.9rem - 44px);
+}
+.fhit:focus-visible {
+  outline: none;
+}
+.fhit:focus-visible > * {
+  outline: 3px solid var(--teal);
+  outline-offset: 2px;
+}
+.fhit:active > .fmenu {
+  transform: translateY(2px);
+}
 .fmenu {
   pointer-events: auto;
   width: 2.5rem;
@@ -966,6 +998,8 @@
 }
 .fspeed {
   pointer-events: auto;
+  display: inline-grid;
+  place-items: center;
   min-width: 2.5rem;
   min-height: 1.9rem;
   padding: 0 0.4rem;
@@ -3253,14 +3287,16 @@ img.pxi.chap {
 .fchips::-webkit-scrollbar {
   display: none;
 }
-.fchip {
+/* the collection and armory filters only: a bare .fchip here used to shrink every chip in the game, the
+   fight's focus chips included, back to 34 px (review G9) */
+.fchips .fchip {
   flex: none;
   white-space: nowrap;
   cursor: pointer;
   min-height: 2.1rem;
   font-size: 0.82rem;
 }
-.fchip[aria-pressed='true'] {
+.fchips .fchip[aria-pressed='true'] {
   background: var(--ink);
   color: var(--bg);
   border-color: var(--ink);
