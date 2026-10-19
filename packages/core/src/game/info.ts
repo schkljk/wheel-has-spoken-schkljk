@@ -11,6 +11,7 @@ import { PERSONALITIES, type PersonalityKey } from '../data/content/personality'
 import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, PILL_NOW, QN, RULES, RULES_MORE, RULES_NOW, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, STAT_NOW, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
 import { BALANCE } from '../data/balance';
+import { riddleOf } from '../data/content/riddles';
 import { findMove } from '../kits';
 import { GEAR_ALL, STATLBL } from '../stats';
 import type { StatMods, TraitFx } from '../types';
@@ -219,6 +220,10 @@ export function infoFor(key: string): Info | null {
     if (a === 'combo') return { e: '⚗️', title: b, sub: 'Element combo', p: COMBO_INFO[b] || '', lines: RULES.combos![2].slice(1) };
     const p = (BALANCE.statRoles && PILL_NOW[a]) || PILL_INFO[a];
     return p ? { e: p[0], title: p[1], p: p[2], lines: [] } : null;
+  }
+  if (kind === 'riddle') {
+    // an undiscovered synergy (review F6): what it takes, as a riddle
+    return { e: '❓', title: 'A synergy riddle', sub: 'Not found yet', p: riddleOf(a), lines: ['Some picks work better together. Build a fighter that fits this, and it goes in your collection.'] };
   }
   if (kind === 'pers') {
     const p = PERSONALITIES[a as PersonalityKey];

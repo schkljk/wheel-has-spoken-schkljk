@@ -2520,6 +2520,14 @@
   opacity: 0.45;
   cursor: default;
 }
+/* an undiscovered synergy: tap for its riddle (F6) */
+.tile.unk.riddle {
+  border-style: dashed;
+  cursor: pointer;
+}
+.tile.unk.riddle small {
+  color: var(--teal);
+}
 .tile .e {
   font-size: 1.2rem;
   flex: none;
