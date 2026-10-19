@@ -20,6 +20,8 @@ export interface ResumeState {
   build?: { f: Json; idx: number; done: boolean } | null;
   /** the level-up spins landed so far for the level being picked (review F4): one is kept */
   lv?: string[] | null;
+  /** a level-up that landed on Awakening or a New weapon: its upgrade spin still to come (G5) */
+  up?: 'power' | 'weapon' | null;
 }
 export type Place = 'map' | 'hub' | 'bracket';
 
@@ -31,7 +33,7 @@ const mine = (g: Game) => {
 /** The state for the active fighter: another fighter's steps, place and half-picked level-up go (G16). */
 const own = (g: Game) => {
   const r = state(g);
-  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null, lv: null });
+  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null, lv: null, up: null });
   r.slot = g.save.roster.active;
   return r;
 };
@@ -67,6 +69,11 @@ export function addLevelSpin(g: Game, k: string) {
 }
 export function clearLevelSpins(g: Game) {
   state(g).lv = null;
+}
+/** An upgrade spin (Awakening, New weapon) won by a level-up and not spun yet: closing the app keeps it (G5). */
+export const pendingUpgrade = (g: Game): 'power' | 'weapon' | null => mine(g)?.up ?? null;
+export function setUpgrade(g: Game, kind: 'power' | 'weapon' | null) {
+  own(g).up = kind;
 }
 
 // ---------------------------------------------------------------- a fighter being built

@@ -5,6 +5,8 @@ import {
   levelSpinsPerLevel,
   levelUpItem,
   levelUpLand,
+  pendingUpgrade,
+  upgradeChoose,
   clockAt,
   clearBuild,
   clearNode,
@@ -127,6 +129,17 @@ describe('a level-up being picked (F4, a second opinion)', () => {
     levelUpLand(g, levelUpItem('str')!);
     expect(levelSpins(g)).toEqual([]);
     expect(g.F!.pendingLv).toBe(0);
+  });
+  it('keeps an Awakening or a New weapon waiting until it is spun (G5)', () => {
+    const g = game();
+    g.F!.pendingLv = 1;
+    expect(levelUpLand(g, levelUpItem('awaken')!)).toBe('power');
+    expect(g.F!.pendingLv).toBe(0);
+    // the app closes on the upgrade wheel: it is still owed
+    const h = { ...g, save: JSON.parse(JSON.stringify(g.save)) };
+    expect(pendingUpgrade(h)).toBe('power');
+    upgradeChoose(g, 'power', null);
+    expect(pendingUpgrade(g)).toBeNull();
   });
   it("stays with its fighter: another fighter's map or steps don't inherit it (G16)", () => {
     const g = game();

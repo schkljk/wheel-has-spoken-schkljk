@@ -17,7 +17,7 @@ import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
-import { clearLevelSpins } from './resume';
+import { clearLevelSpins, setUpgrade } from './resume';
 import { MENTOR_EVENT, withMentor } from './mentor';
 
 export const LASTCH = CHAPTERS.length;
@@ -668,8 +668,12 @@ export function levelUpLand(g: Game, it: (typeof LEVELUP)[number]): 'power' | 'w
   // the spins for this level are over: the next level starts from none (resume.ts)
   clearLevelSpins(g);
   F.pendingLv = Math.max(0, (F.pendingLv || 0) - 1);
-  if (it.k === 'awaken') return 'power';
-  if (it.k === 'arsenal') return 'weapon';
+  // the level is used up in the same change that keeps its upgrade spin waiting (G5)
+  if (it.k === 'awaken' || it.k === 'arsenal') {
+    const kind = it.k === 'awaken' ? 'power' : 'weapon';
+    setUpgrade(g, kind);
+    return kind;
+  }
   applyBonus(F, it);
   invalidate(F);
   return null;
@@ -691,12 +695,14 @@ export function upgradeLists(g: Game, kind: 'power' | 'weapon') {
 }
 /** Nothing better exists: +1 mastery instead. */
 export function upgradeNone(g: Game, kind: 'power' | 'weapon') {
+  setUpgrade(g, null);
   const MK = kind === 'power' ? 'pm' : 'wm';
   applyBonus(g.F!, { k: MK, n: '+1 ' + STATN[MK], e: '⬆️' });
   return `Nothing better exists. +1 ${STATN[MK]!.toLowerCase()} instead`;
 }
 /** Swap to the new pick, or keep the old one for +1 mastery. */
 export function upgradeChoose(g: Game, kind: 'power' | 'weapon', take: { it: Slice; m: Slice } | null) {
+  setUpgrade(g, null);
   const F = g.F!;
   const MK = kind === 'power' ? 'pm' : 'wm';
   const set = F as unknown as Record<string, unknown>;

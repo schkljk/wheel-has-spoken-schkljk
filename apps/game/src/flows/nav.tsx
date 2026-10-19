@@ -16,6 +16,7 @@ import {
   labelOf,
   addLevelSpin,
   levelSpins,
+  pendingUpgrade,
   levelSpinsPerLevel,
   levelUpItem,
   levelUpLand,
@@ -150,6 +151,9 @@ const LV_SUB: Record<string, string> = {
 };
 
 export async function levelUps() {
+  // an upgrade spin the app closed on comes first (G5)
+  const up0 = pendingUpgrade(G);
+  if (up0) await upgradeSpin(up0);
   while (G.F && (G.F.pendingLv || 0) > 0) {
     const F = G.F;
     // a second opinion (F4): two spins a level, keep one. Spins landed before the app closed still count (A4)
@@ -390,7 +394,7 @@ export async function eventFlow(step = false) {
 export async function goHub(tab: 'play' | 'fighter' | 'goals' | 'more' = 'play') {
   if (!G.F) return go({ screen: 'title' });
   if (pendingSteps(G).length) return resumeSteps();
-  if ((G.F.pendingLv || 0) > 0) await levelUps();
+  if ((G.F.pendingLv || 0) > 0 || pendingUpgrade(G)) await levelUps();
   act((g) => setPlace(g, 'hub'));
   go({ screen: 'hub', tab });
 }
