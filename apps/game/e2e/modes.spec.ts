@@ -32,8 +32,10 @@ test('a whole story chapter, boss included', async ({ page }) => {
 });
 
 test('a cup from the first round to the end', async ({ page }) => {
+  // its fights play out on auto, so its dice are pinned like the gauntlet's: an unpinned run can go long on CI
+  test.setTimeout(600_000);
   const errors = watchErrors(page);
-  await start(page, { seed: 22, lvl: 10 });
+  await start(page, { seed: 22, lvl: 10 }, 'cup');
   await page.getByRole('button', { name: /Local brawl/ }).click();
   // the bracket loads on first use (J8): wait for it to replace the hub
   await page.locator('.tabbar').waitFor({ state: 'detached', timeout: 30_000 });

@@ -72,7 +72,7 @@ import { toSlices } from './Spin';
 import type { ArenaWheel } from '../flows/fight';
 import { oddsFor } from '../state/odds';
 import { copyText } from '../ui/copy';
-import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF, toast } from '../state/game';
+import { G, act, buzz, fxScale, reducedMotion, record, settings, commit, SPF, toast } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
 import { Inf } from '../ui/Info';
@@ -610,7 +610,7 @@ export function FightScreen({
       const c = choice ?? autoChoice(dice, bt.P[0], bt.P[1], bt.hist[1]);
       const evs = choice ? bt.step(choice, null, m || {}) : bt.step(c);
       // every round is kept as it is played (G2)
-      act((g) => recordRound(g, choice ? { c, m: (m || {}) as Json, ...x } : { c, auto: true }, dn.current));
+      record((g) => recordRound(g, choice ? { c, m: (m || {}) as Json, ...x } : { c, auto: true }, dn.current));
       // what each side did this round, and who read whom, in words while it plays
       const read = evs.find((e) => e.a?.t === 'read');
       const mine = bt.hist[0].at(-1),
@@ -718,7 +718,7 @@ export function FightScreen({
     setOut({ it });
     // the landed slice is kept as the next round (G2): closing the app now plays it, it doesn't re-spin
     const ph = it.src === 'phase' ? it.n : undefined;
-    act((g) => recordSpin(g, { c: it.c, m: (it.m || {}) as Json, u: it.c === 'ult' ? it.ultIdx : undefined, ph }, dn.current, S.nudged));
+    record((g) => recordSpin(g, { c: it.c, m: (it.m || {}) as Json, u: it.c === 'ult' ? it.ultIdx : undefined, ph }, dn.current, S.nudged));
     // once per fight the player may push the wheel one more slice: offer it for a moment longer
     const offer = !S.nudged && !autoRef.current && list.length > 1;
     const nx = offer ? sc.wheel.nextSlice(idx, S.dir) : -1;

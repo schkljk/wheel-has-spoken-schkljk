@@ -86,6 +86,19 @@ export function sync(): void {
   flushNotes();
 }
 
+/**
+ * Records something only the save needs to know, and writes it at the end of the task like any change, without
+ * a new snapshot for the screens: a fight keeps its record every round (G2), and nothing on screen shows it.
+ */
+export function record(fn: (g: Game) => void): void {
+  fn(G);
+  ver++;
+  if (!writing) {
+    writing = true;
+    queueMicrotask(write);
+  }
+}
+
 /** Runs a rule against the live game, then saves. */
 export function act<T>(fn: (g: Game) => T): T {
   G.clock = now();
