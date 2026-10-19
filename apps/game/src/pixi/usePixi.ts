@@ -12,15 +12,41 @@ const idle: Application[] = [];
 const MAX_IDLE = 2;
 const OPTS = { backgroundAlpha: 0, antialias: true, autoDensity: true } as const;
 
+const resolution = () => Math.min(devicePixelRatio || 1, 2);
+/** apps made so far (a screen that needed one before the warm-up ran already did the warming) */
+let made = 0;
+
+// The first app (three WebGL contexts made, the shaders compiled) is made while the game is idle, before
+// anything needs it; a wheel that comes up meanwhile waits for it instead of making its own.
+let warming: Promise<void> | null = null;
+/** Makes an app, draws one frame of everything (pixi/warm.ts) and puts it in the pool. Once. */
+export function warmPixi(): Promise<void> {
+  return (warming ??= loadPx()
+    .then(async (P) => {
+      if (made) return;
+      made++;
+      const a = new P.Application();
+      await a.init({ ...OPTS, width: 64, height: 64, resolution: resolution() });
+      a.stop();
+      P.warmUp(a);
+      release(P, a);
+    })
+    .catch(() => {
+      // warming up is optional: the first wheel makes its app as before
+    }));
+}
+
 async function acquire(P: Px, el: HTMLDivElement): Promise<Application> {
+  if (warming) await warming;
   for (let a = idle.pop(); a; a = idle.pop()) {
     if (!a.renderer) continue;
     a.resizeTo = el;
     a.start();
     return a;
   }
+  made++;
   const a = new P.Application();
-  await a.init({ ...OPTS, resizeTo: el, resolution: Math.min(devicePixelRatio || 1, 2) });
+  await a.init({ ...OPTS, resizeTo: el, resolution: resolution() });
   return a;
 }
 /** Back to the pool: the screen's things and per-frame work go, the WebGL context stays. */

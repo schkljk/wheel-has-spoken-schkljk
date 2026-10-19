@@ -7,7 +7,7 @@ import { installPressFeedback } from './ui/kit';
 import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
 import { installCosmetics } from './state/cosmetics';
-import { loadPx } from './pixi/usePixi';
+import { warmPixi } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import { effect } from '@preact/signals';
 import { installAudio } from './audio/engine';
@@ -48,8 +48,9 @@ ensurePool({
   history: { champs: (p.champs as unknown as HistoryEntry[]).filter((c) => c && c.best), lastTop: p.lastTop as unknown as HistoryEntry[] },
 });
 
-// the Pixi chunk (wheels and fights) loads once the first screen is up, so the first spin doesn't wait for it
-if ('requestIdleCallback' in window) requestIdleCallback(() => void loadPx());
-else setTimeout(() => void loadPx(), 300);
+// the Pixi chunk (wheels and fights) loads once the first screen is up, and its first app warms up (WebGL made,
+// shaders compiled), so the first spin and the first fight don't wait for either
+if ('requestIdleCallback' in window) requestIdleCallback(() => void warmPixi());
+else setTimeout(() => void warmPixi(), 300);
 // and the pixel icons the wheels show, a few at a time
 warmPortraits();
