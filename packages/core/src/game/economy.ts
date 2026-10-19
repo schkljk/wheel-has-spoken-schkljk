@@ -370,7 +370,7 @@ export function dailyLand(g: Game, it: (typeof DAILY)[number]): string {
       break;
     case 'scout':
       nx({ readB: 0.2 });
-      out = 'Reads 20% better next fight';
+      out = 'Reads two steps clearer next fight';
       break;
     default:
       out = 'Better luck tomorrow';
@@ -421,7 +421,7 @@ export function applyEvent(g: Game, it: (typeof EVENTS)[number]): string {
       break;
     case 'scout':
       nx({ readB: 0.2 });
-      out = 'Reads 20% better next fight';
+      out = 'Reads two steps clearer next fight';
       break;
     case 'relic':
       applyBonus(F, { k: 'relic', n: 'Cursed relic', e: '🗿' });

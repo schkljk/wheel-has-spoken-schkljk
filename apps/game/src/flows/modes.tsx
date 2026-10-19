@@ -227,7 +227,7 @@ function DuelSheet({ days }: { days: string[] }) {
         </p>
         {best && (
           <div class="duel-best">
-            <b>Your best: {best.won ? `won in ${best.rounds} rounds, ${best.hp}% HP left` : `lost in ${best.rounds} rounds`}</b>
+            <b>Your best: {best.won ? `won in ${best.rounds} rounds` : `lost in ${best.rounds} rounds`}</b>
             <span>{best.sq}</span>
             <button class="btn ghost sm" onClick={() => void copyText(duelShare(d, best))}>
               Copy the score

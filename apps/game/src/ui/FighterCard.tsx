@@ -68,15 +68,16 @@ export function NumBlock({ f }: { f: CareerFighter }) {
 export function modTxt(k: string, v: number) {
   // against an average roll (6); an average roll just says so
   if (v === 6) return 'average';
-  const p = (x: number) => `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x))}%`;
-  if (k === 'str') return p((Math.pow(1.17, 0.6 * (v - 6)) - 1) * 100) + ' Attack';
-  if (k === 'wm') return p((Math.pow(1.17, 0.4 * (v - 6)) - 1) * 100) + ' Attack';
-  if (k === 'dur') return p((Math.pow(1.17, v - 6) - 1) * 100) + ' Defense';
-  if (k === 'pm') return p((Math.pow(1.17, 0.75 * (v - 6)) - 1) * 100) + ' Power';
-  if (k === 'iq') return p((v - 6) * 0.8) + ' crit, reads';
+  // an effect that rounds to nothing says so, instead of a red "−0%" (G15)
+  const p = (x: number, what: string) => (Math.round(x) === 0 ? 'about average' : `${x >= 0 ? '+' : '−'}${Math.abs(Math.round(x))}% ${what}`);
+  if (k === 'str') return p((Math.pow(1.17, 0.6 * (v - 6)) - 1) * 100, 'Attack');
+  if (k === 'wm') return p((Math.pow(1.17, 0.4 * (v - 6)) - 1) * 100, 'Attack');
+  if (k === 'dur') return p((Math.pow(1.17, v - 6) - 1) * 100, 'Defense');
+  if (k === 'pm') return p((Math.pow(1.17, 0.75 * (v - 6)) - 1) * 100, 'Power');
+  if (k === 'iq') return p((v - 6) * 0.8, 'crit, reads');
   // Speed is 4 per point plus 2 per level: say the rolled part against an average roll, like the others
   if (k === 'spd') return `${v >= 6 ? '+' : '−'}${Math.abs(4 * (v - 6))} Speed`;
-  if (k === 'cha') return p((v - 6) * 0.4) + ' crit, haggling';
+  if (k === 'cha') return p((v - 6) * 0.4, 'crit, haggling');
   return '';
 }
 const TQ = (v: number) => (v <= 3 ? 0 : v <= 6 ? 1 : v <= 10 ? 2 : 3);
@@ -106,7 +107,7 @@ function StatRows({ f }: { f: CareerFighter }) {
             {/* the roll, then only its effect, colored by what it does (bonuses are already in it) */}
             <span class="vl" title={diff ? `${diff > 0 ? '+' : '−'}${Math.abs(diff)} from bonuses and penalties` : undefined}>
               {base.n}
-              <small class={`modv ${v > 6 ? 'up' : v < 6 ? 'down' : ''}`}>{modTxt(k, v)}</small>
+              <small class={`modv ${modTxt(k, v) === 'about average' ? '' : v > 6 ? 'up' : v < 6 ? 'down' : ''}`}>{modTxt(k, v)}</small>
             </span>
             <span class="tr" aria-hidden="true">
               <i class={`f${TQ(Math.min(14, v))}`} style={{ width: `${Math.min(100, Math.round((v / 20) * 100))}%` }} />

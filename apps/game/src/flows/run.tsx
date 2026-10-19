@@ -1,7 +1,7 @@
-import { RUN_FIGHTS, boonOf, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon } from '@whs/core';
+import { RUN_FIGHTS, boonOf, numStats, quitRun, runBest, runFighter, runOpponent, runSpecOf, runState, startRun, takeBoon, type NumStats } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
-import { G, act } from '../state/game';
+import { G, act, popStats } from '../state/game';
 import { confirm } from '../state/ui';
 import { fight } from './fight';
 import { choose, goHub, runSteps, showCine } from './nav';
@@ -49,9 +49,14 @@ export async function runFlow() {
       'Start the run',
     );
   }
+  // the runner's numbers after a boon or a win's level, old → new like any fighter's (G15)
+  let last: NumStats | null = null;
   for (;;) {
     const R = runState(G);
     if (!R) return void goHub();
+    const ns = numStats(runFighter(R));
+    if (last) popStats(last, ns);
+    last = ns;
     if (R.offer) {
       const offer = R.offer;
       const c = await choose({
@@ -70,7 +75,7 @@ export async function runFlow() {
     const c = await choose({
       emoji: boss ? '💀' : '🏃',
       title: boss ? 'Spin & Run: the boss' : `Spin & Run: fight ${R.i + 1} of ${RUN_FIGHTS}`,
-      sub: `${f.name}, level ${f.lvl}, ${R.hp}% HP`,
+      sub: `${f.name}, level ${f.lvl}, HP ${Math.max(1, Math.round((R.hp / 100) * ns.hp))}/${ns.hp}`,
       body: (
         <>
           Next: <b>{o.name}</b>, {boss && o.bossTitle ? `${o.bossTitle}, level ${o.lvl}` : `level ${o.lvl} ${lc(o.race.n)} ${lc(o.arch.n)}`}.

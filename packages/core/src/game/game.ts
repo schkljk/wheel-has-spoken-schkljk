@@ -29,6 +29,22 @@ export interface Clock {
   date: string;
 }
 
+/**
+ * The game's day only moves forward (review G12). Setting the phone's date back used to bring back a fresh daily
+ * challenge, daily wheel and deal on every switch; now the day is never earlier than the latest one seen (kept in
+ * the save), so going back in time just finds the dailies already used.
+ */
+export function forwardDay(g: Pick<Game, 'save'>, d: Date): Date {
+  const x = g.save.profile.extra as { dayMax?: number };
+  const day = Date.UTC(d.getFullYear(), d.getMonth(), d.getDate());
+  if (typeof x.dayMax === 'number' && day < x.dayMax) {
+    const m = new Date(x.dayMax);
+    return new Date(m.getUTCFullYear(), m.getUTCMonth(), m.getUTCDate(), 12);
+  }
+  if (x.dayMax !== day) x.dayMax = day;
+  return d;
+}
+
 export function clockAt(d = new Date()): Clock {
   const y = new Date(d.getTime() - 864e5);
   return { today: d.toDateString(), yesterday: y.toDateString(), date: d.toLocaleDateString() };

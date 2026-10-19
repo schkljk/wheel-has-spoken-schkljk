@@ -409,6 +409,8 @@ export interface SpinSpec<T extends { n: string; e?: string; q?: number; d?: str
   onLand: (it: T) => ComponentChildren | void;
   /** continue on its own after this many ms (the arena wheel) */
   autoNext?: number;
+  /** a result worth reading waits for a tap even with autoNext (new gear: review G10) */
+  hold?: (it: T) => boolean;
   /** spin on its own as soon as the wheel is up (spoils after a fight: no tap needed) */
   autoSpin?: boolean;
 }
@@ -479,7 +481,8 @@ export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown)
     if (q >= 3) burst();
     setSpinning(false);
     setResult(it);
-    if (spec.autoNext != null) timers.current.push(window.setTimeout(() => done(it), reducedMotion() ? 200 : fast ? spec.autoNext / 2 : spec.autoNext));
+    // reduced motion takes out animation, not reading time (G10)
+    if (spec.autoNext != null && !spec.hold?.(it)) timers.current.push(window.setTimeout(() => done(it), fast ? spec.autoNext / 2 : spec.autoNext));
   };
   const events = {
     land: (i: number, info: { turns: number; flick: boolean }) => {

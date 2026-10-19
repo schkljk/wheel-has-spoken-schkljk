@@ -4,6 +4,7 @@ import { EVENT_TALK, type TalkOption } from '../data/content/charisma';
 import { NODE_MORE } from '../data/content/nemesis';
 import { CH_EVENTS, type ChapterEvent, type ChapterOpt, type EventFx } from '../data/content/chapter-events';
 import { LEVELUP } from '../data/misc';
+import { readSteps } from '../data/wording';
 import { TITLES, SKIPPED } from '../data/wheels';
 import { WHEELS, WHEEL, applyBonus, itemsOf, levelUp, type Slice } from '../fighter';
 import { headToHead } from '../battle';
@@ -306,7 +307,7 @@ export function fxText(fx: EventFx = {}): string {
   if (fx.heal) (fx.heal > 0 ? gain : cost).push(fx.heal > 0 ? `heal ${fx.heal}% HP` : `lose ${-fx.heal}% HP`);
   if (fx.fame) (fx.fame > 0 ? gain : cost).push(fx.fame > 0 ? `+${fx.fame} fame` : `lose ${-fx.fame} fame`);
   if (fx.stat) gain.push(`+1 ${STATN[fx.stat]!.toLowerCase()} for good`);
-  if (fx.readB) gain.push(`read your next opponent ${pct(fx.readB)} better`);
+  if (fx.readB) gain.push(`read your next opponent ${readSteps(fx.readB)} clearer`);
   if (fx.en) gain.push('full energy in your next fight');
   if (fx.dmgX) gain.push(`+${pct(fx.dmgX - 1)} damage in your next fight`);
   if (fx.revive) gain.push(`get back up once in your next fight, with ${fx.revive}% HP`);

@@ -3,6 +3,7 @@ import {
   SaveStore,
   StorageFullError,
   clockAt,
+  forwardDay,
   ctxOf,
   hashStr,
   loadCareer,
@@ -44,6 +45,9 @@ const pinned = (() => {
 })();
 const today = () => (pinned ? new Date(pinned) : new Date());
 export const G: Game = { save: structuredClone(first.save), F: null, rng: mulberry32(seed()), clock: clockAt(today()), pool: null, notes: [] };
+// the game's day never goes back (G12)
+const now = () => clockAt(forwardDay(G, today()));
+G.clock = now();
 /** Bumps whenever the live fighter changes, so screens that show it update. */
 export const fver = signal(0);
 
@@ -64,7 +68,7 @@ export function sync(): void {
 
 /** Runs a rule against the live game, then saves. */
 export function act<T>(fn: (g: Game) => T): T {
-  G.clock = clockAt(today());
+  G.clock = now();
   const r = fn(G);
   sync();
   return r;
@@ -184,7 +188,11 @@ function watchStats() {
   const prev = lastNs;
   lastNs = { cid: F.cid, n };
   if (!prev || prev.cid !== F.cid) return;
-  const rows = WATCH.filter((k) => n[k] != null && prev.n[k] != null && n[k] !== prev.n[k]).map((k) => ({ k, a: prev.n[k] as number, b: n[k] as number }));
+  popStats(prev.n, n);
+}
+/** The old → new popup for any fighter's numbers (a Spin & Run runner, a mentor's lesson: G15). */
+export function popStats(a: NumStats, b: NumStats) {
+  const rows = WATCH.filter((k) => b[k] != null && a[k] != null && b[k] !== a[k]).map((k) => ({ k, a: a[k] as number, b: b[k] as number }));
   if (rows.length) statPop.value = { id: Date.now(), rows };
 }
 

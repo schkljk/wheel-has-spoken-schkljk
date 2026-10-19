@@ -3,6 +3,7 @@ import { ARENAS } from '../data/arenas';
 import { SEASONAL_ARENAS } from '../data/content/seasonal';
 import { BONUS, DAILY, EVENTS, INJURIES, LEVELUP, MUTATORS } from '../data/misc';
 import { RARITY } from '../data/gear';
+import { readSteps } from '../data/wording';
 import { SYN_SETS } from '../data/content/gear-sets';
 import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
@@ -62,7 +63,7 @@ export function fxLines(fx?: (TraitFx & Record<string, unknown>) | null): string
   if (n('guardX')) L.push(`Guard blocks ${Math.round((1 - n('guardX')) * 100)}% instead of 60%`);
   if (n('guardAdd')) L.push(`Guard blocks ${pctS(n('guardAdd'))} less`);
   if (n('guardEn')) L.push(`Guarding gives +${n('guardEn')} extra energy`);
-  if (n('readB')) L.push(`Reads opponents ${pctS(n('readB'))} better`);
+  if (n('readB')) L.push(`Reads opponents ${readSteps(n('readB'))} clearer`);
   if (n('counterB')) L.push(`+${pctS(n('counterB'))} counter chance when guarding`);
   if (n('revive')) L.push(`Gets back up once with ${n('revive')} HP`);
   const pet = fx.pet as { e: string; n: string } | undefined;

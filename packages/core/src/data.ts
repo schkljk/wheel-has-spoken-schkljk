@@ -26,4 +26,4 @@ export * from './data/content/bounties';
 export * from './data/content/riddles';
 export * from './data/content/cosmetics';
 // the wording fixes: laid over the tables above once, on load
-export { reword, rewordDeep } from './data/wording';
+export { readSteps, reword, rewordDeep } from './data/wording';

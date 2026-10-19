@@ -242,6 +242,8 @@ export async function lootFlow(table: LootTable, o: { step?: boolean; landed?: (
   const list = lootList(G, table);
   const reasons = act((g) => lootStart(g, table));
   let pending: Gear | null = null;
+  // a piece of gear is worth reading: its reveal waits for a tap (G10)
+  let gear = false;
   await spinWheel({
     cat: 'loot',
     title: 'Loot',
@@ -253,8 +255,10 @@ export async function lootFlow(table: LootTable, o: { step?: boolean; landed?: (
     // spoils spin and move on by themselves (B3); a gear choice still waits for you
     autoSpin: true,
     autoNext: 1700,
+    hold: () => gear,
     onLand: (it) => {
       const r = lootLand(G, it);
+      gear = !!r && r.kind === 'gear';
       if (o.step) stepDone(G);
       if (r && r.kind === 'gear' && r.then === 'choose') pushStep(G, { t: 'gear', k: r.gear.k });
       o.landed?.(G);

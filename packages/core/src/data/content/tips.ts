@@ -30,7 +30,7 @@ export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }
   reads: {
     e: '🔮',
     t: 'Reading them',
-    d: 'Before each round you get a clue about their next move, from "Clear as day" down to "Wild guess". The surer the clue, the more you can trust it. IQ, charisma and some gear make clues clearer.',
+    d: 'Before each round you get a clue about their next move, from "Clear as day" down to "Wild guess". The surer the clue, the more you can trust it. IQ, charisma and some gear make clues clearer: a step clearer is one word up the scale, like Maybe to Probably.',
     f: 'A wild guess is still a guess. So is your horoscope.',
   },
   sudden: {

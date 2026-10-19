@@ -1,5 +1,5 @@
-import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, takeMentor, type CareerFighter, type Mentor, type SumLine } from '@whs/core';
-import { G, act, go } from '../state/game';
+import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, numStats, takeMentor, type CareerFighter, type Mentor, type SumLine } from '@whs/core';
+import { G, act, go, popStats } from '../state/game';
 import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
@@ -22,11 +22,14 @@ async function start(f: CareerFighter) {
     });
     m = ms[c] ?? null;
   }
+  const before = numStats(f, ctxOf(G));
   act((g) => {
     enterCareer(g, f);
     if (m) takeMentor(f, m);
     clearBuild(g);
   });
+  // the mentor's +1, as numbers (G15)
+  if (m) popStats(before, numStats(f, ctxOf(G)));
   void goHub();
 }
 
