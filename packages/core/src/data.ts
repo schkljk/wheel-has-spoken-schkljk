@@ -22,5 +22,6 @@ export * from './data/content/commentary';
 export * from './data/content/seasonal';
 export * from './data/content/build-summary';
 export * from './data/content/tips';
+export * from './data/content/bounties';
 // the wording fixes: laid over the tables above once, on load
 export { reword, rewordDeep } from './data/wording';

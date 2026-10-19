@@ -26,3 +26,4 @@ export * from './dots';
 export * from './preview';
 export * from './recap';
 export * from './resume';
+export * from './bounty';
