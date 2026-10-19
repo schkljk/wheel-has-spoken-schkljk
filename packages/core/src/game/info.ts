@@ -193,7 +193,7 @@ export function infoFor(key: string): Info | null {
   }
   if (kind === 'rule') {
     // the review's rules (E1-E4) have pages of their own while they are on
-    const off = (a === 'moves' && !BALANCE.pureFocus) || (a === 'energy' && !BALANCE.statRoles);
+    const off = (a === 'moves' && !BALANCE.pureFocus) || (a === 'energy' && !BALANCE.statRoles) || (a === 'club' && !BALANCE.clubInsider);
     const r = (!off && RULES_NOW[a]) || RULES[a] || RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }

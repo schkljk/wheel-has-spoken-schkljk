@@ -50,6 +50,8 @@ export interface Balance {
   storyPacing: boolean;
   /** every level-up spins twice and you keep one (review F4) */
   secondOpinion: boolean;
+  /** the fight club's payouts follow a noisy bookie's line, and an insider tells the real odds (review F8) */
+  clubInsider: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -76,6 +78,7 @@ export const LEGACY_BALANCE: Balance = {
   healRules: false,
   storyPacing: false,
   secondOpinion: false,
+  clubInsider: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -127,6 +130,7 @@ export const BALANCE: Balance = {
   healRules: true,
   storyPacing: true,
   secondOpinion: true,
+  clubInsider: true,
 };
 
 /**

@@ -7,6 +7,10 @@ import {
   clubMatchup,
   clubMult,
   clubSettle,
+  buyClubTip,
+  clubLine,
+  clubTip,
+  clubTipFree,
   coinsOf,
   ctxOf,
   cupOpponent,
@@ -416,9 +420,18 @@ function ClubFight({ c, side, bt }: { c: Club; side: 'A' | 'B'; bt: Battle }) {
 }
 function ClubSheet({ c }: { c: Club }) {
   const [bet, setBet] = useState(c.bet);
+  const [inside, setInside] = useState<string[] | null>(c.tipped ? clubTip(c).lines : null);
   c.bet = bet;
   const coins = coinsOf(G);
   const ctx = ctxOf(G);
+  // payouts follow the bookie's line (F8); the insider knows the real odds
+  const line = clubLine(c);
+  const free = clubTipFree(G);
+  const gems = G.save.profile.gems || 0;
+  const askInsider = () => {
+    if (!act((g) => buyClubTip(g, c))) return toast('No gems. The insider does not take IOUs');
+    setInside(clubTip(c).lines);
+  };
   const side = (f: typeof c.A, p: number, k: 'A' | 'B') => (
     <div class="fc-side">
       <FighterSprite look={lookOf(f)} h={92} mirror={k === 'B'} />
@@ -454,10 +467,23 @@ function ClubSheet({ c }: { c: Club }) {
           ))}
         </div>
         <div class="fc-vs">
-          {side(c.A, c.pA, 'A')}
+          {side(c.A, line, 'A')}
           <div class="fc-v">VS</div>
-          {side(c.B, 1 - c.pA, 'B')}
+          {side(c.B, 1 - line, 'B')}
         </div>
+        {c.line != null &&
+          (inside ? (
+            <div class="fc-tip" aria-live="polite">
+              <b>🕵️ The insider says</b>
+              {inside.map((t) => (
+                <p key={t}>{t}</p>
+              ))}
+            </div>
+          ) : (
+            <button class="btn ghost block" disabled={!free && gems < 1} onClick={askInsider}>
+              🕵️ {free ? 'Charm the insider (your charisma: free)' : 'Ask the insider · 1 💎'}
+            </button>
+          ))}
         <div class="row">
           <button class="btn ghost grow" onClick={() => openClub()}>
             New matchup

@@ -351,6 +351,15 @@ export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: st
       'A full bar (100) unlocks the signature move, which uses all of it.',
     ],
   ],
+  club: [
+    '🎰',
+    'Fight club',
+    [
+      'Bet coins on a fight between two other fighters. The payout follows the bookie\'s line: backing the underdog pays more.',
+      'The bookie only reads the cards, so the line is often off. The insider knows the real odds: a gem buys the tip, or 45 charisma and up gets it for free.',
+      'Call a hall of fame exhibition before the bell: a right call pays 5 coins.',
+    ],
+  ],
   heals: [
     '💚',
     'Heals and revives',

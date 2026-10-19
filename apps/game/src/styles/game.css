@@ -3537,3 +3537,35 @@ img.pxi.chap {
   text-transform: uppercase;
   color: var(--muted);
 }
+
+/* fight club insider and exhibition calls (review F8) */
+.fc-tip {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  animation: pop 0.3s ease-out both;
+}
+.fc-tip p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.ex-call-row .btn {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ex-called {
+  margin: 0.25rem 0;
+  text-align: center;
+  font-weight: 700;
+}
+.ex-called.good {
+  color: var(--good);
+}
+.ex-called.bad {
+  color: var(--muted);
+}
