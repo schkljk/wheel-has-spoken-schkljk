@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { GEAR, RSUB, RULES, SIDEKICKS, TALENTS, forwardDay, newSave, readSteps } from '../src';
+import { GEAR, RSUB, RULES, SIDEKICKS, TREE, forwardDay, newSave, readSteps } from '../src';
 
 // Review round 2: G12 (the day only moves forward) and G15 (reads in words, help text that tells the truth).
 describe('the game day (G12)', () => {
@@ -34,7 +34,7 @@ describe('reads are words (G15)', () => {
       if (typeof v === 'string') texts.push(v);
       else if (v && typeof v === 'object') for (const x of Object.values(v)) walk(x);
     };
-    walk([GEAR, SIDEKICKS, TALENTS, RULES, RSUB]);
+    walk([GEAR, SIDEKICKS, TREE, RULES, RSUB]);
     expect(texts.filter((t) => /reads?\b[^.]*\d+% (better|worse)/i.test(t))).toEqual([]);
   });
   it('from the number the engine uses: the Butler bot (0.15, which used to say 10%) reads a step and a half clearer', () => {
