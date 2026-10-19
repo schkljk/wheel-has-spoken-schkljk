@@ -292,6 +292,77 @@ export async function renderTrack(t: Track, loops = 1, rate = 44100): Promise<Au
 (globalThis as unknown as { __whsMusic?: unknown }).__whsMusic = {
   /** what is playing now (for the tests) */
   playing: () => cur?.id ?? null,
+  /**
+   * The theme twice in a row, the way the game loops it, cut down to exactly one loop starting at the second
+   * pass (so it carries the first pass's tail, as in the game). Returns how the join compares with the rest
+   * (level just before and after it, and the biggest sample-to-sample jump there and anywhere), and the cut as
+   * a WAV that loops without a gap.
+   */
+  async seam() {
+    const t = THEME_TRACK;
+    const rate = 44100;
+    const b = await renderTrack(t, 2, rate);
+    const L = b.getChannelData(0),
+      R = b.getChannelData(1);
+    const len = 60 / t.bpm / 4;
+    const loopN = Math.round(t.steps * len * rate);
+    const s0 = Math.round((0.05 + t.steps * len) * rate);
+    const mono = (i: number) => (L[i]! + R[i]!) / 2;
+    const rms = (a: number, n: number) => {
+      let q = 0;
+      for (let i = a; i < a + n; i++) q += mono(i) ** 2;
+      return Math.sqrt(q / n);
+    };
+    const w = Math.round(0.25 * rate);
+    let jumpSeam = 0,
+      jumpAll = 0;
+    for (let i = 1; i < L.length; i++) {
+      const j = Math.abs(mono(i) - mono(i - 1));
+      jumpAll = Math.max(jumpAll, j);
+      if (Math.abs(i - s0) < 0.05 * rate) jumpSeam = Math.max(jumpSeam, j);
+    }
+    // the bar lines elsewhere, for comparison: every bar's level change across its line
+    const bar = Math.round(16 * len * rate);
+    const changes: number[] = [];
+    for (let k = 1; k < 24; k++) {
+      const at = Math.round(0.05 * rate) + k * bar;
+      changes.push(Math.abs(20 * Math.log10(rms(at, w) / rms(at - w, w))));
+    }
+    const seamChange = Math.abs(20 * Math.log10(rms(s0, w) / rms(s0 - w, w)));
+    // the loop file: one pass, starting at the second, 16-bit stereo
+    let peak = 0;
+    for (let i = s0; i < s0 + loopN; i++) peak = Math.max(peak, Math.abs(L[i]!), Math.abs(R[i]!));
+    const k = 0.9 / peak;
+    const buf = new DataView(new ArrayBuffer(44 + loopN * 4));
+    const str = (o: number, x: string) => [...x].forEach((c, i) => buf.setUint8(o + i, c.charCodeAt(0)));
+    str(0, 'RIFF');
+    buf.setUint32(4, 36 + loopN * 4, true);
+    str(8, 'WAVEfmt ');
+    buf.setUint32(16, 16, true);
+    buf.setUint16(20, 1, true);
+    buf.setUint16(22, 2, true);
+    buf.setUint32(24, rate, true);
+    buf.setUint32(28, rate * 4, true);
+    buf.setUint16(32, 4, true);
+    buf.setUint16(34, 16, true);
+    str(36, 'data');
+    buf.setUint32(40, loopN * 4, true);
+    for (let i = 0; i < loopN; i++) {
+      buf.setInt16(44 + i * 4, Math.max(-1, Math.min(1, L[s0 + i]! * k)) * 32767, true);
+      buf.setInt16(46 + i * 4, Math.max(-1, Math.min(1, R[s0 + i]! * k)) * 32767, true);
+    }
+    const bytes = new Uint8Array(buf.buffer);
+    let bin = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return {
+      loopSeconds: loopN / rate,
+      seamLevelChangeDb: seamChange,
+      barLevelChangeDb: { median: changes.sort((a, b) => a - b)[11], max: changes[changes.length - 1] },
+      jumpAtSeam: jumpSeam,
+      jumpAnywhere: jumpAll,
+      wav: btoa(bin),
+    };
+  },
   async measure(id: 'theme' | 'arena' | 'phase', wav = false) {
     const t = id === 'theme' ? THEME_TRACK : id === 'arena' ? arenaTrack('colosseum') : phaseTrack({ root: 45, bpm: 132 });
     const b = await renderTrack(t, 1, wav ? 22050 : 44100);
