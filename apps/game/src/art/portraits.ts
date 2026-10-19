@@ -87,7 +87,11 @@ function cached(key: string, make: Make): HTMLCanvasElement | null | undefined {
 const url = (key: string, cv: Make) => {
   if (!urls.has(key)) {
     const c = cv();
-    if (c === undefined) return void spritesReady.value, null;
+    if (c === undefined) {
+      // not drawable yet: whoever asked draws again when the code is in
+      void spritesReady.value;
+      return null;
+    }
     capped(urls, key, c?.toDataURL('image/png') ?? null);
   }
   return urls.get(key)!;
