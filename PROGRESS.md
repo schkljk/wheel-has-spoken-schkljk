@@ -13,6 +13,17 @@
 
 ## After the upgrade list: owner requests
 
+### Review round 2 (October 2026)
+
+- **Asked for:** "Review the game again for new suggestions."
+- **How:** four reviewers in parallel:
+  - Player experience: a new career through chapter 1, plus every mode and round-1 feature at four sizes.
+  - Performance: 4× CPU and Fast 3G.
+  - Game design: 24 whole story runs with the economy tracked, plus simulations of every new mode, with proposed changes tested in memory.
+  - Bugs and exploits: the app closed at every step, saves, two tabs, date changes, a new version deploying.
+- **Result:** 51 open suggestions with evidence, effort and a suggested order, in `docs/SUGGESTIONS.md` (round 2, IDs G–L). Round 1 is kept below it.
+- **Fixed right away (G1):** the fight result piled its lines on top of each other. A chapter-cleared result was unreadable at every size, and nothing scrolled: the scroll box and the list inside it shared a class, so the box's rows could shrink to nothing. The box has its own class now. A new e2e check (`textOverlaps`) runs at 390×844, 320×568 and 844×390; it fails on the old style and passes now.
+
 ### Review follow-up: the owner's picks
 
 - **Asked for:** "Do A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A12, A13, B2, B3, B5, B6, B7, C1, C2, C3, D1–D10, E1–E5, F2–F12" (from `docs/SUGGESTIONS.md`). Skipped by the owner: A11, B1, B4, E6, E7, F1.
