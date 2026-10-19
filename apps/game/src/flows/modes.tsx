@@ -1,8 +1,10 @@
 import {
+  BALANCE,
   TRIAL_COUNT,
   TRIAL_FROM,
   trialBoss,
   trialInfo,
+  trialLevel,
   trialTier,
   trialsCleared,
   trialsOpen,
@@ -254,7 +256,7 @@ async function duelFight(d: Duel) {
 function TrialsSheet() {
   const done = trialsCleared(G);
   return (
-    <Sheet emoji="🌀" title="Wheelborn trials" sub="Ten remixed bosses for levels 34 to 50. Losing costs nothing">
+    <Sheet emoji="🌀" title="Wheelborn trials" sub={`Ten remixed bosses for levels ${trialLevel(0)} to ${trialLevel(TRIAL_COUNT - 1)}. Losing costs nothing`}>
       <div class="stack">
         {Array.from({ length: TRIAL_COUNT }, (_, i) => {
           const t = trialInfo(i);
@@ -613,10 +615,13 @@ function ClubSheet({ c }: { c: Club }) {
               🕵️ {free ? 'Charm the insider (your charisma: free)' : 'Ask the insider · 1 💎'}
             </button>
           ))}
+        {BALANCE.clubTight && <p class="hint center">This card stays up until you bet on it. The bookie does not reshuffle for browsers.</p>}
         <div class="row">
-          <button class="btn ghost grow" onClick={() => openClub()}>
-            New matchup
-          </button>
+          {!BALANCE.clubTight && (
+            <button class="btn ghost grow" onClick={() => openClub()}>
+              New matchup
+            </button>
+          )}
           <button class="btn ghost grow" onClick={closeSheet}>
             Leave
           </button>
