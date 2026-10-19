@@ -88,18 +88,20 @@ export const LEGACY_BALANCE: Balance = {
 export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.37 - 0.01 * (ch - 11));
 
 /** How many levels each boss is above its chapter. */
-export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
+// the Wheelmaster (chapter 10) fights at the chapter's level: a chosen one's +2 to everything counts for more
+// since the review's stat roles, and its table can't ease off any further
+export const BOSS_LVL_UP: number[] = BOSSES.map((_, i) => (i === 9 ? 0 : 1));
 /**
  * Stat tiers taken off (or added to) each boss's table, chapters 1 to 20. Tuned with the HP below over whole
  * story runs (tools/sim/tune-bosses.ts): an average build wins about 72% of tries in chapter 1, 54% at the end
  * of Act I, and 42% to 28% across Act II.
  */
 // prettier-ignore
-export const BOSS_STAT_SHIFT: number[] = [-6, -4, -3, -5, -3, -3, -5, -2, -5, -5, 2, -4, 3, -5, 0, 4, 4, -5, -5, -6];
+export const BOSS_STAT_SHIFT: number[] = [-6, -1, -2, -2, -3, -2, -4, -2, -4, -6, 4, -1, 3, -4, 4, 4, 4, -5, -4, -6];
 
 /** Boss HP by chapter (see the stat shift above). */
 // prettier-ignore
-export const BOSS_HP: number[] = [90, 142, 180, 245, 250, 225, 182, 240, 312, 205, 320, 533, 340, 493, 360, 608, 624, 471, 440, 331];
+export const BOSS_HP: number[] = [224, 190, 170, 214, 257, 205, 255, 353, 355, 180, 512, 410, 487, 529, 360, 608, 624, 630, 693, 331];
 
 /** Gentler first chapters, so the weakest builds can get going (the rest of CH_PCT is unchanged). */
 export const CH_PCT_EASY: (readonly [number, number])[] = [
