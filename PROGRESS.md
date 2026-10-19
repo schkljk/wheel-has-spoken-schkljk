@@ -66,6 +66,59 @@
       - The 512 px PNG icon is now in the app manifest for Android installs.
     - D9: the save keeps its backup index in memory instead of parsing three backups on every write.
     - D10: portrait caches are capped. Evicted fighter textures are destroyed unless a fighter on stage still uses them.
+  - **E1–E5, the design pass.** Every rule is a switch in `data/balance.ts`, off in the old game's tuning, so the parity tests still play the old rules exactly. Measured with `npx tsx tools/sim/design.ts` (the same seeded fights with the switches off and on, 3,000 per cell) and `npx tsx tools/sim/story-run.ts [--before]`.
+    - **E1, you pick what, the wheel picks how hard.** Attack holds only strikes (a quick jab joins them), Defend only guards and counters, Power only your power; with nothing to cast, the Power wheel holds the feint that beats a guard. Following the read now beats auto-battle by about 16 points:
+
+      | Chapter | Auto | Following the read, before | After |
+      |---|---|---|---|
+      | 1 | 50% | 56% | 66% |
+      | 10 | 49% | 53% | 65% |
+      | 20 | 49% | 53% | 65% |
+
+    - **E2, reads stay readable.** The AI's skill no longer clouds your read, IQ counts half as much, and only a trickster pushes a read below "Just a hunch". "Wild guess" went from 32% of reads in chapter 1 and 68% in chapter 20 to 2% everywhere. Reads are right about 61% of the time in every chapter (58% down to 42% before).
+    - **E3, every stat has a job.** Speed is a quarter of your defense against strikes and IQ about a third against powers. IQ adds crit damage, and power mastery makes powers cheaper (25 energy, down to 15). Win-rate points from +2 of one stat (two seeds, 4,000 fights each): durability 5.3 → 4.2, speed 2.0 → 4.3, strength 2.7 → 2.5, weapon mastery 3.0 → 2.6, power mastery 0.9 → 2.0, IQ 0.9 → 1.8, charisma 0.0 → 0.3.
+    - **E4, heals fade, the dead rise once.**
+      - Regeneration heals a share of the HP you are missing.
+      - Every heal shrinks after round 6, to a fifth by round 11.
+      - One revive per fight, whatever its source.
+      - Powers pierce 30% of durability.
+      - A power cut off by a strike keeps half its damage instead of a third.
+      - The Necromancer rises with 20% HP (35% before).
+
+      | | Before | After |
+      |---|---|---|
+      | Powers below "No power" | 2 | 0 |
+      | Best to worst power | 24.9 points | 18.4 |
+      | Regeneration | 68% | 58% |
+      | Mage | 41% | 50% |
+      | Necromancer | 63% | 60% |
+      | Best to worst class (the legendary Chosen one aside) | 21.5 points | 17.7 |
+
+    - **E5 and F7, story pacing:**
+      - Every fight row after the first has an elite to pick instead.
+      - A story fight you are 85%+ sure to win can be claimed from the ☰ menu before round 1: full rewards, at the HP a real win costs.
+      - A boss puts on at most one level after sizing you up (three before). Its intro says so, and beating it pays 2 gems a level.
+    - **F4, a second opinion** (it changes how strong fighters get, so it is in this pass): every level-up spins twice and you keep one.
+    - **Boss retune** (`tools/sim/tune-bosses.ts`, 5 rounds of 90 story runs): the same aims as before for an average build (72% of boss tries in chapter 1, 54% at the end of Act I, 42% to 28% across Act II). The Wheelmaster now fights at its chapter's level.
+    - **Whole story runs**, 30 per build strength, story only, on auto-battle:
+
+      | Runs that finish the story | Before | After |
+      |---|---|---|
+      | Weak builds | 13% | 30% |
+      | Average builds | 73% | 77% |
+      | Strong builds | 83% | 87% |
+
+      In Act II a strong build now beats bosses more often than an average one (chapter 15: 62% vs 42%, chapter 17: 72% vs 51%; before, about the same). Regular fights are 73% to 98% wins, with sure wins claimed.
+  - **New features:**
+    - **F2, daily duel** (Play tab): one matchup a day, the same for everyone. Both fighters, the arena and every die (the fight's and the combat wheel's) come from the date. Scored by result, rounds and HP left, with a line to copy (a square per round's read). No streak; the last seven days stay playable, and the first win of each pays 8 coins.
+    - **F5, bounty board** (Goals tab): three standing build challenges ("Beat a story boss as a Pigeon"), 24 in all, one table row each. A new one goes up only when one is done; swapping one costs a gem.
+    - **F6, synergy riddles:** an undiscovered synergy in the collection is a dashed tile with a riddle (83 written, set bonuses generated). A test checks no riddle says its synergy's name.
+    - **F8, fight club insider:** payouts follow a bookie's line, which is the real odds plus noise. The insider tells the real odds and the dirt on whoever the line has wrong, for a gem, or free with 45 charisma. Exhibitions can be called before the bell: 5 coins for a right call.
+    - **F9, ghost codes** (More tab): your fighter as a line of text a friend can paste and fight. Only the build travels, with a checksum. Ghost fights are for pride: no XP, no coins.
+    - **F10, mentors:** a new career can take a retired champion as a mentor: +1 to their best stat, and they drop by on the map at most once a chapter.
+    - **F11, the locker** (More tab): 20 earned cosmetics for gems (wheel rims, pointer charms, victory confetti, nameplates). Looks only.
+    - **F12, Wheelborn trials** (Play tab, level 34 or a finished story): ten remixed bosses for levels 34 to 50. Each is one boss's picks wearing two other bosses' phase-two kits, so phase two puts two one-time slices on your wheel. Stat tier and HP are set per trial (`tools/sim/trials.ts`) for a ladder from about 55% to 30% at the trial's level. First clears pay gems; losing costs nothing.
+  - **Still to do:** F3, Spin & Run.
 
 
 ### Full review (October 2026)
