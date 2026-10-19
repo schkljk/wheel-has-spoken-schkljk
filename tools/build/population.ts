@@ -2,7 +2,8 @@
 // (game/summary.ts). It only changes when the rules for rolling or rating a fighter do. Part of `npm run bake`.
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { computePopulation } from '../../packages/core/src/game/summary';
+// the whole core, as the game loads it: the tables' load-time overlays (wording, the review's retune) apply
+import { computePopulation } from '../../packages/core/src';
 
 export function populationSource(): string {
   const P = computePopulation();
