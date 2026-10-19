@@ -46,7 +46,8 @@ test('F2: the daily duel, played, scored and kept', async ({ page }) => {
 test('F4: a level-up spins twice and you keep one', async ({ page }) => {
   test.setTimeout(120_000);
   const errors = watchErrors(page);
-  await open(page, careerSaveKV({ seed: 5, lvl: 4, fast: true, pendingLv: 1 }));
+  // its own dice: the level-up wheels land on slices rolled from them (G2), the same on every machine
+  await open(page, { ...careerSaveKV({ seed: 5, lvl: 4, fast: true, pendingLv: 1 }), 'whs:seed': 'second opinion' });
   // going to the fighter page spins waiting level-ups first
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('button', { name: 'Spin the level-up wheel' }).click();
@@ -55,7 +56,9 @@ test('F4: a level-up spins twice and you keep one', async ({ page }) => {
   await page.getByRole('button', { name: 'Spin for a second opinion' }).click();
   // two different slices: pick one; the same twice: it says so and moves on
   const keep = page.getByRole('heading', { name: 'Keep one' });
-  await expect(keep.or(page.locator('.tabbar'))).toBeVisible({ timeout: 30_000 });
+  // the same twice on Awakening or New weapon goes straight to its upgrade spin
+  const upgrade = page.getByRole('heading', { name: /^(Awakening|New weapon)$/ });
+  await expect(keep.or(page.locator('.tabbar')).or(upgrade)).toBeVisible({ timeout: 30_000 });
   if (await keep.count()) {
     await fits(page, 'keep one');
     await page.locator('.ch-opt').first().click();
