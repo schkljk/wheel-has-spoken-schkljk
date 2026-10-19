@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   CALL_PAY,
+  addCoins,
   buyClubTip,
   clockAt,
   clubLine,
@@ -24,7 +25,7 @@ function game(seed = 4): Game {
   const rng = mulberry32(seed);
   const g: Game = { save: newSave(0), F: null, rng, clock: clockAt(), pool: null, notes: [] };
   enterCareer(g, randomFighter('Bettor', rng) as CareerFighter);
-  g.F!.coins = 100;
+  addCoins(g, 100);
   return g;
 }
 
@@ -44,7 +45,9 @@ describe('the fight club insider', () => {
     const coins = coinsOf(g);
     const r = clubSettle(g, c, 'A', 0);
     expect(r.mult).toBe(clubMult(clubLine(c)));
-    expect(coinsOf(g)).toBe(coins + Math.round(10 * r.mult));
+    expect(r.pay).toBe(Math.round(10 * r.mult));
+    // (a goal for betting may pay on top)
+    expect(coinsOf(g)).toBeGreaterThanOrEqual(coins + r.pay);
   });
   it('tells the real odds for a gem, once a matchup', () => {
     const g = game();
