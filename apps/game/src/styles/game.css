@@ -856,14 +856,17 @@
 }
 .hv {
   display: flex;
+  /* on a narrow phone the energy goes under the HP instead of under the round panel (H9) */
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 0.3rem;
+  column-gap: 0.3rem;
   /* never below 13 px: these are the numbers the fight is about */
   font-size: clamp(0.8125rem, 2.8vw, 0.9rem);
   font-weight: 700;
   white-space: nowrap;
 }
 .hv .env {
+  margin-left: auto;
   pointer-events: auto;
 }
 /* the opponent's last moves, newest last */
