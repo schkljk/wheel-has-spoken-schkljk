@@ -123,7 +123,7 @@ function StatRows({ f }: { f: CareerFighter }) {
 export function KitStrip({ f }: { f: CareerFighter }) {
   const ks = kitMoves(f);
   if (!ks.length) return null;
-  if (f === G.F) ensure((g) => ks.forEach((m) => markSeen(g, 'moves', 'mv/' + m.n)));
+  if (f === G.F) ensure((g) => ks.forEach((m) => markSeen(g, 'moves', 'mv/' + m.n)), 'seen|' + ks.map((m) => m.n).join('|'));
   return (
     <div class="card-kit">
       <span class="ck-l">Moves</span>

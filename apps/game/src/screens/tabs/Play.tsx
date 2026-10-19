@@ -36,7 +36,7 @@ export function PlayTab() {
   const ch = S ? S.ch : 1;
   const C = CHAPTERS[ch - 1]!;
   const run = runSummary(G);
-  const NM = ensure((g) => myNemesis(g));
+  const NM = ensure((g) => myNemesis(g), 'nemesis');
   const NG = goalsBySoonest(G)[0];
   const chal = F.challenge as { kind: string; name: string } | null;
   const open = rushOpen(G);

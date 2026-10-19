@@ -8,7 +8,7 @@ const times = (n: number) => (n === 1 ? 'once' : `×${n}`);
 
 /** The trophy room (upgrade 23): what every fighter has won, as shelves, with silhouettes for what's left. */
 export function openTrophies() {
-  const s = ensure((g) => trophyShelves(g));
+  const s = ensure((g) => trophyShelves(g), 'trophies');
   const bosses = s.bosses.filter((b) => b.won).length;
   const titles = s.titles.filter((t) => t.won).length;
   const classes = s.classes.filter((c) => c.lvl > 0);

@@ -113,7 +113,7 @@ function BaseShop({ tab: tab0 }: { tab: Tab }) {
       );
     });
   else if (tab === 'deal') {
-    const d = ensure((g) => dailyDeal(g));
+    const d = ensure((g) => dailyDeal(g), 'deal');
     const row = (k: string | null, star: boolean) => {
       const g = k ? GEARK[k] : null;
       if (!g) return null;

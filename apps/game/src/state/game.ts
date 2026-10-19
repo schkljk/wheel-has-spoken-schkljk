@@ -47,14 +47,27 @@ export const G: Game = { save: structuredClone(first.save), F: null, rng: mulber
 /** Bumps whenever the live fighter changes, so screens that show it update. */
 export const fver = signal(0);
 
-/** Writes the game and publishes a new snapshot. */
-export function sync(): void {
-  persistFighter(G);
-  if (G.save.roster.slots.some(Boolean)) keepSave();
+/** Bumps with every change the app makes to the game (see ensure). */
+let ver = 0;
+let writing = false;
+function write() {
+  writing = false;
   try {
     store.write(G.save);
   } catch (e) {
     toast(e instanceof StorageFullError ? 'Storage is full: export your save from More, Your save' : 'Could not save just now');
+  }
+}
+/** Writes the game and publishes a new snapshot. */
+export function sync(): void {
+  ver++;
+  persistFighter(G);
+  if (G.save.roster.slots.some(Boolean)) keepSave();
+  // the changes of one task are written once, at its end, before anything else can run (a fighter build wrote
+  // the profile twice per wheel): nothing is left unwritten that writing every change would have kept
+  if (!writing) {
+    writing = true;
+    queueMicrotask(write);
   }
   save.value = structuredClone(G.save);
   fver.value++;
@@ -72,13 +85,19 @@ export function act<T>(fn: (g: Game) => T): T {
 
 /**
  * Runs a rule while a screen renders (e.g. today's offers or deal get rolled the first time they are shown).
- * Saves afterwards only if something changed, so rendering never loops.
+ * Saves afterwards only if something changed, so rendering never loops. Finding out means serializing the whole
+ * save before and after, so a rule given a `key` that changed nothing is trusted to change nothing again until
+ * the game changes (the Play, Goals and Fighter tabs did it on every render).
  */
-export function ensure<T>(fn: (g: Game) => T): T {
+const clean = new Map<string, { ver: number; save: SaveData; F: Game['F'] }>();
+export function ensure<T>(fn: (g: Game) => T, key?: string): T {
+  const c = key ? clean.get(key) : undefined;
+  if (c && c.ver === ver && c.save === G.save && c.F === G.F) return fn(G);
   const snap = () => JSON.stringify(G.save) + JSON.stringify(G.F ? serFighter(G.F) : null);
   const before = snap();
   const r = fn(G);
   if (snap() !== before) queueMicrotask(sync);
+  else if (key) clean.set(key, { ver, save: G.save, F: G.F });
   return r;
 }
 
@@ -95,6 +114,7 @@ export function replaceSave(next: SaveData, reason: string): void {
 }
 /** Starts over from a save that is already stored. */
 export function loadSave(next: SaveData): void {
+  ver++;
   G.save = structuredClone(next);
   G.F = null;
   save.value = next;
