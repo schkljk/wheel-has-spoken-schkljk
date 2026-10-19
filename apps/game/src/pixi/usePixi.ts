@@ -54,7 +54,7 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) 
     let P: Px | null = null;
     let disposed = false;
     let cleanup: void | (() => void);
-    let ro: ResizeObserver | null = null;
+    let ro: { disconnect(): void } | null = null;
     void loadPx().then(async (px) => {
       if (disposed) return;
       P = px;
@@ -64,8 +64,7 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) 
       el.appendChild(app.canvas);
       // Pixi's resizeTo only follows the window; the host also changes size when the content around it does
       // (an odds row appears, a result grows), and a canvas that kept its old size would cover that content
-      ro = new ResizeObserver(() => app.renderer && app.resize());
-      ro.observe(el);
+      ro = followHost(app, el);
       if (location.search.includes('perf')) timeFrames(app);
       cleanup = setup(app, el, px);
       setApp(app);
@@ -78,6 +77,38 @@ export function usePixi(setup: (app: Application, host: HTMLDivElement, px: Px) 
     };
   }, []);
   return { host, app };
+}
+
+/** A host size change smaller than this (CSS px, either way) is a wobble: it waits for the layout to settle. */
+export const SMALL_RESIZE = 40;
+const SETTLE_MS = 250;
+/**
+ * Keeps the drawing buffer the host's size. Every resize reallocates the WebGL buffer (a whole frame's work on a
+ * phone), so a small change waits until the layout has settled, the canvas stretched to the host meanwhile; a
+ * big one (a new layout) resizes at once. Window resizes and rotation go through Pixi's own resizeTo.
+ */
+function followHost(app: Application, el: HTMLElement): { disconnect(): void } {
+  let timer = 0;
+  // how far the host is from the size the buffer was made for
+  const off = () => (app.renderer ? Math.max(Math.abs(el.clientWidth - app.screen.width), Math.abs(el.clientHeight - app.screen.height)) : 0);
+  const settle = () => {
+    timer = 0;
+    if (off()) app.resize();
+  };
+  const ro = new ResizeObserver(() => {
+    clearTimeout(timer);
+    timer = 0;
+    const d = off();
+    if (d >= SMALL_RESIZE) app.resize();
+    else if (d) timer = window.setTimeout(settle, SETTLE_MS);
+  });
+  ro.observe(el);
+  return {
+    disconnect() {
+      clearTimeout(timer);
+      ro.disconnect();
+    },
+  };
 }
 
 /** `?perf`: records how long each frame's Pixi work takes (updates and drawing), for tools/dev/fps.ts. */
