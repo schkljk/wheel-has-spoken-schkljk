@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { sfx } from './sound';
 import { statPop, type StatChange } from '../state/game';
+import { cine, sheet } from '../state/ui';
 import { NS_META } from './FighterCard';
 import { Icon } from './Icon';
 
@@ -34,7 +35,8 @@ export function StatPopHost() {
   }, [p]);
   if (!p) return null;
   return (
-    <button class="statpop" key={p.id} onClick={() => (statPop.value = null)} aria-live="polite">
+    // over an open sheet or card it waits at the top, clear of the choices
+    <button class={`statpop${sheet.value || cine.value ? ' top' : ''}`} key={p.id} onClick={() => (statPop.value = null)} aria-live="polite">
       <b class="sp-h">📊 Stats changed</b>
       {p.rows.map((r: StatChange) => {
         const m = NS_META.find((x) => x[0] === r.k)!;

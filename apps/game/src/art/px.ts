@@ -100,17 +100,47 @@ export interface Buf {
   w: number;
   h: number;
   s: number;
-  c: (RGB | null)[];
-  r: (Ramp | null)[];
+  /** the color, packed (pack/unpack): 0 is an empty pixel */
+  c: Uint32Array;
+  /** the ramp it came from, by id (rampId/rampOf): 0 is none */
+  r: Uint16Array;
   t: Int8Array;
   a: Uint8Array;
 }
+// Typed arrays instead of arrays of color and ramp references: a 2x sprite layer was about a megabyte of
+// garbage to build and throw away, and three of them went into every sprite.
+/** A color as one number; never 0, so 0 can mean "nothing drawn". */
+export const pack = (c: RGB) => 0x1000000 | (c[0] << 16) | (c[1] << 8) | c[2];
+export const unpack = (n: number): RGB => [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+const RAMP_ID = new Map<Ramp, number>();
+const RAMP_OF: (Ramp | null)[] = [null];
+/** each ramp's six tones, packed */
+const RAMP_PACK: Uint32Array[] = [new Uint32Array(6)];
+let lastR: Ramp | null = null,
+  lastId = 0;
+/** A ramp's id in a layer's `r` (ramps are cached by RP, so there are only ever a few hundred). */
+export function rampId(R: Ramp | null): number {
+  if (!R) return 0;
+  // most pixels in a row come from the same ramp
+  if (R === lastR) return lastId;
+  let id = RAMP_ID.get(R);
+  if (id === undefined) {
+    id = RAMP_OF.length;
+    RAMP_OF.push(R);
+    RAMP_PACK.push(Uint32Array.from(R, pack));
+    RAMP_ID.set(R, id);
+  }
+  lastR = R;
+  lastId = id;
+  return id;
+}
+export const rampOf = (id: number): Ramp | null => RAMP_OF[id] ?? null;
 /** A layer `w` x `h` art pixels, `s` real pixels per art pixel each way. */
 export function buf(w: number, h: number, s = 1): Buf {
   const W = Math.round(w * s),
     H = Math.round(h * s),
     n = W * H;
-  return { w: W, h: H, s, c: new Array<RGB | null>(n).fill(null), r: new Array<Ramp | null>(n).fill(null), t: new Int8Array(n).fill(-1), a: new Uint8Array(n) };
+  return { w: W, h: H, s, c: new Uint32Array(n), r: new Uint16Array(n), t: new Int8Array(n).fill(-1), a: new Uint8Array(n) };
 }
 /** An empty layer the same size as B. */
 export const blank = (B: Buf) => buf(B.w / B.s, B.h / B.s, B.s);
@@ -127,7 +157,7 @@ export const has = (B: Buf, x: number, y: number) => {
 export const rampAt = (B: Buf, x: number, y: number) => {
   const X = Math.floor((x + 0.5) * B.s),
     Y = Math.floor((y + 0.5) * B.s);
-  return X >= 0 && Y >= 0 && X < B.w && Y < B.h ? B.r[Y * B.w + X] : null;
+  return X >= 0 && Y >= 0 && X < B.w && Y < B.h ? rampOf(B.r[Y * B.w + X]!) : null;
 };
 /** Calls f for every real pixel inside the art-pixel box, with its index and the art coordinates of its center. */
 export function forPx(B: Buf, x0: number, y0: number, x1: number, y1: number, f: (i: number, x: number, y: number) => void) {
@@ -139,8 +169,10 @@ export function forPx(B: Buf, x0: number, y0: number, x1: number, y1: number, f:
   for (let Y = Y0; Y <= Y1; Y++) for (let X = X0; X <= X1; X++) f(Y * B.w + X, (X + 0.5) / s, (Y + 0.5) / s);
 }
 function setPx(B: Buf, i: number, c: RGB, R: Ramp | null, t: number, al: number) {
-  B.c[i] = c;
-  B.r[i] = R;
+  const id = rampId(R);
+  // a ramp tone is packed already; a raw color is packed here
+  B.c[i] = id && t >= 0 && R![t] === c ? RAMP_PACK[id]![t]! : pack(c);
+  B.r[i] = id;
   B.t[i] = t;
   B.a[i] = al;
 }
@@ -211,11 +243,11 @@ export function ln(B: Buf, x0: number, y0: number, x1: number, y1: number, R: Ra
 }
 /** Darkens one real pixel by `n` tones. */
 export function shadeAt(B: Buf, i: number, n = 1) {
-  const R = B.r[i];
+  const R = rampOf(B.r[i]!);
   if (!R || B.t[i]! <= DEEP) return;
   const t = Math.max(DEEP, B.t[i]! - n);
   B.t[i] = t;
-  B.c[i] = R[t]!;
+  B.c[i] = RAMP_PACK[B.r[i]!]![t]!;
 }
 /** Darkens a drawn art pixel by `n` tones (cast shadows, creases). */
 export function shade(B: Buf, x: number, y: number, n = 1) {
@@ -356,7 +388,7 @@ export function paint(B: Buf, test: Test, x0: number, y0: number, x1: number, y1
         if (!(inM(x + 1, y) || inM(x - 1, y) || inM(x, y + 1) || inM(x, y - 1))) continue;
         const i = y * B.w + x;
         if (o.onto && !B.c[i]) continue;
-        const bR = B.r[i];
+        const bR = rampOf(B.r[i]!);
         if (!B.c[i]) setPx(B, i, R[OLN]!, R, OLN, o.al ?? 255);
         else if (bR && B.t[i]! > DEEP) {
           const t = B.t[i]! >= BASE ? DEEP : OLN;
@@ -447,14 +479,14 @@ export function outline(B: Buf) {
         if (nx < 0 || ny < 0 || nx >= B.w || ny >= B.h) continue;
         const j = ny * B.w + nx;
         if (!B.c[j] || B.a[j]! < 140 || B.t[j] === OLN) continue;
-        const R = B.r[j] ?? null;
+        const R = rampOf(B.r[j]!);
         add.push([i, R ? R[OLN] : [24, 16, 36], R]);
         break;
       }
     }
   for (const [i, c, R] of add) {
-    B.c[i] = c;
-    B.r[i] = R;
+    B.c[i] = pack(c);
+    B.r[i] = rampId(R);
     B.t[i] = OLN;
     B.a[i] = 255;
   }
@@ -463,11 +495,11 @@ export function outline(B: Buf) {
 export function toRGBA(B: Buf): Uint8ClampedArray {
   const d = new Uint8ClampedArray(B.w * B.h * 4);
   for (let i = 0; i < B.w * B.h; i++) {
-    const c = B.c[i];
+    const c = B.c[i]!;
     if (!c) continue;
-    d[i * 4] = c[0];
-    d[i * 4 + 1] = c[1];
-    d[i * 4 + 2] = c[2];
+    d[i * 4] = (c >> 16) & 255;
+    d[i * 4 + 1] = (c >> 8) & 255;
+    d[i * 4 + 2] = c & 255;
     d[i * 4 + 3] = B.a[i]!;
   }
   return d;

@@ -92,7 +92,27 @@ export interface SpriteLayers {
  * Builds both sprite layers for a look. Needs `look.race` (unknown races are drawn as humans). Deterministic: the
  * name hash picks the skin tone (humans), hair color and hair style.
  */
+// The page's images, the fight's textures and the portraits all ask for the same fighter, often within a second:
+// it used to be drawn three times. The last few builds are kept (least recently used goes first; each is about
+// 0.75 MB of pixels, so only a few).
+const BUILT = new Map<string, SpriteLayers>();
+const BUILT_MAX = 8;
+/** A fighter's sprite layers (shared: never change the arrays). */
 export function buildSprite(L: Look): SpriteLayers {
+  const k = spriteKey(L);
+  const hit = BUILT.get(k);
+  if (hit) {
+    BUILT.delete(k);
+    BUILT.set(k, hit);
+    return hit;
+  }
+  const s = drawSprite(L);
+  BUILT.set(k, s);
+  if (BUILT.size > BUILT_MAX) BUILT.delete(BUILT.keys().next().value!);
+  return s;
+}
+
+function drawSprite(L: Look): SpriteLayers {
   const race = own(RACE_SP, L.race) || RACE_SP.Human!,
     out = own(OUT, L.arch) || OUT.npc!,
     hs = hashStr(L.name || 'x');

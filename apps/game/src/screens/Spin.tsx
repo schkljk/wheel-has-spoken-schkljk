@@ -19,6 +19,7 @@ import {
   synFound,
   synOf,
   wheelsDone,
+  wheelsMaybe,
   wheelsTotal,
   type BuildFighter,
   type Fighter,
@@ -297,6 +298,8 @@ export function BuildScreen({ name }: { name: string }) {
   };
 
   const total = wheelsTotal(S.f);
+  // sub-wheels that may still join say so ("of 21+") instead of the total creeping up one spin at a time
+  const more = S.done ? 0 : wheelsMaybe(S.f);
   const done = S.done ? total : wheelsDone(S.f, S.idx);
   const canReroll = !S.auto && S.lastSpun >= 0 && !S.spinning && (S.f.free || 0) > 0;
   const label = W && !S.done ? labelOf(W, S.f) : 'Done';
@@ -323,7 +326,7 @@ export function BuildScreen({ name }: { name: string }) {
               <i style={{ width: `${(done / total) * 100}%` }} />
             </span>
           </span>
-          <small class="prog-n">{S.done ? `${total} of ${total} spun` : `Spin ${done + 1} of ${total}`}</small>
+          <small class="prog-n">{S.done ? `${total} of ${total} spun` : `Spin ${done + 1} of ${total}${more ? '+' : ''}`}</small>
           <button class="btn ghost sm" onClick={() => openSheet(<SoFarSheet f={S.f} />)}>
             <Icon name="scroll" /> So far
           </button>

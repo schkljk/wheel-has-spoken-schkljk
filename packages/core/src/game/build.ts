@@ -73,6 +73,8 @@ export function nextWheel(f: BuildFighter, i: number): number {
   return i;
 }
 export const wheelsTotal = (f: PartialFighter) => WHEELS.filter((W) => applicable(W, f)).length;
+/** Wheels that may still be added: a sub-wheel whose parent wheel (race, archetype, backstory) hasn't landed yet. */
+export const wheelsMaybe = (f: PartialFighter) => WHEELS.filter((W) => W.cond && !W.cond(f) && W.from && W.from(f) == null).length;
 export const wheelsDone = (f: PartialFighter, i: number) => WHEELS.slice(0, i).filter((W) => applicable(W, f)).length;
 
 const RESIL = ['str', 'spd', 'dur', 'iq'];

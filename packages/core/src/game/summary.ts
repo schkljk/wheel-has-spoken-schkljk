@@ -75,18 +75,20 @@ export function buildSummary(f: Fighter, ctx: GameContext = {}): BuildSummary {
   const P = population();
   const v = values(f, ctx);
   const z = KEYS.filter((k) => v[k] != null).map((k) => ({ k, v: v[k]!, z: (v[k]! - P[k][0]) / P[k][1] }));
-  const unit = (k: SumKey) => (k === 'crit' || k === 'dodge' ? '%' : '');
+  // crit and dodge read the same as on the card; rolled stats are said in words only, because the card shows
+  // real numbers ("64 Speed") and a raw roll ("Speed 16") next to them reads like a contradiction
+  const num = (k: SumKey, x: number) => (k === 'crit' || k === 'dodge' ? ` ${x}%,` : ':');
   const best = [...z].sort((a, b) => b.z - a.z).slice(0, 3);
   const strengths = best.map(({ k, v: x, z: s }) => {
     const [e, n, jokes] = STRENGTH_LINES[k];
-    return { k, e, n, what: `${NAMES[k]} ${x}${unit(k)}, ${high(s)}`, joke: pickBy(jokes, f.name + k) };
+    return { k, e, n, what: `${NAMES[k]}${num(k, x)} ${high(s)}`, joke: pickBy(jokes, f.name + k) };
   });
   const worst = [...z].filter((x) => !best.includes(x)).sort((a, b) => a.z - b.z)[0];
   let weakness: SumLine;
   // a clearly low stat is the weakness; otherwise it's the one the weakness wheel gave them
   if (worst && (worst.z <= -0.6 || !f.weak || f.weak.k === 'none')) {
     const [e, n, jokes] = WEAKNESS_LINES[worst.k];
-    weakness = { k: worst.k, e, n, what: `${NAMES[worst.k]} ${worst.v}${unit(worst.k)}, ${low(worst.z)}`, joke: pickBy(jokes, f.name + worst.k) };
+    weakness = { k: worst.k, e, n, what: `${NAMES[worst.k]}${num(worst.k, worst.v)} ${low(worst.z)}`, joke: pickBy(jokes, f.name + worst.k) };
   } else {
     const w = f.weak!;
     weakness = { k: 'weak', e: w.e || '⚠️', n: w.n, what: w.d || '', joke: FLAVOR[w.n] ?? pickBy(TRAIT_JOKES, f.name) };

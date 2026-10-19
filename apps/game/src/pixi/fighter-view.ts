@@ -4,7 +4,13 @@ import { CHIP_ICON } from '../ui/status-icons';
 import { iconTexture } from './icon-tex';
 import { PAURA, SIZE_H, SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_S, SPRITE_W, buildSprite, type Look } from '../art/sprite';
 
-const cache = new Map<string, { body: Texture; arm: Texture; sx: number; sy: number; hx: number; hy: number }>();
+type SpriteTex = { body: Texture; arm: Texture; sx: number; sy: number; hx: number; hy: number };
+const cache = new Map<string, SpriteTex>();
+/** fighters on a stage right now: their textures (with and without the weapon) are never evicted */
+const LIVE = new Set<FighterView>();
+const bare = (look: Look): Look => ({ ...look, weapon: 'Bare fists', ench: undefined });
+const inUse = (k: string) => [...LIVE].some((v) => keyOf(v.look) === k || keyOf(bare(v.look)) === k);
+const CACHE_MAX = 24;
 function canvasOf(rgba: Uint8ClampedArray) {
   const cv = document.createElement('canvas');
   cv.width = SPRITE_PW;
@@ -15,21 +21,36 @@ function canvasOf(rgba: Uint8ClampedArray) {
   ctx.putImageData(id, 0, 0);
   return cv;
 }
-/** Pixel textures for a look (body and weapon arm), crisp when scaled up. */
+const keyOf = (look: Look) => [look.name, look.race, look.rsub, look.arch, look.weapon, look.ench, look.boss ?? ''].join('|');
+/**
+ * Pixel textures for a look (body and weapon arm), crisp when scaled up. Kept for the most recent looks; the
+ * oldest one nobody is showing is destroyed (evicted textures used to stay on the GPU for good).
+ */
 export function spriteTextures(look: Look) {
-  const k = [look.name, look.race, look.rsub, look.arch, look.weapon, look.ench, look.boss ?? ''].join('|');
+  const k = keyOf(look);
   let c = cache.get(k);
-  if (!c) {
-    const s = buildSprite(look);
-    const body = Texture.from(canvasOf(s.body));
-    const arm = Texture.from(canvasOf(s.arm));
-    body.source.scaleMode = 'nearest';
-    arm.source.scaleMode = 'nearest';
-    c = { body, arm, sx: s.sx, sy: s.sy, hx: s.hx, hy: s.hy };
+  if (c) {
+    cache.delete(k);
     cache.set(k, c);
-    if (cache.size > 40) {
-      const first = cache.keys().next().value!;
-      cache.delete(first);
+    return c;
+  }
+  const s = buildSprite(look);
+  const body = Texture.from(canvasOf(s.body));
+  const arm = Texture.from(canvasOf(s.arm));
+  body.source.scaleMode = 'nearest';
+  arm.source.scaleMode = 'nearest';
+  c = { body, arm, sx: s.sx, sy: s.sy, hx: s.hx, hy: s.hy };
+  cache.set(k, c);
+  if (cache.size > CACHE_MAX) {
+    for (const [ok, old] of cache) {
+      if (ok === k || inUse(ok)) continue;
+      cache.delete(ok);
+      // after the frame that may still draw it
+      setTimeout(() => {
+        old.body.destroy(true);
+        old.arm.destroy(true);
+      }, 100);
+      break;
     }
   }
   return c;
@@ -84,6 +105,11 @@ export class FighterView extends Container {
     this.addChild(this.flip, this.badges);
     if (side === 1) this.flip.scale.x = -1;
     this.mythic = !!opts.mythic;
+    LIVE.add(this);
+  }
+  override destroy(options?: Parameters<Container['destroy']>[0]) {
+    LIVE.delete(this);
+    super.destroy(options);
   }
   private mythic: boolean;
 
@@ -155,7 +181,7 @@ export class FighterView extends Container {
   }
   /** Whether the weapon shows in the hand (a thrown boomerang is not in it until it comes back). */
   holdWeapon(on: boolean) {
-    const t = spriteTextures(on ? this.look : { ...this.look, weapon: 'Bare fists', ench: undefined });
+    const t = spriteTextures(on ? this.look : bare(this.look));
     t.arm.source.scaleMode = this.arm.texture.source.scaleMode;
     this.arm.texture = t.arm;
   }

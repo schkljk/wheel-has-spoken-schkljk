@@ -4,7 +4,7 @@
 //
 // Pure: no DOM. ui/icon-pixels.ts turns them into pixels for the SVG icons and the Pixi textures.
 
-import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, buf, dot, ell, ln, or, outline, poly, raw, type Buf, type Pt, type Ramp, type RGB } from './px';
+import { BASE, DEEP, LIT, OLN, SHD, SHINE, Bx, C, E, P, RP, S, and, buf, dot, ell, ln, or, outline, poly, raw, unpack, type Buf, type Pt, type Ramp, type RGB } from './px';
 
 export const ICON_SIZE = 16;
 type Draw = (B: Buf, tint: Ramp) => void;
@@ -729,6 +729,6 @@ export function drawIcon(name: string, tintHex?: string, s = 1): { px: (RGB | nu
   const B = buf(ICON_SIZE, ICON_SIZE, s);
   f(B, RP(tintHex || '#9AA6B2'));
   outline(B);
-  return { px: B.c.map((c) => c ?? null), a: B.a, size: B.w };
+  return { px: Array.from(B.c, (c) => (c ? unpack(c) : null)), a: B.a, size: B.w };
 }
 void INK;

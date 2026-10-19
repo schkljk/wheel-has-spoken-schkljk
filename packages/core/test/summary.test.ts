@@ -38,7 +38,7 @@ describe('the scouting report', () => {
     boost(f!, { str: 20, dur: -12 });
     const r = buildSummary(f!);
     expect(r.strengths[0]).toMatchObject({ k: 'str', n: 'Hits hard' });
-    expect(r.strengths[0]!.what).toMatch(/^Strength \d+, among the very best$/);
+    expect(r.strengths[0]!.what).toMatch(/^Strength: among the very best$/);
     expect(r.weakness).toMatchObject({ k: 'dur', n: 'Fragile' });
     expect(r.weakness.what).toMatch(/among the very lowest/);
   });

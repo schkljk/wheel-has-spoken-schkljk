@@ -11,6 +11,7 @@ import { CodexScreen } from './screens/Codex';
 import type { Run } from '@whs/core';
 import { G, go } from './state/game';
 import { goHub } from './flows/nav';
+import type { ArenaWheel } from './flows/fight';
 import type { FightOutcome, FightResult, FightSpec } from '@whs/core';
 import { CineHost, ConfirmHost, SheetHost, ToastHost } from './ui/kit';
 import { InfoHost } from './ui/Info';
@@ -30,7 +31,7 @@ function Screen() {
     case 'spin':
       return <SpinScreen key={r.key as number} spec={r.spec as SpinSpec} done={r.done as (it: unknown) => void} />;
     case 'fight':
-      return <FightScreen key={r.key as number} spec={r.spec as FightSpec} end={r.end as (o: FightOutcome) => FightResult} done={r.done as (x: FightResult) => void} />;
+      return <FightScreen key={r.key as number} spec={r.spec as FightSpec} end={r.end as (o: FightOutcome) => FightResult} done={r.done as (x: FightResult) => void} arenaWheel={r.arenaWheel as ArenaWheel | null} />;
     case 'map':
       return <MapScreen key={r.key as number} />;
     case 'bracket':

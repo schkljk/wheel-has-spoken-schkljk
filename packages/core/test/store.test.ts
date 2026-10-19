@@ -26,6 +26,32 @@ const legacyText = () => readFileSync(resolve(__dirname, 'fixtures', 'legacy-pla
 const imported = (t = 1000) => migrate(legacyText(), t);
 
 describe('save store', () => {
+  it('reads the backups once, not on every write (D9)', () => {
+    let t = 1000;
+    const kv = new MemKV();
+    let reads = 0;
+    const get = kv.getItem.bind(kv);
+    kv.getItem = (k: string) => {
+      if (k.startsWith('whs:backup:')) reads++;
+      return get(k);
+    };
+    const store = new SaveStore(kv, () => t);
+    const s = imported();
+    store.write(s);
+    const after = reads;
+    for (let i = 0; i < 25; i++) {
+      t += 1000;
+      s.profile.gems = i;
+      store.write(s);
+    }
+    expect(reads).toBe(after);
+    // and it still knows when one is due, and where it went
+    t += AUTO_BACKUP_EVERY + 1;
+    store.write(s);
+    expect(store.listBackups().length).toBe(2);
+    expect(new SaveStore(kv, () => t).listBackups()).toEqual(store.listBackups());
+  });
+
   it('starts fresh, then round-trips a save through split keys', () => {
     let t = 1000;
     const kv = new MemKV();

@@ -18,7 +18,39 @@ export interface NodePreview {
 /** The level a chapter's boss expects (hard runs expect three more). */
 export const recLevel = (g: Game) => CHAPTERS[storyOf(g).ch - 1]!.lvl + (storyOf(g).hard ? 3 : 0);
 
-export function nodePreview(g: Game, kind: NodeKind): NodePreview {
+/** The level range a story fight or elite at this point of the story is drawn at (storyOpponent). */
+export function foeLevels(g: Game, kind: 'fight' | 'elite'): [number, number] {
+  const S = storyOf(g);
+  const base = CHAPTERS[S.ch - 1]!.lvl + (S.ng || 0) * 4 + (kind === 'elite' ? 2 : 0) + (S.hard ? 3 : 0);
+  return [Math.max(1, base - 1), Math.max(1, base)];
+}
+/** How many steps from row `from` to the next campfire (0: that row has one), or null if none is left. */
+export function nextRest(g: Game, from: number): number | null {
+  const S = storyOf(g);
+  for (let r = from; r < S.rows.length; r++) if (S.rows[r]!.includes('rest')) return r - from;
+  return null;
+}
+
+/** What a step holds. `row` is the step's row on the map, for the distance to the next campfire. */
+export function nodePreview(g: Game, kind: NodeKind, row?: number): NodePreview {
+  const p = basePreview(g, kind);
+  const lines = [...p.lines];
+  // fights say who you are up against, level for level
+  if (kind === 'fight' || kind === 'elite') {
+    const lvl = g.F!.lvl || 1;
+    const [a, b] = foeLevels(g, kind);
+    const tag = lvl < a ? `: ${a - lvl} below them` : lvl > b ? `: ${lvl - b} above them` : '';
+    lines.unshift(`Their level: ${a === b ? a : `${a}–${b}`}. You are level ${lvl}${tag}`);
+  }
+  // and every step says where the next campfire is, counting from the row after it
+  if (row != null && kind !== 'rest') {
+    const d = nextRest(g, row + 1);
+    lines.push(`🔥 ${d == null ? 'No campfire left before the boss' : d === 0 ? 'A campfire right after this' : `Next campfire: ${d + 1} steps on`}`);
+  }
+  return { ...p, lines };
+}
+
+function basePreview(g: Game, kind: NodeKind): NodePreview {
   const S = storyOf(g);
   const ch = S.ch;
   const hard = !!S.hard;

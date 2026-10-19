@@ -17,8 +17,8 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         </span>
       </header>
       <div class="scroll pad card-body">
-        <ScoutingReport f={f} />
         <FighterCard f={f} />
+        <ScoutingReport f={f} />
       </div>
       <footer class="dock pad">
         <button
@@ -63,8 +63,12 @@ function ScoutingReport({ f }: { f: CareerFighter }) {
     </li>
   );
   return (
-    <section class="card scout" aria-label="Scouting report">
-      <h3>📋 Scouting report</h3>
+    // the fighter comes first; the report is folded under them, a tap away
+    <details class="card scout" aria-label="Scouting report">
+      <summary>
+        <h3>📋 Scouting report</h3>
+        <small>{r.closer}</small>
+      </summary>
       <ul class="sr-list">
         {r.strengths.map((l) => line('good', l))}
         {line('bad', r.weakness, 'Biggest weakness: ')}
@@ -81,7 +85,6 @@ function ScoutingReport({ f }: { f: CareerFighter }) {
           </li>
         )}
       </ul>
-      <p class="sr-close">{r.closer}</p>
-    </section>
+    </details>
   );
 }

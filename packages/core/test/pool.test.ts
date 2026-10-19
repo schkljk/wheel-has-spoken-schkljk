@@ -33,7 +33,8 @@ describe('ranked pool', () => {
       expect(o.poolPct!).toBeGreaterThanOrEqual(0.5);
       expect(o.poolPct!).toBeLessThan(0.8);
       expect(o.name).not.toBe('pool');
-      expect(rankTxt(o)).toMatch(/^Top \d+%$/);
+      // a rank out of the thousand, never a percentage
+      expect(rankTxt(o)).toMatch(/^Rank \d+$/);
     }
     const early = poolPick(null, 0.5, 0.8, rng, 'Before the pool');
     expect(early.name).toBe('Before the pool');

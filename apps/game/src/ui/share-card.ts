@@ -1,3 +1,4 @@
+import { cpuCanvas } from '../art/canvas';
 import { sceneSVG } from '../pixi/scenery-svg';
 import { spriteImages } from '../art/sprite-dom';
 import type { Look } from '../art/sprite';
@@ -91,10 +92,8 @@ async function fighter(x: CanvasRenderingContext2D, look: Look, cx: number, feet
 
 /** Draws the card. Fonts should be loaded first (document.fonts.ready). */
 export async function drawShareCard(c: CardData): Promise<HTMLCanvasElement> {
-  const cv = document.createElement('canvas');
-  cv.width = CARD_W;
-  cv.height = CARD_H;
-  const x = cv.getContext('2d')!;
+  // read back as a PNG right after, while the fight scene still runs: CPU-backed (art/canvas.ts)
+  const [cv, x] = cpuCanvas(CARD_W, CARD_H);
   const sky = c.arena?.sky || '#2A2342';
   const floor = c.arena?.floor || '#3A2F55';
 

@@ -72,4 +72,4 @@ export function poolPick(ranking: PoolRanking | null, lo: number, hi: number, rn
 
 /** "Top 12%" style label for a pool fighter. */
 export const rankTxt = (o: { poolPct?: number } | null | undefined) =>
-  o && o.poolPct != null ? `Top ${Math.max(1, Math.round((1 - o.poolPct) * 100))}%` : '';
+  o && o.poolPct != null ? `Rank ${Math.max(1, Math.round((1 - o.poolPct) * 1000))}` : '';

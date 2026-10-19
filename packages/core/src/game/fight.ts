@@ -5,7 +5,7 @@ import { headToHead, newBattle, type Battle, type BattleOpts, type Side } from '
 import { activePower, fullName, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json } from '../save/fighter';
-import type { Arena } from '../types';
+import type { Arena, Injury } from '../types';
 import type { FightMod } from '../data/misc';
 import { addCoins, coinsOf, ctxOf, pl, slotOf, type Game } from './game';
 import {
@@ -153,6 +153,31 @@ export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run'
   return {};
 }
 
+/** A chance to win, said in words (the player never sees a percentage). `tone` colors the chip. */
+export function oddsWord(p: number): { t: string; tone: 'good' | 'even' | 'bad' } {
+  if (p >= 0.9) return { t: 'Sure thing', tone: 'good' };
+  if (p >= 0.72) return { t: 'Heavy favorite', tone: 'good' };
+  if (p >= 0.58) return { t: 'Favorite', tone: 'good' };
+  if (p >= 0.42) return { t: 'Coin flip', tone: 'even' };
+  if (p >= 0.28) return { t: 'Underdog', tone: 'bad' };
+  if (p >= 0.1) return { t: 'Big underdog', tone: 'bad' };
+  return { t: 'Long shot', tone: 'bad' };
+}
+/** How many of a crowd a fighter beats, in words ("most", "about half of"). */
+export function shareWord(w: number): string {
+  if (w >= 0.9) return 'almost all';
+  if (w >= 0.7) return 'most';
+  if (w >= 0.55) return 'more than half of the';
+  if (w >= 0.45) return 'about half of the';
+  if (w >= 0.3) return 'some';
+  if (w >= 0.1) return 'a few';
+  return 'almost no';
+}
+
+/** A new injury, said out loud with how to get rid of it (it used to arrive with one terse line). */
+export const injLine = (j: Injury) =>
+  `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
+
 /** Simulated chance to win, shown before the fight (120 fights at the fight's HP, default round limit). */
 export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(g.F!, spec.opp, g.rng, 120, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) });
 
@@ -286,7 +311,7 @@ export function endTierFight(g: Game, spec: FightSpec, o: FightOutcome): FightRe
   }
   if (!won && g.rng() < 0.35) {
     const j = addInjury(g, F);
-    if (j) lines.push(`${j.e} Injury: ${j.n} (${injText(j)})`);
+    if (j) lines.push(injLine(j));
   }
   fightKeys(won, o, spec.odds, F, keys);
   if (nemBeaten) keys.push('revenge');
@@ -474,7 +499,7 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
     lines.push(`💔 You lose a grit. ${pl(S.grit, 'grit', 'grit')} left`);
     if (g.rng() < 0.3) {
       const j = addInjury(g, F);
-      if (j) lines.push(`${j.e} Injury: ${j.n} (${injText(j)})`);
+      if (j) lines.push(injLine(j));
     }
   }
   if (me.st.dodges >= 3) keys.push('untouch');

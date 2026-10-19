@@ -349,6 +349,26 @@ for (const goal of GOALS) {
 }
 export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 
+// roughly how many fights one step of a goal takes, so goals sort by how soon they can be done rather than by
+// percent (a level takes far longer than a win, and "Reach level 50" should never sit above "Win 10 fights")
+const GOAL_RATE: [RegExp, number][] = [
+  [/^w\d/, 1.4], [/^e\d/, 7], [/^b\d/, 14], [/^ch\d/, 14], [/^cup/, 6], [/^world/, 40], [/^g\d/, 2], [/^dc/, 15],
+  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8],
+];
+/** About how many fights a goal still needs. */
+export function goalEta(g: Game, k: string): number {
+  const goal = GOALS.find((x) => x.k === k);
+  if (!goal) return Infinity;
+  const left = Math.max(0, goal.need - Math.min(goal.need, goalCur(g, k)));
+  return left * (GOAL_RATE.find(([re]) => re.test(k))?.[1] ?? 3);
+}
+/** The open goals, the soonest done first. */
+export const goalsBySoonest = (g: Game) =>
+  GOALS.filter((x) => !g.save.profile.goalsDone.includes(x.k))
+    .map((x) => ({ x, eta: goalEta(g, x.k) }))
+    .sort((a, b) => a.eta - b.eta)
+    .map((e) => e.x);
+
 export interface Reward {
   gems?: number;
   coins?: number;

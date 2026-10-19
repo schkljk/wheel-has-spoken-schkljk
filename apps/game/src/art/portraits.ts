@@ -7,11 +7,18 @@ import { POWER_ICON } from './icons';
 import { drawDeco } from './map-deco';
 import { mapTheme } from './map-themes';
 import { buf, outline, toRGBA } from './px';
+import { cpuCanvas } from './canvas';
 import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, type Look } from './sprite';
 import { weapon } from './sprite-weapons';
 
 const cache = new Map<string, HTMLCanvasElement | null>();
 const urls = new Map<string, string | null>();
+// every fighter's face is its own entry, so a long session would keep adding: the oldest go past this many
+const MAX = 400;
+const capped = <V,>(m: Map<string, V>, k: string, v: V) => {
+  m.set(k, v);
+  if (m.size > MAX) m.delete(m.keys().next().value!);
+};
 
 /** The square around the opaque pixels of an RGBA image (only the top `rows` rows when given). */
 function crop(rgba: Uint8ClampedArray, w: number, h: number, rows?: number): HTMLCanvasElement | null {
@@ -35,18 +42,13 @@ function crop(rgba: Uint8ClampedArray, w: number, h: number, rows?: number): HTM
         r = Math.max(r, x);
       }
   const side = Math.max(n, r - l + 1);
-  const src = document.createElement('canvas');
-  src.width = w;
-  src.height = h;
-  const sx = src.getContext('2d')!;
+  const [src, sx] = cpuCanvas(w, h);
   const id = sx.createImageData(w, h);
   id.data.set(rgba);
   sx.putImageData(id, 0, 0);
-  const out = document.createElement('canvas');
-  out.width = side;
-  out.height = side;
+  const [out, ox] = cpuCanvas(side, side);
   const cy = rows ? top : Math.round((top + bottom + 1) / 2 - side / 2);
-  out.getContext('2d')!.drawImage(src, Math.round((l + r + 1) / 2 - side / 2), cy, side, side, 0, 0, side, side);
+  ox.drawImage(src, Math.round((l + r + 1) / 2 - side / 2), cy, side, side, 0, 0, side, side);
   return out;
 }
 
@@ -58,11 +60,11 @@ function cached(key: string, make: () => HTMLCanvasElement | null): HTMLCanvasEl
   } catch {
     cv = null;
   }
-  cache.set(key, cv);
+  capped(cache, key, cv);
   return cv;
 }
 const url = (key: string, cv: () => HTMLCanvasElement | null) => {
-  if (!urls.has(key)) urls.set(key, cv()?.toDataURL('image/png') ?? null);
+  if (!urls.has(key)) capped(urls, key, cv()?.toDataURL('image/png') ?? null);
   return urls.get(key)!;
 };
 
@@ -101,9 +103,7 @@ export const iconCanvas = (name: string, s = 1) =>
   cached(`icon|${name}|${s}`, () => {
     const p = iconPixels(name, undefined, s);
     if (!p) return null;
-    const cv = document.createElement('canvas');
-    cv.width = cv.height = p.size;
-    const x = cv.getContext('2d')!;
+    const [cv, x] = cpuCanvas(p.size, p.size);
     const id = x.createImageData(p.size, p.size);
     p.px.forEach((c, i) => c && id.data.set([c[0], c[1], c[2], p.a ? p.a[i]! : 255], i * 4));
     x.putImageData(id, 0, 0);

@@ -74,7 +74,7 @@ export function FighterTab() {
           </small>
           <div class="belts">
             {TIERS_T.filter((t) => t.size).map((t) => (
-              <Inf key={t.k} k={`tier|${t.k}`} class={`belt${F.belts && F.belts[t.k] ? ' on' : ''}`}>
+              <Inf key={t.k} k={`tier|${t.k}`} class={`belt${F.belts && F.belts[t.k] ? ' on' : ''}`} label={`${t.n} belt: ${F.belts && F.belts[t.k] ? 'won' : 'not won yet'}`}>
                 {t.e}
               </Inf>
             ))}

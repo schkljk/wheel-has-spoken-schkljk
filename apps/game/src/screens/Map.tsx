@@ -129,7 +129,7 @@ export function MapScreen() {
                 const N = nodeOf(t as NodeKind);
                 const nem = t === 'nemesis' && NM;
                 const name = t === 'boss' ? boss.name : nem ? NM.f.name : N.n;
-                const go = () => (state === 'now' ? void enterNode(i) : previewNode(t as NodeKind));
+                const go = () => (state === 'now' ? void enterNode(i) : previewNode(t as NodeKind, r));
                 if (t === 'boss')
                   return (
                     <button
@@ -194,8 +194,8 @@ export function MapScreen() {
 }
 
 /** What a step holds, before you get there. */
-function previewNode(k: NodeKind) {
-  const p = nodePreview(G, k);
+function previewNode(k: NodeKind, row: number) {
+  const p = nodePreview(G, k, row);
   openSheet(
     <Sheet emoji={p.e} title={p.n} sub={p.sub}>
       <ul class="np-lines">

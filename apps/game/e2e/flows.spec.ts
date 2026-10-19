@@ -166,7 +166,7 @@ test('the combat wheel can be nudged one slice, once a fight', async ({ page }) 
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   // a full energy bar turns the spin button into the signature
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
@@ -207,7 +207,7 @@ test("the opponent's last three moves show by their HP bar, after each round", a
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   // a full energy bar turns the spin button into the signature
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   const moves = page.locator('.mhist i');
@@ -252,7 +252,7 @@ test('holding a combat wheel slice previews it, and letting go does not spin', a
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
   /** a point on the wheel at `deg` (0 is the top, clockwise) and the slice name there */
@@ -295,7 +295,7 @@ test("a boss's phase two changes the light and adds its slice to one wheel", asy
   await page.getByRole('button', { name: /Boss rush/ }).click();
   await page.getByRole('button', { name: /^Start the rush/ }).click();
   await page.getByRole('button', { name: 'Fight', exact: true }).click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 60_000 });
   await expect(page.locator('.fchip.new')).toHaveCount(0);
@@ -332,7 +332,7 @@ test('the knockout blow plays in slow motion with the camera pushed in, then the
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   const spin = page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ });
   await expect(spin).toBeEnabled({ timeout: 120_000 });
   // one touch from the floor, round after round (revives and misses happen), until they go down
@@ -391,7 +391,7 @@ test('a hidden synergy is a mystery on the card until the first fight gives it a
   await page.getByRole('button', { name: /Start the chapter|Continue the story/ }).click();
   await page.getByRole('button', { name: 'Begin' }).click();
   await page.locator('.mnode.now').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await page.getByRole('button', { name: /^Skip/ }).click();
@@ -430,7 +430,7 @@ test('the nemesis waits on the story map with a speech about your last fight', a
   await expect(page.locator('.cine')).toContainText(/City Circuit|6|17/);
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.getByRole('button', { name: 'Settle it' }).click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await expect(page.getByText('Nemesis fight')).toBeVisible();
@@ -558,7 +558,7 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   await expect(page.getByText(/\. Record/).locator('img[alt="❤️"]')).toHaveCount(3);
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.getByRole('button', { name: /Climb/ }).click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await expect(page.getByText('Tower, floor 1').first()).toBeVisible();
@@ -594,7 +594,7 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   await expect(page.locator('.maphead').getByText('Hard, chapter 1')).toBeVisible();
   expect((await layoutProblems(page)).clipped).toEqual([]);
   await page.locator('.mnode.now.t-fight').first().click();
-  await page.getByRole('button', { name: 'Spin the arena' }).click();
+  // the arena spins by itself while the fighters walk in
   await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Fight menu' }).click();
   await page.getByRole('button', { name: /^Skip/ }).click();
@@ -646,8 +646,11 @@ test('gear compare: what a piece changes, green and red, before it goes on', asy
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('tab', { name: 'Fighter' }).click();
   await page.getByRole('button', { name: /Armory/ }).click();
+  // the armory flags the upgrade waiting in that slot (▲) and offers to wear it
+  await expect(page.locator('.arm-slot').first().locator('.gv.up')).toHaveCount(1);
   await page.locator('.arm-slot').first().click();
-  await page.getByRole('button', { name: 'Wear' }).click();
+  await expect(page.getByRole('button', { name: '▲ Wear the best: Knight plate' })).toBeVisible();
+  await page.getByRole('button', { name: 'Wear', exact: true }).click();
   const dlg = page.getByRole('alertdialog');
   await expect(dlg.getByText('Wear Knight plate?')).toBeVisible();
   await expect(dlg.locator('.gc-side').first()).toContainText('Now');
@@ -659,8 +662,8 @@ test('gear compare: what a piece changes, green and red, before it goes on', asy
   await page.setViewportSize({ width: 320, height: 568 });
   // backing out changes nothing
   await dlg.getByRole('button', { name: 'Back' }).click();
-  await expect(page.getByRole('button', { name: 'Wear' })).toBeVisible();
-  await page.getByRole('button', { name: 'Wear' }).click();
+  await expect(page.getByRole('button', { name: 'Wear', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Wear', exact: true }).click();
   await dlg.getByRole('button', { name: 'Wear it' }).click();
   await expect(page.getByText(/Knight plate equipped/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Take off' })).toHaveCount(1);

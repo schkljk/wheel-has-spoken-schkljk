@@ -27,6 +27,7 @@ import {
   mutatorList,
   mutatorOf,
   nextGauntletOpp,
+  oddsWord,
   pick,
   pl,
   powerScale,
@@ -424,7 +425,7 @@ function ClubSheet({ c }: { c: Club }) {
         Level {f.lvl} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}
       </small>
       <small>📈 {powerScale(f, ctx).n}</small>
-      <span class="fc-odds">{Math.round(p * 100)}% to win</span>
+      <span class={`fc-odds ${oddsWord(p).tone}`}>{oddsWord(p).t}</span>
       <button
         class="btn sm"
         disabled={!(coins >= bet && bet > 0)}
