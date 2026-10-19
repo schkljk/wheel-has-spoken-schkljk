@@ -49,10 +49,10 @@ import { cine, closeSheet, confirm, openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { duck, sfx } from '../ui/sound';
-import { spinWheel } from '../screens/Spin';
+import { spinWheel } from '../screens/spin-route';
 import { GearIcon } from '../ui/GearIcon';
 import { GearCompareView } from '../ui/GearCompare';
-import { swapped } from './armory';
+import { swapped } from './lazy';
 
 // ---------------------------------------------------------------- primitives
 export interface ChoiceOpt {

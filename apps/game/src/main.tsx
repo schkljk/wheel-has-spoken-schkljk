@@ -1,6 +1,7 @@
 import { render } from 'preact';
 import type { HistoryEntry } from '@whs/core';
-import { App } from './App';
+import { App, prefetchScreens } from './App';
+import { prefetchFlows } from './flows/lazy';
 import { route, save } from './state/game';
 import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
@@ -10,6 +11,7 @@ import { installCosmetics } from './state/cosmetics';
 import { warmPixi } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import { loadEmojiSheet } from './art/emoji-px';
+import { loadSprites } from './art/sprite-lazy';
 import { effect } from '@preact/signals';
 import { installAudio } from './audio/engine';
 import { THEME_TRACK, playMusic } from './audio/music';
@@ -26,8 +28,10 @@ import './styles/screens.css';
 import './styles/game.css';
 
 installErrorLog();
-// the baked pixel emojis for the page start loading before anything draws (any that are needed sooner get drawn)
+// the baked pixel emojis for the page, and the sprite drawing code, start loading before anything draws (the
+// title draws without them: faces kept from last time, emojis drawn on the spot)
 void loadEmojiSheet(16);
+void loadSprites();
 installEmojiIcons();
 installCosmetics();
 // the Android app's glue, only in the Android build (the web build doesn't carry Capacitor at all)
@@ -53,7 +57,10 @@ ensurePool({
 
 // the Pixi chunk (wheels and fights) loads once the first screen is up, and its first app warms up (WebGL made,
 // shaders compiled), so the first spin and the first fight don't wait for either; the wheels' bigger emojis too
+// ... and the screens and flows the menus load on first use (the first chunk carries only the title and the hub)
 const warm = () => {
+  prefetchScreens();
+  prefetchFlows();
   void warmPixi();
   void loadEmojiSheet(32);
 };

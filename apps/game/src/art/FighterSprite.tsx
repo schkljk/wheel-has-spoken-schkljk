@@ -1,5 +1,6 @@
-import { OL, PAURA, SIZE_H, SPRITE_PH, type Look } from './sprite';
+import { OL, PAURA, SIZE_H, SPRITE_PH, type Look } from './sprite-look';
 import { spriteImages } from './sprite-dom';
+import { spritesReady } from './sprite-lazy';
 
 // crisp pixels when each one gets at least 1.5 screen pixels, smooth below that (small fighters)
 const render = (hh: number) => ((hh * (globalThis.devicePixelRatio || 1)) / SPRITE_PH >= 1.5 ? 'image-rendering:pixelated' : 'image-rendering:auto');
@@ -56,6 +57,8 @@ export function FighterSprite({ look, h = 110, sized, mirror, class: cls }: Spri
   const sc = sized ? (look.size !== undefined && SIZE_H[look.size]) || 1 : 1;
   const hh = Math.round(h * sc),
     ww = Math.round((hh * 100) / 120);
+  // until the drawing code is in, a fighter with a race is an empty box of their size (not the "who is this?")
+  const waiting = !!look.race && !spritesReady.value;
   const img = spriteImages(look);
   const PX = render(hh);
   const aura = img && look.power && look.power !== 'none' ? PAURA[look.power] : undefined;
@@ -69,7 +72,7 @@ export function FighterSprite({ look, h = 110, sized, mirror, class: cls }: Spri
         <image href={img.arm} x="0" y="0" width="100" height="120" preserveAspectRatio="none" style={PX} />
       </g>
     </>
-  ) : (
+  ) : waiting ? null : (
     <Mystery />
   );
   const cl = (img ? 'ch px' : 'ch') + (cls ? ' ' + cls : '');

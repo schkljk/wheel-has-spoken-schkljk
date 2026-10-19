@@ -27,7 +27,7 @@ import {
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
-import { lookOf } from '../art/sprite';
+import { lookOf } from '../art/sprite-look';
 import { G, ensure } from '../state/game';
 import { rateFor } from '../state/odds';
 import { Inf } from './Info';

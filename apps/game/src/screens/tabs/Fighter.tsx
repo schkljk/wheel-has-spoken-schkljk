@@ -20,15 +20,14 @@ import {
   xpNeed,
 } from '@whs/core';
 import { FighterSprite } from '../../art/FighterSprite';
-import { lookOf } from '../../art/sprite';
+import { lookOf } from '../../art/sprite-look';
 import { G, act, activeFighter, ensure, go } from '../../state/game';
 import { confirm, openSheet } from '../../state/ui';
 import { FighterCard, NumBlock, KitStrip } from '../../ui/FighterCard';
 import { Icon } from '../../ui/Icon';
 import { Inf } from '../../ui/Info';
 import { Sheet, rise } from '../../ui/kit';
-import { openArmory } from '../../flows/armory';
-import { openTalents } from '../../flows/talents';
+import { openArmory, openTalents } from '../../flows/lazy';
 import { GearIcon, SlotIcon } from '../../ui/GearIcon';
 
 /** What the next rank pays, in words: "+18 🪙 and 1 talent point". */

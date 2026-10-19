@@ -7,9 +7,7 @@ import { Hearts } from '../../ui/Hearts';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goHub, goMap } from '../../flows/nav';
-import { openBag } from '../../flows/story';
-import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, openDuel, openTrials, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
-import { openBaseShop } from '../../flows/shop';
+import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openBag, openBaseShop, openClub, openDuel, openTrials, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/lazy';
 import { openPatchNotes } from '../../sheets/Records';
 import { sfx } from '../../ui/sound';
 

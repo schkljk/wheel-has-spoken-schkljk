@@ -2,7 +2,8 @@
 // and keeps the recent ones (legacy charSVG kept 140 in insertion order; this one is least-recently-used).
 
 import { cpuCanvas } from './canvas';
-import { SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_W, buildSprite, spriteKey, type Look } from './sprite';
+import { SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_W, spriteKey, type Look } from './sprite-look';
+import { spriteArt } from './sprite-lazy';
 
 /** A sprite ready for <image href>: both layers as PNG data URLs, arm pivot in viewBox units (100 x 120). */
 export interface SpriteImages {
@@ -38,9 +39,12 @@ export function spriteImages(look: Look): SpriteImages | null {
     cache.set(k, hit);
     return hit;
   }
+  // the drawing code loads a moment after the first screen: nothing yet (FighterSprite draws again then)
+  const A = spriteArt();
+  if (!A) return null;
   let c: SpriteImages;
   try {
-    const s = buildSprite(look);
+    const s = A.buildSprite(look);
     // legacy buildBody scaled the pivot into the 100x120 viewBox exactly like this
     c = { body: toURL(s.body), arm: toURL(s.arm), sx: (s.sx * 100) / SPRITE_W, sy: (s.sy * 120) / SPRITE_H };
   } catch (e) {

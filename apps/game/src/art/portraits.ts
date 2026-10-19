@@ -8,9 +8,10 @@ import { drawDeco } from './map-deco';
 import { mapTheme } from './map-themes';
 import { toRGBA } from './px';
 import { cpuCanvas } from './canvas';
-import { SPRITE_PH, SPRITE_PW, SPRITE_S, buildSprite, spriteKey, type Look } from './sprite';
+import { SPRITE_PH, SPRITE_PW, SPRITE_S, spriteKey, type Look } from './sprite-look';
 import { kv } from '../state/storage';
-import { archLook, cropRGBA, faceKey, faceRGBA, raceLook, weaponKey, weaponRGBA } from './content-art';
+import { archLook, cropRGBA, faceKey, raceLook, weaponKey } from './content-keys';
+import { spriteArt, spritesReady } from './sprite-lazy';
 import type { Rgba } from './wheel-art';
 // the baked race, class, weapon and enchant icons (tools/art/bake.ts): the image and where each one is in it
 import ATLAS_URL from './baked/content.png?url';
@@ -68,25 +69,39 @@ function fromAtlas(key: string): HTMLCanvasElement | null {
   return cv;
 }
 
-function cached(key: string, make: () => HTMLCanvasElement | null): HTMLCanvasElement | null {
+// `make` gives undefined while the sprite drawing code is still loading (sprite-lazy.ts): nothing is kept then,
+// and a component that asked reads `spritesReady`, so it draws again once the code is in
+type Make = () => HTMLCanvasElement | null | undefined;
+function cached(key: string, make: Make): HTMLCanvasElement | null | undefined {
   if (cache.has(key)) return cache.get(key)!;
-  let cv: HTMLCanvasElement | null = null;
+  let cv: HTMLCanvasElement | null | undefined = null;
   try {
     cv = fromAtlas(key) ?? make();
   } catch {
     cv = null;
   }
+  if (cv === undefined) return undefined;
   capped(cache, key, cv);
   return cv;
 }
-const url = (key: string, cv: () => HTMLCanvasElement | null) => {
-  if (!urls.has(key)) capped(urls, key, cv()?.toDataURL('image/png') ?? null);
+const url = (key: string, cv: Make) => {
+  if (!urls.has(key)) {
+    const c = cv();
+    if (c === undefined) return void spritesReady.value, null;
+    capped(urls, key, c?.toDataURL('image/png') ?? null);
+  }
   return urls.get(key)!;
+};
+/** The sprite drawing code's `f`, or undefined while it loads. */
+const drawn = <T,>(f: (A: NonNullable<ReturnType<typeof spriteArt>>) => T): T | undefined => {
+  const A = spriteArt();
+  return A ? f(A) : undefined;
 };
 
 /** A face: the top of the sprite (the whole thing for pigeons and rubber ducks), in plain clothes unless a class is given. */
-export const faceCanvas = (look: Look, rows = 30) => cached(faceKey(look, rows), () => rgbaCanvas(faceRGBA(look, rows)));
-export const facePortrait = (look: Look, rows = 30) => url(faceKey(look, rows), () => faceCanvas(look, rows));
+const faceCv = (look: Look, rows: number) => cached(faceKey(look, rows), () => drawn((A) => rgbaCanvas(A.faceRGBA(look, rows))));
+export const faceCanvas = (look: Look, rows = 30) => faceCv(look, rows) ?? null;
+export const facePortrait = (look: Look, rows = 30) => url(faceKey(look, rows), () => faceCv(look, rows));
 /** A chapter's badge: the piece of its map's scenery that stands for it (a bin for the alley, a gear for the citadel). */
 export const chapterIcon = (ch: number) =>
   url(`chap|${ch}`, () =>
@@ -105,7 +120,7 @@ export function fighterFace(look: Look): string | null {
     capped(urls, key, kept);
     return kept;
   }
-  const u = url(key, () => cached(key, () => crop(buildSprite(L).body, SPRITE_PW, SPRITE_PH, 30 * SPRITE_S)));
+  const u = url(key, () => cached(key, () => drawn((A) => crop(A.buildSprite(L).body, SPRITE_PW, SPRITE_PH, 30 * SPRITE_S))));
   if (u) keepFace(key, u);
   return u;
 }
@@ -145,8 +160,9 @@ function keepFace(key: string, u: string) {
 }
 
 /** A weapon on its own (with its enchant's glow), held at an angle. */
-export const weaponCanvas = (name: string, ench?: string) => cached(weaponKey(name, ench), () => rgbaCanvas(weaponRGBA(name, ench)));
-export const weaponPortrait = (name: string, ench?: string) => url(weaponKey(name, ench), () => weaponCanvas(name, ench));
+const weaponCv = (name: string, ench?: string) => cached(weaponKey(name, ench), () => drawn((A) => rgbaCanvas(A.weaponRGBA(name, ench))));
+export const weaponCanvas = (name: string, ench?: string) => weaponCv(name, ench) ?? null;
+export const weaponPortrait = (name: string, ench?: string) => url(weaponKey(name, ench), () => weaponCv(name, ench));
 
 /** A pixel icon as a canvas (for Pixi), `s` real pixels per art pixel. */
 export const iconCanvas = (name: string, s = 1) =>
@@ -158,7 +174,7 @@ export const iconCanvas = (name: string, s = 1) =>
     p.px.forEach((c, i) => c && id.data.set([c[0], c[1], c[2], p.a ? p.a[i]! : 255], i * 4));
     x.putImageData(id, 0, 0);
     return cv;
-  });
+  }) ?? null;
 
 /** The icon for a wheel slice or collection entry, if its kind has one. */
 export function contentCanvas(cat: string | undefined, it: { n: string; k?: string }, race?: string): HTMLCanvasElement | null {
