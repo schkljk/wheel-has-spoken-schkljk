@@ -3,10 +3,7 @@
 
 import type { Ramp } from './px';
 
-export const SW = 70;
-export const SH = 84;
-/** the row under the feet */
-export const GROUND = 82;
+export { GROUND, SH, SW } from './sprite-dims';
 
 /** Everything the art needs from a fighter. */
 export interface Look {

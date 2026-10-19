@@ -22,15 +22,14 @@ import {
   xpNeed,
 } from '@whs/core';
 import { FighterSprite } from '../../art/FighterSprite';
-import { lookOf } from '../../art/sprite';
+import { lookOf } from '../../art/sprite-look';
 import { G, act, activeFighter, ensure, go } from '../../state/game';
 import { confirm, openSheet } from '../../state/ui';
 import { FighterCard, NumBlock, KitStrip } from '../../ui/FighterCard';
 import { Icon } from '../../ui/Icon';
 import { Inf } from '../../ui/Info';
 import { Sheet, rise } from '../../ui/kit';
-import { openArmory } from '../../flows/armory';
-import { openTalents } from '../../flows/talents';
+import { openArmory, openTalents } from '../../flows/lazy';
 import { GearIcon, SlotIcon } from '../../ui/GearIcon';
 
 /** What the next rank pays, in words: "+18 🪙 and 1 talent point". */
@@ -50,7 +49,7 @@ export function FighterTab() {
   const fm = F.fame || 0;
   const nx = (F.next || {}) as Record<string, number>;
   const nextB = [nx.dmgX ? '+15% damage' : '', nx.hp ? 'starts at 80% HP' : '', nx.en ? 'full energy' : '', nx.readB ? `reads ${readSteps(nx.readB as number)} clearer` : ''].filter(Boolean);
-  const offers = F.contract ? [] : ensure((g) => contractOffers(g));
+  const offers = F.contract ? [] : ensure((g) => contractOffers(g), 'contracts');
   const c = F.contract ? CONTRACTK[F.contract as string] : null;
   let n = 0;
   return (

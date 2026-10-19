@@ -3,6 +3,7 @@ import { SLICE_COLORS, bulb, sliceMask, wheelFace, wheelHub, wheelPointer, wheel
 import { emojiCanvas } from '../art/emoji-px';
 import { WHEEL_LOOK } from '../art/look';
 import { sfx } from '../audio/engine';
+import { canvasTexture } from './tex';
 
 const TEX = new WeakMap<HTMLCanvasElement, Texture>();
 const SMOOTH = new WeakMap<HTMLCanvasElement, Texture>();
@@ -11,8 +12,7 @@ export function texOf(c: HTMLCanvasElement, smooth = false) {
   const M = smooth ? SMOOTH : TEX;
   let t = M.get(c);
   if (!t) {
-    t = Texture.from(c, smooth);
-    t.source.scaleMode = smooth ? 'linear' : 'nearest';
+    t = canvasTexture(c, smooth ? 'linear' : 'nearest');
     M.set(c, t);
   }
   return t;
@@ -113,9 +113,7 @@ function texRgba(r: Rgba) {
   const id = x.createImageData(r.w, r.h);
   id.data.set(r.d);
   x.putImageData(id, 0, 0);
-  const t = Texture.from(cv);
-  t.source.scaleMode = 'nearest';
-  return t;
+  return canvasTexture(cv);
 }
 const PIXEL_FONT = '"WHS Display", "Saira Condensed", system-ui, sans-serif';
 

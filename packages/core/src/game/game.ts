@@ -25,7 +25,7 @@ export interface Clock {
   /** date key of today and yesterday (legacy: `new Date().toDateString()`) */
   today: string;
   yesterday: string;
-  /** short local date for records ("17/10/2026") */
+  /** short date for records ("17 Oct 2026") */
   date: string;
 }
 
@@ -44,10 +44,16 @@ export function forwardDay(g: Pick<Game, 'save'>, d: Date): Date {
   if (x.dayMax !== day) x.dayMax = day;
   return d;
 }
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+/**
+ * "17 Oct 2026", written by hand: the first locale-aware format of a session (toLocaleDateString) loads the
+ * browser's date data, 120 to 155 ms on a mid-range phone, and the clock is read on every action.
+ */
+export const shortDate = (d: Date) => `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
 
 export function clockAt(d = new Date()): Clock {
   const y = new Date(d.getTime() - 864e5);
-  return { today: d.toDateString(), yesterday: y.toDateString(), date: d.toLocaleDateString() };
+  return { today: d.toDateString(), yesterday: y.toDateString(), date: shortDate(d) };
 }
 
 /** Balance patches and past champions, as the stat and wheel rules read them. */

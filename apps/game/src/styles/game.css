@@ -101,8 +101,10 @@
 }
 .landed {
   grid-area: landed;
-  min-height: 5.2rem;
-  max-height: 30dvh;
+  /* one height whatever landed, so the wheel above never changes size between spins (each change resized its
+     canvas: 36 times per fighter). Tall enough for a result with two notes (150 px, 170 at 320 px wide, over
+     three builds); anything longer scrolls inside */
+  height: min(10.5rem, 30dvh);
   overflow-y: auto;
   padding: 0 var(--gutter);
   text-align: center;
@@ -223,7 +225,7 @@
     grid-template-areas: 'wheel head' 'wheel landed' 'wheel foot';
   }
   .landed {
-    max-height: none;
+    height: auto;
   }
   .cat {
     font-size: 1.35rem;
@@ -286,6 +288,13 @@
 }
 .stamp.q0 {
   color: var(--muted);
+}
+/* the rating arrives from the worker a moment after the card */
+.stamp.rating {
+  opacity: 0.6;
+}
+.stamp.stamp-in {
+  animation: pop 0.3s cubic-bezier(0.2, 1.4, 0.4, 1);
 }
 .stamp.q1 {
   color: var(--q1);
@@ -2543,6 +2552,12 @@
   padding-top: 0.6rem;
   padding-bottom: 1rem;
 }
+/* only the categories near the screen are laid out and painted (3,944 elements at once otherwise); each keeps
+   its real height once it has been shown, and starts from an estimate (set per category in Codex.tsx) */
+.cx-cat {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 600px;
+}
 .cx-cat h3 {
   display: flex;
   justify-content: space-between;
@@ -3186,6 +3201,12 @@ img.pxi.chap {
 }
 .scout[open] h3::after {
   content: ' ▾';
+}
+.scout.wait h3::after {
+  content: none;
+}
+.scout.wait small {
+  color: var(--muted);
 }
 .sr-list {
   list-style: none;

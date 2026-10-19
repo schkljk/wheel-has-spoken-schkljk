@@ -4,8 +4,21 @@
 
 import { effect } from '@preact/signals';
 import { settings } from '../state/game';
-import { SFX } from './sfx-data';
 import { lengthOf, render, type RenderOpts, type Spec } from './synth';
+
+// the named sounds (a table of a few hundred) load as their own small chunk as soon as the game starts, rather
+// than as part of the script the title waits for; nothing can play before the first tap anyway
+let SFX: Record<string, readonly Spec[]> | null = null;
+let sfxLoad: Promise<void> | null = null;
+const loadSfx = () =>
+  (sfxLoad ??= import('./sfx-data')
+    .then((m) => {
+      SFX = m.SFX;
+      (globalThis as unknown as { __whsSfx?: unknown }).__whsSfx = sfxTools;
+    })
+    .catch(() => {
+      sfxLoad = null;
+    }));
 
 export const DEFAULT_SFX_VOL = 0.8;
 export const DEFAULT_MUSIC_VOL = 0.55;
@@ -75,6 +88,7 @@ export function whenUnlocked(f: () => void) {
 
 /** Sound starts with the first tap or key; settings changes reach the buses; the background pauses it. */
 export function installAudio() {
+  void loadSfx();
   const go = () => {
     if (unlocked) return;
     unlocked = true;
@@ -102,6 +116,7 @@ export interface SfxOpts extends RenderOpts {
 }
 /** Plays a sound by name (audio/sfx-data.ts). */
 export function sfx(name: string, o: SfxOpts = {}) {
+  if (!SFX) return void loadSfx();
   const specs = SFX[name];
   if (specs) play(specs, o);
 }
@@ -130,11 +145,11 @@ export function duck(depth = 0.4, hold = 0.3, back = 0.6) {
   g.setTargetAtTime(1, t + hold, back / 3);
 }
 
-// the loudness check (tools/audio) renders every sound offline in a browser
-(globalThis as unknown as { __whsSfx?: unknown }).__whsSfx = {
-  names: () => Object.keys(SFX),
+// the loudness check (tools/audio) renders every sound offline in a browser (set once the sounds have loaded)
+const sfxTools = {
+  names: () => Object.keys(SFX ?? {}),
   async measure(name: string) {
-    const specs = SFX[name];
+    const specs = SFX?.[name];
     if (!specs) return null;
     const len = lengthOf(specs) + 0.15;
     const oc = new OfflineAudioContext(1, Math.ceil(len * 44100), 44100);

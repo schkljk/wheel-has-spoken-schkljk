@@ -7,9 +7,7 @@ import { Hearts } from '../../ui/Hearts';
 import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goHub, goMap } from '../../flows/nav';
-import { openBag } from '../../flows/story';
-import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, openDuel, openTrials, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
-import { openBaseShop } from '../../flows/shop';
+import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openBag, openBaseShop, openClub, openDuel, openTrials, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/lazy';
 import { openPatchNotes } from '../../sheets/Records';
 import { sfx } from '../../ui/sound';
 
@@ -30,15 +28,16 @@ export function PlayTab() {
   useEffect(() => {
     const pn = G.save.profile.patchNotes as { unseen?: boolean } | null;
     if (pn && pn.unseen) openPatchNotes();
-    // a seasonal arena on the wheel (upgrade 27): said once a season
-    const news = act((g) => seasonNews(g));
+    // a seasonal arena on the wheel (upgrade 27): said once a season (saved only when it was said: an act on
+    // every visit to the tab wrote the save and made every tab check its rules again)
+    const news = ensure((g) => seasonNews(g), 'season');
     if (news) toast(news);
   }, []);
   const S = F.story as Story | null;
   const ch = S ? S.ch : 1;
   const C = CHAPTERS[ch - 1]!;
   const run = runSummary(G);
-  const NM = ensure((g) => myNemesis(g));
+  const NM = ensure((g) => myNemesis(g), 'nemesis');
   const NG = goalsBySoonest(G)[0];
   const chal = F.challenge as { kind: string; name: string } | null;
   const open = rushOpen(G);

@@ -5,5 +5,5 @@
     "types": ["node", "vite/client"],
     "resolveJsonModule": true
   },
-  "include": ["parity", "sim", "art", "audio", "../packages/core/test", "../apps/game/e2e", "../playwright.config.ts", "../vitest.config.ts"]
+  "include": ["../apps/game/src/env.d.ts", "build", "parity", "sim", "art", "audio", "../packages/core/test", "../apps/game/e2e", "../playwright.config.ts", "../vitest.config.ts"]
 }

@@ -2,6 +2,7 @@ import { ColorMatrixFilter, Container, Graphics, Point, Sprite, Text, Texture } 
 import type { StatusChip } from '@whs/core';
 import { CHIP_ICON } from '../ui/status-icons';
 import { iconTexture } from './icon-tex';
+import { canvasTexture } from './tex';
 import { PAURA, SIZE_H, SPRITE_H, SPRITE_PH, SPRITE_PW, SPRITE_S, SPRITE_W, buildSprite, type Look } from '../art/sprite';
 
 type SpriteTex = { body: Texture; arm: Texture; sx: number; sy: number; hx: number; hy: number };
@@ -35,10 +36,8 @@ export function spriteTextures(look: Look) {
     return c;
   }
   const s = buildSprite(look);
-  const body = Texture.from(canvasOf(s.body));
-  const arm = Texture.from(canvasOf(s.arm));
-  body.source.scaleMode = 'nearest';
-  arm.source.scaleMode = 'nearest';
+  const body = canvasTexture(canvasOf(s.body));
+  const arm = canvasTexture(canvasOf(s.arm));
   c = { body, arm, sx: s.sx, sy: s.sy, hx: s.hx, hy: s.hy };
   cache.set(k, c);
   if (cache.size > CACHE_MAX) {

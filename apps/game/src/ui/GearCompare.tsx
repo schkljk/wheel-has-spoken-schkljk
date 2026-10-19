@@ -1,6 +1,6 @@
 import { GEARK, gearCompare } from '@whs/core';
 import { G } from '../state/game';
-import { NS_META } from './FighterCard';
+import { NS_META } from './stat-meta';
 import { GearIcon, SlotIcon } from './GearIcon';
 import { Icon } from './Icon';
 

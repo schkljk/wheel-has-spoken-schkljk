@@ -80,7 +80,8 @@ export function CodexScreen({ back }: { back: () => void }) {
           if (on && !list.length) return null;
           shown += list.length;
           return (
-            <section class="cx-cat" key={k}>
+            // about three tiles a row on a phone: the height a category starts from until it is first drawn
+            <section class="cx-cat" key={k} style={{ containIntrinsicSize: `auto ${48 + Math.ceil(list.length / 3) * 44}px` }}>
               <h3>
                 {label}
                 <span>

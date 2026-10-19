@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { sfx } from './sound';
 import { statPop, type StatChange } from '../state/game';
 import { cine, sheet } from '../state/ui';
-import { NS_META } from './FighterCard';
+import { NS_META } from './stat-meta';
 import { Icon } from './Icon';
 
 /** Counts a number from a to b. */

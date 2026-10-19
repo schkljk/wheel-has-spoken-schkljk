@@ -438,10 +438,7 @@ export interface SpinSpec<T extends { n: string; e?: string; q?: number; d?: str
   autoSpin?: boolean;
 }
 
-/** A single wheel (loot, level-ups, events, arenas...). Resolves with what landed once Continue is tapped. */
-export function spinWheel<T extends { n: string; e?: string; q?: number; d?: string }>(spec: SpinSpec<T>): Promise<T> {
-  return new Promise((resolve) => go({ screen: 'spin', spec, done: resolve, key: Math.random() }));
-}
+export { spinWheel } from './spin-route';
 
 export function SpinScreen({ spec, done }: { spec: SpinSpec; done: (it: unknown) => void }) {
   const [landed, setLanded] = useState<Landed | null>(null);

@@ -20,30 +20,23 @@ import {
   synFound,
   synOf,
   verdict,
-  winRate,
   type CareerFighter,
   type NumStats,
   type WheelItem,
 } from '@whs/core';
 import type { ComponentChildren } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
-import { lookOf } from '../art/sprite';
+import { lookOf } from '../art/sprite-look';
 import { G, ensure } from '../state/game';
+import { rateFor } from '../state/odds';
 import { Inf } from './Info';
 import { GearIcon } from './GearIcon';
 import { Icon, type IconName } from './Icon';
 
 /** The real numbers: key, pixel icon, label, unit. */
-export const NS_META: [keyof NumStats, IconName, string, string?][] = [
-  ['hp', 'heart', 'HP'],
-  ['atk', 'sword', 'Attack'],
-  ['pow', 'spark', 'Power'],
-  ['def', 'shield', 'Defense'],
-  ['spd', 'wing', 'Speed'],
-  ['crit', 'target', 'Crit', '%'],
-  ['dodge', 'swirl', 'Dodge', '%'],
-  ['cha', 'chat', 'Charisma'],
-];
+import { NS_META } from './stat-meta';
+export { NS_META };
 
 /** The real numbers: level sets the base, rolled stats modify it. */
 export function NumBlock({ f }: { f: CareerFighter }) {
@@ -123,7 +116,7 @@ function StatRows({ f }: { f: CareerFighter }) {
 export function KitStrip({ f }: { f: CareerFighter }) {
   const ks = kitMoves(f);
   if (!ks.length) return null;
-  if (f === G.F) ensure((g) => ks.forEach((m) => markSeen(g, 'moves', 'mv/' + m.n)));
+  if (f === G.F) ensure((g) => ks.forEach((m) => markSeen(g, 'moves', 'mv/' + m.n)), 'seen|' + ks.map((m) => m.n).join('|'));
   return (
     <div class="card-kit">
       <span class="ck-l">Moves</span>
@@ -154,11 +147,29 @@ function Row(props: { dt: string; it?: (WheelItem & { skip?: unknown }) | null; 
   );
 }
 
+/**
+ * A fighter's rating (their share of wins against random level 1 fighters), or null while the worker works it
+ * out: 160 fights, over a second on a mid-range phone, that used to freeze the card's reveal.
+ */
+export function useRating(f: CareerFighter): number | null {
+  const cached = (f as { _win?: number | null })._win;
+  const [w, setW] = useState<{ f: CareerFighter; p: number } | null>(null);
+  useEffect(() => {
+    if (cached != null) return;
+    let live = true;
+    void rateFor(f, ctxOf(G)).then((p) => live && setW({ f, p }));
+    return () => {
+      live = false;
+    };
+  }, [f, cached]);
+  return cached ?? (w && w.f === f ? w.p : null);
+}
+
 /** The full fighter card (legacy cardHTML): art, verdict, real numbers, stats, moves and every wheel result. */
 export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolean }) {
   const ctx = ctxOf(G);
-  const w = winRate(f, ctx);
-  const v = verdict(w);
+  const w = useRating(f);
+  const v = w == null ? null : verdict(w);
   const syns = synOf(f);
   const gear = gearOf(f);
   const P = (G.save.profile.patch || {}) as { race?: Record<string, Record<string, number>>; arch?: Record<string, Record<string, number>> };
@@ -183,12 +194,24 @@ export function FighterCard({ f, nemesis }: { f: CareerFighter; nemesis?: boolea
             Power scale: <Inf k="rule|scale">{powerScale(f, ctx).n}</Inf>
           </div>
         </div>
-        <Inf k="rule|verdict" class={`stamp q${v.q}`}>
-          {v.t}
-        </Inf>
+        {v ? (
+          <Inf k="rule|verdict" class={`stamp q${v.q} stamp-in`}>
+            {v.t}
+          </Inf>
+        ) : (
+          <span class="stamp q0 rating" aria-label="Rating them">
+            …
+          </span>
+        )}
       </div>
       <p class="fc-win">
-        Beats <b>{shareWord(w)}</b> random level 1 fighters.
+        {w == null ? (
+          'Sizing them up against random level 1 fighters…'
+        ) : (
+          <>
+            Beats <b>{shareWord(w)}</b> random level 1 fighters.
+          </>
+        )}
       </p>
       <NumBlock f={f} />
       <StatRows f={f} />

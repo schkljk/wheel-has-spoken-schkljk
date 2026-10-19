@@ -153,7 +153,7 @@ export function GoalsTab() {
   // the soonest done first, by fights still needed (not by percent)
   const open = goalsBySoonest(G).slice(0, 6);
   // the first look deals the board; after that it only changes when a bounty does
-  const bounties = ensure((g) => bountyBoard(g));
+  const bounties = ensure((g) => bountyBoard(g), 'bounties');
   const mk = F.arch.k;
   const ml = masteryLvl(G, mk);
   const mw = G.save.profile.mastery[mk] || 0;

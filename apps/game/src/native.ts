@@ -15,7 +15,7 @@ export function stepBack(): boolean {
   }
   const menu = document.querySelector('.fmenu');
   if (shown(menu) && !document.querySelector('.fresult')) return menu.click(), true;
-  const back = [...document.querySelectorAll('main button')].find((b) => b.querySelector('svg[data-i="back"]') && shown(b));
+  const back = [...document.querySelectorAll('main button')].find((b) => b.querySelector('[data-i="back"]') && shown(b));
   if (back) return (back as HTMLElement).click(), true;
   const tabs = [...document.querySelectorAll('[role=tablist] [role=tab]')];
   if (tabs.length && tabs[0]!.getAttribute('aria-selected') !== 'true') return (tabs[0] as HTMLElement).click(), true;

@@ -1,5 +1,5 @@
 import { fighterFace } from './portraits';
-import { lookOf, type LookSource } from './sprite';
+import { lookOf, type LookSource } from './sprite-look';
 
 /** A fighter's face as a pixel portrait (their race emoji if the sprite can't be drawn). */
 export function FighterFace({ f, e }: { f: LookSource; e?: string }) {

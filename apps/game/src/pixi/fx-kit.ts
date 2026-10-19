@@ -8,6 +8,7 @@ import { weaponCanvas, iconCanvas } from '../art/portraits';
 import type { FightDims } from './dims';
 import type { FighterView } from './fighter-view';
 import { ease, type Tweens } from './tween';
+import { canvasTexture } from './tex';
 
 export interface Pt {
   x: number;
@@ -46,9 +47,7 @@ function rgbaTex(r: FxRgba): Texture {
   const id = x.createImageData(r.w, r.h);
   id.data.set(r.d);
   x.putImageData(id, 0, 0);
-  const t = Texture.from(cv);
-  t.source.scaleMode = 'nearest';
-  return t;
+  return canvasTexture(cv);
 }
 /** An effect sprite's texture (art/fx-art.ts), made once. */
 export function fxTex(name: string, hex?: string): Texture {
@@ -64,8 +63,7 @@ export function fxTex(name: string, hex?: string): Texture {
 function canvasTex(key: string, cv: HTMLCanvasElement | null): Texture {
   let t = texCache.get(key);
   if (!t) {
-    t = cv ? Texture.from(cv, true) : Texture.WHITE;
-    t.source.scaleMode = 'nearest';
+    t = cv ? canvasTexture(cv) : Texture.WHITE;
     texCache.set(key, t);
   }
   return t;

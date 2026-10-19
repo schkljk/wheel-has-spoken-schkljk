@@ -3,3 +3,4 @@
 export { Application, Container, Graphics, Ticker } from 'pixi.js';
 export { WheelView } from './wheel';
 export { FightScene } from './fight-scene';
+export { warmUp } from './warm';
