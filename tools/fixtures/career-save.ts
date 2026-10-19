@@ -23,7 +23,7 @@ import {
  * For e2e tests and dev screenshots (skips the minute of wheel spinning).
  */
 export function careerSaveKV(
-  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; compare?: boolean; seen?: boolean; trophies?: boolean; legends?: boolean } = {},
+  o: { seed?: number; name?: string; lvl?: number; coins?: number; gems?: number; ch?: number; row?: number; fast?: boolean; auto?: boolean; nemesis?: boolean; event?: boolean; forge?: boolean; compare?: boolean; seen?: boolean; trophies?: boolean; legends?: boolean; pendingLv?: number } = {},
 ): Record<string, string> {
   const rng = mulberry32(o.seed ?? 1);
   const save = newSave(Date.now());
@@ -34,6 +34,8 @@ export function careerSaveKV(
   const f = randomFighter(o.name ?? 'Test Hero', rng) as CareerFighter;
   enterCareer(g, f);
   if (o.lvl) f.lvl = o.lvl;
+  // level-ups waiting to be spun, the way a fight leaves them
+  if (o.pendingLv) f.pendingLv = o.pendingLv;
   if (o.ch) f.story = { ...newChapter(g, o.ch, 0), cleared: Array.from({ length: o.ch - 1 }, (_, i) => i + 1) } as never;
   if (o.row != null && f.story) {
     const S = f.story as unknown as { row: number; rows: unknown[]; seenIntro: boolean };

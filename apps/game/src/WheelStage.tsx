@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { bulb, wheelFace, wheelHub, wheelPointer, wheelRim, type Rgba } from './art/wheel-art';
+import { WHEEL_LOOK } from './art/look';
 
 // The idle title wheel: the game's own pixel wheel in its colors, slowly turning, its bulbs twinkling and its
 // pointer flicking past the pegs. Drawn once into a few canvases and turned by CSS: the WebGL version kept the
@@ -49,7 +50,7 @@ function layers() {
     off = bulb(false, bs);
   const rim = (odd: boolean) =>
     layer((x) => {
-      put(x, wheelRim(N, rw), c, c);
+      put(x, WHEEL_LOOK.rim ? wheelRim(N, rw, WHEEL_LOOK.rim[0], WHEEL_LOOK.rim[1]) : wheelRim(N, rw), c, c);
       for (let k = 0; k < 16; k++) {
         const ang = (k / 16) * TAU + TAU / 32;
         const r = N / 2 - rw / 2;

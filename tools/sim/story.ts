@@ -4,6 +4,12 @@
  * The choices are a plain "average player": heal when hurt, loot when healthy, wear better gear.
  */
 import {
+  BALANCE,
+  canClaim,
+  claimWin,
+  ctxOf,
+  fightMods,
+  headToHead,
   BOSSES,
   CHAPTERS,
   GEARK,
@@ -30,6 +36,7 @@ import {
   gearArrives,
   gearChoose,
   healS,
+  levelSpinsPerLevel,
   levelUpLand,
   levelUpList,
   lootLand,
@@ -173,7 +180,10 @@ function loot(g: Game, table: LootTable) {
 function levelUps(g: Game) {
   const F = g.F!;
   while ((F.pendingLv || 0) > 0) {
-    const up = levelUpLand(g, spin(g.rng, levelUpList()));
+    // a second opinion (review F4): two spins, and the player keeps the rarer slice (stats first on a tie)
+    const spins = Array.from({ length: levelSpinsPerLevel() }, () => spin(g.rng, levelUpList()));
+    const keep = spins.reduce((a, b) => (b.q > a.q || (b.q === a.q && a.respin && !b.respin) ? b : a));
+    const up = levelUpLand(g, keep);
     if (!up) continue;
     const L = upgradeLists(g, up);
     if (!L.list.length) {
@@ -203,10 +213,15 @@ function battle(g: Game, spec: FightSpec, end: (o: FightOutcome) => FightResult)
   const arena = spin(g.rng, arenaOdds(g, F, spec.opp).list);
   arenaLand(g, arena);
   spec.arena = arena;
-  // the odds only decide the "giant slayer" achievement: not worth 120 simulated fights here
-  spec.odds = 0.5;
-  const bt = startBattle(g, spec);
-  bt.start();
+  // the odds only decide the "giant slayer" achievement, and whether a sure story win gets claimed (review E5):
+  // a quick estimate where a claim is possible, none elsewhere
+  const claimable = BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite');
+  spec.odds = claimable ? headToHead(F, spec.opp, g.rng, 40, { arena, mods: fightMods(g, spec), ctx: ctxOf(g) }) : 0.5;
+  let bt = startBattle(g, spec);
+  // a player claims every sure win: it plays out on auto until a win comes up
+  const claimed = canClaim(spec, bt) ? claimWin(g, spec, bt) : null;
+  if (claimed) bt = claimed.bt;
+  else bt.start();
   for (let i = 0; i < 200 && !bt.over; i++) bt.step(autoChoice(g.rng, bt.P[0], bt.P[1], bt.hist[1]));
   if (!bt.over) bt.w = bt.P[0].hp >= bt.P[1].hp ? 0 : 1;
   const r = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });

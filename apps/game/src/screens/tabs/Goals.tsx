@@ -1,7 +1,7 @@
 import { useEffect } from 'preact/hooks';
-import { ARCHS, COL_STEP, GOALS, MASTERY, MASTERY_RW, codexCount, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals } from '@whs/core';
-import { G, act, activeFighter, save } from '../../state/game';
-import { openSheet } from '../../state/ui';
+import { ARCHS, BOUNTY_SWAP_GEMS, COL_STEP, GOALS, MASTERY, MASTERY_RW, bountyBoard, bountiesDone, codexCount, goalCur, goalsBySoonest, masteryLvl, rwText, seeGoals, swapBounty } from '@whs/core';
+import { G, act, activeFighter, ensure, save, toast } from '../../state/game';
+import { confirm, openSheet } from '../../state/ui';
 import { Sheet, rise } from '../../ui/kit';
 
 type Goal = (typeof GOALS)[number];
@@ -26,6 +26,40 @@ function GoalRow({ g, done }: { g: Goal; done?: boolean }) {
         <small>
           {c}/{g.need}
         </small>
+      </span>
+    </div>
+  );
+}
+
+/** A standing build challenge on the bounty board (F5): no timer, and swapping it for another costs a gem. */
+function BountyRow({ x }: { x: ReturnType<typeof bountyBoard>[number] }) {
+  const gems = G.save.profile.gems || 0;
+  const swap = async () => {
+    if (!(await confirm({ title: 'Swap this bounty?', body: `"${x.b.n}" comes down and a new one goes up. Costs ${BOUNTY_SWAP_GEMS} 💎.`, yes: 'Swap it' }))) return;
+    if (!act((g) => swapBounty(g, x.b.k))) toast('Not enough gems');
+  };
+  return (
+    <div class="goal bounty">
+      <span class="g-e" aria-hidden="true">
+        {x.b.e}
+      </span>
+      <div class="g-t">
+        <b>{x.b.n}</b>
+        <small>
+          💎 {x.b.gems}
+          {x.need > 1 ? ` · ${x.cur}/${x.need}` : ''}
+        </small>
+        <small class="flav">{x.b.f}</small>
+        {x.need > 1 && (
+          <div class="xpbar">
+            <i style={{ width: `${Math.round((x.cur / x.need) * 100)}%` }} />
+          </div>
+        )}
+      </div>
+      <span class="g-r">
+        <button class="btn ghost sm" disabled={gems < BOUNTY_SWAP_GEMS} aria-label={`Swap "${x.b.n}" for another bounty, ${BOUNTY_SWAP_GEMS} gem`} onClick={() => void swap()}>
+          Swap
+        </button>
       </span>
     </div>
   );
@@ -81,6 +115,8 @@ export function GoalsTab() {
   const done = G.save.profile.goalsDone;
   // the soonest done first, by fights still needed (not by percent)
   const open = goalsBySoonest(G).slice(0, 6);
+  // the first look deals the board; after that it only changes when a bounty does
+  const bounties = ensure((g) => bountyBoard(g));
   const mk = F.arch.k;
   const ml = masteryLvl(G, mk);
   const mw = G.save.profile.mastery[mk] || 0;
@@ -105,6 +141,14 @@ export function GoalsTab() {
       <button class="btn ghost sm" onClick={() => openSheet(<AllGoals />)}>
         See all goals
       </button>
+      <span class="sec-label">
+        Bounty board <small>{bountiesDone(G)} done. No timers: a new one goes up when one comes down</small>
+      </span>
+      {bounties.map((x) => (
+        <div key={x.b.k} {...rise(n++)}>
+          <BountyRow x={x} />
+        </div>
+      ))}
       <span class="sec-label">
         {F.arch.e} {F.arch.n} mastery
       </span>

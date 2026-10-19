@@ -1,7 +1,7 @@
 /**
  * Whole story runs with weak, average and strong builds (see story.ts for the player's choices), spread
  * over worker threads.
- *   npx tsx tools/sim/story-run.ts [--runs 30] [--seed 1] [--to 20] [--cups 0] [--off storyNemesis]
+ *   npx tsx tools/sim/story-run.ts [--runs 30] [--seed 1] [--to 20] [--cups 0] [--off storyNemesis] [--before]
  */
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
@@ -22,7 +22,9 @@ function runJob(j: Job, seed: number, to: number, pool: PoolRanking, cups: numbe
 
 /** Plays these runs on worker threads (with these boss tables, if given). */
 /** The on/off switches of the balance table, so worker threads play by the same rules as the main thread. */
-const switches = () => Object.fromEntries(Object.entries(BALANCE).filter(([, v]) => typeof v === 'boolean')) as Record<string, boolean>;
+const switches = () => Object.fromEntries(Object.entries(BALANCE).filter(([, v]) => typeof v === 'boolean' || typeof v === 'number')) as Record<string, boolean | number>;
+/** The game before the review's design pass (E1-E5): its switches off, bosses toughening up to three levels. */
+export const BEFORE_REVIEW = { pureFocus: false, fairReads: false, statRoles: false, healRules: false, storyPacing: false, bossTuneCap: 3 };
 
 export async function runMany(jobs: Job[], o: { seed: number; to: number; pool: PoolRanking; cups?: number; bossHp?: number[]; bossShift?: number[] }) {
   const n = Math.max(1, Math.min(availableParallelism(), jobs.length));
@@ -92,7 +94,7 @@ export async function storyTables(runs: number, seed: number, to = CHAPTERS.leng
 
 if (!isMainThread) {
   const { part, seed, to, pool, cups, bossHp, bossShift, switches: sw } = workerData as {
-    part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[]; switches: Record<string, boolean>;
+    part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[]; switches: Record<string, boolean | number>;
   };
   Object.assign(BALANCE, sw);
   if (bossHp) bossHp.forEach((h, i) => (BOSS_HP[i] = h));
@@ -105,5 +107,7 @@ if (!isMainThread) {
   };
   // --off <switch> plays without one of the balance table's switches (they reach the workers too)
   process.argv.forEach((a, i) => a === '--off' && Object.assign(BALANCE, { [process.argv[i + 1]!]: false }));
+  // --before plays the game as it was before the review's design pass (with today's boss tables)
+  if (process.argv.includes('--before')) Object.assign(BALANCE, BEFORE_REVIEW);
   await storyTables(arg('runs', 30), arg('seed', 1), arg('to', CHAPTERS.length), arg('cups', 0));
 }

@@ -6,6 +6,8 @@ import { ContentIcon } from '../ui/ContentIcon';
 import { Chips, SearchBox } from '../ui/Filters';
 import { Icon } from '../ui/Icon';
 
+/** A synergy's key (the collection lists entries by name). */
+const synKey = (it: object) => (it as { k?: string }).k;
 // filters stay put while you look around (upgrade 30)
 const cxf = signal<CodexFilter>({ show: 'all', q: null });
 const cxCat = signal<string | null>(null);
@@ -83,6 +85,14 @@ export function CodexScreen({ back }: { back: () => void }) {
                       <span class="t">
                         {x.it.n}
                         {x.par && <small>{x.par}</small>}
+                      </span>
+                    </button>
+                  ) : k === 'syn' && synKey(x.it) ? (
+                    // an undiscovered synergy is a riddle (F6)
+                    <button key={x.key} class={`tile unk riddle q${x.it.q == null ? 1 : x.it.q}`} onClick={() => openInfo(`riddle|${synKey(x.it)}`)}>
+                      <span class="e">?</span>
+                      <span class="t">
+                        ???<small>Tap for a riddle</small>
                       </span>
                     </button>
                   ) : (

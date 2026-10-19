@@ -1,10 +1,34 @@
-import { buildSummary, clearBuild, ctxOf, enterCareer, type CareerFighter, type SumLine } from '@whs/core';
+import { STATN, buildSummary, clearBuild, ctxOf, enterCareer, mentorOptions, takeMentor, type CareerFighter, type Mentor, type SumLine } from '@whs/core';
 import { G, act, go } from '../state/game';
 import { confirm } from '../state/ui';
 import { rise } from '../ui/kit';
 import { FighterCard } from '../ui/FighterCard';
 import { Icon } from '../ui/Icon';
-import { goHub } from '../flows/nav';
+import { choose, goHub } from '../flows/nav';
+
+/** Starts the career; a retired fighter can mentor the new one (F10): +1 to what they were best at. */
+async function start(f: CareerFighter) {
+  const ms = mentorOptions(G);
+  let m: Mentor | null = null;
+  if (ms.length) {
+    const c = await choose({
+      emoji: '🎓',
+      title: 'Pick a mentor?',
+      sub: `A retired fighter shows ${f.name} the ropes, and drops by now and then`,
+      options: [
+        ...ms.map((x) => ({ label: `${x.e} ${x.n}`, sub: `+1 ${STATN[x.k]!.toLowerCase()} to start. ${x.s}` })),
+        { label: 'No mentor', sub: 'Figure it all out alone. Very brave. Very slow' },
+      ],
+    });
+    m = ms[c] ?? null;
+  }
+  act((g) => {
+    enterCareer(g, f);
+    if (m) takeMentor(f, m);
+    clearBuild(g);
+  });
+  void goHub();
+}
 
 /** The finished fighter: keep them (start a career) or scrap them. */
 export function CardScreen({ f }: { f: CareerFighter }) {
@@ -21,16 +45,7 @@ export function CardScreen({ f }: { f: CareerFighter }) {
         <ScoutingReport f={f} />
       </div>
       <footer class="dock pad">
-        <button
-          class="btn block"
-          onClick={() => {
-            act((g) => {
-              enterCareer(g, f);
-              clearBuild(g);
-            });
-            void goHub();
-          }}
-        >
+        <button class="btn block" onClick={() => void start(f)}>
           <Icon name="check" /> Start their career
         </button>
         <button

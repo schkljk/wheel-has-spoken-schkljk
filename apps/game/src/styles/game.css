@@ -1281,6 +1281,9 @@
 .menu-i.danger b {
   color: var(--danger);
 }
+.menu-i.good b {
+  color: var(--good);
+}
 .log {
   margin: 0;
   padding: 0;
@@ -1796,6 +1799,13 @@
 .cine-meta {
   color: var(--muted);
   font-size: 0.9rem;
+}
+.cine-meta.tuned {
+  display: grid;
+  gap: 0.15rem;
+}
+.cine-meta.tuned b {
+  color: var(--gold);
 }
 .boss-plate {
   display: grid;
@@ -2516,6 +2526,14 @@
 .tile.unk {
   opacity: 0.45;
   cursor: default;
+}
+/* an undiscovered synergy: tap for its riddle (F6) */
+.tile.unk.riddle {
+  border-style: dashed;
+  cursor: pointer;
+}
+.tile.unk.riddle small {
+  color: var(--teal);
 }
 .tile .e {
   font-size: 1.2rem;
@@ -3533,4 +3551,143 @@ img.pxi.chap {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+/* fight club insider and exhibition calls (review F8) */
+.fc-tip {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  animation: pop 0.3s ease-out both;
+}
+.fc-tip p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+.ex-call-row .btn {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ex-called {
+  margin: 0.25rem 0;
+  text-align: center;
+  font-weight: 700;
+}
+.ex-called.good {
+  color: var(--good);
+}
+.ex-called.bad {
+  color: var(--muted);
+}
+/* the daily duel's best score (F2) */
+.duel-best {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  text-align: center;
+}
+.duel-best span {
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+.fc-bets[data-hscroll] {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+.fc-bets[data-hscroll] .fchip {
+  flex: none;
+}
+/* ghost codes (F9) */
+.ghost-code {
+  display: block;
+  max-height: 5.5rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.ghost-in {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  color: var(--ink);
+  border: 2px solid var(--line);
+  font: inherit;
+  font-size: 0.85rem;
+  resize: none;
+}
+.ghost-prev {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+/* earned nameplates (F11) */
+html[data-plate] .fc-name.mine,
+html[data-plate] .hn.mine {
+  background: var(--plate-bg);
+  color: var(--plate-ink);
+  border-radius: 6px;
+  padding: 0 0.35rem;
+  box-shadow: 0 2px 0 var(--edge);
+  width: fit-content;
+  max-width: 100%;
+}
+html[data-plate='pl_wanted'] .fc-name.mine,
+html[data-plate='pl_wanted'] .hn.mine {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}
+/* the locker (F11) */
+.locker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.45rem;
+}
+.locker-item {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  padding: 0.55rem 0.4rem;
+  border-radius: var(--r-card);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  text-align: center;
+  min-width: 0;
+}
+.locker-item.on {
+  border-color: var(--gold);
+}
+.locker-item .lk-e {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+.locker-item small {
+  color: var(--muted);
+}
+.lk-sw {
+  display: flex;
+  gap: 2px;
+}
+.lk-sw i {
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 3px;
+  border: 1px solid var(--edge);
 }

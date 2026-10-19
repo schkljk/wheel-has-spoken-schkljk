@@ -1,6 +1,7 @@
 import { Container, Graphics, Sprite, Text, TextStyle, Texture, CanvasTextMetrics } from 'pixi.js';
 import { SLICE_COLORS, bulb, sliceMask, wheelFace, wheelHub, wheelPointer, wheelRim, type Rgba } from '../art/wheel-art';
 import { emojiCanvas } from '../art/emoji-px';
+import { WHEEL_LOOK } from '../art/look';
 import { sfx } from '../audio/engine';
 
 const TEX = new WeakMap<HTMLCanvasElement, Texture>();
@@ -136,6 +137,7 @@ export class WheelView extends Container {
   readonly hub = new Container();
   private hubArt = new Sprite();
   private hubPic = new Sprite();
+  private charm = new Sprite();
   private hubR = 20;
   private hubText = new Text({ text: '?', style: { fontFamily: PIXEL_FONT, fontSize: 30, fill: 0x3a2200, align: 'center' } });
   private sparks = new Container();
@@ -182,7 +184,9 @@ export class WheelView extends Container {
     for (const sp of [this.face, this.hilite, this.rim, this.hubArt, this.hubPic]) sp.anchor.set(0.5);
     this.hubText.anchor.set(0.5);
     this.hubPic.visible = false;
-    this.pointer.addChild(this.pointerArt);
+    this.pointer.addChild(this.pointerArt, this.charm);
+    this.charm.anchor.set(0.5, 0.15);
+    this.charm.visible = false;
     this.readText.anchor.set(0, 0.5);
     this.readPic.anchor.set(0, 0.5);
     this.readout.addChild(this.readBg, this.readPic, this.readText);
@@ -233,12 +237,12 @@ export class WheelView extends Container {
     this.face.texture = this.own(texRgba(wheelFace(faceN, spans.length ? spans : [TAU], colors.length ? colors : ['#5b4bb7'], hole)));
     this.face.scale.set(p);
     // the rim only depends on the size: drawn once per size and kept
-    const rk = `${N}|${rw}`;
+    const rk = `${N}|${rw}|${WHEEL_LOOK.rim?.join() ?? ''}`;
     let rim = RIMS.get(rk);
     if (!rim) {
       // forgotten, not destroyed: another wheel may still show it
       if (RIMS.size >= 8) RIMS.delete(RIMS.keys().next().value!);
-      RIMS.set(rk, (rim = texRgba(wheelRim(N, rw))));
+      RIMS.set(rk, (rim = texRgba(WHEEL_LOOK.rim ? wheelRim(N, rw, WHEEL_LOOK.rim[0], WHEEL_LOOK.rim[1]) : wheelRim(N, rw))));
     }
     this.rim.texture = rim;
     this.rim.scale.set(p);
@@ -344,6 +348,15 @@ export class WheelView extends Container {
     this.pointerArt.scale.set(p);
     this.pointerArt.anchor.set(pt.px / pt.w, pt.py / pt.h);
     this.pointer.position.set(0, -(N / 2) * p + rw * p * 0.15);
+    // an earned charm hangs off the pointer's cap (F11); it swings with it
+    const cv = WHEEL_LOOK.charm ? emojiCanvas(WHEEL_LOOK.charm, true) : null;
+    this.charm.visible = !!cv;
+    if (cv) {
+      const s = Math.max(12, pt.w * p * 0.9);
+      this.charm.texture = picFit(cv, s).tex;
+      this.charm.width = this.charm.height = s;
+      this.charm.position.set(pt.w * p * 0.62, -pt.py * p * 0.1);
+    }
     this.disc.rotation = this.rot;
     this.lastRot = this.rot;
   }

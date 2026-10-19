@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  BALANCE,
   CW_FOCUS,
+  canClaim,
+  claimWin,
+  mulberry32,
   CW_REC,
   ULTS,
   ULT_WHEEL,
@@ -14,6 +18,7 @@ import {
   numStats,
   peekSlice,
   phaseKitOf,
+  phaseKits,
   phaseSlice,
   personalityOf,
   pickW,
@@ -55,6 +60,7 @@ import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import type { ArenaWheel } from '../flows/fight';
 import { oddsFor } from '../state/odds';
+import { copyText } from '../ui/copy';
 import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF, toast } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
@@ -183,7 +189,7 @@ function Hud({
     }
     return (
       <div class={`hs${i ? ' r' : ' me'}`}>
-        <div class="hn ellipsis">{names[i]}</div>
+        <div class={`hn ellipsis${i === 0 && G.F && bt?.P[0].f === G.F ? ' mine' : ''}`}>{names[i]}</div>
         <Inf
           key={`mom${M.n[i]}`}
           k="rule|momentum"
@@ -204,7 +210,7 @@ function Hud({
           <i style={{ width: `${en}%` }} />
         </div>
         <div class="hv">
-          <span>{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</span>
+          {BALANCE.healRules ? <Inf k="rule|heals">{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</Inf> : <span>{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</span>}
           <Inf k="rule|energy" class="env">
             ⚡ {en}
           </Inf>
@@ -257,9 +263,11 @@ export function FightScreen({
   /** the arena still to spin: it spins on the combat wheel's spot while the fighters walk in */
   arenaWheel?: ArenaWheel | null;
 }) {
-  const F = G.F!;
+  // a stand-in (the daily duel) fights instead of the active fighter, with its own dice for the wheel too
+  const F = spec.me ?? G.F!;
   const O = spec.opp;
   const names: [string, string] = [F.name, O.name];
+  const dice = useMemo(() => (spec.wheelSeed != null ? mulberry32(spec.wheelSeed) : G.rng), []);
   // the label as the fight starts (a cup's round moves on once it is won)
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
@@ -275,8 +283,8 @@ export function FightScreen({
   const [last, setLast] = useState<{ m: Move[]; n: number }>({ m: [], n: 0 });
   /** the slice being held for a preview */
   const [peek, setPeek] = useState<number | null>(null);
-  /** the boss's phase-two slice has been landed (it's once a fight) */
-  const [phaseUsed, setPhaseUsed] = useState(false);
+  /** the boss's phase-two slices landed so far (each once a fight; a remix brings two) */
+  const [phaseUsed, setPhaseUsed] = useState<string[]>([]);
   const [out, setOut] = useState<{ it: CwSlice } | null>(null);
   /** the round's matchup while it plays out (C1) */
   const [matchup, setMatchup] = useState<string | null>(null);
@@ -302,7 +310,7 @@ export function FightScreen({
     return ps ? [{ it: ps, w: ps.w, mult: 1 }, ...l] : l;
   }, [focus, phase, snap, phaseUsed]);
   /** the focus whose wheel has the boss's phase-two slice right now */
-  const phaseFam = btRef.current && !phaseUsed && btRef.current.P[1].phased ? phaseKitOf(btRef.current.P[1].f)?.slice : undefined;
+  const phaseFam = btRef.current && btRef.current.P[1].phased ? phaseKits(btRef.current.P[1].f).find((k) => !phaseUsed.includes(k.slice.n))?.slice : undefined;
   const items = useMemo(() => toSlices(list), [list]);
 
   // the wheel follows the slot the DOM leaves for it
@@ -453,7 +461,7 @@ export function FightScreen({
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
     // the first fight with a hidden synergy gives it away
-    const found = act((g) => discoverHidden(g, F));
+    const found = spec.me ? [] : act((g) => discoverHidden(g, F));
     found.forEach((s, i) =>
       setTimeout(() => sceneRef.current?.showProc({ kind: 'synergy', k: s.k, n: s.n, e: s.e, sub: 'Hidden synergy found', side: 0, anti: false }), i * 1700),
     );
@@ -499,6 +507,8 @@ export function FightScreen({
     setFocus((f) => (f === 'ult' && !ult ? 'atk' : ult ? 'ult' : f));
     setOut(null);
     if (autoRef.current) return void doRound(null);
+    // a sure story win can be claimed from the menu; the first one says so
+    if (canClaim(spec, bt)) tip('claim');
     setPhase('input');
   }
 
@@ -508,7 +518,7 @@ export function FightScreen({
     S.playing = true;
     setPhase('playing');
     try {
-      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(G.rng, bt.P[0], bt.P[1], bt.hist[1]));
+      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(dice, bt.P[0], bt.P[1], bt.hist[1]));
       // what each side did this round, and who read whom, in words while it plays
       const read = evs.find((e) => e.a?.t === 'read');
       const mine = bt.hist[0].at(-1),
@@ -562,7 +572,7 @@ export function FightScreen({
     try {
       // the result and the steps after it are saved together: closing the app on this screen loses nothing (A4)
       r = act((g) => {
-        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });
+        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd, hist: bt.hist });
         setPendingSteps(g, x.next);
         return x;
       });
@@ -595,7 +605,7 @@ export function FightScreen({
     const bt = btRef.current;
     if (!sc || !bt || phase !== 'input' || S.playing || bt.over || !list.length) return;
     ac();
-    const idx = pickW(G.rng, list);
+    const idx = pickW(dice, list);
     const dir = flickW && flickW < 0 ? -1 : 1;
     S.dir = dir;
     const turns = flickW ? Math.max(2, Math.min(6, Math.round(Math.abs(flickW) / 5))) : 3 + Math.floor(Math.random() * 2);
@@ -621,7 +631,7 @@ export function FightScreen({
       () => {
         setNudgeTo(null);
         const bt = btRef.current!;
-        if (it.src === 'phase') setPhaseUsed(true);
+        if (it.src === 'phase') setPhaseUsed((u) => [...u, it.n]);
         if (it.c === 'ult') {
           if (it.ultIdx != null) bt.P[0].ultSpin = ULT_WHEEL[it.ultIdx]!;
           void doRound('ult', { ...(it.m || {}) });
@@ -748,6 +758,23 @@ export function FightScreen({
     sceneRef.current?.settle();
     if (!S.playing) finishInstant();
   };
+  /** A sure win taken without playing it (review E5): it plays out on auto until a win comes up, full rewards. */
+  const claim = () => {
+    const bt = btRef.current;
+    if (!bt || S.ended || S.playing || !canClaim(spec, bt)) return;
+    const won = act((g) => claimWin(g, spec, bt));
+    if (!won) return skip();
+    btRef.current = won.bt;
+    S.log = won.events;
+    const sc = sceneRef.current!;
+    sc.settle();
+    const last = won.events[won.events.length - 1];
+    if (last) {
+      setSnap(last);
+      sc.applySnap(last);
+    }
+    finish();
+  };
   const toggleAuto = () => {
     const on = !autoRef.current;
     setAuto(on);
@@ -817,6 +844,13 @@ export function FightScreen({
         {!over && <Toggle label="Auto-battle" sub="This fight only: your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />}
         {!over && <Toggle label="Fast mode" sub="Quicker animations in every fight (saved)" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />}
         <div class="fm-grid">
+          {!over && canClaim(spec, bt) && (
+            <button class="menu-i good" onClick={() => (closeSheet(), claim())}>
+              <Icon name="cup" />
+              <b>Claim the win</b>
+              <small>A sure thing: full rewards, no fight</small>
+            </button>
+          )}
           {!over && (
             <button class="menu-i" onClick={() => (closeSheet(), skip())}>
               <Icon name="skip" />
@@ -880,7 +914,8 @@ export function FightScreen({
   const ult = bt ? bt.P[0].en >= 100 : false;
   const pw = bt ? cwPowOk(bt.P[0]) : false;
   let rec: Focus | null = plan ? CW_REC[plan.shown] || null : null;
-  if (rec === 'pow' && !pw) rec = 'atk';
+  // with nothing to cast, the old Power wheel was mostly strikes; a pure one (review E1) holds the feint that beats a guard
+  if (rec === 'pow' && !pw && !BALANCE.pureFocus) rec = 'atk';
   const style = {
     '--groundY': `${dims.groundY}px`,
     '--stageW': `${dims.stageW}px`,
@@ -1055,6 +1090,11 @@ export function FightScreen({
               </div>
             )}
             {recap && <RecapCard r={recap} names={names} />}
+            {result.share && (
+              <button class="btn ghost sm block" onClick={() => void copyText(result.share!)}>
+                <Icon name="card" /> Copy the score
+              </button>
+            )}
             {result.won && (
               <button class="btn ghost sm block" onClick={shareWin}>
                 <Icon name="download" /> Save this win as a picture

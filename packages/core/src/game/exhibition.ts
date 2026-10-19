@@ -2,8 +2,8 @@ import { CALLS, type CallKind } from '../data/content/commentary';
 import { autoChoice, newBattle, type BattleEvent } from '../battle';
 import { mulberry32 } from '../rng';
 import { deserFighter, type SerFighter } from '../save/fighter';
-import { champsOf, type Retired } from './career';
-import type { Game } from './game';
+import { champsOf, track, type Retired } from './career';
+import { addCoins, type Game } from './game';
 
 /**
  * Hall of fame exhibitions (Phase 4, upgrade 24): two legends from the hall of fame fight for nothing but
@@ -126,4 +126,16 @@ export function runExhibition(a: Legend, b: Legend, seed: number): Exhibition {
   }
   const w = (bt.w ?? (bt.P[0].hp >= bt.P[1].hp ? 0 : 1)) as 0 | 1;
   return { a, b, intro, rounds, w, outro: [say('ko', w, w), say('ko', w, w), say('outro', w, w)] };
+}
+
+/** Coins for calling an exhibition right (review F8): pride, and a little something for the cab home. */
+export const CALL_PAY = 5;
+/** Settles the player's call on an exhibition: paid if it came true. */
+export function settleCall(g: Game, ex: Exhibition, call: 0 | 1) {
+  const right = ex.w === call;
+  if (right) {
+    addCoins(g, CALL_PAY);
+    track(g, 'calls');
+  }
+  return { right, pay: right ? CALL_PAY : 0 };
 }

@@ -6,6 +6,9 @@ import { applyBonus, levelUp } from '../fighter';
 import { headToHead, newBattle, type Battle } from '../battle';
 import { poolPick } from '../pool';
 import { clamp, shuffle } from '../random';
+import { BALANCE } from '../data/balance';
+import { eff } from '../stats';
+import { oddsWord } from './fight';
 import { deserFighter, serFighter, type CareerFighter, type Json, type SerFighter } from '../save/fighter';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addMasteryWin, award, awardGems, challengeFighter, gainFame, gainXP, invalidate, randomGear, recordMatch, track } from './career';
@@ -339,11 +342,17 @@ export interface Club {
   B: CareerFighter;
   /** A's chance to win */
   pA: number;
+  /** the bookie's line on A (review F8): what the payouts are set by, often off from the real odds */
+  line?: number;
+  /** the insider tip was bought for this matchup */
+  tipped?: boolean;
   bet: number;
 }
 export const CLUB_BETS = [5, 10, 25, 50];
 /** Payout multiplier for backing a side with chance p: underdogs pay more. */
 export const clubMult = (p: number) => Math.round(clamp(0.92 / p, 1.1, 8) * 10) / 10;
+/** The odds the payouts are set by: the bookie's line once it exists (F8), the real odds before that. */
+export const clubLine = (c: Club) => c.line ?? c.pA;
 /** A new matchup of two pool fighters around your level. */
 export function clubMatchup(g: Game): Club {
   const F = g.F!;
@@ -358,17 +367,56 @@ export function clubMatchup(g: Game): Club {
   const A = mk();
   const B = mk();
   const pA = clamp(headToHead(A, B, g.rng, 100, { ctx }), 0.05, 0.95);
-  return { A, B, pA, bet: Math.min(10, coinsOf(g)) };
+  // the bookie only reads the cards (F8): the line is the real odds plus a good amount of noise, so value
+  // bets exist for whoever knows better
+  const line = BALANCE.clubInsider ? clamp(pA + (g.rng() - 0.5) * 0.4, 0.06, 0.94) : undefined;
+  return { A, B, pA, line, bet: Math.min(10, coinsOf(g)) };
+}
+/** The charisma that gets the insider talking for free (a gem otherwise). */
+export const CLUB_TIP_CHA = 9;
+export const clubTipFree = (g: Game) => (eff(g.F!, ctxOf(g)).cha || 5) >= CLUB_TIP_CHA;
+/** What the insider says (F8): who is really the favorite, and the dirt on whoever the line has wrong. */
+export function clubTip(c: Club): { lines: string[] } {
+  const line = clubLine(c);
+  const off = c.pA - line;
+  const who = off >= 0 ? c.A : c.B;
+  const real = (p: number) => oddsWord(p).t.toLowerCase();
+  const lines = [`${c.A.name} is really ${aOrAn(real(c.pA))}. ${c.B.name} is really ${aOrAn(real(1 - c.pA))}.`];
+  if (Math.abs(off) >= 0.08) lines.push(nth(Math.abs(off) * 997, UNDERRATED).replace('{n}', who.name));
+  else lines.push('The line is about right. The insider looks disappointed in both of you.');
+  return { lines };
+}
+const aOrAn = (w: string) => `${/^[aeiou]/.test(w) ? 'an' : 'a'} ${w}`;
+const nth = (x: number, l: readonly string[]) => l[Math.floor(x) % l.length]!;
+/** Dirt on a fighter the bookie underrates. */
+const UNDERRATED = [
+  '{n} has been training in secret. In a walk-in freezer. Nobody asked why.',
+  "{n} let the bookie see a limp. There is no limp.",
+  '{n} lost a fight last week on purpose. The odds have not recovered.',
+  "{n}'s trainer is the bookie's ex. The line is personal.",
+  '{n} switched to decaf. Nobody is ready for what that means.',
+];
+/** Buys the insider's tip: free with enough charisma, a gem otherwise. False if it can't be paid. */
+export function buyClubTip(g: Game, c: Club): boolean {
+  if (c.tipped) return true;
+  if (!clubTipFree(g)) {
+    const p = g.save.profile;
+    if ((p.gems || 0) < 1) return false;
+    p.gems -= 1;
+  }
+  c.tipped = true;
+  return true;
 }
 /** Places the bet and starts the fight (narrated, so it can be watched). */
 export function clubFight(g: Game, c: Club): Battle | null {
   if (c.bet <= 0 || !spend(g, c.bet)) return null;
   return newBattle(c.A, c.B, g.rng, { ctx: ctxOf(g) });
 }
-/** Pays out a won bet. */
+/** Pays out a won bet, at the line's multiplier. */
 export function clubSettle(g: Game, c: Club, side: 'A' | 'B', w: 0 | 1) {
   const won = (w === 0) === (side === 'A');
-  const mult = clubMult(side === 'A' ? c.pA : 1 - c.pA);
+  const line = clubLine(c);
+  const mult = clubMult(side === 'A' ? line : 1 - line);
   let pay = 0;
   if (won) {
     pay = Math.round(c.bet * mult);

@@ -18,6 +18,8 @@ export interface ResumeState {
   place?: Place | null;
   /** a fighter being built: the partial fighter, the wheel it is on, and whether every wheel is spun */
   build?: { f: Json; idx: number; done: boolean } | null;
+  /** the level-up spins landed so far for the level being picked (review F4): one is kept */
+  lv?: string[] | null;
 }
 export type Place = 'map' | 'hub' | 'bracket';
 
@@ -53,6 +55,19 @@ export function setPlace(g: Game, place: Place | null) {
   r.place = place;
 }
 export const lastPlace = (g: Game): Place | null => mine(g)?.place ?? null;
+
+// ---------------------------------------------------------------- a level-up being picked
+/** The level-up slices landed so far for the level being picked (two to choose from with a second opinion). */
+export const levelSpins = (g: Game): string[] => (mine(g)?.lv ?? []).slice();
+export function addLevelSpin(g: Game, k: string) {
+  const r = state(g);
+  if (r.slot !== g.save.roster.active) Object.assign(r, { steps: null, place: null });
+  r.slot = g.save.roster.active;
+  r.lv = [...levelSpins(g), k];
+}
+export function clearLevelSpins(g: Game) {
+  state(g).lv = null;
+}
 
 // ---------------------------------------------------------------- a fighter being built
 export const savedBuild = (g: Game) => state(g).build ?? null;
@@ -121,7 +136,7 @@ export function nodeFoe(g: Game, kind: 'fight' | 'elite'): CareerFighter {
 /** The step's encounter: the one it drew before, or a new one (kept). */
 export function nodeEvent(g: Game): StoryEventView {
   const n = nodeOf(g);
-  const old = n?.ev ? eventOf(n.ev) : undefined;
+  const old = n?.ev ? eventOf(n.ev, g) : undefined;
   if (old) return old;
   const ev = storyEvent(g);
   if (n) n.ev = ev.k;

@@ -1,6 +1,11 @@
 import { reducedMotion } from '../state/game';
 
-const COLORS = ['#FFB627', '#FF4F8B', '#3DD6C6', '#B388FF', '#FFFFFF'];
+const DEFAULT = ['#FFB627', '#FF4F8B', '#3DD6C6', '#B388FF', '#FFFFFF'];
+let COLORS = DEFAULT;
+/** Earned victory confetti (review F11), or the default mix. */
+export function setConfetti(colors: string[] | null) {
+  COLORS = colors && colors.length ? colors : DEFAULT;
+}
 
 /** Confetti anywhere on the page (legacy burstAt). Defaults to the upper middle of the screen. */
 export function burst(x = innerWidth / 2, y = innerHeight * 0.4, n = 22) {

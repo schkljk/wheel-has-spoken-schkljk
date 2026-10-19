@@ -1,11 +1,13 @@
 import { ARENAS } from '../data/arenas';
+import { BALANCE } from '../data/balance';
+import { mulberry32 } from '../rng';
 import { CHAPTERS } from '../data/content/story';
 import { FAME_CUP, FAME_WIN } from '../data/content/progression';
-import { headToHead, newBattle, type Battle, type BattleOpts, type Side } from '../battle';
+import { headToHead, newBattle, type Battle, type BattleEvent, type BattleOpts, type Side } from '../battle';
 import { activePower, fullName, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json } from '../save/fighter';
-import type { Arena, Injury } from '../types';
+import type { Arena, Injury, Move } from '../types';
 import type { FightMod } from '../data/misc';
 import { addCoins, coinsOf, ctxOf, pl, slotOf, type Game } from './game';
 import {
@@ -32,7 +34,7 @@ import {
 } from './career';
 import { ACHK, CONTRACTK } from './lookups';
 import { RNAME1, nextGauntletOpp, recordCup, resolveMyRound, saveRun, simRest, type Cup, type Gauntlet, type Tier } from './cups';
-import { LASTCH, hpTxt, newChapter, storyOf } from './story';
+import { LASTCH, hpTxt, newChapter, storyOf, tunedBossGems } from './story';
 import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
 import { endHard } from './hard';
@@ -41,7 +43,7 @@ import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial';
 export interface FightTier {
   k: string;
   n: string;
@@ -64,6 +66,12 @@ export interface FightSpec {
   arena: Arena | null;
   /** chance to win from simulations, fixed when the fight opens */
   odds: number;
+  /** someone else fights instead of the active fighter (the daily duel), with no buffs or career perks */
+  me?: CareerFighter;
+  /** the fight's own dice, so it plays the same for everyone (the daily duel) */
+  seed?: number;
+  /** and the combat wheel's */
+  wheelSeed?: number;
 }
 
 /** The header label of a fight. */
@@ -143,7 +151,7 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
 
 /** Round limits: bosses get 30 rounds and sudden death; elites, legends and cup finals get 20. */
 export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run' | 'tier'>): Pick<BattleOpts, 'maxRounds' | 'suddenDeath'> {
-  if (spec.kind === 'rush' || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
+  if (spec.kind === 'rush' || spec.kind === 'trial' || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
   if (spec.kind === 'story' && (spec.node === 'elite' || spec.node === 'nemesis')) return { maxRounds: 20 };
   if (spec.kind === 'challenge' && spec.opp && spec.opp.isRival === 'legend') return { maxRounds: 20 };
   if (spec.kind === 'cup') {
@@ -179,22 +187,51 @@ export const injLine = (j: Injury) =>
   `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
 
 /** Simulated chance to win, shown before the fight (120 fights at the fight's HP, default round limit). */
-export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(g.F!, spec.opp, g.rng, 120, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) });
+export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(spec.me ?? g.F!, spec.opp, g.rng, 120, { arena: spec.arena, ...setupOf(g, spec) });
+/** Mods and context: a stand-in fighter (the daily duel) gets none of the career's. */
+const setupOf = (g: Game, spec: Omit<FightSpec, 'odds'>) =>
+  spec.me
+    ? { mods: [{}, {}] as [FightMod, FightMod], ctx: {} }
+    : // a ghost fight (F9) is for pride: next-fight buffs stay for a fight that counts
+      { mods: spec.kind === 'ghost' ? ([{}, {}] as [FightMod, FightMod]) : fightMods(g, spec), ctx: ctxOf(g) };
 /** The same simulation as plain data, to run off the main thread: run it with headToHead(a, b, mulberry32(seed), n, opts). */
 export const fightOddsJob = (g: Game, spec: Omit<FightSpec, 'odds'>) => ({
-  a: g.F!,
+  a: spec.me ?? g.F!,
   b: spec.opp,
   n: 120,
   seed: Math.floor(g.rng() * 2 ** 31),
-  opts: { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) },
+  opts: { arena: spec.arena, ...setupOf(g, spec) },
 });
 
 /** Starts the battle; next-fight buffs are used up. */
 export function startBattle(g: Game, spec: FightSpec): Battle {
   const F = g.F!;
-  const bt = newBattle(F, spec.opp, g.rng, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g), ...fightRules(spec) });
-  F.next = null;
+  const rng = spec.seed != null ? mulberry32(spec.seed) : g.rng;
+  const bt = newBattle(spec.me ?? F, spec.opp, rng, { arena: spec.arena, ...setupOf(g, spec), ...fightRules(spec) });
+  // a stand-in's fight doesn't use up the active fighter's next-fight buffs
+  if (!spec.me && spec.kind !== 'ghost') F.next = null;
   return bt;
+}
+
+/** Odds at or above this let a story fight be claimed without playing it (review E5). */
+export const CLAIM_ODDS = 0.85;
+/** A regular or elite story fight the player is all but sure to win, not yet under way: it can be claimed. */
+export const canClaim = (spec: FightSpec, bt: Battle | null) =>
+  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !!bt && bt.round === 0 && !bt.over;
+/**
+ * Claims a sure win (review E5): the fight is played out on auto-battle, from the same start, until a win
+ * comes up, so the rewards are full and the HP it costs is what a real win costs. Null if no win comes up
+ * (then the fight is played as usual).
+ */
+export function claimWin(g: Game, spec: FightSpec, bt: Battle): { bt: Battle; events: BattleEvent[] } | null {
+  const mods: [FightMod, FightMod] = [bt.P[0].mod, bt.P[1].mod];
+  for (let i = 0; i < 30; i++) {
+    const b = newBattle(g.F!, spec.opp, g.rng, { arena: spec.arena, mods, ctx: ctxOf(g), ...fightRules(spec) });
+    const events = b.start();
+    while (!b.over) events.push(...b.step());
+    if (b.w === 0) return { bt: b, events };
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- after the fight
@@ -208,6 +245,8 @@ export interface FightOutcome {
   round: number;
   /** ended in sudden death */
   sd: boolean;
+  /** both sides' moves, round by round (newer callers) */
+  hist?: Move[][];
 }
 export type Step =
   | { t: 'loot'; table: LootTable }
@@ -238,6 +277,8 @@ export interface FightResult {
   /** sound and celebration: 0 lost, 2 won, 3 big win */
   q: 0 | 2 | 3;
   confetti: boolean;
+  /** a line to copy and share (the daily duel) */
+  share?: string;
 }
 
 /** Achievement keys every fight can earn. */
@@ -570,6 +611,11 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   award(g, keys, got);
   lines.unshift(`+${xp} XP, +${coins} 🪙`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  // a boss that toughened up for you pays for it (review E5 and F7)
+  if (won && node === 'boss' && tunedBossGems(O)) {
+    lines.push(`💪 ${O.name} put on ${pl(O.tuned!, 'level', 'levels')} for you and lost anyway`);
+    awardGems(g, tunedBossGems(O), lines);
+  }
   if (won) {
     track(g, 'wins');
     addMasteryWin(g, F);

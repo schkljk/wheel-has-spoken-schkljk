@@ -6,6 +6,7 @@ import { ensurePool } from './state/pool';
 import { installPressFeedback } from './ui/kit';
 import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
+import { installCosmetics } from './state/cosmetics';
 import { loadPx } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import { effect } from '@preact/signals';
@@ -25,6 +26,7 @@ import './styles/game.css';
 
 installErrorLog();
 installEmojiIcons();
+installCosmetics();
 // the Android app's glue, only in the Android build (the web build doesn't carry Capacitor at all)
 if (__NATIVE__) void import('./native').then((m) => m.installNative());
 installPressFeedback();

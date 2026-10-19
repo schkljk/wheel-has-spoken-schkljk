@@ -1,6 +1,10 @@
 import {
   arenaOdds,
   endDailyFight,
+  endDuelFight,
+  endGhostFight,
+  endTrialFight,
+  type Duel,
   endRushFight,
   endStoryFight,
   endTierFight,
@@ -25,7 +29,7 @@ export interface ArenaWheel {
 }
 
 /** Opens the fight (its arena spins during the walk-in unless it is fixed) and resolves with its result. */
-export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { arena?: Arena | null; rush?: RushState; tower?: TowerState } = {}): Promise<FightResult> {
+export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { arena?: Arena | null; rush?: RushState; tower?: TowerState; duel?: Duel; trial?: number } = {}): Promise<FightResult> {
   const F = G.F!;
   const O: CareerFighter = spec0.opp;
   const fixed = opts.arena !== undefined;
@@ -36,6 +40,9 @@ export async function fight(spec0: Omit<FightSpec, 'arena' | 'odds'>, opts: { ar
   const end = (o: FightOutcome): FightResult => {
     if (spec.kind === 'story') return endStoryFight(G, spec, o);
     if (spec.kind === 'daily') return endDailyFight(G, O, o);
+    if (spec.kind === 'duel') return endDuelFight(G, opts.duel!, o);
+    if (spec.kind === 'ghost') return endGhostFight(G, O, o);
+    if (spec.kind === 'trial') return endTrialFight(G, opts.trial!, O, o);
     if (spec.kind === 'rush') return endRushFight(G, opts.rush!, O, o);
     if (spec.kind === 'tower') return endTowerFight(G, opts.tower!, O, o);
     return endTierFight(G, spec, o);

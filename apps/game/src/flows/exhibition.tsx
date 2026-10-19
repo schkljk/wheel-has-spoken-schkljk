@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { COMMENTATORS, deserFighter, exhibitionLegends, runExhibition, type Call, type Exhibition, type Legend } from '@whs/core';
+import { CALL_PAY, COMMENTATORS, deserFighter, exhibitionLegends, runExhibition, settleCall, type Call, type Exhibition, type Legend } from '@whs/core';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
-import { G, reducedMotion, settings } from '../state/game';
+import { G, act, reducedMotion, settings } from '../state/game';
 import { openSheet } from '../state/ui';
 import { Sheet } from '../ui/kit';
 import { sfx, tick } from '../ui/sound';
@@ -29,6 +29,8 @@ function ExhibitionPick({ legends, pair }: { legends: Legend[]; pair: [number, n
     if (y >= x) y++;
     setPair([x, y]);
   };
+  const ring = (call: 0 | 1 | null) =>
+    openSheet(<ExhibitionLive key={Math.random()} ex={runExhibition(legends[a]!, legends[b]!, (Date.now() & 0xffffff) + a * 31 + b)} pair={[a, b]} call={call} />, true);
   const set = (corner: 0 | 1, i: number) => setPair(corner === 0 ? (i === b ? [i, a] : [i, b]) : i === a ? [b, i] : [a, i]);
   return (
     <Sheet emoji="🏛️" title="Exhibition" sub="Two legends, nothing on the line but pride">
@@ -51,8 +53,17 @@ function ExhibitionPick({ legends, pair }: { legends: Legend[]; pair: [number, n
           <button class="btn ghost grow" onClick={shuffle}>
             🎲 Shuffle
           </button>
-          <button class="btn grow" onClick={() => openSheet(<ExhibitionLive key={Math.random()} ex={runExhibition(legends[a]!, legends[b]!, (Date.now() & 0xffffff) + a * 31 + b)} pair={[a, b]} />, true)}>
+          <button class="btn grow" onClick={() => ring(null)}>
             🔔 Ring the bell
+          </button>
+        </div>
+        {/* call it before the bell (F8): a right call pays a little */}
+        <div class="row ex-call-row" role="group" aria-label={`Call it, +${CALL_PAY} coins if you are right`}>
+          <button class="btn ghost sm grow" onClick={() => ring(0)}>
+            🔴 Call it for {legends[a]!.n}
+          </button>
+          <button class="btn ghost sm grow" onClick={() => ring(1)}>
+            🔵 Call it for {legends[b]!.n}
           </button>
         </div>
         <span class="sec-label">The hall of fame ({legends.length})</span>
@@ -80,7 +91,8 @@ function ExhibitionPick({ legends, pair }: { legends: Legend[]; pair: [number, n
 
 type Line = { k: number; t: 'call'; c: Call } | { k: number; t: 'line'; s: string } | { k: number; t: 'round'; r: number };
 
-function ExhibitionLive({ ex, pair }: { ex: Exhibition; pair: [number, number] }) {
+function ExhibitionLive({ ex, pair, call = null }: { ex: Exhibition; pair: [number, number]; call?: 0 | 1 | null }) {
+  const [called, setCalled] = useState<{ right: boolean; pay: number } | null>(null);
   const [shown, setShown] = useState<Line[]>([]);
   const [hp, setHp] = useState<[number, number]>([100, 100]);
   const [done, setDone] = useState(false);
@@ -110,6 +122,7 @@ function ExhibitionLive({ ex, pair }: { ex: Exhibition; pair: [number, number] }
       else {
         setDone(true);
         sfx('ui.goal', { vary: 0 });
+        if (call != null) setCalled(act((g) => settleCall(g, ex, call)));
       }
     };
     timer = window.setTimeout(next, 300);
@@ -153,6 +166,11 @@ function ExhibitionLive({ ex, pair }: { ex: Exhibition; pair: [number, number] }
           ),
         )}
       </ol>
+      {called && (
+        <p class={`ex-called ${called.right ? 'good' : 'bad'}`}>
+          {called.right ? `🎯 You called it. +${called.pay} 🪙` : '🙈 You called it wrong. The booth saw. The booth will remember.'}
+        </p>
+      )}
       {done ? (
         <div class="row">
           <button class="btn grow" onClick={() => openSheet(<ExhibitionLive key={Math.random()} ex={runExhibition(ex.a, ex.b, (Date.now() & 0xffffff) + 7)} pair={pair} />, true)}>

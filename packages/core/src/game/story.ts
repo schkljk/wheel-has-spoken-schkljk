@@ -16,6 +16,8 @@ import type { Fighter, WheelItem } from '../types';
 import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addInjury, gainFame, injText, invalidate, markSeen, priceOf, randomGear, STATN } from './career';
 import { CX_CATS, ITEMK } from './lookups';
+import { clearLevelSpins } from './resume';
+import { MENTOR_EVENT, withMentor } from './mentor';
 
 export const LASTCH = CHAPTERS.length;
 export const maxGrit = (g: Game) => 3 + lgLvl(g.save.profile, 'grit');
@@ -70,7 +72,11 @@ export function genMap(g: Game, C: { len: number }): NodeKind[][] {
       let tries = 0;
       while (opts.size < n && tries++ < 40) opts.add(pickWeighted(g, { rest: 2, shop: 1.5, event: 2, treasure: 0.8 }));
       rows.push(shuffle(g.rng, [...opts]) as NodeKind[]);
-    } else rows.push(r >= 2 && g.rng() < 0.6 ? ['fight', 'elite'] : ['fight']);
+    }
+    // every fight row after the first has an elite to pick instead (review E5): the story's fights are only
+    // filler when you want them to be
+    else if (BALANCE.storyPacing) rows.push(r >= 1 ? ['fight', 'elite'] : ['fight']);
+    else rows.push(r >= 2 && g.rng() < 0.6 ? ['fight', 'elite'] : ['fight']);
   }
   return rows;
 }
@@ -156,13 +162,17 @@ export function storyOdds(g: Game, o: Fighter, n = 60) {
   return headToHead(g.F!, o, g.rng, n, { mods: [{ hp: storyOf(g).hp }, o.maxHp ? { maxHp: o.maxHp } : {}], ctx: ctxOf(g) });
 }
 function tuneUp(g: Game, o: Fighter, target: number, cap = 6) {
-  for (let i = 0; i < cap; i++) {
+  let n = 0;
+  for (; n < cap; n++) {
     if (storyOdds(g, o) <= target + 0.08) break;
     applyBonus(o, { k: 'all1', n: '+1 to everything', e: '💪' });
     o.lvl = (o.lvl || 1) + 1;
   }
+  if (n) o.tuned = n;
   invalidate(o);
 }
+/** Gems for beating a boss that sized you up and toughened (review E5 and F7): 2 a level it put on. */
+export const tunedBossGems = (o: Fighter) => (BALANCE.storyPacing ? 2 * (o.tuned || 0) : 0);
 
 /** A story opponent from the ranked pool slice that fits the chapter (elites come from higher up). */
 export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
@@ -186,9 +196,9 @@ export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {
 }
 
 /** The chapter boss, built from its table and tuned to stay a real fight. */
-export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && storyOf(g).hard)): CareerFighter {
+/** A boss's body from its table: every wheel picked or spun, stat tiers moved by `shift` (or all set to `tier`). */
+export function bossBody(g: Game, ch: number, shift: number, tier?: number): CareerFighter {
   const def = BOSSES[ch - 1]!;
-  const ng = storyOf(g).ng || 0;
   const f = { name: def.name, bonus: {}, boons: [] } as unknown as CareerFighter;
   const set = f as unknown as Record<string, unknown>;
   const ctx = ctxOf(g);
@@ -200,11 +210,18 @@ export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && stor
     }
     const list = itemsOf(W, f, ctx) as Slice[];
     let it: Slice | undefined;
-    if (W.tier) it = list.find((x) => x.v === clamp((def.stats[W.k] || 5) + BALANCE.bossStatShift(ch), 1, 14));
+    if (W.tier) it = list.find((x) => x.v === clamp(tier ?? (def.stats[W.k] || 5) + shift, 1, 14));
     else if (def.picks[W.k] != null) it = list.find((x) => x.n === def.picks[W.k] || x.k === def.picks[W.k]);
     if (!it) it = W.k === 'title' ? list[0] : list[pickW(g.rng, list)];
     set[W.k] = it;
   }
+  return f;
+}
+
+export function makeBoss(g: Game, ch: number, hard = !!(g.F && g.F.story && storyOf(g).hard)): CareerFighter {
+  const def = BOSSES[ch - 1]!;
+  const ng = storyOf(g).ng || 0;
+  const f = bossBody(g, ch, BALANCE.bossStatShift(ch));
   Object.assign(f, {
     title: TITLES[0],
     maxHp: BALANCE.bossHp(ch, ng),
@@ -277,7 +294,7 @@ export interface StoryEventView {
 }
 
 // ---------------------------------------------------------------- chapter-themed encounters (upgrade 20)
-const CH_EVENTK: Record<string, ChapterEvent> = Object.fromEntries(CH_EVENTS.map((e) => [e.k, e]));
+const CH_EVENTK: Record<string, ChapterEvent> = Object.fromEntries([...CH_EVENTS, MENTOR_EVENT].map((e) => [e.k, e]));
 const pct = (p: number) => `${Math.round(p * 100)}%`;
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -319,8 +336,13 @@ const viewOf = (ev: ChapterEvent): StoryEventView => ({
   d: ev.d,
   o: ev.o.map((o) => ({ l: o.l, s: optText(o), cost: o.cost, fight: o.fight, wheel: o.wheel, loot: o.loot, risk: o.risk })),
 });
-/** An encounter by its key: one of the classic twelve or a chapter's own. */
-export const eventOf = (k: string): StoryEventView | undefined => SEVENTS.find((e) => e.k === k) ?? (CH_EVENTK[k] && viewOf(CH_EVENTK[k]));
+/** An encounter by its key: one of the classic twelve or a chapter's own (a mentor's cameo needs the game for its name). */
+export const eventOf = (k: string, g?: Pick<Game, 'F'>): StoryEventView | undefined =>
+  k === MENTOR_EVENT.k && g ? mentorView(g) : (SEVENTS.find((e) => e.k === k) ?? (CH_EVENTK[k] && viewOf(CH_EVENTK[k])));
+const mentorView = (g: Pick<Game, 'F'>): StoryEventView => {
+  const v = viewOf(MENTOR_EVENT);
+  return { ...v, t: withMentor(v.t, g), d: withMentor(v.d, g) };
+};
 
 /** Does what some effects say; returns the mechanics line of what happened. */
 function applyFx(g: Game, fx: EventFx = {}): string {
@@ -383,6 +405,11 @@ function chapterOption(g: Game, ev: ChapterEvent, i: number): EventOutcome {
 /** Picks the next unseen encounter of this chapter (more often one of the chapter's own, when it has any left). */
 export function storyEvent(g: Game): StoryEventView {
   const S = storyOf(g);
+  // a mentor (review F10) drops by, once a chapter at most
+  if (g.F?.mentor && !(S.used || []).includes(MENTOR_EVENT.k) && g.rng() < 0.3) {
+    S.used = (S.used || []).concat(MENTOR_EVENT.k);
+    return mentorView(g);
+  }
   if (BALANCE.themedEvents) {
     const mine = CH_EVENTS.filter((e) => e.ch === S.ch && !(S.used || []).includes(e.k));
     if (mine.length && g.rng() < 0.6) {
@@ -466,6 +493,7 @@ export function eventOption(g: Game, k: string, i: number): EventOutcome {
   if (CH_EVENTK[k]) {
     const r = chapterOption(g, CH_EVENTK[k], i);
     invalidate(g.F!);
+    if (k === MENTOR_EVENT.k && 'txt' in r && r.txt) r.txt = withMentor(r.txt, g);
     return r;
   }
   const ev = SEVENTS.find((e) => e.k === k)!;
@@ -630,9 +658,14 @@ export const prizeMoney = (g: Game) => 4 + storyOf(g).ch;
 
 // ---------------------------------------------------------------- level-ups
 export const levelUpList = () => LEVELUP.map((it) => ({ it, w: it.w, mult: 1 }));
+/** How many level-up spins a level gets: two with a second opinion (review F4), and you keep one. */
+export const levelSpinsPerLevel = () => (BALANCE.secondOpinion ? 2 : 1);
+export const levelUpItem = (k: string) => LEVELUP.find((x) => x.k === k);
 /** A level-up spin landed: stat bonuses apply at once; awaken and arsenal lead to an upgrade spin. */
 export function levelUpLand(g: Game, it: (typeof LEVELUP)[number]): 'power' | 'weapon' | null {
   const F = g.F!;
+  // the spins for this level are over: the next level starts from none (resume.ts)
+  clearLevelSpins(g);
   F.pendingLv = Math.max(0, (F.pendingLv || 0) - 1);
   if (it.k === 'awaken') return 'power';
   if (it.k === 'arsenal') return 'weapon';

@@ -38,6 +38,22 @@ export interface Balance {
   moreSets: boolean;
   /** calendar-themed arenas join the arena wheel in their season (upgrade 27) */
   seasonal: boolean;
+  /** a focus wheel holds only moves of its family: you pick what, the wheel picks how hard (review E1) */
+  pureFocus: boolean;
+  /** reads leave the AI's skill out, IQ counts half as much, and only tricksters push a read below "Just a hunch" (E2) */
+  fairReads: boolean;
+  /** speed guards against strikes, IQ against powers and adds crit damage, power mastery makes powers cheaper (E3) */
+  statRoles: boolean;
+  /** regeneration heals a share of what's missing, heals fade after round 6, one revive per fight, powers pierce durability (E4) */
+  healRules: boolean;
+  /** every fight row has an elite, sure wins can be claimed, a boss that toughened up for you pays gems (E5) */
+  storyPacing: boolean;
+  /** every level-up spins twice and you keep one (review F4) */
+  secondOpinion: boolean;
+  /** the fight club's payouts follow a noisy bookie's line, and an insider tells the real odds (review F8) */
+  clubInsider: boolean;
+  /** the bounty board counts career steps toward standing build challenges (review F5) */
+  bounties: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -58,24 +74,34 @@ export const LEGACY_BALANCE: Balance = {
   gearUpgrades: false,
   moreSets: false,
   seasonal: false,
+  pureFocus: false,
+  fairReads: false,
+  statRoles: false,
+  healRules: false,
+  storyPacing: false,
+  secondOpinion: false,
+  clubInsider: false,
+  bounties: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
 export const BOSS_AIM = (ch: number) => (ch <= 10 ? 0.55 - 0.01 * (ch - 1) : 0.37 - 0.01 * (ch - 11));
 
 /** How many levels each boss is above its chapter. */
-export const BOSS_LVL_UP: number[] = BOSSES.map(() => 1);
+// the Wheelmaster (chapter 10) fights at the chapter's level: a chosen one's +2 to everything counts for more
+// since the review's stat roles, and its table can't ease off any further
+export const BOSS_LVL_UP: number[] = BOSSES.map((_, i) => (i === 9 ? 0 : 1));
 /**
  * Stat tiers taken off (or added to) each boss's table, chapters 1 to 20. Tuned with the HP below over whole
  * story runs (tools/sim/tune-bosses.ts): an average build wins about 72% of tries in chapter 1, 54% at the end
  * of Act I, and 42% to 28% across Act II.
  */
 // prettier-ignore
-export const BOSS_STAT_SHIFT: number[] = [-6, -4, -3, -5, -3, -3, -5, -2, -5, -5, 2, -4, 3, -5, 0, 4, 4, -5, -5, -6];
+export const BOSS_STAT_SHIFT: number[] = [-6, -1, -2, -2, -3, -2, -4, -2, -4, -6, 4, -1, 3, -4, 4, 4, 4, -5, -4, -6];
 
 /** Boss HP by chapter (see the stat shift above). */
 // prettier-ignore
-export const BOSS_HP: number[] = [90, 142, 180, 245, 250, 225, 182, 240, 312, 205, 320, 533, 340, 493, 360, 608, 624, 471, 440, 331];
+export const BOSS_HP: number[] = [224, 190, 170, 214, 257, 205, 255, 353, 355, 180, 512, 410, 487, 529, 360, 608, 624, 630, 693, 331];
 
 /** Gentler first chapters, so the weakest builds can get going (the rest of CH_PCT is unchanged). */
 export const CH_PCT_EASY: (readonly [number, number])[] = [
@@ -86,7 +112,8 @@ export const CH_PCT_EASY: (readonly [number, number])[] = [
 
 export const BALANCE: Balance = {
   bossTarget: (ch, ng) => BOSS_AIM(ch) + 0.04 - 0.02 * ng,
-  bossTuneCap: 3,
+  // a boss puts on at most one level after sizing you up (review E5; it was three)
+  bossTuneCap: 1,
   bossHp: (ch, ng) => BOSS_HP[ch - 1]! + ng * 40,
   bossLvl: (ch, ng) => Math.max(1, CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4),
   bossStatShift: (ch) => BOSS_STAT_SHIFT[ch - 1]!,
@@ -102,6 +129,14 @@ export const BALANCE: Balance = {
   gearUpgrades: true,
   moreSets: true,
   seasonal: true,
+  pureFocus: true,
+  fairReads: true,
+  statRoles: true,
+  healRules: true,
+  storyPacing: true,
+  secondOpinion: true,
+  clubInsider: true,
+  bounties: true,
 };
 
 /**

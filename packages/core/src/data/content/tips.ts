@@ -17,7 +17,8 @@ export type TipKey =
   | 'club'
   | 'tower'
   | 'hard'
-  | 'speed';
+  | 'speed'
+  | 'claim';
 
 export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }> = {
   fight: {
@@ -115,5 +116,11 @@ export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }
     t: 'Fight speed',
     d: 'The 1× button at the top of every fight switches to 2×: same fight, same odds, half the waiting. Tap it again to slow back down. It remembers.',
     f: 'For people who have seen a sword before.',
+  },
+  claim: {
+    e: '🏆',
+    t: 'A sure thing',
+    d: 'When a story fight is a Sure thing or close to it, the ☰ menu can claim the win before the first round: full rewards, and it costs the HP a real win would.',
+    f: 'They saw your card and asked for a draw. You declined.',
   },
 };

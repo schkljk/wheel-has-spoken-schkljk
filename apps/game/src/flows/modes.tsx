@@ -1,4 +1,19 @@
 import {
+  TRIAL_COUNT,
+  TRIAL_FROM,
+  trialBoss,
+  trialInfo,
+  trialTier,
+  trialsCleared,
+  trialsOpen,
+  DUEL_TIER,
+  DUEL_WIN_COINS,
+  duelBest,
+  duelDays,
+  duelOf,
+  duelShare,
+  type CareerFighter,
+  type Duel,
   CLUB_BETS,
   DAILY_TIER,
   abandonRun,
@@ -7,6 +22,10 @@ import {
   clubMatchup,
   clubMult,
   clubSettle,
+  buyClubTip,
+  clubLine,
+  clubTip,
+  clubTipFree,
   coinsOf,
   ctxOf,
   cupOpponent,
@@ -55,7 +74,7 @@ import {
   type RushState,
   type TowerState,
 } from '@whs/core';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, act, go, settings, toast } from '../state/game';
@@ -67,8 +86,10 @@ import { landSound, tick } from '../ui/sound';
 import { spinWheel } from '../screens/Spin';
 import { evText } from '../screens/Fight';
 import { fight } from './fight';
+import { bossIntro } from './story';
 import { choose, goHub, goMap, runSteps, showCine } from './nav';
 import { tip } from '../state/tips';
+import { copyText } from '../ui/copy';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
@@ -167,6 +188,118 @@ export async function dailyFlow() {
   });
   if (c !== 0) return goHub();
   const r = await fight({ kind: 'daily', tier: DAILY_TIER, opp: o, mut: { mods: mut.mods, arena: mut.arena } }, mut.arena ? { arena: dailyArena(mut.arena) } : {});
+  await runSteps(r.next);
+}
+
+// ---------------------------------------------------------------- the daily duel (F2)
+function DuelSheet({ days }: { days: string[] }) {
+  const [day, setDay] = useState(days[0]!);
+  const d = useMemo(() => duelOf(day), [day]);
+  const best = duelBest(G, day);
+  const side = (f: CareerFighter, i: 0 | 1) => (
+    <div class="fc-side">
+      <FighterSprite look={lookOf(f)} h={84} mirror={i === 1} />
+      <b class="ellipsis">{f.name}</b>
+      <small>
+        Level {f.lvl} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}
+      </small>
+      <small class="ellipsis">{i === 0 ? 'You play this one' : `${f.power.e} ${f.power.n}`}</small>
+    </div>
+  );
+  return (
+    <Sheet icon="sword" title={`Daily duel #${d.no}`} sub="Same fighters. Same dice. Different excuses.">
+      <div class="stack">
+        <div class="fc-bets" role="group" aria-label="Which day" data-hscroll>
+          {days.map((x, i) => (
+            <button key={x} class={`fchip light${x === day ? ' on' : ''}`} onClick={() => setDay(x)}>
+              {i === 0 ? 'Today' : i === 1 ? 'Yesterday' : x.slice(5).replace('-', '/')}
+              {duelBest(G, x)?.won ? ' ✓' : ''}
+            </button>
+          ))}
+        </div>
+        <div class="fc-vs">
+          {side(d.me, 0)}
+          <div class="fc-v">VS</div>
+          {side(d.opp, 1)}
+        </div>
+        <p class="hint center">
+          {d.arena.e} {d.arena.n}. Everyone gets this exact fight: the dice only change with your moves.
+        </p>
+        {best && (
+          <div class="duel-best">
+            <b>Your best: {best.won ? `won in ${best.rounds} rounds, ${best.hp}% HP left` : `lost in ${best.rounds} rounds`}</b>
+            <span>{best.sq}</span>
+            <button class="btn ghost sm" onClick={() => void copyText(duelShare(d, best))}>
+              Copy the score
+            </button>
+          </div>
+        )}
+        <button class="btn block" onClick={() => (closeSheet(), void duelFight(d))}>
+          ⚔️ {best ? 'Fight it again' : 'Fight'}
+        </button>
+        <span class="hint center">First win of each duel: +{DUEL_WIN_COINS} 🪙. No streaks: play any of the last week whenever you like.</span>
+      </div>
+    </Sheet>
+  );
+}
+export function openDuel() {
+  openSheet(<DuelSheet days={duelDays(new Date(G.clock.today))} />);
+}
+async function duelFight(d: Duel) {
+  const r = await fight({ kind: 'duel', tier: DUEL_TIER, opp: d.opp, me: d.me, seed: d.seed, wheelSeed: d.wheelSeed }, { arena: d.arena, duel: d });
+  await runSteps(r.next);
+}
+
+// ---------------------------------------------------------------- the Wheelborn trials (F12)
+function TrialsSheet() {
+  const done = trialsCleared(G);
+  return (
+    <Sheet emoji="🌀" title="Wheelborn trials" sub="Ten remixed bosses for levels 34 to 50. Losing costs nothing">
+      <div class="stack">
+        {Array.from({ length: TRIAL_COUNT }, (_, i) => {
+          const t = trialInfo(i);
+          const open = i <= done;
+          return (
+            <div key={i} class={`goal trial${i < done ? ' done' : ''}`}>
+              <span class="g-e" aria-hidden="true">
+                {i < done ? '✅' : open ? t.body.e || '🌀' : '🔒'}
+              </span>
+              <div class="g-t">
+                <b>
+                  {i + 1}. {t.body.name}, remixed
+                </b>
+                <small>
+                  Level {t.lvl}. Fights with the tricks of {t.kits[0]!.name} and {t.kits[1]!.name}
+                </small>
+              </div>
+              <span class="g-r">
+                <button class="btn sm" disabled={!open} onClick={() => (closeSheet(), void trialFight(i))}>
+                  {i < done ? 'Rematch' : 'Fight'}
+                </button>
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </Sheet>
+  );
+}
+export function openTrials() {
+  if (!trialsOpen(G)) return toast(`Reach level ${TRIAL_FROM}, or clear the whole story, to face the trials`);
+  openSheet(<TrialsSheet />);
+}
+async function trialFight(i: number) {
+  const t = trialInfo(i);
+  const ok = await confirm({
+    title: `Face ${t.body.name}, remixed?`,
+    body: `Level ${t.lvl}, with the phase-two tricks of ${t.kits[0]!.name} and ${t.kits[1]!.name}. 30 rounds, then sudden death. Your HP starts full.`,
+    yes: 'Fight the remix',
+    no: 'Not yet',
+  });
+  if (!ok) return;
+  const b = act((g) => trialBoss(g, i));
+  await bossIntro(b, pick(G.rng, t.body.lines), `Wheelborn trial ${i + 1} of ${TRIAL_COUNT}`);
+  const r = await fight({ kind: 'trial', tier: trialTier(i), opp: b }, { trial: i });
   await runSteps(r.next);
 }
 
@@ -416,9 +549,18 @@ function ClubFight({ c, side, bt }: { c: Club; side: 'A' | 'B'; bt: Battle }) {
 }
 function ClubSheet({ c }: { c: Club }) {
   const [bet, setBet] = useState(c.bet);
+  const [inside, setInside] = useState<string[] | null>(c.tipped ? clubTip(c).lines : null);
   c.bet = bet;
   const coins = coinsOf(G);
   const ctx = ctxOf(G);
+  // payouts follow the bookie's line (F8); the insider knows the real odds
+  const line = clubLine(c);
+  const free = clubTipFree(G);
+  const gems = G.save.profile.gems || 0;
+  const askInsider = () => {
+    if (!act((g) => buyClubTip(g, c))) return toast('No gems. The insider does not take IOUs');
+    setInside(clubTip(c).lines);
+  };
   const side = (f: typeof c.A, p: number, k: 'A' | 'B') => (
     <div class="fc-side">
       <FighterSprite look={lookOf(f)} h={92} mirror={k === 'B'} />
@@ -454,10 +596,23 @@ function ClubSheet({ c }: { c: Club }) {
           ))}
         </div>
         <div class="fc-vs">
-          {side(c.A, c.pA, 'A')}
+          {side(c.A, line, 'A')}
           <div class="fc-v">VS</div>
-          {side(c.B, 1 - c.pA, 'B')}
+          {side(c.B, 1 - line, 'B')}
         </div>
+        {c.line != null &&
+          (inside ? (
+            <div class="fc-tip" aria-live="polite">
+              <b>🕵️ The insider says</b>
+              {inside.map((t) => (
+                <p key={t}>{t}</p>
+              ))}
+            </div>
+          ) : (
+            <button class="btn ghost block" disabled={!free && gems < 1} onClick={askInsider}>
+              🕵️ {free ? 'Charm the insider (your charisma: free)' : 'Ask the insider · 1 💎'}
+            </button>
+          ))}
         <div class="row">
           <button class="btn ghost grow" onClick={() => openClub()}>
             New matchup

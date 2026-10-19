@@ -14,6 +14,7 @@ import type { Profile, Slot } from '../save/schema';
 import type { Fighter, Injury, StatKey, Synergy } from '../types';
 import { addCoins, ctxOf, newCid, freeSlot, pl, slotOf, type Game } from './game';
 import { ACHK, ARCHK, CODEX, CX_CATS, cxKey, lookOf, type Look } from './lookups';
+import { bountyStep } from './bounty';
 
 // ---------------------------------------------------------------- records in the save
 export interface Champ {
@@ -289,6 +290,8 @@ export function track(g: Game, k: string, n = 1) {
   const s = g.save.profile.stats;
   s[k] = (s[k] || 0) + n;
   checkGoals(g);
+  // the bounty board counts the same steps (review F5)
+  for (let i = 0; i < n; i++) bountyStep(g, k);
 }
 export function trackMax(g: Game, k: string, v: number) {
   const s = g.save.profile.stats;
