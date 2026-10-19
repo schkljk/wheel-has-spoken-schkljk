@@ -11,6 +11,7 @@ import {
   eventList,
   gearArrives,
   gearChoose,
+  gearVerdict,
   healS,
   labelOf,
   levelUpLand,
@@ -48,6 +49,8 @@ export interface ChoiceOpt {
   disabled?: boolean;
   /** a small chip by the label (charisma options say what they need) */
   tag?: string;
+  /** the chip's color: good news, bad news or neither (default: the charisma purple) */
+  tone?: 'up' | 'down' | 'even';
   /** styled as a charisma option */
   talk?: boolean;
   /** a way out rather than a choice ("Not now", "Walk back down"): styled quieter (guessed from the label) */
@@ -73,7 +76,7 @@ export function choose(o: { emoji?: string; title: string; sub?: string; body?: 
             >
               <b>
                 {x.label}
-                {x.tag && <span class="ch-tag">{x.tag}</span>}
+                {x.tag && <span class={`ch-tag${x.tone ? ' ' + x.tone : ''}`}>{x.tag}</span>}
               </b>
               {x.sub && <small>{x.sub}</small>}
             </button>
@@ -246,8 +249,14 @@ export async function gearChoice(g: Gear) {
   const F = G.F!;
   const old = GEARK[F.gear![g.slot]!];
   const salv = salvageValue(g);
+  // the better choice goes first, tagged (a common piece should never be pushed over an epic one)
+  const v = old ? gearVerdict(G, g.k) : 'up';
+  const TAG = { up: 'Upgrade', down: 'Downgrade', even: 'About even' } as const;
+  const wearOpt: ChoiceOpt = { label: `Wear ${g.n}`, sub: old ? `${old.n} goes to your armory` : 'Equip it now', tag: TAG[v], tone: v };
+  const keepOpt: ChoiceOpt = { label: old ? `Keep wearing ${old.n}` : 'Store it for later', sub: `${g.n} goes to your armory`, tag: v === 'down' ? 'Better' : undefined, tone: 'up' };
+  const keepFirst = v === 'down';
   for (;;) {
-    const c = await choose({
+    const pick = await choose({
       emoji: g.e,
       title: `New ${SLOT_N[g.slot].toLowerCase()}: ${g.n}`,
       sub: `${RARITY[g.r] ? RARITY[g.r].n : ''}. ${g.d}`,
@@ -258,11 +267,12 @@ export async function gearChoice(g: Gear) {
         </>
       ),
       options: [
-        { label: `Wear ${g.n}`, sub: old ? `${old.n} goes to your armory` : 'Equip it now' },
-        { label: old ? `Keep wearing ${old.n}` : 'Store it for later', sub: `${g.n} goes to your armory` },
+        ...(keepFirst ? [keepOpt, wearOpt] : [wearOpt, keepOpt]),
         { label: `Salvage ${g.n}`, sub: `Get ${salv} 🪙 instead. It's gone for good` },
       ],
     });
+    // 0 wear, 1 keep, 2 salvage, whatever order they were shown in
+    const c = pick === 2 ? 2 : keepFirst ? 1 - pick : pick;
     if (c === 2 && !(await confirm({ title: `Salvage ${g.n}?`, body: `You get ${salv} coins. It is gone for good.`, yes: 'Salvage it' }))) continue;
     const prev = F.gear![g.slot];
     act((x) => gearChoose(x, g, (['wear', 'store', 'salvage'] as const)[c]!));

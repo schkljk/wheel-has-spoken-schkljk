@@ -147,7 +147,7 @@ export async function dailyFlow() {
   const c = await choose({
     emoji: '📆',
     title: 'Daily challenge',
-    sub: dc.streak ? `${dc.streak}-day streak` : 'Win to start a streak',
+    sub: dc.streak ? `Streak: ${dc.streak} ${dc.streak === 1 ? 'win' : 'wins'} in a row` : 'Win to start a streak. Skipping a day never breaks it',
     body: (
       <>
         <b>{o.name}</b>, level {o.lvl} {o.race.n.toLowerCase()} {o.arch.n.toLowerCase()}.

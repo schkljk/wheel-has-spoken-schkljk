@@ -41,7 +41,7 @@ export const TIPS: Record<TipKey, { e: string; t: string; d: string; f: string }
     e: '🗺️',
     t: 'The story map',
     d: 'Pick one step at a time: fights, elites, rests, events, merchants, treasure, then the boss. HP carries between fights. A lost fight costs a grit; run out and the chapter starts over on a new path.',
-    f: 'The boss is at the bottom. Bosses always are. It is a union thing.',
+    f: 'The boss waits at the top, so you walk up. Bosses always take the view. It is a union thing.',
   },
   shop: {
     e: '🏪',

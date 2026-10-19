@@ -25,7 +25,7 @@ export const SYN_HIDDEN: HiddenSynergy[] = [
   },
   {
     k: 'h_underdog', n: 'The underdog story', e: '🎬', q: 3, hidden: 1,
-    d: 'NPC with a joke weapon: gets back up once with 30 HP', fx: { revive: 30 },
+    d: 'NPC with a joke weapon: gets back up once with 30% HP', fx: { revive: 30 },
     test: (f) => f.arch?.k === 'npc' && jokeWeapon(f),
     flavor: 'Every sports movie ever. Cue the montage.',
   },

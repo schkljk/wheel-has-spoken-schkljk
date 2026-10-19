@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as D from '../../packages/core/src/data';
 import { readLegacyGlobals } from './extract-content';
+import { clean } from './emit';
 
 // The content tables (story, progression, economy, text) equal the running legacy game.
 const NAMES = [
@@ -13,7 +14,8 @@ const NAMES = [
 describe('ported content equals the running legacy game', async () => {
   const legacy = await readLegacyGlobals(NAMES);
   it.each(NAMES)('%s', (n) => {
-    expect((D as Record<string, unknown>)[n]).toEqual(legacy[n]);
+    // with the wording fixes (data/wording.ts) laid over the legacy text
+    expect((D as Record<string, unknown>)[n]).toEqual(D.rewordDeep(clean(legacy[n])));
   });
   it('has the expected amount of content', () => {
     expect(D.CHAPTERS).toHaveLength(20);

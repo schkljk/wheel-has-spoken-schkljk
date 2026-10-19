@@ -292,7 +292,7 @@ async function campfireFlow() {
     body: 'A quiet spot to catch your breath. You only have time for one thing.',
     options: [
       { label: 'Sleep it off', sub: 'Heal 45% HP' },
-      { label: 'Train', sub: '10 HP: spin the training wheel for a permanent stat point' },
+      { label: 'Train', sub: '10% HP: spin the training wheel for a permanent stat point' },
       { label: 'See the medic', sub: `Cure injuries and heal 20% HP${(F.inj || []).length ? '' : '. You have no injuries right now'}` },
     ],
   });

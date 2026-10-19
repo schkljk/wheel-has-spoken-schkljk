@@ -38,7 +38,7 @@ const SYN_SET_ROWS: (Synergy & { set: string; need: number })[] = [
   { k: 'set_pirate4', set: 'pirate', need: 4, n: 'Pirate set (4)', e: '🏴‍☠️', q: 2, d: '4 pirate pieces: +1 strength, +15% damage while behind on HP', m: { str: 1 }, fx: { behindX: 1.15 } },
   { k: 'set_pirate6', set: 'pirate', need: 6, n: 'Pirate set (6)', e: '🏴‍☠️', q: 3, d: 'Full pirate set: acts first, +10% extra hit chance', fx: { firstStrike: 1, extra: 0.1 } },
   { k: 'set_chef2', set: 'chef', need: 2, n: 'Chef set (2)', e: '👨‍🍳', q: 1, d: '2 chef pieces: eats a snack below 30% HP for 25 HP, once', fx: { snack: 25 } },
-  { k: 'set_chef4', set: 'chef', need: 4, n: 'Chef set (4)', e: '👨‍🍳', q: 2, d: 'Full chef set: +2 HP every round, +1 charisma. Yes, chef', m: { cha: 1 }, fx: { regen: 2 } },
+  { k: 'set_chef4', set: 'chef', need: 4, n: 'Chef set (4)', e: '👨‍🍳', q: 2, d: 'Full chef set: +2% HP every round, +1 charisma. Yes, chef', m: { cha: 1 }, fx: { regen: 2 } },
   { k: 'set_cosmic2', set: 'cosmic', need: 2, n: 'Cosmic set (2)', e: '🌌', q: 1, d: '2 cosmic pieces: start fights with +10 energy', fx: { startEn: 10 } },
   { k: 'set_cosmic4', set: 'cosmic', need: 4, n: 'Cosmic set (4)', e: '🌌', q: 2, d: '4 cosmic pieces: +1 power mastery, +3 energy every round', m: { pm: 1 }, fx: { enRegen: 3 } },
   { k: 'set_cosmic6', set: 'cosmic', need: 6, n: 'Cosmic set (6)', e: '🌌', q: 3, d: 'Full cosmic set: signature 25% harder, +8% dodge', fx: { ultX: 1.25, dodgeB: 0.08 } },

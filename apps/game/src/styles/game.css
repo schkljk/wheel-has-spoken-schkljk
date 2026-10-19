@@ -532,6 +532,16 @@
   background: #b388ff;
   color: #1a1426;
 }
+.ch-tag.up {
+  background: var(--good);
+}
+.ch-tag.down {
+  background: var(--danger);
+  color: #fff;
+}
+.ch-tag.even {
+  background: var(--muted);
+}
 .ch-opt:disabled {
   opacity: 0.5;
 }
@@ -3294,4 +3304,15 @@ img.pxi.chap {
   text-transform: uppercase;
   color: var(--gold);
   margin-bottom: 0.15rem;
+}
+
+/* armory: better or worse than what is worn */
+.gv {
+  font-size: 0.8em;
+}
+.gv.up {
+  color: var(--good);
+}
+.gv.down {
+  color: var(--danger);
 }

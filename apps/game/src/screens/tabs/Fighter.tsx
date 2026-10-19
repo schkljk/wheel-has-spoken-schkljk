@@ -47,7 +47,7 @@ export function FighterTab() {
   const NX = RANKS[rk + 1];
   const fm = F.fame || 0;
   const nx = (F.next || {}) as Record<string, number>;
-  const nextB = [nx.dmgX ? '+15% damage' : '', nx.hp ? 'starts at 80 HP' : '', nx.en ? 'full energy' : '', nx.readB ? 'reads 20% better' : ''].filter(Boolean);
+  const nextB = [nx.dmgX ? '+15% damage' : '', nx.hp ? 'starts at 80% HP' : '', nx.en ? 'full energy' : '', nx.readB ? 'reads 20% better' : ''].filter(Boolean);
   const offers = F.contract ? [] : ensure((g) => contractOffers(g));
   const c = F.contract ? CONTRACTK[F.contract as string] : null;
   let n = 0;
