@@ -89,6 +89,13 @@
   inset: 0;
   overflow: hidden;
 }
+/* a Pixi canvas is always its host's size: the drawing buffer follows a frame later (ResizeObserver), and in
+   that frame the old picture is stretched instead of spilling past the host */
+.pixiwheel > canvas,
+.fight-canvas > canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
 .pixiwheel.live {
   cursor: grab;
 }

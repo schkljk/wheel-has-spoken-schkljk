@@ -111,13 +111,16 @@ export async function layoutProblems(page: Page): Promise<{ clipped: string[]; p
 /**
  * Plays on its own: taps whatever the current screen asks for (spin, continue, the first open choice,
  * the current map step, fight results...) until `done` says stop. Fights should run on auto-battle.
+ * Some screens move on by themselves (loot and level-up wheels), so `stop` (a selector) is also checked
+ * right before each tap: reaching the map between a `done` check and the next tap must not start a fight.
  * Returns how many taps it made.
  */
-export async function autopilot(page: Page, done: () => Promise<boolean>, max = 400, o: { skipFights?: boolean } = {}): Promise<number> {
+export async function autopilot(page: Page, done: () => Promise<boolean>, max = 400, o: { skipFights?: boolean; stop?: string } = {}): Promise<number> {
   const src = `(${TAP_NEXT})(${JSON.stringify(o)})`;
   for (let i = 0; i < max; i++) {
     if (await done()) return i;
     const tapped = await page.evaluate(src);
+    if (tapped === 'stop') return i;
     await page.waitForTimeout(tapped ? 250 : 400);
   }
   return max;
@@ -125,6 +128,7 @@ export async function autopilot(page: Page, done: () => Promise<boolean>, max = 
 
 // plain source (not a function) so compilers can't add helpers the page doesn't have
 const TAP_NEXT = `((o) => {
+  if (o.stop && document.querySelector(o.stop)) return 'stop';
   const vis = (el) => {
     if (!el) return false;
     const r = el.getBoundingClientRect();
