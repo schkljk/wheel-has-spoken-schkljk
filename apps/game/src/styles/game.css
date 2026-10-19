@@ -1274,6 +1274,9 @@
 .menu-i.danger b {
   color: var(--danger);
 }
+.menu-i.good b {
+  color: var(--good);
+}
 .log {
   margin: 0;
   padding: 0;
@@ -1789,6 +1792,13 @@
 .cine-meta {
   color: var(--muted);
   font-size: 0.9rem;
+}
+.cine-meta.tuned {
+  display: grid;
+  gap: 0.15rem;
+}
+.cine-meta.tuned b {
+  color: var(--gold);
 }
 .boss-plate {
   display: grid;

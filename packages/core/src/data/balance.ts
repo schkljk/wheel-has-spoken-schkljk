@@ -38,6 +38,16 @@ export interface Balance {
   moreSets: boolean;
   /** calendar-themed arenas join the arena wheel in their season (upgrade 27) */
   seasonal: boolean;
+  /** a focus wheel holds only moves of its family: you pick what, the wheel picks how hard (review E1) */
+  pureFocus: boolean;
+  /** reads leave the AI's skill out, IQ counts half as much, and only tricksters push a read below "Just a hunch" (E2) */
+  fairReads: boolean;
+  /** speed guards against strikes, IQ against powers and adds crit damage, power mastery makes powers cheaper (E3) */
+  statRoles: boolean;
+  /** regeneration heals a share of what's missing, heals fade after round 6, one revive per fight, powers pierce durability (E4) */
+  healRules: boolean;
+  /** every fight row has an elite, sure wins can be claimed, a boss that toughened up for you pays gems (E5) */
+  storyPacing: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -58,6 +68,11 @@ export const LEGACY_BALANCE: Balance = {
   gearUpgrades: false,
   moreSets: false,
   seasonal: false,
+  pureFocus: false,
+  fairReads: false,
+  statRoles: false,
+  healRules: false,
+  storyPacing: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -86,7 +101,8 @@ export const CH_PCT_EASY: (readonly [number, number])[] = [
 
 export const BALANCE: Balance = {
   bossTarget: (ch, ng) => BOSS_AIM(ch) + 0.04 - 0.02 * ng,
-  bossTuneCap: 3,
+  // a boss puts on at most one level after sizing you up (review E5; it was three)
+  bossTuneCap: 1,
   bossHp: (ch, ng) => BOSS_HP[ch - 1]! + ng * 40,
   bossLvl: (ch, ng) => Math.max(1, CHAPTERS[ch - 1]!.lvl + BOSS_LVL_UP[ch - 1]! + ng * 4),
   bossStatShift: (ch) => BOSS_STAT_SHIFT[ch - 1]!,
@@ -102,6 +118,11 @@ export const BALANCE: Balance = {
   gearUpgrades: true,
   moreSets: true,
   seasonal: true,
+  pureFocus: true,
+  fairReads: true,
+  statRoles: true,
+  healRules: true,
+  storyPacing: true,
 };
 
 /**

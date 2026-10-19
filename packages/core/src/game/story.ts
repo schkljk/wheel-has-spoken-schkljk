@@ -70,7 +70,11 @@ export function genMap(g: Game, C: { len: number }): NodeKind[][] {
       let tries = 0;
       while (opts.size < n && tries++ < 40) opts.add(pickWeighted(g, { rest: 2, shop: 1.5, event: 2, treasure: 0.8 }));
       rows.push(shuffle(g.rng, [...opts]) as NodeKind[]);
-    } else rows.push(r >= 2 && g.rng() < 0.6 ? ['fight', 'elite'] : ['fight']);
+    }
+    // every fight row after the first has an elite to pick instead (review E5): the story's fights are only
+    // filler when you want them to be
+    else if (BALANCE.storyPacing) rows.push(r >= 1 ? ['fight', 'elite'] : ['fight']);
+    else rows.push(r >= 2 && g.rng() < 0.6 ? ['fight', 'elite'] : ['fight']);
   }
   return rows;
 }
@@ -156,13 +160,17 @@ export function storyOdds(g: Game, o: Fighter, n = 60) {
   return headToHead(g.F!, o, g.rng, n, { mods: [{ hp: storyOf(g).hp }, o.maxHp ? { maxHp: o.maxHp } : {}], ctx: ctxOf(g) });
 }
 function tuneUp(g: Game, o: Fighter, target: number, cap = 6) {
-  for (let i = 0; i < cap; i++) {
+  let n = 0;
+  for (; n < cap; n++) {
     if (storyOdds(g, o) <= target + 0.08) break;
     applyBonus(o, { k: 'all1', n: '+1 to everything', e: '💪' });
     o.lvl = (o.lvl || 1) + 1;
   }
+  if (n) o.tuned = n;
   invalidate(o);
 }
+/** Gems for beating a boss that sized you up and toughened (review E5 and F7): 2 a level it put on. */
+export const tunedBossGems = (o: Fighter) => (BALANCE.storyPacing ? 2 * (o.tuned || 0) : 0);
 
 /** A story opponent from the ranked pool slice that fits the chapter (elites come from higher up). */
 export function storyOpponent(g: Game, kind: 'fight' | 'elite'): CareerFighter {

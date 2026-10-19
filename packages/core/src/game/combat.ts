@@ -2,7 +2,8 @@ import { ULTS } from '../data/wheels';
 import { BOSSES } from '../data/content/story';
 import { BOSS_PHASE, type BossPhaseKit } from '../data/content/phase';
 import { ULT_WHEEL } from '../data/kits';
-import { POW_COST, canPower, ultWeights, type Battle, type Side } from '../battle';
+import { canPower, powCost, ultWeights, type Battle, type Side } from '../battle';
+import { BALANCE } from '../data/balance';
 import { kitMoves } from '../kits';
 import { clamp } from '../random';
 import type { Fighter, RoundMod } from '../types';
@@ -39,11 +40,17 @@ export interface CwSlice {
   flavor?: string;
 }
 
-export const cwPowOk = (me: Side) => me.f.power.k !== 'none' && !me.f.power.passive && me.powOn && canPower(me) && me.en >= POW_COST;
+export const cwPowOk = (me: Side) => me.f.power.k !== 'none' && !me.f.power.passive && me.powOn && canPower(me);
+
+/** The move a focus is about (review E1): Attack strikes, Defend guards, Power uses the power. */
+const FAMILY: Record<string, string> = { atk: 'strike', def: 'guard', pow: 'power' };
 
 /**
  * A focus wheel's slices: this fighter's own moves for that focus plus a few basics, near-equal in size and
  * nudged by stats (legacy cwSlices). The Signature wheel is the signature move's damage wheel.
+ * With the review's pure focus (E1) every slice is of the focus's own family, so you choose what and the wheel
+ * chooses how hard: Attack holds strikes (a quick jab among them), Defend guards and counters, Power powers. A
+ * Power wheel with no power to use holds the guard-beating tricks instead (feint, charge up).
  */
 export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult: number }[] {
   if (focus === 'ult') {
@@ -64,6 +71,9 @@ export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult
       { k: 'strike', n: 'Strike', e: f.weapon.e || '👊', c: 'strike', q: 1, w: nudge(s.str), d: 'Beats Power' },
       { k: 'heavy', n: 'Heavy blow', e: '🔨', c: 'strike', m: { dmgX: 1.45, slow: 1, label: 'Heavy blow' } as RoundMod, q: 1, w: nudge((s.str + s.wm) / 2), d: '+45% damage, goes second' },
       { k: 'feint', n: 'Feint', e: '🎭', c: 'feint', q: 1, w: nudge(s.iq), d: 'Baits a guard: the next hit lands 40% harder' },
+      BALANCE.pureFocus
+        ? { k: 'jab', n: 'Quick jab', e: '⚡', c: 'strike', m: { dmgX: 0.75, first: 1, label: 'Quick jab' } as RoundMod, q: 1, w: nudge(s.spd), d: 'Goes first, 75% damage' }
+        : null,
     ],
     def: [
       { k: 'guard', n: 'Guard', e: '🛡️', c: 'guard', q: 1, w: nudge(s.dur), d: 'Beats Strike, blocks and counters' },
@@ -72,7 +82,7 @@ export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult
     ],
     pow: [
       pw ? { k: 'power', n: f.power.n, e: f.power.e, c: 'power', q: 1, w: nudge(s.pm), d: 'Breaks Guard' } : null,
-      pw && me.en >= POW_COST + 15
+      pw && me.en >= powCost(me) + 15
         ? { k: 'surge', n: 'Overcharge', e: '🌩️', c: 'power', m: { dmgX: 1.4, enCost: 15, label: 'Overcharge' } as RoundMod, q: 1, w: nudge(s.pm), d: '+40% power damage, costs 15 more energy' }
         : null,
       { k: 'focus', n: 'Charge up', e: '🧘', c: 'focus', q: 1, w: nudge(s.iq), d: '+30 energy, your next hit lands 25% harder' },
@@ -81,7 +91,13 @@ export function cwSlices(me: Side, focus: Focus): { it: CwSlice; w: number; mult
   const own: CwSlice[] = kitMoves(f)
     .filter((m) => m.fam === focus && (m.c !== 'power' || pw))
     .map((m) => ({ k: 'kit_' + m.n, n: m.n, e: m.e, c: m.c, m: { ...m.rm } as RoundMod, q: m.src === 'class' ? 3 : 2, w: 1.15, d: m.d, src: m.src }));
-  const list = [...own, ...(basics[focus] || []).filter((x): x is CwSlice => !!x)].slice(0, Math.max(5, own.length + 1));
+  let all = [...own, ...(basics[focus] || []).filter((x): x is CwSlice => !!x)];
+  if (BALANCE.pureFocus) {
+    const pure = all.filter((x) => x.c === FAMILY[focus]);
+    // a Power wheel with nothing to cast: the tricks that beat a guard (a feint) or set up the next turn
+    all = pure.length ? pure : focus === 'pow' ? [basics.atk![2]!, ...all.filter((x) => x.c === 'focus')] : all;
+  }
+  const list = all.slice(0, Math.max(5, own.length + 1));
   return list.map((it) => ({ it, w: Math.round(it.w * 100) / 100, mult: 1 }));
 }
 

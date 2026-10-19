@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  BALANCE,
   CW_FOCUS,
+  canClaim,
+  claimWin,
   CW_REC,
   ULTS,
   ULT_WHEEL,
@@ -204,7 +207,7 @@ function Hud({
           <i style={{ width: `${en}%` }} />
         </div>
         <div class="hv">
-          <span>{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</span>
+          {BALANCE.healRules ? <Inf k="rule|heals">{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</Inf> : <span>{snap ? `${snap.hr[i]}/${snap.mx[i]} HP` : ''}</span>}
           <Inf k="rule|energy" class="env">
             ⚡ {en}
           </Inf>
@@ -499,6 +502,8 @@ export function FightScreen({
     setFocus((f) => (f === 'ult' && !ult ? 'atk' : ult ? 'ult' : f));
     setOut(null);
     if (autoRef.current) return void doRound(null);
+    // a sure story win can be claimed from the menu; the first one says so
+    if (canClaim(spec, bt)) tip('claim');
     setPhase('input');
   }
 
@@ -748,6 +753,23 @@ export function FightScreen({
     sceneRef.current?.settle();
     if (!S.playing) finishInstant();
   };
+  /** A sure win taken without playing it (review E5): it plays out on auto until a win comes up, full rewards. */
+  const claim = () => {
+    const bt = btRef.current;
+    if (!bt || S.ended || S.playing || !canClaim(spec, bt)) return;
+    const won = act((g) => claimWin(g, spec, bt));
+    if (!won) return skip();
+    btRef.current = won.bt;
+    S.log = won.events;
+    const sc = sceneRef.current!;
+    sc.settle();
+    const last = won.events[won.events.length - 1];
+    if (last) {
+      setSnap(last);
+      sc.applySnap(last);
+    }
+    finish();
+  };
   const toggleAuto = () => {
     const on = !autoRef.current;
     setAuto(on);
@@ -817,6 +839,13 @@ export function FightScreen({
         {!over && <Toggle label="Auto-battle" sub="This fight only: your fighter picks their own moves" on={autoRef.current} onToggle={() => (toggleAuto(), openMenu())} />}
         {!over && <Toggle label="Fast mode" sub="Quicker animations in every fight (saved)" on={settings.value.fast} onToggle={() => (commit((s) => (s.settings.fast = !s.settings.fast)), sceneRef.current && (sceneRef.current.sp = SPF()), openMenu())} />}
         <div class="fm-grid">
+          {!over && canClaim(spec, bt) && (
+            <button class="menu-i good" onClick={() => (closeSheet(), claim())}>
+              <Icon name="cup" />
+              <b>Claim the win</b>
+              <small>A sure thing: full rewards, no fight</small>
+            </button>
+          )}
           {!over && (
             <button class="menu-i" onClick={() => (closeSheet(), skip())}>
               <Icon name="skip" />
@@ -880,7 +909,8 @@ export function FightScreen({
   const ult = bt ? bt.P[0].en >= 100 : false;
   const pw = bt ? cwPowOk(bt.P[0]) : false;
   let rec: Focus | null = plan ? CW_REC[plan.shown] || null : null;
-  if (rec === 'pow' && !pw) rec = 'atk';
+  // with nothing to cast, the old Power wheel was mostly strikes; a pure one (review E1) holds the feint that beats a guard
+  if (rec === 'pow' && !pw && !BALANCE.pureFocus) rec = 'atk';
   const style = {
     '--groundY': `${dims.groundY}px`,
     '--stageW': `${dims.stageW}px`,

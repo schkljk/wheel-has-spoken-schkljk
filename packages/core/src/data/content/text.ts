@@ -330,6 +330,34 @@ export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: st
       'Before each round you get a read on their next move. How sure you are shows as a clue: Clear as day, Pretty sure, Probably, Maybe, Just a hunch, or Wild guess.',
       'The teal ring around a focus button is the counter to the read. What beats what: they Strike, you Defend. They use Power, you Attack. They Guard, you use Power. Their Signature, you Defend. A Feint or Charging up, you Attack.',
       'The surer the clue, the more often the read is right. Higher IQ and charisma than them, a Tactical stance, scouting reports and some gear make reads clearer. Tricksters and trash talkers are harder to read.',
+      'A read is never worse than Just a hunch, unless they are a trickster. How good the opponent is never clouds it: a sharp opponent plays better, not sneakier.',
+    ],
+  ],
+  moves: [
+    '⚔️',
+    'Your moves',
+    [
+      'Every fighter brings their own moves to the combat wheel: two from their class, one from their race and one from their weapon. A goblin assassin with a dagger plays nothing like a titan monk with bare fists.',
+      'You pick the focus, the wheel picks how hard. Attack holds only strikes (a heavy blow, a quick jab, your own strikes), Defend only guards and counters, Power only your power. With no power to use, the Power wheel holds the tricks that beat a guard: a Feint, or Charge up.',
+      'Gold slices are class moves, teal ones come from race and weapon. Strike beats Power, Power beats Guard, Guard beats Strike.',
+    ],
+  ],
+  energy: [
+    '⚡',
+    'Energy',
+    [
+      'Strike: +25. Guard: +40. Getting hit: +8. Winning the move matchup: +15.',
+      'Powers cost 25, a bit less for every point of power mastery above average, down to 15.',
+      'A full bar (100) unlocks the signature move, which uses all of it.',
+    ],
+  ],
+  heals: [
+    '💚',
+    'Heals and revives',
+    [
+      'Regeneration heals a share of the HP you are missing each round, so it matters most when you are hurt.',
+      'Every heal shrinks after round 6, down to a fifth by round 11. Long fights are won by hitting.',
+      'One revive per fight, whatever it comes from: smelling salts, plot armor, a necromancer rising, a trait or a miracle.',
     ],
   ],
   simodds: [
@@ -340,6 +368,23 @@ export const RULES_NOW: Record<string, [e: string, title: string, paragraphs: st
       "Good reads beat these odds. Autopilot doesn't use the read at all.",
     ],
   ],
+};
+
+/** Stat and pill texts for the review's stat roles (E3), read before STAT_INFO and PILL_INFO while they are on. */
+export const STAT_NOW: Record<string, [e: string, n: string, d: string]> = {
+  spd: [
+    '👟', 'Speed',
+    'Who acts first each round, how often attacks get dodged, the chance of a bonus extra hit when faster, and a quarter of your defense against strikes.',
+  ],
+  dur: [
+    '🛡️', 'Durability',
+    'How much damage gets shrugged off: most of your defense against strikes and powers, all of it against everything else. Powers pierce 30% of it.',
+  ],
+  iq: ['🧠', 'IQ', 'Crit chance and crit damage, about a third of your defense against powers, how accurately you read the opponent, and how smart autopilot moves are.'],
+  pm: ['✨', 'Power mastery', 'How hard powers hit. Powers cost 25 energy, a bit less for every point above average, down to 15.'],
+};
+export const PILL_NOW: Record<string, [e: string, n: string, d: string]> = {
+  crit: ['💥', 'Critical hit', '60% extra damage, or 120% against a glass jaw, and more with high IQ. IQ, assassins, luck and some traits raise the chance.'],
 };
 
 export const RULES_MORE: Record<string, [e: string, title: string, paragraphs: string[]]> = {

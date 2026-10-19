@@ -8,8 +8,9 @@ import { SYN } from '../data/synergies';
 import { SYN_HIDDEN } from '../data/content/hidden-synergies';
 import { ACHIEVEMENTS } from '../data/content/progression';
 import { PERSONALITIES, type PersonalityKey } from '../data/content/personality';
-import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, QN, RULES, RULES_MORE, RULES_NOW, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, TAGN, WHEELN } from '../data/content/text';
+import { ARCH_MECH, CATN, COMBO_INFO, FLAVOR, PILL_INFO, PILL_NOW, QN, RULES, RULES_MORE, RULES_NOW, STATUS_FLAVOR, STATUS_INFO, STATUS_MORE, STAT_INFO, STAT_NOW, TAGN, WHEELN } from '../data/content/text';
 import { WHEELS } from '../fighter';
+import { BALANCE } from '../data/balance';
 import { findMove } from '../kits';
 import { GEAR_ALL, STATLBL } from '../stats';
 import type { StatMods, TraitFx } from '../types';
@@ -191,11 +192,13 @@ export function infoFor(key: string): Info | null {
     };
   }
   if (kind === 'rule') {
-    const r = RULES_NOW[a] ?? RULES[a] ?? RULES_MORE[a];
+    // the review's rules (E1-E4) have pages of their own while they are on
+    const off = (a === 'moves' && !BALANCE.pureFocus) || (a === 'energy' && !BALANCE.statRoles);
+    const r = (!off && RULES_NOW[a]) || RULES[a] || RULES_MORE[a];
     return r ? { e: r[0], title: r[1], lines: r[2] } : null;
   }
   if (kind === 'stat') {
-    const s = STAT_INFO[a];
+    const s = (BALANCE.statRoles && STAT_NOW[a]) || STAT_INFO[a];
     return s ? { e: s[0], title: s[1], p: s[2], lines: [] } : null;
   }
   if (kind === 'status') {
@@ -214,7 +217,7 @@ export function infoFor(key: string): Info | null {
   }
   if (kind === 'pill') {
     if (a === 'combo') return { e: '⚗️', title: b, sub: 'Element combo', p: COMBO_INFO[b] || '', lines: RULES.combos![2].slice(1) };
-    const p = PILL_INFO[a];
+    const p = (BALANCE.statRoles && PILL_NOW[a]) || PILL_INFO[a];
     return p ? { e: p[0], title: p[1], p: p[2], lines: [] } : null;
   }
   if (kind === 'pers') {
@@ -272,7 +275,7 @@ export function infoFor(key: string): Info | null {
         ? 'No power at all'
         : it.passive
           ? 'Passive: always on, nothing to spend'
-          : `Costs 25 energy to use${(it.t as string[] | undefined)?.length ? '. Counts as ' + tagList(it.t as string[]).join(' and ') : ''}`,
+          : `Costs 25 energy${BALANCE.statRoles ? ' (less with high power mastery)' : ''} to use${(it.t as string[] | undefined)?.length ? '. Counts as ' + tagList(it.t as string[]).join(' and ') : ''}`,
     );
   if (a === 'ench' && (it.t as string[] | undefined)?.length) lines.push(`Weapon hits also count as ${tagList(it.t as string[]).join(' and ')}`);
   if (a === 'weak') {

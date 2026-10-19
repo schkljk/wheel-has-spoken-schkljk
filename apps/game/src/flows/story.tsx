@@ -30,6 +30,7 @@ import {
   mysteryList,
   pick,
   pl,
+  tunedBossGems,
   powerScale,
   talkOf,
   storyOf,
@@ -138,6 +139,15 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
       <div class="cine-meta">
         Level {b.lvl}. {Math.round(b.maxHp! * LS(b))} HP, you have {hpTxt(G, storyOf(G).hp)}. Power scale: {powerScale(b, ctxOf(G)).n}. Has a second phase.
       </div>
+      {tunedBossGems(b) > 0 && (
+        // the boss sized you up (review E5 and F7): it says so, and it pays for it
+        <div class="cine-meta tuned">
+          <b>
+            Sized you up: +{pl(b.tuned!, 'level', 'levels')}. Beat them anyway for +{tunedBossGems(b)} 💎.
+          </b>
+          <i>{b.name} saw your card and called a trainer. From the parking lot.</i>
+        </div>
+      )}
     </>,
     'Fight',
   );

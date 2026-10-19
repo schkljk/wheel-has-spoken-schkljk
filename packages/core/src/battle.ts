@@ -66,6 +66,8 @@ export interface Side {
   mir: number;
   uno: number;
   salt?: number;
+  /** revives used this fight (one at most with the review's heal rules) */
+  revs?: number;
   snacked: number;
   weakShown: number;
   phased?: number;
@@ -205,7 +207,9 @@ export const physOff = (x: Side) => 0.6 * x.s.str + 0.4 * x.s.wm + 0.5 * isPhys(
 export const powOff = (x: Side) => (x.powOn && !x.f.power.passive ? 0.75 * x.s.pm + 0.25 * x.s.iq + 0.5 * x.f.power.l : -99);
 const physTags = (x: Side) => [...x.f.weapon.t, ...(x.f.ench.t || []), ...(x.tr.breath ? [x.tr.breath] : [])];
 const hitsWeak = (def: Side, tags: readonly string[]) => !!(def.f.weak.trig && tags.some((t) => def.f.weak.trig!.includes(t)));
-export const canPower = (x: Side) => x.powOn && !x.f.power.passive && x.en >= POW_COST;
+/** What a power costs this fighter: power mastery makes it cheaper (review E3), down to 15 energy. */
+export const powCost = (x: Side) => (BALANCE.statRoles ? Math.max(15, POW_COST - Math.round(Math.max(0, x.s.pm - 6) * 1.25)) : POW_COST);
+export const canPower = (x: Side) => x.powOn && !x.f.power.passive && x.en >= powCost(x);
 const isUnholy = (x: Side) => !!(x.f.race.unholy || x.tr.unholy);
 const isImmune = (x: Side) => !!(x.f.race.immune || x.tr.immune);
 /** Stat gaps matter with diminishing returns: the first 5 points fully, the rest at a third. */
@@ -214,6 +218,15 @@ export const softGap = (d: number) => {
   return Math.sign(d) * (a <= 5 ? a : 5 + (a - 5) / 3);
 };
 const baseDmg = (rng: Rng, off: number, def: number) => 10 * Math.pow(1.17, softGap(off - def)) * rnd(rng, 0.8, 1.2);
+/**
+ * Defense against a strike or a counter: durability, and with the review's stat roles (E3) a quarter of it
+ * comes from speed (you can't hit what isn't there).
+ */
+export const strikeDef = (x: Side) => (BALANCE.statRoles ? 0.75 * x.s.dur + 0.25 * x.s.spd : x.s.dur);
+/** Defense against a power: about a third of it from IQ (E3), and powers pierce 30% of durability (E4). */
+export const powerDef = (x: Side) => (BALANCE.statRoles ? 0.65 * x.s.dur + 0.35 * x.s.iq : x.s.dur) - (BALANCE.healRules ? 0.3 * x.s.dur : 0);
+/** Heals shrink after round 6 (review E4): long fights are decided by hits, not by who heals longer. */
+export const healFade = (round: number) => (!BALANCE.healRules || round <= 6 ? 1 : Math.max(0.2, 1 - 0.16 * (round - 6)));
 const gxOf = (x: Side) => (x.syn.has('tank2') ? 0.15 : clamp(x.tr.guardX + x.tr.guardAdd, 0.1, 0.9));
 /** Tags an event with the synergy behind it, when the fighter has it (no effect on the fight). */
 const synCue = (x: Side, k: string) => (x.syn.has(k) ? { syn: k, sb: x.i } : null);
@@ -370,6 +383,13 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
 
   function checkDown(t: Side) {
     if (t.hp > 0) return;
+    // one revive per fight, whatever its source (review E4)
+    if (BALANCE.healRules && t.revs) return;
+    const hp0 = t.hp;
+    reviveOnce(t);
+    if (t.hp > hp0) t.revs = (t.revs || 0) + 1;
+  }
+  function reviveOnce(t: Side) {
     if (t.mod.revive && !t.salt) {
       t.salt = 1;
       t.hp = t.mod.revive;
@@ -382,7 +402,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       log(`📜 Plot armor! ${N(t)} refuses to go down`, 'special', null, [], { t: 'revive', on: t.i, fx: '📜' });
     } else if (t.f.arch.k === 'necro' && !t.revived) {
       t.revived = 1;
-      t.hp = t.syn.has('bonelord') ? 60 : 35;
+      // with the review's rules (E4) the dead rise weaker: one revive a fight already caps how often
+      t.hp = BALANCE.healRules ? (t.syn.has('bonelord') ? 40 : 20) : t.syn.has('bonelord') ? 60 : 35;
       log(`⚰️ ${N(t)} rises from the dead with ${real(t, t.hp)} HP`, 'special', null, [], { t: 'revive', on: t.i, fx: '⚰️', ...synCue(t, 'bonelord') });
     } else if (t.tr.revive && !t.rev2) {
       t.rev2 = 1;
@@ -398,7 +419,9 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
   type Kind = 'strike' | 'power' | 'ult' | Move;
   /** One hit's damage. `fix` (a base roll, 0.8 to 1.2) makes it a preview: no draws, no crit, nothing used up. */
   function calc(att: Side, def: Side, off: number, tags: readonly string[], kind: Kind, fix?: number) {
-    let defL = def.s.dur;
+    // a signature is defended like the attack it is made of (the review's stat roles, E3)
+    const ultK = kind === 'ult' && BALANCE.statRoles ? (powOff(att) > physOff(att) ? 'power' : 'strike') : kind;
+    let defL = ultK === 'strike' ? strikeDef(def) : ultK === 'power' ? powerDef(def) : def.s.dur;
     const note: string[] = [];
     let mult = 1;
     let combo: string | null = null;
@@ -444,7 +467,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
           (att.f.arch.k === 'assassin' ? 0.12 : 0) + (att.powOn && att.f.power.k === 'luck' ? 0.1 : 0) + (att.syn.has('backstab') ? 0.15 : 0) +
           (kind === 'ult' ? 0.15 : 0) + att.tr.critB + (att.f.ench.k === 'lucky' ? 0.1 : 0) + (AR.critB || 0);
     if (fix == null && rng() < soft(cc, ...SOFT_CAP.crit)) {
-      mult *= def.f.weak.k === 'jaw' ? 2.2 : 1.6;
+      // IQ finds the soft spot: crits land harder (review E3)
+      mult *= (def.f.weak.k === 'jaw' ? 2.2 : 1.6) + (BALANCE.statRoles ? 0.05 * Math.max(0, att.s.iq - 5) : 0);
       note.push('crit');
     }
     let th = att.tr.rage;
@@ -585,7 +609,8 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
         note.push('caught');
       }
       if (pw && def.move === 'strike') {
-        d *= 0.3;
+        // a power cut off by a strike keeps half its damage with the review's rules (E4), not a third
+        d *= BALANCE.healRules ? 0.5 : 0.3;
         note.push('interrupted');
       }
       if (breaking) {
@@ -721,7 +746,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     }
     checkDown(def);
     if (def.guard && !ult && both()) {
-      const cd = baseDmg(rng, physOff(def), att.s.dur) * (1 + def.tr.counterB) * ((def.rm && def.rm.counterX) || 1);
+      const cd = baseDmg(rng, physOff(def), strikeDef(att)) * (1 + def.tr.counterB) * ((def.rm && def.rm.counterX) || 1);
       hurt(att, cd);
       log(`↩️ ${N(def)} counters`, '', cd, [], { t: 'hit', by: def.i, to: att.i, fx: def.f.weapon.e, kind: 'melee' });
       checkDown(att);
@@ -772,7 +797,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       log(`${u.e} ${N(att)}'s signature wheel lands on ${u.n.toLowerCase()} (×${u.m})`, u.k === 'whiff' ? 'miss' : 'special', null, [], {
         t: 'status', on: att.i, fx: u.e,
       });
-    } else if (choice === 'power') att.en = Math.max(0, att.en - POW_COST - ((att.rm && att.rm.enCost) || 0));
+    } else if (choice === 'power') att.en = Math.max(0, att.en - powCost(att) - ((att.rm && att.rm.enCost) || 0));
     else gain(att, 25);
     const r = att.rm || {};
     if (r.gamble) {
@@ -870,7 +895,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       log(`🩸 ${N(att)} pays ${real(att, r.selfDmg)} HP for ${r.label}`, 'miss', r.selfDmg, [], { t: 'self', on: att.i, fx: '🩸' });
     }
     if (r.heal || r.healMissing) {
-      const h = Math.round(Math.min(att.maxHp - att.hp, (r.heal || 0) + (r.healMissing ? (att.maxHp - att.hp) * r.healMissing : 0)));
+      const h = Math.round(Math.min(att.maxHp - att.hp, ((r.heal || 0) + (r.healMissing ? (att.maxHp - att.hp) * r.healMissing : 0)) * healFade(bt.round)));
       if (h > 0) {
         att.hp += h;
         log(`💚 ${N(att)} uses ${r.label}`, 'heal', h, [], { t: 'heal', on: att.i });
@@ -984,7 +1009,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     counterPreview(i, rm = {}) {
       const me = P[i];
       const op = P[1 - i]!;
-      const base = 10 * Math.pow(1.17, softGap(physOff(me) - op.s.dur)) * (1 + me.tr.counterB) * (rm.counterX || 1);
+      const base = 10 * Math.pow(1.17, softGap(physOff(me) - strikeDef(op))) * (1 + me.tr.counterB) * (rm.counterX || 1);
       const k = op.ls || 1;
       return { lo: Math.max(1, Math.round(base * 0.8 * k)), hi: Math.max(1, Math.round(base * 1.2 * k)) };
     },
@@ -992,11 +1017,14 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
     plan() {
       const m = autoChoice(rng, P[1], P[0], bt.hist[0]);
       bt.planned = m;
+      // with the review's fair reads (E2) the AI's skill stays out of your read, IQ counts half, and only a
+      // trickster can push it below "Just a hunch"
+      const fair = BALANCE.fairReads;
       const acc = clamp(
-        0.68 + 0.05 * (P[0].s.iq - P[1].s.iq) + 0.012 * ((P[0].s.cha || 5) - (P[1].s.cha || 5)) + P[0].tr.readB + (P[0].mod.readB || 0) -
+        0.68 + (fair ? 0.025 : 0.05) * (P[0].s.iq - P[1].s.iq) + 0.012 * ((P[0].s.cha || 5) - (P[1].s.cha || 5)) + P[0].tr.readB + (P[0].mod.readB || 0) -
           (P[1].f.arch.k === 'trickster' ? 0.12 : 0) - (P[1].f.stance && P[1].f.stance.k === 'balanced' ? 0.1 : 0) - (P[1].tr.taunt ? 0.15 : 0) -
-          (P[1].f.aiSkill || 0) * 0.3,
-        0.3,
+          (fair ? 0 : (P[1].f.aiSkill || 0) * 0.3),
+        fair && P[1].f.arch.k !== 'trickster' ? 0.5 : 0.3,
         0.95,
       );
       let shown = m;
@@ -1053,7 +1081,7 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
       const aiKit = (me: Side, c: Move): [Move, RoundMod] | null => {
         const fam = ({ strike: 'atk', feint: 'atk', guard: 'def', power: 'pow', focus: 'pow' } as Record<string, string>)[c];
         if (!fam) return null;
-        const ks = kitMoves(me.f).filter((m) => m.fam === fam && (m.c !== 'power' || (canPower(me) && me.en >= POW_COST)));
+        const ks = kitMoves(me.f).filter((m) => m.fam === fam && (m.c !== 'power' || canPower(me)));
         if (!(ks.length && rng() < 0.4)) return null;
         const m = pick(rng, ks);
         return [m.c, { ...m.rm }];
@@ -1175,7 +1203,9 @@ export function newBattle(A: Fighter, B: Fighter, rng: Rng, opts: BattleOpts = {
             checkDown(me);
             if (!both()) break;
           }
-          const rg = (me.powOn && me.f.power.k === 'regen' ? 3 + me.s.pm * 0.7 : 0) + me.tr.regen + (me.f.chaos.k === 'crowd' ? 3 : 0);
+          // with the review's heal rules (E4) Regeneration heals a share of what's missing, and every heal fades after round 6
+          const rgPow = me.powOn && me.f.power.k === 'regen' ? (BALANCE.healRules ? (me.maxHp - me.hp) * (0.1 + me.s.pm * 0.01) : 3 + me.s.pm * 0.7) : 0;
+          const rg = (rgPow + me.tr.regen + (me.f.chaos.k === 'crowd' ? 3 : 0)) * healFade(bt.round);
           if (me.tr.enRegen) gain(me, me.tr.enRegen);
           if (me.tr.snack && !me.snacked && me.hp / me.maxHp < 0.3) {
             me.snacked = 1;

@@ -1,7 +1,8 @@
 import { ARENAS } from '../data/arenas';
+import { BALANCE } from '../data/balance';
 import { CHAPTERS } from '../data/content/story';
 import { FAME_CUP, FAME_WIN } from '../data/content/progression';
-import { headToHead, newBattle, type Battle, type BattleOpts, type Side } from '../battle';
+import { headToHead, newBattle, type Battle, type BattleEvent, type BattleOpts, type Side } from '../battle';
 import { activePower, fullName, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json } from '../save/fighter';
@@ -32,7 +33,7 @@ import {
 } from './career';
 import { ACHK, CONTRACTK } from './lookups';
 import { RNAME1, nextGauntletOpp, recordCup, resolveMyRound, saveRun, simRest, type Cup, type Gauntlet, type Tier } from './cups';
-import { LASTCH, hpTxt, newChapter, storyOf } from './story';
+import { LASTCH, hpTxt, newChapter, storyOf, tunedBossGems } from './story';
 import { nemFought, storyNemesisEnd } from './nemesis';
 import { noteBelt, noteBoss } from './trophies';
 import { endHard } from './hard';
@@ -195,6 +196,27 @@ export function startBattle(g: Game, spec: FightSpec): Battle {
   const bt = newBattle(F, spec.opp, g.rng, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g), ...fightRules(spec) });
   F.next = null;
   return bt;
+}
+
+/** Odds at or above this let a story fight be claimed without playing it (review E5). */
+export const CLAIM_ODDS = 0.85;
+/** A regular or elite story fight the player is all but sure to win, not yet under way: it can be claimed. */
+export const canClaim = (spec: FightSpec, bt: Battle | null) =>
+  BALANCE.storyPacing && spec.kind === 'story' && (spec.node === 'fight' || spec.node === 'elite') && spec.odds >= CLAIM_ODDS && !!bt && bt.round === 0 && !bt.over;
+/**
+ * Claims a sure win (review E5): the fight is played out on auto-battle, from the same start, until a win
+ * comes up, so the rewards are full and the HP it costs is what a real win costs. Null if no win comes up
+ * (then the fight is played as usual).
+ */
+export function claimWin(g: Game, spec: FightSpec, bt: Battle): { bt: Battle; events: BattleEvent[] } | null {
+  const mods: [FightMod, FightMod] = [bt.P[0].mod, bt.P[1].mod];
+  for (let i = 0; i < 30; i++) {
+    const b = newBattle(g.F!, spec.opp, g.rng, { arena: spec.arena, mods, ctx: ctxOf(g), ...fightRules(spec) });
+    const events = b.start();
+    while (!b.over) events.push(...b.step());
+    if (b.w === 0) return { bt: b, events };
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------- after the fight
@@ -570,6 +592,11 @@ export function endStoryFight(g: Game, spec: FightSpec, o: FightOutcome): FightR
   award(g, keys, got);
   lines.unshift(`+${xp} XP, +${coins} 🪙`);
   if (won) awardGems(g, (node === 'boss' ? 2 + Math.floor(ch / 3) + (hard ? 3 : 0) : node === 'elite' || node === 'nemesis' ? 1 : 0) + (o.sd ? 1 : 0), lines);
+  // a boss that toughened up for you pays for it (review E5 and F7)
+  if (won && node === 'boss' && tunedBossGems(O)) {
+    lines.push(`💪 ${O.name} put on ${pl(O.tuned!, 'level', 'levels')} for you and lost anyway`);
+    awardGems(g, tunedBossGems(O), lines);
+  }
   if (won) {
     track(g, 'wins');
     addMasteryWin(g, F);

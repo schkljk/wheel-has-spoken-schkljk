@@ -311,4 +311,6 @@ export interface Fighter {
   wheelBoss?: number;
   bossFx?: TraitFx;
   aiSkill?: number;
+  /** levels a boss put on after sizing up the player (review E5 and F7) */
+  tuned?: number;
 }
