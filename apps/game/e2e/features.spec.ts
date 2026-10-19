@@ -111,7 +111,9 @@ test('F9: a ghost code copies out, pastes back in, and fights', async ({ page })
   await page.getByRole('tab', { name: 'More' }).click();
   await page.getByRole('button', { name: /Ghost codes/ }).click();
   const code = (await page.locator('.ghost-code').textContent())!.trim();
-  expect(code).toMatch(/^WHS1\./);
+  // the short code (H8)
+  expect(code).toMatch(/^WHS2\./);
+  expect(code.length).toBeLessThan(130);
   await fits(page, 'ghost codes');
   await page.getByLabel("A friend's ghost code").fill(`  ${code.slice(0, 30)}\n${code.slice(30)}  `);
   await expect(page.locator('.ghost-prev')).toBeVisible();
