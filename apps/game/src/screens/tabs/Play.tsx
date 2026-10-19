@@ -26,8 +26,9 @@ export function PlayTab() {
   useEffect(() => {
     const pn = G.save.profile.patchNotes as { unseen?: boolean } | null;
     if (pn && pn.unseen) openPatchNotes();
-    // a seasonal arena on the wheel (upgrade 27): said once a season
-    const news = act((g) => seasonNews(g));
+    // a seasonal arena on the wheel (upgrade 27): said once a season (saved only when it was said: an act on
+    // every visit to the tab wrote the save and made every tab check its rules again)
+    const news = ensure((g) => seasonNews(g), 'season');
     if (news) toast(news);
   }, []);
   const S = F.story as Story | null;
