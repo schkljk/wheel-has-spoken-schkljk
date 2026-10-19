@@ -1232,6 +1232,13 @@
   color: #e6dff5;
   min-height: 0;
 }
+/* the result's scrolling part: rows keep their full height and the box scrolls (rows sized by the space
+   left would collapse, and their text would spill over the next row) */
+.fr-scroll {
+  display: grid;
+  grid-auto-rows: max-content;
+  gap: 0.45rem;
+}
 .fresult .chips {
   display: flex;
   flex-wrap: wrap;

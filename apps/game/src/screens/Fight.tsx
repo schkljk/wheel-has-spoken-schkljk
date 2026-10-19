@@ -1074,7 +1074,7 @@ export function FightScreen({
           <div class="big">{result.big}</div>
           <p>{result.desc}</p>
           {/* everything that can be long scrolls here; the choices below always stay on screen */}
-          <div class="gains scroll">
+          <div class="fr-scroll scroll">
             <ul class="gains">
               {result.lines.map((l) => (
                 <li key={l}>{l}</li>

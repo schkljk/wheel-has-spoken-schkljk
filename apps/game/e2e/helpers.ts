@@ -50,6 +50,44 @@ export async function open(page: Page, seed: Record<string, string> = {}) {
  * Nothing on screen may be cut off and the page itself must not scroll (a port of the legacy
  * pw_matrix.py check). Content inside a scrolling panel is reachable, so only the panel must fit.
  */
+/**
+ * Pairs of text boxes inside `sel` that sit on top of each other (more than 4 px both ways). Clipping checks
+ * can't see this: a row that collapses to no height still fits, and its text spills over its neighbours.
+ */
+export async function textOverlaps(page: Page, sel: string): Promise<string[]> {
+  return page.evaluate((sel) => {
+    const root = document.querySelector(sel);
+    if (!root) return [];
+    // the part of a box you can see: what a scrolling panel hides is not on top of anything
+    const seen = (e: Element) => {
+      const r = e.getBoundingClientRect();
+      let [l, t, rt, b] = [r.left, r.top, r.right, r.bottom];
+      for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) {
+        const st = getComputedStyle(p);
+        if (!/(auto|scroll|hidden)/.test(st.overflowY + st.overflowX)) continue;
+        const q = p.getBoundingClientRect();
+        [l, t, rt, b] = [Math.max(l, q.left), Math.max(t, q.top), Math.min(rt, q.right), Math.min(b, q.bottom)];
+      }
+      return { l, t, r: rt, b };
+    };
+    const els = [...root.querySelectorAll('li, p, b, small, span, button, .chip, h2, h3, .oc')]
+      .filter((e) => [...e.childNodes].some((c) => c.nodeType === 3 && (c.textContent || '').trim()))
+      .map((e) => ({ e, v: seen(e) }))
+      .filter(({ v }) => v.r - v.l > 2 && v.b - v.t > 2);
+    const out: string[] = [];
+    for (let i = 0; i < els.length; i++)
+      for (let j = i + 1; j < els.length; j++) {
+        const a = els[i]!;
+        const b = els[j]!;
+        if (a.e.contains(b.e) || b.e.contains(a.e)) continue;
+        const ix = Math.min(a.v.r, b.v.r) - Math.max(a.v.l, b.v.l);
+        const iy = Math.min(a.v.b, b.v.b) - Math.max(a.v.t, b.v.t);
+        if (ix > 4 && iy > 4) out.push(`"${(a.e.textContent || '').trim().slice(0, 24)}" over "${(b.e.textContent || '').trim().slice(0, 24)}"`);
+      }
+    return out;
+  }, sel);
+}
+
 export async function layoutProblems(page: Page): Promise<{ clipped: string[]; pageScrolls: boolean }> {
   return page.evaluate(() => {
     const vw = innerWidth;
