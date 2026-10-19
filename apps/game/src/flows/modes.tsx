@@ -334,7 +334,6 @@ export async function towerFlow() {
   await towerNext({ floor: 1, hp: 100, seed: Date.now() & 0xffffff });
 }
 async function towerNext(T: TowerState) {
-  act((g) => keepRun(g, 'tower', T));
   const o = act((g) => towerOpponent(g, T));
   const m = towerMutator(T);
   const best = towerBest(G);
@@ -372,6 +371,8 @@ async function towerNext(T: TowerState) {
     if (T.floor > 1) toast(`🗼 You cleared ${T.floor - 1} floors`);
     return goHub();
   }
+  // the climb is on once you climb (a win keeps it between floors: G6)
+  act((g) => keepRun(g, 'tower', T));
   const r = await fight(
     { kind: 'tower', tier: towerTier(T), opp: o, rushHp: T.hp, mut: m ? { mods: m.mods, arena: m.arena } : undefined },
     { tower: T, ...(m && m.arena ? { arena: dailyArena(m.arena) } : {}) },

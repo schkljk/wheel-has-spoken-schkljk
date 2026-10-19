@@ -224,7 +224,7 @@ test("the opponent's last three moves show by their HP bar, after each round", a
     await expect(moves).toHaveCount(Math.min(r, 3));
   }
   expect(rounds, 'the fight lasts long enough to fill the row').toBeGreaterThanOrEqual(3);
-  await expect(page.locator('.mhist')).toHaveAttribute('aria-label', /^Their last moves: (Strike|Power|Guard|Signature|Feint|Charge up|Sidestep)(, .+){2}$/);
+  await expect(page.locator('.mhist')).toHaveAttribute('aria-label', /^Their last moves: (Strike|Power|Guard|Signature|Feint|Charge up|Sidestep|Fumble)(, .+){2}$/);
   // the momentum meters show as many lit pips as their label says, and explain themselves when tapped
   for (const m of await page.locator('.mom').all()) {
     const n = Number((await m.getAttribute('aria-label'))!.match(/^Momentum (\d) of 3/)![1]);
@@ -384,7 +384,7 @@ test('a hidden synergy is a mystery on the card until the first fight gives it a
   await page.getByRole('button', { name: 'Play', exact: true }).first().click();
   await page.getByRole('tab', { name: 'Fighter' }).click();
   await page.getByRole('button', { name: 'Every wheel result and trait' }).click();
-  await expect(page.locator('.syn.secret').filter({ hasText: '???' })).toHaveCount(1);
+  await expect(page.locator('.syn.secret').filter({ hasText: 'Solves a riddle' })).toHaveCount(1);
   await expect(page.getByText('Unnamed extra')).toHaveCount(0);
   await page.getByRole('button', { name: 'Close' }).last().click();
   await page.getByRole('tab', { name: 'Play' }).click();
@@ -402,7 +402,7 @@ test('a hidden synergy is a mystery on the card until the first fight gives it a
   await page.getByRole('tab', { name: 'Fighter' }).click();
   await page.getByRole('button', { name: 'Every wheel result and trait' }).click();
   await expect(page.locator('.syn.secret').filter({ hasText: 'Unnamed extra' })).toHaveCount(1);
-  await expect(page.locator('.syn.secret').filter({ hasText: '???' })).toHaveCount(0);
+  await expect(page.locator('.syn.secret').filter({ hasText: 'Solves a riddle' })).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 
@@ -557,7 +557,7 @@ test('the endless tower: a floor, its hearts, a fight, and the next floor or a h
   await expect(page.getByText('Tower, floor 1')).toBeVisible();
   await expect(page.getByText(/\. Record/).locator('img[alt="❤️"]')).toHaveCount(3);
   expect((await layoutProblems(page)).clipped).toEqual([]);
-  await page.getByRole('button', { name: /Climb/ }).click();
+  await page.getByRole('button', { name: /^⚔️ Climb/ }).click();
   // the arena spins by itself while the fighters walk in
   await expect(page.getByRole('button', { name: /^(Spin your move|Unleash your signature)$/ })).toBeEnabled({ timeout: 60_000 });
   await page.getByRole('button', { name: 'Fight menu' }).click();
@@ -600,6 +600,10 @@ test('hard mode: pick a cleared chapter, see its twist, fight on hard, then walk
   await page.getByRole('button', { name: /^Skip/ }).click();
   await page.locator('.fresult').waitFor({ timeout: 60_000 });
   await page.locator('.fresult .spoil, .fresult > .btn').first().click();
+  // a loot spin that lands on new gear waits for a tap (G10)
+  const lootOn = page.locator('.spin-screen').getByRole('button', { name: 'Continue' });
+  await expect(page.locator('.maphead, [role=dialog]').first().or(lootOn)).toBeVisible({ timeout: 60_000 });
+  if (await lootOn.isVisible()) await lootOn.click();
   // a win offers a reward first, then it is the hard map again
   await expect(page.locator('.maphead, [role=dialog]').first()).toBeVisible({ timeout: 30_000 });
   const prize = page.getByRole('button', { name: /Prize money/ });
