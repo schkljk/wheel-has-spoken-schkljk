@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useRef } from 'preact/hooks';
-import { buzz, dropToast, toasts } from '../state/game';
+import { buzz, dropToast, route, toasts } from '../state/game';
+import { updateNow, updateReady } from '../state/update';
 import { sfx, uiTap } from './sound';
 import { cine, closeSheet, confirmReq, sheet, sheetLocked } from '../state/ui';
 import { Icon, type IconName } from './Icon';
@@ -142,6 +143,15 @@ export function ToastHost() {
           )}
         </div>
       ))}
+      {/* a new version waits for a tap, offered where nothing is in progress (review G3) */}
+      {updateReady.value && ['title', 'hub'].includes((route.value as { screen: string }).screen) && (
+        <div class="toast act">
+          A new version is ready
+          <button class="toast-btn" onClick={updateNow}>
+            Update
+          </button>
+        </div>
+      )}
     </div>
   );
 }

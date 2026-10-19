@@ -657,7 +657,7 @@ html[data-motion='reduced'] *::after {
   padding-right: 0.4rem;
 }
 .toast-btn {
-  min-height: 2.2rem;
+  min-height: 2.75rem;
   padding: 0 0.9rem;
   border-radius: 999px;
   border: 0;

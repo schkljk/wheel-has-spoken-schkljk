@@ -19,7 +19,9 @@ export default defineConfig({
     preact(),
     VitePWA({
       disable: app,
-      registerType: 'autoUpdate',
+      // a new version waits for the player's tap (state/update.ts): swapping files under a running game left
+      // its lazy screens pointing at files that were gone
+      registerType: 'prompt',
       includeAssets: ['icon.svg'],
       manifest: {
         name: 'The Wheel Has Spoken',

@@ -7,6 +7,7 @@ import { installPressFeedback } from './ui/kit';
 import { installEmojiIcons } from './ui/emoji';
 import { installErrorLog } from './state/errlog';
 import { installCosmetics } from './state/cosmetics';
+import { installUpdates } from './state/update';
 import { loadPx } from './pixi/usePixi';
 import { warmPortraits } from './art/portraits';
 import { effect } from '@preact/signals';
@@ -27,6 +28,8 @@ import './styles/game.css';
 installErrorLog();
 installEmojiIcons();
 installCosmetics();
+// the web build's service worker: a new version waits for a tap (the Android app updates by reinstalling)
+if (!__NATIVE__) installUpdates();
 // the Android app's glue, only in the Android build (the web build doesn't carry Capacitor at all)
 if (__NATIVE__) void import('./native').then((m) => m.installNative());
 installPressFeedback();
