@@ -14,6 +14,7 @@ import { addCoins, coinsOf, ctxOf, pl, spend, type Game } from './game';
 import { addMasteryWin, award, awardGems, challengeFighter, gainFame, gainXP, invalidate, randomGear, recordMatch, track } from './career';
 import { hpTxt, makeBoss, storyEnsure, storyOf } from './story';
 import type { FightOutcome, FightResult, FightTier, Step } from './fight';
+import { keepRun } from './resume';
 
 const commonAfter = (g: Game, won: boolean, O: CareerFighter) => {
   const F = g.F!;
@@ -208,6 +209,8 @@ export function endRushFight(g: Game, R: RushState, O: CareerFighter, o: FightOu
   lines.push(...gainFame(g, fame));
   const done = R.i >= total;
   if (!won || done) next.push({ t: 'levelups' }, { t: 'hub' });
+  // the run goes on from here after closing the app, or it's over (G6)
+  keepRun(g, 'rush', won && !done ? R : null);
   return {
     won,
     big: won ? (done ? 'Rush cleared' : 'Boss down') : 'Rush over',
@@ -323,6 +326,7 @@ export function endTowerFight(g: Game, T: TowerState, O: CareerFighter, o: Fight
   award(g, keys, got);
   lines.unshift(`+${xp} XP, +${coins} 🪙`);
   if (over) next.push({ t: 'levelups' }, { t: 'hub' });
+  keepRun(g, 'tower', over ? null : T);
   return {
     won,
     big: won ? `Floor ${T.floor - 1} cleared` : over ? 'The tower wins' : 'Knocked down a floor',

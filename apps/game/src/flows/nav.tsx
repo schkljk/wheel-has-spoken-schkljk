@@ -458,12 +458,13 @@ export async function runSteps(steps: Step[], places: Places = {}) {
       case 'gauntlet':
         leave();
         return places.gauntlet?.();
+      // back in after closing the app, the run picks up from the save (G6)
       case 'rush':
         leave();
-        return places.rush?.();
+        return places.rush ? places.rush() : void import('./modes').then((m) => m.rushFlow());
       case 'tower':
         leave();
-        return places.tower?.();
+        return places.tower ? places.tower() : void import('./modes').then((m) => m.towerFlow());
       case 'run':
         leave();
         return void import('./run').then((m) => m.runFlow());

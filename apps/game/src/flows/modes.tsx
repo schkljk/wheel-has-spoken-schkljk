@@ -1,5 +1,8 @@
 import {
   TRIAL_COUNT,
+  keepRun,
+  keptRush,
+  keptTower,
   TRIAL_FROM,
   trialBoss,
   trialInfo,
@@ -306,10 +309,14 @@ async function trialFight(i: number) {
 // ---------------------------------------------------------------- the endless tower (upgrade 25)
 export async function towerFlow() {
   if (!towerOpen(G)) return toast(`Reach level ${TOWER_FROM} or clear chapter 1 to unlock the tower`);
+  // a climb the app closed on goes on where it was (G6)
+  const kept = keptTower(G);
+  if (kept) return towerNext(kept);
   tip('tower');
   await towerNext({ floor: 1, hp: 100, seed: Date.now() & 0xffffff });
 }
 async function towerNext(T: TowerState) {
+  act((g) => keepRun(g, 'tower', T));
   const o = act((g) => towerOpponent(g, T));
   const m = towerMutator(T);
   const best = towerBest(G);
@@ -342,6 +349,7 @@ async function towerNext(T: TowerState) {
     ],
   });
   if (c !== 0) {
+    act((g) => keepRun(g, 'tower', null));
     if (T.floor > 1) toast(`🗼 You cleared ${T.floor - 1} floors`);
     return goHub();
   }
@@ -416,6 +424,9 @@ export async function leaveHard() {
 // ---------------------------------------------------------------- boss rush
 export async function rushFlow() {
   if (!rushOpen(G)) return toast('Beat chapter 2 or reach level 10 to unlock');
+  // a rush the app closed on goes on where it was (G6)
+  const kept = keptRush(G);
+  if (kept) return rushNext(kept);
   // boss fights ask first: the rush is a run, not a single fight
   const n = rushBosses(G).length;
   const best = G.save.profile.rushBest || 0;
@@ -434,6 +445,7 @@ export async function rushFlow() {
   await rushNext({ i: 0, hp: 100 });
 }
 async function rushNext(R: RushState) {
+  act((g) => keepRun(g, 'rush', R));
   const n = rushBosses(G).length;
   const { boss, def } = act((g) => rushBoss(g, R));
   // between bosses: keep going, or walk away with the best so far on record
@@ -448,7 +460,10 @@ async function rushNext(R: RushState) {
       ],
     });
     if (c !== 0) {
-      act((g) => (g.save.profile.rushBest = Math.max(g.save.profile.rushBest || 0, R.i)));
+      act((g) => {
+        g.save.profile.rushBest = Math.max(g.save.profile.rushBest || 0, R.i);
+        keepRun(g, 'rush', null);
+      });
       return void goHub();
     }
   }

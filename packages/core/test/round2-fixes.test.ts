@@ -80,3 +80,26 @@ describe('the save safety net knows the new parts (G14)', () => {
     expect(g.save.profile.stats.wins).toBe(6);
   });
 });
+
+describe('a rush or a climb under way survives closing the app (G6)', () => {
+  it('keeps the run between fights and clears it when the run ends', async () => {
+    const { endRushFight, endTowerFight, enterCareer, keptRush, keptTower, mulberry32, newSave, randomFighter, clockAt } = await import('../src');
+    const rng = mulberry32(2);
+    const g = { save: newSave(0), F: null, rng, clock: clockAt(), pool: null, notes: [] as string[] } as never as Parameters<typeof keptRush>[0];
+    enterCareer(g, randomFighter('Climber', rng) as never);
+    g.save.roster.active = 0;
+    const O = randomFighter('Foe', rng) as never;
+    const out = (w: 0 | 1) => ({ w, me: { f: g.F, hp: 60, maxHp: 100 }, round: 6, sd: false }) as never;
+    endRushFight(g, { i: 0, hp: 100 }, O, out(0));
+    expect(keptRush(g)).toMatchObject({ i: 1 });
+    // a round trip through the save keeps it
+    const h = { ...g, save: JSON.parse(JSON.stringify(g.save)) };
+    expect(keptRush(h)).toMatchObject({ i: 1 });
+    endRushFight(g, keptRush(g)!, O, out(1));
+    expect(keptRush(g)).toBeNull();
+    endTowerFight(g, { floor: 3, hp: 80, seed: 7 }, O, out(0));
+    expect(keptTower(g)).toMatchObject({ floor: 4 });
+    endTowerFight(g, { floor: 4, hp: 80, seed: 7, lives: 1 }, O, out(1));
+    expect(keptTower(g)).toBeNull();
+  });
+});

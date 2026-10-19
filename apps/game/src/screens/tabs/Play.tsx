@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, duelText, RUN_FIGHTS, runBest, runState, TRIAL_COUNT, TRIAL_FROM, trialsCleared, trialsOpen, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, duelText, RUN_FIGHTS, runBest, runState, TRIAL_COUNT, TRIAL_FROM, trialsCleared, trialsOpen, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, keptRush, keptTower, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
@@ -71,7 +71,7 @@ export function PlayTab() {
       n: 'Boss rush',
       icon: 'skull',
       locked: !open,
-      st: open ? `${act2 ? 'Act II' : 'Act I'} bosses. Best ${rushBest}/10` : 'Chapter 2 or level 10',
+      st: keptRush(G) ? `Rush on: ${keptRush(G)!.i} of 10 down` : open ? `${act2 ? 'Act II' : 'Act I'} bosses. Best ${rushBest}/10` : 'Chapter 2 or level 10',
       fl: open ? 'Back to back, no snacks' : 'Bosses do not do walk-ins',
       go: () => void rushFlow(),
     },
@@ -79,7 +79,7 @@ export function PlayTab() {
       n: 'Endless tower',
       icon: 'tower',
       locked: !towerOpen(G),
-      st: towerOpen(G) ? `Best: floor ${F.towerBest || 0}${tb ? `. Record ${tb}` : ''}` : `Level ${TOWER_FROM} or chapter 1`,
+      st: keptTower(G) ? `Climb on: floor ${keptTower(G)!.floor}` : towerOpen(G) ? `Best: floor ${F.towerBest || 0}${tb ? `. Record ${tb}` : ''}` : `Level ${TOWER_FROM} or chapter 1`,
       fl: towerOpen(G) ? 'A new twist every five floors' : 'The stairs are judging you',
       go: () => void towerFlow(),
     },
