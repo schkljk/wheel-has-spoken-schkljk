@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BALANCE,
+  DUEL_BAND,
   DUEL_WIN_COINS,
+  LS,
+  duelBestFor,
+  duelHpText,
+  headToHead,
+  useBalance,
   autoChoice,
   clockAt,
   coinsOf,
@@ -77,6 +84,80 @@ describe('the daily duel', () => {
   });
   it('writes the reads as squares', () => {
     expect(duelSquares([['strike', 'strike', 'guard'], ['power', 'guard', 'guard']])).toBe('🟩🟥⬜');
-    expect(duelShare({ no: 7 }, { won: false, rounds: 4, hp: 0, sq: '🟥' })).toBe('The Wheel Has Spoken · Daily duel #7: lost in 4 rounds\n🟥');
+    const d = duelOf('2026-10-19');
+    expect(duelShare(d, { won: false, rounds: 4, hp: 0, sq: '🟥' })).toBe(`The Wheel Has Spoken · Daily duel #${d.no}: lost in 4 rounds\n🟥`);
+  });
+});
+
+// Review round 2: K4 (fair days) and G13 (losses rank by the opponent's HP), and HP as real numbers.
+describe('the daily duel, review round 2', () => {
+  const side = (f: FightOutcome['me']['f'], hp: number, maxHp = 100) => ({ f, hp, maxHp, ls: LS(f) }) as unknown as FightOutcome['me'];
+  it('re-rolls a lopsided day the same way for everyone (K4)', () => {
+    const days = Array.from({ length: 12 }, (_, k) => `2026-03-${String(k + 1).padStart(2, '0')}`);
+    for (const day of days) {
+      const d = duelOf(day);
+      // the same matchup however often it is asked for
+      expect(duelOf(day).opp.name).toBe(d.opp.name);
+      const p = headToHead(d.me, d.opp, mulberry32(9), 120, { arena: d.arena });
+      expect(p, day).toBeGreaterThan(0.12);
+      expect(p, day).toBeLessThan(0.88);
+    }
+    expect(days.some((day) => duelOf(day).tries > 0)).toBe(true);
+    expect(DUEL_BAND.lo).toBe(0.25);
+  });
+  it('keeps the old matchups with the band off', () => {
+    const keep = { ...BALANCE };
+    useBalance({ duelBand: false });
+    try {
+      expect(duelOf('2026-03-02').tries).toBe(0);
+    } finally {
+      useBalance(keep);
+    }
+  });
+  it('ranks a loss by the HP the opponent had left, lower is better (G13)', () => {
+    const g = game();
+    const d = duelOf('2026-10-19');
+    endDuelFight(g, d, { w: 1, me: side(d.me, 0), them: side(d.opp, 60), round: 3, sd: false, hist: [[], []] });
+    expect(duelBest(g, d.day)!.ohp).toBe(60);
+    // a closer loss in more rounds beats it
+    endDuelFight(g, d, { w: 1, me: side(d.me, 0), them: side(d.opp, 20), round: 12, sd: false, hist: [[], []] });
+    expect(duelBest(g, d.day)!.ohp).toBe(20);
+    // a quicker wipe does not
+    const r = endDuelFight(g, d, { w: 1, me: side(d.me, 0), them: side(d.opp, 90), round: 2, sd: false, hist: [[], []] });
+    expect(duelBest(g, d.day)!.ohp).toBe(20);
+    expect(r.lines.join(' ')).toContain('Your best on this one stands: lost in 12 rounds');
+    // an old loss record (no opponent HP) loses to any new loss
+    (g.save.profile.extra.duels as unknown as Record<string, unknown>)[d.day] = { won: false, rounds: 5, hp: 0, sq: '' };
+    endDuelFight(g, d, { w: 1, me: side(d.me, 0), them: side(d.opp, 95), round: 2, sd: false, hist: [[], []] });
+    expect(duelBest(g, d.day)!.ohp).toBe(95);
+  });
+  it('says HP in real numbers, for new and old records', () => {
+    const g = game();
+    const d = duelOf('2026-10-19');
+    const mx = Math.round(100 * LS(d.me));
+    const r = endDuelFight(g, d, { w: 0, me: side(d.me, 50), them: side(d.opp, 0), round: 6, sd: false, hist: [[], []] });
+    const s = duelBest(g, d.day)!;
+    expect(duelHpText(d, s)).toBe(`${Math.round(50 * LS(d.me))}/${mx} HP`);
+    expect(r.lines[0]).toBe(`Won in 6 rounds with ${duelHpText(d, s)} left`);
+    expect(r.share).toContain(`won in 6 rounds with ${duelHpText(d, s)} left`);
+    expect(r.share).not.toContain('%');
+    // an old win stored a percentage only: worked out from the stand-in's max
+    expect(duelHpText(d, { won: true, rounds: 4, hp: 50, sq: '' })).toBe(`${Math.round(mx / 2)}/${mx} HP`);
+    // a loss says the opponent's HP; an old one says nothing
+    const omx = Math.round(100 * LS(d.opp));
+    endDuelFight(game(), d, { w: 1, me: side(d.me, 0), them: side(d.opp, 25), round: 7, sd: false, hist: [[], []] });
+    expect(duelShare(d, { won: false, rounds: 7, hp: 0, sq: '', ohp: 25, ohr: Math.round(25 * LS(d.opp)), omx })).toContain(`lost in 7 rounds, ${d.opp.name} on ${Math.round(25 * LS(d.opp))}/${omx} HP`);
+    expect(duelHpText(d, { won: false, rounds: 7, hp: 0, sq: '' })).toBe('');
+  });
+  it('only counts a record from the same matchup', () => {
+    const g = game();
+    const d = duelOf('2026-10-19');
+    g.save.profile.extra.duels = { [d.day]: { won: true, rounds: 4, hp: 50, sq: '', opp: 'Somebody else' } };
+    expect(duelBestFor(g, d)).toBeNull();
+    // the first win against this matchup still pays
+    const coins = coinsOf(g);
+    endDuelFight(g, d, { w: 0, me: side(d.me, 50), them: side(d.opp, 0), round: 9, sd: false, hist: [[], []] });
+    expect(coinsOf(g)).toBe(coins + DUEL_WIN_COINS);
+    expect(duelBestFor(g, d)!.opp).toBe(d.opp.name);
   });
 });
