@@ -3804,3 +3804,48 @@ html[data-plate='pl_wanted'] .hn.mine {
   gap: 0.3rem;
   justify-items: end;
 }
+
+/* ---------- the Locker's preview (review H7): a wheel wearing it, its confetti, your name on its plate ---------- */
+.lk-prev {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 3rem;
+}
+.lk-prev .tw-small {
+  position: relative;
+  width: min(9.5rem, 40vw);
+  height: min(9.5rem, 40vw);
+}
+.tw-charm {
+  position: absolute;
+  left: 55%;
+  top: 12%;
+  font-size: 11cqmin;
+  line-height: 1;
+  transform-origin: 30% 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.5));
+  animation: tw-sway 2.6s ease-in-out infinite alternate;
+}
+@keyframes tw-sway {
+  from {
+    transform: rotate(-8deg);
+  }
+  to {
+    transform: rotate(8deg);
+  }
+}
+.lk-plate {
+  font: 800 1.15rem/1.3 var(--display);
+  background: var(--plate-bg);
+  color: var(--plate-ink);
+  border-radius: 6px;
+  padding: 0 0.35rem;
+  box-shadow: 0 2px 0 var(--edge);
+  width: fit-content;
+  max-width: 100%;
+}
+.lk-plate[data-plate='pl_wanted'] {
+  font-family: Georgia, 'Times New Roman', serif;
+  letter-spacing: 0.04em;
+}

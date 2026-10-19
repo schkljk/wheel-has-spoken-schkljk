@@ -32,7 +32,7 @@ function layer(draw: (x: CanvasRenderingContext2D) => void) {
 }
 
 /** The four layers: the turning face, the rim with every other bulb lit (and the other half), and the hub. */
-function layers() {
+function layers(rimCols: string[] | null = WHEEL_LOOK.rim) {
   const rw = Math.max(4, Math.round(N * 0.06));
   const faceN = N - 2 * (rw - 1);
   const hubN = Math.max(9, Math.round(N * 0.22));
@@ -50,7 +50,7 @@ function layers() {
     off = bulb(false, bs);
   const rim = (odd: boolean) =>
     layer((x) => {
-      put(x, WHEEL_LOOK.rim ? wheelRim(N, rw, WHEEL_LOOK.rim[0], WHEEL_LOOK.rim[1]) : wheelRim(N, rw), c, c);
+      put(x, rimCols ? wheelRim(N, rw, rimCols[0], rimCols[1]) : wheelRim(N, rw), c, c);
       for (let k = 0; k < 16; k++) {
         const ang = (k / 16) * TAU + TAU / 32;
         const r = N / 2 - rw / 2;
@@ -70,11 +70,15 @@ function layers() {
   return { face, rimA: rim(false), rimB: rim(true), hub, pointer, pivot };
 }
 
-export function WheelStage() {
+/**
+ * The title wheel, or a small one wearing a rim or a charm from the Locker before it is bought (review H7). The
+ * charm hangs off the pointer as it does on every wheel.
+ */
+export function WheelStage({ rim, charm, small }: { rim?: string[] | null; charm?: string | null; small?: boolean } = {}) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = host.current!;
-    const L = layers();
+    const L = layers(rim === undefined ? WHEEL_LOOK.rim : rim);
     const box = document.createElement('div');
     box.className = 'tw-box';
     const add = (cv: HTMLCanvasElement, cls: string) => {
@@ -87,10 +91,17 @@ export function WheelStage() {
     add(L.rimB, 'tw-rim tw-blink');
     add(L.hub, 'tw-hub');
     add(L.pointer, 'tw-ptr').style.transformOrigin = L.pivot;
+    const ch = charm === undefined ? WHEEL_LOOK.charm : charm;
+    if (ch) {
+      const tag = document.createElement('span');
+      tag.className = 'tw-charm';
+      tag.textContent = ch;
+      box.appendChild(tag);
+    }
     el.appendChild(box);
     return () => {
       box.remove();
     };
-  }, []);
-  return <div ref={host} class="title-wheel" />;
+  }, [rim?.join(), charm]);
+  return <div ref={host} class={`title-wheel${small ? ' tw-small' : ''}`} />;
 }
