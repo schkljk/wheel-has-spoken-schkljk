@@ -137,7 +137,7 @@ export async function bossIntro(b: ReturnType<typeof makeBoss>, line: string, ki
       </div>
       <TypeLine text={line} />
       <div class="cine-meta">
-        Level {b.lvl}. {Math.round(b.maxHp! * LS(b))} HP, you have {hpTxt(G, storyOf(G).hp)}. Power scale: {powerScale(b, ctxOf(G)).n}. Has a second phase.
+        Level {b.lvl}. {Math.round(b.maxHp! * LS(b))} HP, you have {hpTxt(G, G.F?.story ? storyOf(G).hp : 100)}. Power scale: {powerScale(b, ctxOf(G)).n}. Has a second phase.
       </div>
       {tunedBossGems(b) > 0 && (
         // the boss sized you up (review E5 and F7): it says so, and it pays for it

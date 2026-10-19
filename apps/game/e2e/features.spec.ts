@@ -98,7 +98,59 @@ test('F8: the fight club insider tells the real odds for a gem', async ({ page }
   await play(page);
   await page.getByRole('button', { name: /Fight club/ }).click();
   await page.getByRole('button', { name: /insider/ }).click();
-  await expect(page.getByText('🕵️ The insider says')).toBeVisible();
+  await expect(page.locator('.fc-tip').getByText('The insider says')).toBeVisible();
   await fits(page, 'club with the tip');
+  expect(errors).toEqual([]);
+});
+
+test('F9: a ghost code copies out, pastes back in, and fights', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = watchErrors(page);
+  await open(page, careerSaveKV({ seed: 11, lvl: 8, fast: true }));
+  await play(page);
+  await page.getByRole('tab', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Ghost codes/ }).click();
+  const code = (await page.locator('.ghost-code').textContent())!.trim();
+  expect(code).toMatch(/^WHS1\./);
+  await fits(page, 'ghost codes');
+  await page.getByLabel("A friend's ghost code").fill(`  ${code.slice(0, 30)}\n${code.slice(30)}  `);
+  await expect(page.locator('.ghost-prev')).toBeVisible();
+  await page.getByRole('button', { name: /Fight the ghost/ }).click();
+  await page.locator('.readpill').waitFor({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await expect(page.locator('.fresult .big')).toHaveText(/Ghost busted|Haunted/, { timeout: 60_000 });
+  expect(errors).toEqual([]);
+});
+
+test('F11: the locker sells looks for gems, and they go on', async ({ page }) => {
+  const errors = watchErrors(page);
+  await open(page, careerSaveKV({ seed: 12, lvl: 8, gems: 10 }));
+  await play(page);
+  await page.getByRole('tab', { name: 'More' }).click();
+  await page.getByRole('button', { name: /Locker/ }).click();
+  await fits(page, 'locker');
+  await page.locator('.locker-item').filter({ hasText: 'Neon rim' }).getByRole('button', { name: /6/ }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: /^Buy/ }).click();
+  await expect(page.locator('.locker-item.on').filter({ hasText: 'Neon rim' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Locker' }).locator('..')).toContainText('4');
+  expect(errors).toEqual([]);
+});
+
+test('F12: the Wheelborn trials open at level 34 and fight a remix', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = watchErrors(page);
+  await open(page, careerSaveKV({ seed: 13, lvl: 34, fast: true }));
+  await play(page);
+  await page.getByRole('button', { name: /Wheelborn trials/ }).click();
+  await expect(page.locator('.goal.trial')).toHaveCount(10);
+  await fits(page, 'trials');
+  await page.locator('.goal.trial').first().getByRole('button', { name: 'Fight' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Fight the remix' }).click();
+  await page.locator('.cine-btn').click();
+  await page.locator('.readpill').waitFor({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Fight menu' }).click();
+  await page.getByRole('button', { name: /^Skip/ }).click();
+  await expect(page.locator('.fresult .big')).toHaveText(/Trial 1 cleared|The remix wins/, { timeout: 60_000 });
   expect(errors).toEqual([]);
 });
