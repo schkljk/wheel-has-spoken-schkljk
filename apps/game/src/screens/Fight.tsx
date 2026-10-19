@@ -4,6 +4,7 @@ import {
   CW_FOCUS,
   canClaim,
   claimWin,
+  mulberry32,
   CW_REC,
   ULTS,
   ULT_WHEEL,
@@ -58,6 +59,7 @@ import { usePixi } from '../pixi/usePixi';
 import { toSlices } from './Spin';
 import type { ArenaWheel } from '../flows/fight';
 import { oddsFor } from '../state/odds';
+import { copyText } from '../ui/copy';
 import { G, act, buzz, fxScale, reducedMotion, settings, commit, SPF, toast } from '../state/game';
 import { closeSheet, confirm, openInfo, openSheet } from '../state/ui';
 import { Icon, type IconName } from '../ui/Icon';
@@ -260,9 +262,11 @@ export function FightScreen({
   /** the arena still to spin: it spins on the combat wheel's spot while the fighters walk in */
   arenaWheel?: ArenaWheel | null;
 }) {
-  const F = G.F!;
+  // a stand-in (the daily duel) fights instead of the active fighter, with its own dice for the wheel too
+  const F = spec.me ?? G.F!;
   const O = spec.opp;
   const names: [string, string] = [F.name, O.name];
+  const dice = useMemo(() => (spec.wheelSeed != null ? mulberry32(spec.wheelSeed) : G.rng), []);
   // the label as the fight starts (a cup's round moves on once it is won)
   const where = useMemo(() => fightLabel(spec), []);
   const sceneRef = useRef<FightScene | null>(null);
@@ -456,7 +460,7 @@ export function FightScreen({
     const bt = act((g) => startBattle(g, spec));
     btRef.current = bt;
     // the first fight with a hidden synergy gives it away
-    const found = act((g) => discoverHidden(g, F));
+    const found = spec.me ? [] : act((g) => discoverHidden(g, F));
     found.forEach((s, i) =>
       setTimeout(() => sceneRef.current?.showProc({ kind: 'synergy', k: s.k, n: s.n, e: s.e, sub: 'Hidden synergy found', side: 0, anti: false }), i * 1700),
     );
@@ -513,7 +517,7 @@ export function FightScreen({
     S.playing = true;
     setPhase('playing');
     try {
-      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(G.rng, bt.P[0], bt.P[1], bt.hist[1]));
+      const evs = choice ? bt.step(choice, null, m || {}) : bt.step(autoChoice(dice, bt.P[0], bt.P[1], bt.hist[1]));
       // what each side did this round, and who read whom, in words while it plays
       const read = evs.find((e) => e.a?.t === 'read');
       const mine = bt.hist[0].at(-1),
@@ -567,7 +571,7 @@ export function FightScreen({
     try {
       // the result and the steps after it are saved together: closing the app on this screen loses nothing (A4)
       r = act((g) => {
-        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd });
+        const x = end({ w: bt.w!, me: bt.P[0], them: bt.P[1], round: bt.round, sd: !!bt.sd, hist: bt.hist });
         setPendingSteps(g, x.next);
         return x;
       });
@@ -600,7 +604,7 @@ export function FightScreen({
     const bt = btRef.current;
     if (!sc || !bt || phase !== 'input' || S.playing || bt.over || !list.length) return;
     ac();
-    const idx = pickW(G.rng, list);
+    const idx = pickW(dice, list);
     const dir = flickW && flickW < 0 ? -1 : 1;
     S.dir = dir;
     const turns = flickW ? Math.max(2, Math.min(6, Math.round(Math.abs(flickW) / 5))) : 3 + Math.floor(Math.random() * 2);
@@ -1085,6 +1089,11 @@ export function FightScreen({
               </div>
             )}
             {recap && <RecapCard r={recap} names={names} />}
+            {result.share && (
+              <button class="btn ghost sm block" onClick={() => void copyText(result.share!)}>
+                <Icon name="card" /> Copy the score
+              </button>
+            )}
             {result.won && (
               <button class="btn ghost sm block" onClick={shareWin}>
                 <Icon name="download" /> Save this win as a picture

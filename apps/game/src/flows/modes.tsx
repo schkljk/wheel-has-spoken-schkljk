@@ -1,4 +1,12 @@
 import {
+  DUEL_TIER,
+  DUEL_WIN_COINS,
+  duelBest,
+  duelDays,
+  duelOf,
+  duelShare,
+  type CareerFighter,
+  type Duel,
   CLUB_BETS,
   DAILY_TIER,
   abandonRun,
@@ -59,7 +67,7 @@ import {
   type RushState,
   type TowerState,
 } from '@whs/core';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { FighterSprite } from '../art/FighterSprite';
 import { lookOf } from '../art/sprite';
 import { G, act, go, settings, toast } from '../state/game';
@@ -73,6 +81,7 @@ import { evText } from '../screens/Fight';
 import { fight } from './fight';
 import { choose, goHub, goMap, runSteps, showCine } from './nav';
 import { tip } from '../state/tips';
+import { copyText } from '../ui/copy';
 
 // ---------------------------------------------------------------- cups and the gauntlet
 export function showRun(T: Run) {
@@ -171,6 +180,65 @@ export async function dailyFlow() {
   });
   if (c !== 0) return goHub();
   const r = await fight({ kind: 'daily', tier: DAILY_TIER, opp: o, mut: { mods: mut.mods, arena: mut.arena } }, mut.arena ? { arena: dailyArena(mut.arena) } : {});
+  await runSteps(r.next);
+}
+
+// ---------------------------------------------------------------- the daily duel (F2)
+function DuelSheet({ days }: { days: string[] }) {
+  const [day, setDay] = useState(days[0]!);
+  const d = useMemo(() => duelOf(day), [day]);
+  const best = duelBest(G, day);
+  const side = (f: CareerFighter, i: 0 | 1) => (
+    <div class="fc-side">
+      <FighterSprite look={lookOf(f)} h={84} mirror={i === 1} />
+      <b class="ellipsis">{f.name}</b>
+      <small>
+        Level {f.lvl} {f.race.n.toLowerCase()} {f.arch.n.toLowerCase()}
+      </small>
+      <small class="ellipsis">{i === 0 ? 'You play this one' : `${f.power.e} ${f.power.n}`}</small>
+    </div>
+  );
+  return (
+    <Sheet icon="sword" title={`Daily duel #${d.no}`} sub="Same fighters. Same dice. Different excuses.">
+      <div class="stack">
+        <div class="fc-bets" role="group" aria-label="Which day" data-hscroll>
+          {days.map((x, i) => (
+            <button key={x} class={`fchip light${x === day ? ' on' : ''}`} onClick={() => setDay(x)}>
+              {i === 0 ? 'Today' : i === 1 ? 'Yesterday' : x.slice(5).replace('-', '/')}
+              {duelBest(G, x)?.won ? ' ✓' : ''}
+            </button>
+          ))}
+        </div>
+        <div class="fc-vs">
+          {side(d.me, 0)}
+          <div class="fc-v">VS</div>
+          {side(d.opp, 1)}
+        </div>
+        <p class="hint center">
+          {d.arena.e} {d.arena.n}. Everyone gets this exact fight: the dice only change with your moves.
+        </p>
+        {best && (
+          <div class="duel-best">
+            <b>Your best: {best.won ? `won in ${best.rounds} rounds, ${best.hp}% HP left` : `lost in ${best.rounds} rounds`}</b>
+            <span>{best.sq}</span>
+            <button class="btn ghost sm" onClick={() => void copyText(duelShare(d, best))}>
+              Copy the score
+            </button>
+          </div>
+        )}
+        <button class="btn block" onClick={() => (closeSheet(), void duelFight(d))}>
+          ⚔️ {best ? 'Fight it again' : 'Fight'}
+        </button>
+        <span class="hint center">First win of each duel: +{DUEL_WIN_COINS} 🪙. No streaks: play any of the last week whenever you like.</span>
+      </div>
+    </Sheet>
+  );
+}
+export function openDuel() {
+  openSheet(<DuelSheet days={duelDays(new Date(G.clock.today))} />);
+}
+async function duelFight(d: Duel) {
+  const r = await fight({ kind: 'duel', tier: DUEL_TIER, opp: d.opp, me: d.me, seed: d.seed, wheelSeed: d.wheelSeed }, { arena: d.arena, duel: d });
   await runSteps(r.next);
 }
 

@@ -27,3 +27,4 @@ export * from './preview';
 export * from './recap';
 export * from './resume';
 export * from './bounty';
+export * from './duel';

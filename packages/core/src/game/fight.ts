@@ -1,12 +1,13 @@
 import { ARENAS } from '../data/arenas';
 import { BALANCE } from '../data/balance';
+import { mulberry32 } from '../rng';
 import { CHAPTERS } from '../data/content/story';
 import { FAME_CUP, FAME_WIN } from '../data/content/progression';
 import { headToHead, newBattle, type Battle, type BattleEvent, type BattleOpts, type Side } from '../battle';
 import { activePower, fullName, talEcon } from '../stats';
 import { lgLvl } from '../save/career';
 import type { CareerFighter, Json } from '../save/fighter';
-import type { Arena, Injury } from '../types';
+import type { Arena, Injury, Move } from '../types';
 import type { FightMod } from '../data/misc';
 import { addCoins, coinsOf, ctxOf, pl, slotOf, type Game } from './game';
 import {
@@ -42,7 +43,7 @@ import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel';
 export interface FightTier {
   k: string;
   n: string;
@@ -65,6 +66,12 @@ export interface FightSpec {
   arena: Arena | null;
   /** chance to win from simulations, fixed when the fight opens */
   odds: number;
+  /** someone else fights instead of the active fighter (the daily duel), with no buffs or career perks */
+  me?: CareerFighter;
+  /** the fight's own dice, so it plays the same for everyone (the daily duel) */
+  seed?: number;
+  /** and the combat wheel's */
+  wheelSeed?: number;
 }
 
 /** The header label of a fight. */
@@ -180,21 +187,25 @@ export const injLine = (j: Injury) =>
   `${j.e} Injured: ${j.n}, ${injText(j)}. Heals by itself after ${j.dur === 1 ? 'one cup' : `${j.dur} cups`}, or now with a physio session (base shop) or Patch up (campfire)`;
 
 /** Simulated chance to win, shown before the fight (120 fights at the fight's HP, default round limit). */
-export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(g.F!, spec.opp, g.rng, 120, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) });
+export const fightOdds = (g: Game, spec: Omit<FightSpec, 'odds'>) => headToHead(spec.me ?? g.F!, spec.opp, g.rng, 120, { arena: spec.arena, ...setupOf(g, spec) });
+/** Mods and context: a stand-in fighter (the daily duel) gets none of the career's. */
+const setupOf = (g: Game, spec: Omit<FightSpec, 'odds'>) => (spec.me ? { mods: [{}, {}] as [FightMod, FightMod], ctx: {} } : { mods: fightMods(g, spec), ctx: ctxOf(g) });
 /** The same simulation as plain data, to run off the main thread: run it with headToHead(a, b, mulberry32(seed), n, opts). */
 export const fightOddsJob = (g: Game, spec: Omit<FightSpec, 'odds'>) => ({
-  a: g.F!,
+  a: spec.me ?? g.F!,
   b: spec.opp,
   n: 120,
   seed: Math.floor(g.rng() * 2 ** 31),
-  opts: { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g) },
+  opts: { arena: spec.arena, ...setupOf(g, spec) },
 });
 
 /** Starts the battle; next-fight buffs are used up. */
 export function startBattle(g: Game, spec: FightSpec): Battle {
   const F = g.F!;
-  const bt = newBattle(F, spec.opp, g.rng, { arena: spec.arena, mods: fightMods(g, spec), ctx: ctxOf(g), ...fightRules(spec) });
-  F.next = null;
+  const rng = spec.seed != null ? mulberry32(spec.seed) : g.rng;
+  const bt = newBattle(spec.me ?? F, spec.opp, rng, { arena: spec.arena, ...setupOf(g, spec), ...fightRules(spec) });
+  // a stand-in's fight doesn't use up the active fighter's next-fight buffs
+  if (!spec.me) F.next = null;
   return bt;
 }
 
@@ -230,6 +241,8 @@ export interface FightOutcome {
   round: number;
   /** ended in sudden death */
   sd: boolean;
+  /** both sides' moves, round by round (newer callers) */
+  hist?: Move[][];
 }
 export type Step =
   | { t: 'loot'; table: LootTable }
@@ -260,6 +273,8 @@ export interface FightResult {
   /** sound and celebration: 0 lost, 2 won, 3 big win */
   q: 0 | 2 | 3;
   confetti: boolean;
+  /** a line to copy and share (the daily duel) */
+  share?: string;
 }
 
 /** Achievement keys every fight can earn. */

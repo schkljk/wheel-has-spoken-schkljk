@@ -1,5 +1,5 @@
 import { useEffect } from 'preact/hooks';
-import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
+import { BALANCE, CHAPTERS, TIERS_T, exhibitionLegends, hardChapters, hardMutator, seasonNews, TOWER_FROM, towerBest, towerOpen, baseOpen, dailyReady, dailyText, duelText, goalCur, goalsBySoonest, hpTxt, maxGrit, myNemesis, rushOpen, runSummary, tierUnlocked, type Story } from '@whs/core';
 import { G, act, activeFighter, ensure, toast } from '../../state/game';
 import { ChapterIcon } from '../../art/ChapterIcon';
 import { Icon } from '../../ui/Icon';
@@ -8,7 +8,7 @@ import { Inf } from '../../ui/Info';
 import { rise } from '../../ui/kit';
 import { goHub, goMap } from '../../flows/nav';
 import { openBag } from '../../flows/story';
-import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
+import { abandon, challengeFlow, dailyFlow, dailyWheel, hardFlow, leaveHard, openClub, openDuel, resumeRun, rushFlow, startTier, towerFlow } from '../../flows/modes';
 import { openBaseShop } from '../../flows/shop';
 import { openPatchNotes } from '../../sheets/Records';
 import { sfx } from '../../ui/sound';
@@ -51,6 +51,7 @@ export function PlayTab() {
   const cta = S && S.hard ? (S.row === 0 && !S.seenIntro ? 'Start on hard' : 'Continue on hard') : !S || (S.row === 0 && !S.seenIntro) ? 'Start the chapter' : 'Continue the story';
   const modes: Mode[] = [
     { n: 'Daily challenge', icon: 'calendar', st: dailyText(G), fl: 'One twist, zero refunds', go: () => void dailyFlow() },
+    { n: 'Daily duel', icon: 'sword', st: duelText(G), fl: 'Same fighters. Same dice. Different excuses', go: () => openDuel() },
     {
       n: 'Boss rush',
       icon: 'skull',

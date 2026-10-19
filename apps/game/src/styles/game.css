@@ -3577,3 +3577,26 @@ img.pxi.chap {
 .ex-called.bad {
   color: var(--muted);
 }
+/* the daily duel's best score (F2) */
+.duel-best {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: var(--r-card);
+  background: var(--well);
+  border: 2px solid var(--line);
+  text-align: center;
+}
+.duel-best span {
+  letter-spacing: 0.1em;
+  overflow-wrap: anywhere;
+}
+.fc-bets[data-hscroll] {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+}
+.fc-bets[data-hscroll] .fchip {
+  flex: none;
+}
