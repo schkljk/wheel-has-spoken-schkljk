@@ -5,7 +5,7 @@
  */
 import { availableParallelism } from 'node:os';
 import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
-import { BALANCE, BOSS_HP, BOSS_STAT_SHIFT, CHAPTERS, mulberry32, rankPool, type PoolRanking } from '../../packages/core/src';
+import { BALANCE, BOSS_HP, BOSS_STAT_SHIFT, CHAPTERS, mulberry32, rankPool, useBalance, type PoolRanking } from '../../packages/core/src';
 import { fighterOfStrength, newRun, playStory, type RunLog } from './story';
 
 export type Strength = 'weak' | 'average' | 'strong';
@@ -96,7 +96,7 @@ if (!isMainThread) {
   const { part, seed, to, pool, cups, bossHp, bossShift, switches: sw } = workerData as {
     part: Job[]; seed: number; to: number; pool: PoolRanking; cups: number; bossHp?: number[]; bossShift?: number[]; switches: Record<string, boolean | number>;
   };
-  Object.assign(BALANCE, sw);
+  useBalance(sw);
   if (bossHp) bossHp.forEach((h, i) => (BOSS_HP[i] = h));
   if (bossShift) bossShift.forEach((h, i) => (BOSS_STAT_SHIFT[i] = h));
   parentPort!.postMessage(part.map((j) => ({ j, log: runJob(j, seed, to, pool, cups) })));
@@ -106,8 +106,8 @@ if (!isMainThread) {
     return i > 0 ? Number(process.argv[i + 1]) : def;
   };
   // --off <switch> plays without one of the balance table's switches (they reach the workers too)
-  process.argv.forEach((a, i) => a === '--off' && Object.assign(BALANCE, { [process.argv[i + 1]!]: false }));
+  process.argv.forEach((a, i) => a === '--off' && useBalance({ [process.argv[i + 1]!]: false }));
   // --before plays the game as it was before the review's design pass (with today's boss tables)
-  if (process.argv.includes('--before')) Object.assign(BALANCE, BEFORE_REVIEW);
+  if (process.argv.includes('--before')) useBalance(BEFORE_REVIEW);
   await storyTables(arg('runs', 30), arg('seed', 1), arg('to', CHAPTERS.length), arg('cups', 0));
 }

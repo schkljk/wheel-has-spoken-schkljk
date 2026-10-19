@@ -54,6 +54,26 @@ export interface Balance {
   clubInsider: boolean;
   /** the bounty board counts career steps toward standing build challenges (review F5) */
   bounties: boolean;
+  /** one premium piece per fighter, after Act I; the Coat loses its revive, the Crown and the halo boots do something (review K1) */
+  premiumGate: boolean;
+  /** the fight club's line is tighter, pays a little less, the insider only tells the odds, and a matchup stays until you bet (K2) */
+  clubTight: boolean;
+  /** Spin & Run opponents level by fight number, not by you, and a run has one second wind (K3) */
+  runFair: boolean;
+  /** a daily duel is re-rolled, the same way for everyone, until it's between 25% and 75% (K4) */
+  duelBand: boolean;
+  /** the Wheelborn trials run from level 32 to 41, retuned for a smooth ladder (K5) */
+  trialLadder: boolean;
+  /** one revive in the talent tree, and the revive talents say they don't stack (K6) */
+  reviveCap: boolean;
+  /** dodge also grazes signatures, Shadow ambushes, Knight trimmed, Clown fixed (K7) */
+  critDodge: boolean;
+  /** a sold or salvaged piece's upgrades go to the piece that replaces it in its slot (K8) */
+  upgradeCarry: boolean;
+  /** story losses injure at most twice, and a chapter restart heals those (K9) */
+  injuryCap: boolean;
+  /** the quick jab, dead talents, lifesteal and the outlier picks retuned (K10) */
+  pickTune: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -82,6 +102,16 @@ export const LEGACY_BALANCE: Balance = {
   secondOpinion: false,
   clubInsider: false,
   bounties: false,
+  premiumGate: false,
+  clubTight: false,
+  runFair: false,
+  duelBand: false,
+  trialLadder: false,
+  reviveCap: false,
+  critDodge: false,
+  upgradeCarry: false,
+  injuryCap: false,
+  pickTune: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -137,6 +167,16 @@ export const BALANCE: Balance = {
   secondOpinion: true,
   clubInsider: true,
   bounties: true,
+  premiumGate: true,
+  clubTight: true,
+  runFair: true,
+  duelBand: true,
+  trialLadder: true,
+  reviveCap: true,
+  critDodge: true,
+  upgradeCarry: true,
+  injuryCap: true,
+  pickTune: true,
 };
 
 /**
@@ -157,7 +197,16 @@ export const soft = (x: number, knee: number, max = 1) => (!BALANCE.softCaps || 
 /** Where crit, dodge and damage reduction start to taper, and how far they can go. */
 export const SOFT_CAP = { crit: [0.35, 0.65], dodge: [0.3, 0.6], dr: [0.25, 0.6] } as const;
 
+/** The switches that are on or off (the tuning's functions and numbers aside). */
+export type BalanceFlag = { [K in keyof Balance]: Balance[K] extends boolean ? K : never }[keyof Balance];
+
+const hooks: (() => void)[] = [];
+/** Runs `fn` whenever the tuning switches (table overlays and caches follow the switches). */
+export function onBalance(fn: () => void) {
+  hooks.push(fn);
+}
 /** Switches the tuning (the parity tests play by the old game's numbers). */
-export function useBalance(b: Balance) {
+export function useBalance(b: Partial<Balance>) {
   Object.assign(BALANCE, b);
+  for (const h of hooks) h();
 }

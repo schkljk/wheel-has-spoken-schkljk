@@ -2,7 +2,7 @@ import { GEAR } from './data/gear';
 import { INJURIES } from './data/misc';
 import { SYN } from './data/synergies';
 import { PERSONALITIES, type Personality, type PersonalityKey } from './data/content/personality';
-import { BALANCE, GROWTH_TUNE, SOFT_CAP, soft } from './data/balance';
+import { BALANCE, GROWTH_TUNE, SOFT_CAP, onBalance, soft } from './data/balance';
 import { SYN_HIDDEN } from './data/content/hidden-synergies';
 import { GEAR_MORE, SYN_SETS } from './data/content/gear-sets';
 import { OLD_TAL, TREE, type TalentEffect } from './data/talents';
@@ -57,6 +57,8 @@ export const UPGRADE_FX: Record<GearSlot, [k: 'dr' | 'dodgeB' | 'critB', per: nu
   trinket: ['critB', 0.01, 'crit'],
 };
 const UPG_CACHE = new Map<string, Gear>();
+// a retuned piece (data/retune.ts) changes with the switches: upgraded copies are made again
+onBalance(() => UPG_CACHE.clear());
 /** A piece at an upgrade level, with the bonus folded into its traits. */
 export function upgraded(g: Gear, L: number): Gear {
   if (!L) return g;

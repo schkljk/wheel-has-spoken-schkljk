@@ -27,3 +27,5 @@ export * from './data/content/riddles';
 export * from './data/content/cosmetics';
 // the wording fixes: laid over the tables above once, on load
 export { reword, rewordDeep } from './data/wording';
+// review round 2's retune: laid over the tables above while its switches are on (after the wording)
+export { applyRetune } from './data/retune';

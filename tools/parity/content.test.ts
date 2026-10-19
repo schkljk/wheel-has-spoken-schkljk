@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import * as D from '../../packages/core/src/data';
 import { readLegacyGlobals } from './extract-content';
 import { clean } from './emit';
@@ -11,6 +11,10 @@ const NAMES = [
   'FLAVOR', 'STAT_INFO', 'RULES', 'STATUS_INFO', 'PILL_INFO', 'COMBO_INFO', 'ARCH_MECH', 'TAGN', 'WHEELN', 'CATN', 'QN', 'TUT', 'INTENT_TXT', 'HOW',
 ];
 
+// review round 2's retune (data/retune.ts) is laid over some rows while its switches are on: compare with the old tuning
+const tuned = { ...D.BALANCE };
+beforeAll(() => D.useBalance(D.LEGACY_BALANCE));
+afterAll(() => D.useBalance(tuned));
 describe('ported content equals the running legacy game', async () => {
   const legacy = await readLegacyGlobals(NAMES);
   it.each(NAMES)('%s', (n) => {
