@@ -88,6 +88,10 @@ function repairExtra(x: Raw, fixed: string[]) {
     x.trials = { best: countish(isObj(x.trials) ? x.trials.best : 0) };
     note('your trials record');
   }
+  if (x.remix != null && !(isObj(x.remix) && Array.isArray(x.remix.mix) && x.remix.mix.length === 3 && x.remix.mix.every((i) => Number.isInteger(i)))) {
+    x.remix = null;
+    fixed.push('a damaged remix was taken apart');
+  }
   if (x.dayMax !== undefined && !(typeof x.dayMax === 'number' && Number.isFinite(x.dayMax))) delete x.dayMax;
   if (x.season !== undefined && !numMap(x.season)) delete x.season;
 }

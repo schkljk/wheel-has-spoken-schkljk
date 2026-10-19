@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  REMIX_GEMS,
+  buildRemix,
+  builtRemix,
+  endRemixFight,
+  fightRules,
+  remixBodies,
+  remixBoss,
   relicOf,
   runMods,
   runSpecOf,
@@ -266,5 +273,33 @@ describe('L5: Spin & Run relics', () => {
       if (!runState(g)) expect(r.lines.join(' ')).toMatch(/Borrowed time is up/);
     }
     expect(runState(g)).toBe(null);
+  });
+});
+
+describe('L4: the remix workshop', () => {
+  it('builds a remix from a beaten boss and two others, for gems, once; it fights like a trial and counts toward the goals', () => {
+    const g = game(8, 36);
+    for (const c of [1, 2, 3, 4]) clear(g, c);
+    expect(remixBodies(g)).toEqual([0, 1, 2, 3]);
+    g.save.profile.gems = REMIX_GEMS + 1;
+    // the same boss twice, or a body not beaten yet: no
+    expect(buildRemix(g, [0, 0, 5])).toBe(false);
+    expect(buildRemix(g, [9, 2, 5])).toBe(false);
+    expect(g.save.profile.gems).toBe(REMIX_GEMS + 1);
+    expect(buildRemix(g, [2, 7, 15])).toBe(true);
+    expect(g.save.profile.gems).toBe(1);
+    // built: building again charges nothing
+    expect(buildRemix(g, [2, 7, 15])).toBe(true);
+    expect(g.save.profile.gems).toBe(1);
+    const b = remixBoss(g, builtRemix(g)!);
+    expect(b.remix).toEqual([7, 15]);
+    expect(b.lvl).toBe(36);
+    expect(fightRules({ kind: 'remix', opp: b } as never)).toMatchObject({ maxRounds: 30, suddenDeath: true });
+    const r = endRemixFight(g, b, { w: 0, me: g.F, them: b, round: 9, sd: false, hist: [[], []] } as never);
+    expect(r.won).toBe(true);
+    expect(builtRemix(g)).toBe(null);
+    expect(goalCur(g, 'remix1')).toBe(1);
+    checkGoals(g);
+    expect(g.save.profile.goalsDone).toContain('remix1');
   });
 });

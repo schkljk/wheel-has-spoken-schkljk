@@ -110,6 +110,12 @@
     | Smart, taking the crown or the cannon | 5.95 | 5.88 | 35% | 37% |
 
   - Relics reward a good read of the run and punish a greedy one. Borrowed time is the trap: runs pile up at six wins.
+- **L4, the remix workshop:** the trials sheet has a "🧪 Remix workshop" button.
+  - **Building:** pick a body (any boss this fighter has beaten, or Act I's) and two tricks (other bosses' phase-two slices, named on the chips).
+  - **Cost:** building costs 3 💎, with a confirmation. A built remix stays built until it is fought, so closing the app never charges twice.
+  - **Tuning:** it is set to your level with the tuning of the trial nearest that level, which K5's simulations measured.
+  - **Reward:** a win pays the trial XP and 15 🪙.
+  - **Goals:** two new ones, "Mad scientist" (beat a remix, 3 💎) and "It lives, and it lost" (beat 10, 10 💎 and a legacy point). It's a gem sink that is also content.
 - **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 

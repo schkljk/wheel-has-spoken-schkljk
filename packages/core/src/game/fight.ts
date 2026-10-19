@@ -47,7 +47,7 @@ import { MUTATORS } from '../data/misc';
 import type { LootTable, OddsNote, WheelEntry } from './economy';
 import { rating } from './rating';
 
-export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial' | 'run';
+export type FightKind = 'cup' | 'gauntlet' | 'challenge' | 'story' | 'daily' | 'rush' | 'tower' | 'duel' | 'ghost' | 'trial' | 'run' | 'remix';
 export interface FightTier {
   k: string;
   n: string;
@@ -159,7 +159,7 @@ export function fightMods(g: Game, spec: Pick<FightSpec, 'kind' | 'opp' | 'rushH
 
 /** Round limits: bosses get 30 rounds and sudden death; elites, legends and cup finals get 20. */
 export function fightRules(spec: Pick<FightSpec, 'kind' | 'node' | 'opp' | 'run' | 'tier'>): Pick<BattleOpts, 'maxRounds' | 'suddenDeath'> {
-  if (spec.kind === 'rush' || spec.kind === 'trial' || (spec.kind === 'run' && spec.opp?.isBoss) || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
+  if (spec.kind === 'rush' || spec.kind === 'trial' || spec.kind === 'remix' || (spec.kind === 'run' && spec.opp?.isBoss) || (spec.kind === 'story' && spec.node === 'boss')) return { maxRounds: 30, suddenDeath: true };
   if (spec.kind === 'story' && (spec.node === 'elite' || spec.node === 'nemesis')) return { maxRounds: 20 };
   if (spec.kind === 'challenge' && spec.opp && spec.opp.isRival === 'legend') return { maxRounds: 20 };
   if (spec.kind === 'cup') {

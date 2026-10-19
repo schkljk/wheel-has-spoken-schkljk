@@ -1,5 +1,14 @@
 import {
   BALANCE,
+  BOSS_PHASE,
+  BOSSES,
+  REMIX_GEMS,
+  buildRemix,
+  builtRemix,
+  remixBodies,
+  remixBoss,
+  remixTier,
+  type RemixMix,
   TRIAL_COUNT,
   fightUnder,
   keepRun,
@@ -88,6 +97,7 @@ import { lookOf } from '../art/sprite';
 import { G, act, go, settings, toast } from '../state/game';
 import { closeSheet, confirm, openSheet } from '../state/ui';
 import { Inf } from '../ui/Info';
+import { Chips } from '../ui/Filters';
 import { Sheet } from '../ui/kit';
 import { burst } from '../ui/fx';
 import { landSound, tick } from '../ui/sound';
@@ -306,6 +316,69 @@ function TrialsSheet() {
             </div>
           );
         })}
+        {/* your own remix, for gems (L4) */}
+        <button class="btn ghost block" onClick={() => openSheet(<RemixSheet />)}>
+          🧪 Remix workshop: build your own
+        </button>
+      </div>
+    </Sheet>
+  );
+}
+
+/**
+ * The remix workshop (review L4): a boss your fighter has beaten lends the body, two others lend their phase-two
+ * tricks, and it is tuned to your level. Gems to build it, XP and coins to beat it.
+ */
+function RemixSheet() {
+  const bodies = remixBodies(G);
+  const built = builtRemix(G);
+  const [mix, setMix] = useState<RemixMix>(() => built ?? [bodies[0]!, (bodies[0]! + 1) % BOSSES.length, (bodies[0]! + 2) % BOSSES.length]);
+  const gems = G.save.profile.gems || 0;
+  const name = (i: number) => `${BOSSES[i]!.e || ''} ${BOSSES[i]!.name}`.trim();
+  const kit = (i: number) => BOSS_PHASE[i]?.slice;
+  const set = (at: 0 | 1 | 2, v: number | null) => {
+    if (v == null || built) return;
+    const m = [...mix] as RemixMix;
+    // a boss can't be in a remix twice: whoever had that spot swaps with it
+    const was = m.indexOf(v);
+    if (was >= 0) m[was] = m[at];
+    m[at] = v;
+    setMix(m);
+  };
+  const go = async () => {
+    if (!built) {
+      const ok = await confirm({
+        title: `Build this remix for ${REMIX_GEMS} 💎?`,
+        body: `${name(mix[0])}'s body with the tricks of ${BOSSES[mix[1]]!.name} and ${BOSSES[mix[2]]!.name}, at your level. 30 rounds, then sudden death. It is used up when the fight ends, win or lose.`,
+        yes: `Build it, ${REMIX_GEMS} 💎`,
+        no: 'Keep tinkering',
+      });
+      if (!ok) return;
+      if (!act((g) => buildRemix(g, mix))) return toast('Not enough gems');
+    }
+    closeSheet();
+    const m = builtRemix(G)!;
+    const b = act((g) => remixBoss(g, m));
+    await bossIntro(b, 'Stitched together from spare bosses. It has questions about its purpose.', 'Your remix');
+    const r = await fight({ kind: 'remix', tier: remixTier, opp: b });
+    await runSteps(r.next);
+  };
+  const trick = (i: number) => [i, `${kit(i)?.e ?? ''} ${kit(i)?.n ?? BOSSES[i]!.name}`.trim()] as [number, string];
+  const others = BOSSES.map((_, i) => i).filter((i) => i !== mix[0]);
+  return (
+    <Sheet emoji="🧪" title="Remix workshop" sub="Bosses, rearranged. The wheel did not ask for this. Neither did they.">
+      <div class="stack">
+        <span class="sec-label">The body: a boss you've beaten</span>
+        <Chips label="Body" value={mix[0]} options={bodies.map((i) => [i, name(i)] as [number, string])} onChange={(v) => set(0, v)} />
+        <span class="sec-label">Two tricks: their phase-two slices land on your wheel once each</span>
+        <Chips label="First trick" value={mix[1]} options={others.map(trick)} onChange={(v) => set(1, v)} />
+        <Chips label="Second trick" value={mix[2]} options={others.map(trick)} onChange={(v) => set(2, v)} />
+        <p class="hint">
+          {name(mix[0])}, with {BOSSES[mix[1]]!.name}'s {kit(mix[1])?.n ?? 'trick'} ({kit(mix[1])?.d}) and {BOSSES[mix[2]]!.name}'s {kit(mix[2])?.n ?? 'trick'} ({kit(mix[2])?.d}). Tuned to your level like the trial of that level. A win: XP and 15 🪙.
+        </p>
+        <button class="btn block" disabled={!built && gems < REMIX_GEMS} onClick={() => void go()}>
+          {built ? '⚔️ Fight your remix' : `🧪 Build it for ${REMIX_GEMS} 💎 (you have ${gems})`}
+        </button>
       </div>
     </Sheet>
   );

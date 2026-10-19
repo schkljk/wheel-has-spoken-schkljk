@@ -357,7 +357,9 @@ for (const goal of GOALS) {
                               ? 'topLevel'
                               : /^build/.test(k)
                                 ? 'built'
-                                : null;
+                                : /^remix\d/.test(k)
+                                  ? 'remixes'
+                                  : null;
   GOAL_CUR[k] = stat
     ? (g) => ST(g, stat)
     : /^syn\d/.test(k)
@@ -373,7 +375,7 @@ export const goalCur = (g: Game, k: string) => GOAL_CUR[k]!(g);
 // percent (a level takes far longer than a win, and "Reach level 50" should never sit above "Win 10 fights")
 const GOAL_RATE: [RegExp, number][] = [
   [/^w\d/, 1.4], [/^e\d/, 7], [/^b\d/, 14], [/^ch\d/, 14], [/^cup/, 6], [/^world/, 40], [/^g\d/, 2], [/^dc/, 15],
-  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8], [/^syn/, 8],
+  [/^rush/, 30], [/^bet/, 2], [/^loot/, 2], [/^gear/, 4], [/^set$/, 40], [/^lv/, 7], [/^m\d/, 15], [/^build/, 8], [/^syn/, 8], [/^remix/, 6],
 ];
 /** About how many fights a goal still needs. */
 export function goalEta(g: Game, k: string): number {

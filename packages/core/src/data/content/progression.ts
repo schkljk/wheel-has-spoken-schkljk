@@ -160,6 +160,9 @@ export const GOALS_MORE: typeof GOALS = [
   { k: 'syn10', n: 'Matchmaker', e: '🤝', d: 'Find 10 different synergies', need: 10, rw: { gems: 3 } },
   { k: 'syn25', n: 'Chemistry set', e: '⚗️', d: 'Find 25 different synergies', need: 25, rw: { gems: 6 } },
   { k: 'syn50', n: 'Two bad ideas, holding hands', e: '🫱', d: 'Find 50 different synergies', need: 50, rw: { gems: 12, legacy: 1 } },
+  // the remix workshop (L4)
+  { k: 'remix1', n: 'Mad scientist', e: '🧪', d: 'Beat a remix you built yourself', need: 1, rw: { gems: 3 } },
+  { k: 'remix10', n: 'It lives, and it lost', e: '⚡', d: 'Beat 10 remixes you built yourself', need: 10, rw: { gems: 10, legacy: 1 } },
 ];
 /** Every goal the game counts. */
 export const ALL_GOALS: typeof GOALS = [...GOALS, ...GOALS_MORE];

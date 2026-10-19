@@ -121,7 +121,7 @@ Each of these changes how the game plays, so each ships with before and after si
 | ~~L1~~ | **Take the job:** accept a bounty, and its slice is fixed on your next fighter's wheel, for a gem or two. Each bounty then takes one career instead of about 40. *"The wheel takes requests. It charges in dignity."* | done |
 | ~~L2~~ | **Claim or wager:** on a sure win, take it free, or fight it at 60% HP for elite loot and a gem. Today 63% of story fights are claimed. *"Free win, or a stupid risk for shinier junk. You know which."* | done |
 | L3 | **Duel par:** a par worked out from 30 simulated players on the day's dice; the share line says "2 under par". Scores become comparable without a server. *"Par is what a pigeon with a plan would score."* | S |
-| L4 | **Remix workshop:** spend gems to build your own trial from any boss and two kits, with goals like "Beat 10 remixes". A gem sink that is also content. *"Mix and match bosses like a cursed salad bar."* | M |
+| ~~L4~~ | **Remix workshop:** spend gems to build your own trial from any boss and two kits, with goals like "Beat 10 remixes". A gem sink that is also content. *"Mix and match bosses like a cursed salad bar."* | done |
 | ~~L5~~ | **Spin & Run relics:** every third boon is a tradeoff, e.g. Glass cannon (+40% damage, −25% HP) or Borrowed time (a full heal, but the run ends in 3 fights). *"Every relic is cursed. Some just admit it."* | done |
 | ~~L6~~ | **Synergy hunt goals:** find 10, 25 and 50 synergies. Synergies matter: no synergies wins 45%, four win 57%. *"Two bad ideas, holding hands."* | done |
 

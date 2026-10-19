@@ -3,7 +3,7 @@ import { BOSSES } from '../data/content/story';
 import { TITLES } from '../data/wheels';
 import type { CareerFighter } from '../save/fighter';
 import { addMasteryWin, awardGems, gainXP, invalidate, track } from './career';
-import { pl, type Game } from './game';
+import { addCoins, pl, type Game } from './game';
 import type { FightOutcome, FightResult, FightTier } from './fight';
 import { bossBody } from './story';
 
@@ -111,6 +111,88 @@ export function endTrialFight(g: Game, i: number, O: CareerFighter, o: FightOutc
     next: [{ t: 'levelups' }, { t: 'hub' }],
     button: 'Continue',
     q: won ? (first ? 3 : 2) : 0,
+    confetti: won,
+  };
+}
+
+// ---------------------------------------------------------------- the remix workshop (L4)
+/** What building a remix costs. */
+export const REMIX_GEMS = 3;
+export type RemixMix = [body: number, kitA: number, kitB: number];
+const remixState = (g: Game) => g.save.profile.extra as { remix?: { mix: RemixMix } | null };
+/**
+ * The remix workshop (review L4): a trial of your own. Any boss your fighter has beaten lends the body, any two
+ * other bosses lend their phase-two tricks, and it is tuned to your level like the trial of that level. It costs
+ * gems to build (a remix that is paid for stays built until it is fought, so closing the app charges nothing
+ * twice), and a win pays XP and coins.
+ */
+export const remixOpen = trialsOpen;
+/** The bosses a remix can be built from: the chapters this fighter cleared, Act I at least. */
+export function remixBodies(g: Game): number[] {
+  const cleared = ((g.F?.story?.cleared as number[] | undefined) || []).filter((c) => c >= 1 && c <= BOSSES.length);
+  const list = [...new Set(cleared)].map((c) => c - 1).sort((a, b) => a - b);
+  return list.length >= 3 ? list : Array.from({ length: 10 }, (_, i) => i);
+}
+/** Which trial a remix measures up to: the one nearest the fighter's level. */
+const remixRow = (g: Game) => Math.max(0, Math.min(TRIAL_COUNT - 1, (g.F?.lvl || 1) - trialLevel(0)));
+/** The remix built and paid for, waiting to be fought. */
+export const builtRemix = (g: Game): RemixMix | null => remixState(g).remix?.mix ?? null;
+/** Builds a remix: three different bosses, the body one your fighter has beaten. False if it can't be paid. */
+export function buildRemix(g: Game, mix: RemixMix): boolean {
+  const p = g.save.profile;
+  if (builtRemix(g)) return true;
+  if (new Set(mix).size !== 3 || !remixBodies(g).includes(mix[0]) || mix.some((i) => !BOSSES[i]) || (p.gems || 0) < REMIX_GEMS) return false;
+  p.gems -= REMIX_GEMS;
+  remixState(g).remix = { mix: [...mix] as RemixMix };
+  return true;
+}
+/** The remix as a fighter: the trial of its level, wearing the body and kits you chose. */
+export function remixBoss(g: Game, mix: RemixMix): CareerFighter {
+  const [a, b, c] = mix;
+  const def = BOSSES[a]!;
+  const i = remixRow(g);
+  const T = tune();
+  const f = bossBody(g, a + 1, 0, T.tier[i]!);
+  Object.assign(f, {
+    title: TITLES[0],
+    maxHp: T.hp[i]!,
+    bossFx: def.fx,
+    phase: def.phase,
+    aiSkill: T.ai0 + T.aiStep * i,
+    wheelBoss: def.wheelBoss,
+    isBoss: true,
+    bossTitle: 'Your remix',
+    lvl: Math.max(g.F?.lvl || 1, trialLevel(0)),
+    remix: [b, c],
+  });
+  invalidate(f);
+  return f;
+}
+export const remixTier: FightTier = { k: 'remix', n: 'Your remix', e: '🧪', xpW: 0, coins: 0 };
+/** After a remix: it is used up either way; a win pays XP, coins, and counts toward the remix goals. */
+export function endRemixFight(g: Game, O: CareerFighter, o: FightOutcome): FightResult {
+  const F = g.F!;
+  const won = o.w === 0;
+  const lines: string[] = [];
+  remixState(g).remix = null;
+  if (won) {
+    const xp = 40 + 6 * remixRow(g);
+    gainXP(g, F, xp);
+    addCoins(g, 15);
+    lines.push(`+${xp} XP, +15 🪙`);
+    addMasteryWin(g, F);
+    track(g, 'remixes');
+  } else lines.push('The remix is spent. The workshop keeps the receipt');
+  invalidate(F);
+  return {
+    won,
+    big: won ? 'Remix beaten' : 'Your remix wins',
+    desc: won ? `${F.name} beats the monster they built. Mary Shelley would be proud.` : `${O.name}, the way you built them, wins. You did this to yourself.`,
+    lines,
+    got: [],
+    next: [{ t: 'levelups' }, { t: 'hub' }],
+    button: 'Continue',
+    q: won ? 2 : 0,
     confetti: won,
   };
 }
