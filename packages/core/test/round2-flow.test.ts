@@ -119,9 +119,9 @@ describe('H5 and L1: bounties you can steer', () => {
     for (const b of BOUNTIES) {
       if (!b.pin) continue;
       const W = WHEEL[b.pin.w];
-      const items = (typeof W.items === 'function' ? [] : W.items) as { n: string; k?: string }[];
+      const items = (typeof W.items === 'function' ? [] : W.items) as readonly { n: string; k?: string }[];
       // the power wheel depends on the class: No power is on the usual one
-      const list = b.pin.w === 'power' ? (POWERS as { n: string; k?: string }[]) : items;
+      const list = b.pin.w === 'power' ? (POWERS as readonly { n: string; k?: string }[]) : items;
       const hit = (x: { n: string; k?: string }) => (b.pin!.n != null && x.n === b.pin!.n) || (b.pin!.k != null && x.k === b.pin!.k);
       expect(list.some(hit), b.k).toBe(true);
       const f = { [b.pin.w]: list.find(hit) } as never;
@@ -155,7 +155,7 @@ describe('H5 and L1: bounties you can steer', () => {
     expect(takeJob(g, row.b.k)).toBe(false);
     expect(swapBounty(g, row.b.k)).toBe(false);
     const W = WHEEL[row.b.pin!.w];
-    const items = (row.b.pin!.w === 'power' ? POWERS : typeof W.items === 'function' ? [] : W.items) as { n: string; k?: string }[];
+    const items = (row.b.pin!.w === 'power' ? POWERS : typeof W.items === 'function' ? [] : W.items) as readonly { n: string; k?: string }[];
     const at = jobSlice(g, row.b.pin!.w, items);
     expect(at).toBeGreaterThanOrEqual(0);
     expect(jobSlice(g, 'title', items)).toBe(-1);
@@ -240,7 +240,7 @@ describe('L5: Spin & Run relics', () => {
       R().offer = [k, 'str', 'spd'];
       takeBoon(g, k);
     };
-    const before = runOpponent(g, R()).lvl;
+    const before = runOpponent(g, R()).lvl || 1;
     take('crown');
     expect(runOpponent(g, R()).lvl).toBe(before + 2);
     R().offer = ['glass'];

@@ -184,7 +184,7 @@ function offer(R: RunState): string[] {
   const rng = mulberry32((R.seed ^ Math.imul(0x9e3779b9, R.i + 3)) >>> 0);
   const left = RUN_BOONS.filter((b) => b.k !== 'heal' || R.hp < 95);
   const out: string[] = [];
-  if (R.i % 3 === 0) {
+  if (BALANCE.runRelics && R.i % 3 === 0) {
     const rel = RUN_RELICS.filter((r) => !hasRelic(R, r.k)).map((r) => ({ ...r, w: 1 }));
     while (out.length < 2 && rel.length) out.push(rel.splice(pickW(rng, rel), 1)[0]!.k);
   }

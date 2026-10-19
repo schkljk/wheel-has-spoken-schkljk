@@ -87,6 +87,29 @@
   - The first fight shows one tip before the first spin; the reads and speed tips wait for the first round.
   - Sideways, the Play tab puts the story card beside the rest.
 - **L1, take the job:** a bounty's "Job" button (2 💎, with a confirmation) fixes its slice on your next new fighter's wheel. The wheel says "📌 The job: this wheel lands on Pigeon" and lands there. The rest of the wheels spin as usual. Dropping an unused job gives the gems back, and so does winning the bounty before the job is used. One job at a time.
+- **H2, Spin & Run joins the game:**
+  - The runner's picks tick in one after another on their intro, with the whole card folded underneath.
+  - Between fights, "📇 {runner}'s card" shows it again.
+  - Walking away shows a payout card: wins, gems, new collection entries, a new best.
+  - A run's win counts as a win for goals and for bounties the runner fits ("Win 10 fights as a Slime" can be done with a runner).
+  - "Patch up" isn't offered at full HP.
+- **L2, claim or wager:** next to "Claim the win", the fight menu offers "Wager it" (with a confirmation). The same fight starts over from the same dice, at no more than 60% HP. A win pays elite loot and a 💎 on top; a loss is a normal loss. The wager is kept with the fight record, so closing the app doesn't undo it.
+- **L5, Spin & Run relics:** every third pick (after wins 3 and 6) offers two relics, tradeoffs tagged as such, next to one plain boon. A tradeoff is never forced.
+  - **Glass cannon:** +40% damage, 25% less max HP.
+  - **Borrowed time:** a full heal, but the run ends after three more fights.
+  - **Blood pact:** every fight starts with full energy, but a win heals nothing.
+  - **Cursed crown:** +3 to everything, every opponent +2 levels.
+  - Each is taken once a run. They are a switch (`runRelics`).
+  - 400 paired runs per cell on auto-battle (`npx tsx tools/sim/spin-run.ts --only relics`):
+
+    | Boon picks | Wins, no relics | With relics | Whole run won, no relics | With relics |
+    |---|---|---|---|---|
+    | Random | 5.21 | 5.06 | 24% | 19% |
+    | Relics whenever offered | 5.21 | 5.00 | 24% | 17% |
+    | Smart | 5.95 | 5.77 | 35% | 32% |
+    | Smart, taking the crown or the cannon | 5.95 | 5.88 | 35% | 37% |
+
+  - Relics reward a good read of the run and punish a greedy one. Borrowed time is the trap: runs pile up at six wins.
 - **L6:** three new goals: find 10, 25 and 50 synergies (3, 6 and 12 💎, plus a legacy point for 50). They live in their own table next to the ported one, which stays a faithful copy.
 - **Decision (G2):** fights now always use their own seeded dice rather than the session's. Each fight still has its own random dice, so the odds don't change. The other fights (ghosts, duels, trials, challenges) pick up the same way when opened again against the same opponent, but Continue doesn't force them.
 

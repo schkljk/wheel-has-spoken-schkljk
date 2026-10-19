@@ -76,6 +76,8 @@ export interface Balance {
   pickTune: boolean;
   /** results name the HP after a win in real numbers, and leave out "+0 🪙" (H9) */
   clearResults: boolean;
+  /** Spin & Run offers relics, tradeoff boons, every third pick (L5) */
+  runRelics: boolean;
 }
 
 export const LEGACY_BALANCE: Balance = {
@@ -115,6 +117,7 @@ export const LEGACY_BALANCE: Balance = {
   injuryCap: false,
   pickTune: false,
   clearResults: false,
+  runRelics: false,
 };
 
 /** Aimed boss odds for an average build at its chapter's level: a boss toughens while the player is 12 points above. */
@@ -181,6 +184,7 @@ export const BALANCE: Balance = {
   injuryCap: true,
   pickTune: true,
   clearResults: true,
+  runRelics: true,
 };
 
 /**
