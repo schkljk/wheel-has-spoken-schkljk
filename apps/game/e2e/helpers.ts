@@ -151,7 +151,8 @@ const TAP_NEXT = `((o) => {
   }
   // a story win's spoils are picked right on the result (B3)
   if (tap(document.querySelector('.fresult .spoil'))) return true;
-  if (tap(document.querySelector('.fresult .btn'))) return true;
+  // the result's own button, not the share button in its scrolling part
+  if (tap(document.querySelector('.fresult > .btn'))) return true;
   if (tap(document.querySelector('.spin-foot .btn'))) return true;
   if (tap(document.querySelector('.mnode.now'))) return true;
   if (tap(document.querySelector('.bracket-screen .dock .btn'))) return true;
